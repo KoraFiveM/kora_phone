@@ -104,6 +104,9 @@ export default function App() {
   const [folded, setFolded] = useState(false);
   const [pin, setPin] = useState(''); const [lockError, setLockError] = useState('');
   const [viewport, setViewport] = useState({ width: window.innerWidth, height: window.innerHeight });
+  const [phonePosition, setPhonePosition] = useState<{ x: number; y: number } | null>(null);
+  const phoneStage = useRef<HTMLDivElement>(null);
+  const phoneDrag = useRef<{ x: number; y: number; width: number; height: number } | null>(null);
   const audio = useRef<AudioContext | undefined>(undefined);
   const [videoOn, setVideoOn] = useState(false); const [remoteVideo, setRemoteVideo] = useState(false);
   const peerConnection = useRef<RTCPeerConnection | undefined>(undefined); const localStream = useRef<MediaStream | undefined>(undefined);
@@ -342,6 +345,35 @@ export default function App() {
   // The flip style is the form factor; color theme stays independent.
   const phoneHeight = flip ? 820 : 780;
   const scale = Math.min(data.settings.scale, (viewport.height - (isPreview ? (viewport.width > 760 ? 180 : 150) : 40)) / phoneHeight, (viewport.width - 28) / 370);
+  useEffect(() => {
+    if (isPreview) return;
+    const width = 370 * scale;
+    const height = (flip && folded ? 420 : phoneHeight) * scale;
+    setPhonePosition(current => {
+      if (!current) return current;
+      const next = {
+        x: Math.min(current.x, Math.max(0, viewport.width - width)),
+        y: Math.min(current.y, Math.max(0, viewport.height - height)),
+      };
+      return next.x === current.x && next.y === current.y ? current : next;
+    });
+  }, [flip, folded, phoneHeight, scale, viewport.height, viewport.width]);
+  const startPhoneDrag = (event: React.PointerEvent<HTMLDivElement>) => {
+    if (isPreview || event.button !== 0 || !phoneStage.current) return;
+    const bounds = phoneStage.current.getBoundingClientRect();
+    phoneDrag.current = { x: event.clientX - bounds.left, y: event.clientY - bounds.top, width: bounds.width, height: bounds.height };
+    setPhonePosition({ x: bounds.left, y: bounds.top });
+    event.currentTarget.setPointerCapture(event.pointerId);
+  };
+  const movePhone = (event: React.PointerEvent<HTMLDivElement>) => {
+    const drag = phoneDrag.current;
+    if (!drag) return;
+    setPhonePosition({
+      x: Math.max(0, Math.min(event.clientX - drag.x, viewport.width - drag.width)),
+      y: Math.max(0, Math.min(event.clientY - drag.y, viewport.height - drag.height)),
+    });
+  };
+  const stopPhoneDrag = () => { phoneDrag.current = null; };
   const meta = appCopy(app, device?.locale);
   const active = call && ['ringing', 'active'].includes(call.status);
   const unread = (id: AppId) => notifications.filter(n => n.app === id).length;
@@ -378,13 +410,13 @@ export default function App() {
   };
   return <div className={isPreview ? 'preview' : 'game'} onPointerDown={enableAudio}>
     {isPreview && <><header className="preview-header"><a className="brand" href="#" onClick={e => { e.preventDefault(); navigate('home'); }}>NOTHING <span>( PHONE )</span></a><span className="preview-build"><i />QBCORE EDITION <span>/</span> 001</span></header><aside className="preview-intro"><p className="eyebrow"><span className="red-dot" />LESS NOISE. MORE LIFE.</p><h1>Your city.<br />Your people.<br /><span>Your phone.</span></h1><p className="intro-description">Everything you need to feel connected.<br />Nothing to get in the way.</p><div className="intro-rule" /><div className="preview-features"><div><span>01</span><p>Made for the moments<br />between the missions.</p></div><div><span>02</span><p>One device. Your number.<br />A whole city within reach.</p></div></div><div className="preview-controls"><button onClick={() => { if (!shown) apply(previewBootstrap()); else void lock(); }}><LockKeyhole size={15} />{shown ? 'Lock phone' : 'Open phone'}</button><button onClick={() => { if (!shown) apply(previewBootstrap()); previewIncoming(); }}><PhoneIncoming size={15} />Try a call</button><button onClick={resetPreview} aria-label="Reset preview data"><SlidersHorizontal size={15} />Reset</button></div><p className="demo-caption">INTERACTIVE PREVIEW / SAMPLE DATA</p></aside><footer className="preview-footer"><span>DESIGNED TO GET OUT OF YOUR WAY.</span><span>LOS SANTOS <ArrowUpRight size={13} /></span></footer></>}
-    <div className="phone-stage">
+    <div ref={phoneStage} className="phone-stage" style={!isPreview && phonePosition ? { left: phonePosition.x, top: phonePosition.y, right: 'auto', bottom: 'auto' } : undefined}>
       {!shown && isPreview && <button className="reopen" onClick={() => apply(previewBootstrap())}><Power size={24} />Open phone</button>}
       {shown && device && <div className="phone-scale" style={{ width: 370 * scale, height: (flip && folded ? 420 : phoneHeight) * scale }}><div className={`phone ${flip ? 'style-flip' : ''} ${flip && folded ? 'is-folded' : ''} ${app === 'home' ? 'on-home' : ''} ${hiddenCapture ? 'capture-hidden' : ''} theme-${data.settings.theme || 'light'}`} style={{ '--phone-scale': scale } as CSSProperties}>
         <div className="side-key volume-up" /><div className="side-key volume-down" /><div className="side-key power-key" />
         <div inert={flip && folded} aria-hidden={flip && folded} className={`phone-screen ${locked || app === 'home' ? 'show-wallpaper' : ''} ${isDarkTheme(data.settings.theme) ? 'theme-dark' : ''} theme-${data.settings.theme || 'light'} wallpaper-${data.settings.wallpaper} icons-${data.settings.iconStyle ?? 'circle'}`}>
           {(locked || app === 'home') && data.settings.wallpaper === 'custom' && data.settings.wallpaperUrl && <PhotoImage src={data.settings.wallpaperUrl} className="custom-wallpaper" />}
-          <div className="status-bar"><span className="status-time">{time}{data.settings.theme === 'qbcore' && <QbMark size={10} />}</span><div className="camera-dot" /><span className="status-icons">{quiet && <Moon size={12} aria-label="Do Not Disturb is on" />}<Signal size={13} /><Wifi size={14} /><BatteryFull size={17} /></span></div>
+          <div className="status-bar" onPointerDown={startPhoneDrag} onPointerMove={movePhone} onPointerUp={stopPhoneDrag} onPointerCancel={stopPhoneDrag}><span className="status-time">{time}{data.settings.theme === 'qbcore' && <QbMark size={10} />}</span><div className="camera-dot" /><span className="status-icons">{quiet && <Moon size={12} aria-label="Do Not Disturb is on" />}<Signal size={13} /><Wifi size={14} /><BatteryFull size={17} /></span></div>
           <PhoneContext.Provider value={{ device, data, updateData, navigate, notify, run, busy, setCall, setHasPin: value => setDevice(current => current ? { ...current, hasPin: value } : current), revision, updateNumber: value => setDevice(current => current ? { ...current, number: value } : current) }}>
             {locked ? <div className="lock-screen"><LockKeyhole size={19} /><p>{date.toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long' })}</p><DotClock value={time} /><LockLogo brand={data.settings.theme === 'qbcore' ? 'qbcore' : 'nothing'} />{active && <div className="locked-call"><PhoneIncoming size={19} /><div><strong>Incoming call</strong><small>{call.number} · Unlock to answer</small></div></div>}<form onSubmit={unlock} className="unlock-form">{device.hasPin && <input autoFocus type="password" aria-label="Phone PIN" inputMode="numeric" pattern="[0-9]{4,8}" maxLength={8} required placeholder="Enter PIN" autoComplete="off" value={pin} onChange={e => setPin(e.target.value)} />}{lockError && <p className="pin-error" role="alert">{lockError}</p>}<button className="unlock-button" disabled={busy}><Fingerprint size={28} /><span>{device.hasPin ? 'Unlock phone' : 'Make yourself at home'}</span><ArrowRight size={17} /></button></form><small className="lock-bottom">NOTHING / EVERYTHING YOU NEED</small></div>
               : !data.settings.setupComplete ? <SetupScreen /> : app === 'home' ? <main className="home-screen"><div className="home-top"><span className="eyebrow">{data.settings.theme === 'qbcore' && <QbMark size={11} />}{date.toLocaleDateString('en-GB', { weekday: 'short', day: '2-digit', month: 'short' }).toUpperCase()}</span><div><button className={`icon-button ${editing ? 'active' : ''}`} aria-label={editing ? 'Done arranging apps' : 'Arrange apps'} onClick={() => { setEditing(!editing); setDragId(null); setOverId(null); }}>{editing ? <Check size={17} /> : <SlidersHorizontal size={16} />}</button><button className={`icon-button ${quiet ? 'active' : ''}`} aria-label={quiet ? 'Turn off Do Not Disturb' : 'Turn on Do Not Disturb'} aria-pressed={quiet} onClick={toggleQuiet}><Moon size={16} /></button><button className="icon-button" aria-label="Notifications" onClick={() => setShowNotifications(!showNotifications)}><Bell size={17} />{notifications.length > 0 && <i className="notification-dot" />}</button><button className="icon-button" aria-label="Lock phone" onClick={lock}><LockKeyhole size={16} /></button></div></div><DotClock value={time} /><div className="home-widgets"><button className="city-widget" onClick={() => navigate(available('weather') ? 'weather' : 'gps')}><Sun size={31} strokeWidth={1.2} /><div><strong>Los Santos</strong><span>{available('weather') ? 'Your day, at a glance' : 'Find your way'}</span></div><ArrowUpRight size={14} /></button><button className="settings-widget" aria-label="Open Settings" onClick={() => navigate('settings')}><SettingsIcon size={25} strokeWidth={1.3} /><span>Make it yours</span></button></div><div className="home-section"><span>EVERYTHING, IN REACH.</span><span>( 01 )</span></div><div className="app-grid">{homeApps.slice(visiblePage * 12, visiblePage * 12 + 12).map(item => <AppIcon key={item.id} id={item.id} badge={unread(item.id)} editing={editing} dragging={dragId === item.id} over={overId === item.id} onClick={() => editing ? setEditing(false) : navigate(item.id)} onDragStart={() => setDragId(item.id)} onDragOver={e => { if (editing && dragId && dragId !== item.id) { e.preventDefault(); setOverId(item.id); } }} onDrop={e => { e.preventDefault(); if (dragId) reorder(dragId, item.id); setDragId(null); setOverId(null); }} onDragEnd={() => { setDragId(null); setOverId(null); }} />)}</div>{editing && <p className="home-edit-hint">Drag to rearrange · tap check to finish</p>}<button className="home-note" onClick={() => navigate(notifications[0]?.app || 'messages')}><span className="note-symbol"><MessageCircle size={21} strokeWidth={1.5} /></span><span><strong>{(notifications[0] && (data.contacts.find(c => c.number === notifications[0].title)?.name ?? notifications[0].title)) || 'A little closer.'}</strong><small>{notifications[0]?.body || 'Good conversations start with hello.'}</small></span><ArrowUpRight size={16} /></button><div className="home-page-dots">{Array.from({ length: pageCount }, (_, i) => <button key={i} aria-label={`App page ${i + 1}`} aria-current={visiblePage === i ? 'page' : undefined} onClick={() => setHomePage(i)}><i /></button>)}</div><nav className="dock" aria-label="Favorite apps">{(['phone', 'messages', 'contacts', available('camera') ? 'camera' : 'gallery'] as AppId[]).map(id => <AppIcon key={id} id={id} dock badge={unread(id)} onClick={() => navigate(id)} />)}</nav></main>
