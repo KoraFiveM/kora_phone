@@ -74,6 +74,10 @@ local function finish(call, finalStatus, reason)
     if not call or terminal[call.status] then return false end
     local prior = call.status
     if not SteviePhone.Repositories.Calls.transition(call.id, { prior }, finalStatus, reason) then return false end
+    if prior == 'active' then
+        SteviePhone.Integrations.Voice.leave(sourceForDevice(call.callerDeviceId), call.voiceChannel)
+        SteviePhone.Integrations.Voice.leave(sourceForDevice(call.calleeDeviceId), call.voiceChannel)
+    end
     call.status = finalStatus
     call.endedReason = reason
     notify(call, 'stevie-phone:client:calls:ended', {
@@ -150,6 +154,16 @@ function Calling.accept(source, payload)
         return PhoneError(PhoneConstants.Errors.CONFLICT, 'Call state changed')
     end
     call.status = 'active'
+    local callerSource = sourceForDevice(call.callerDeviceId)
+    local calleeSource = sourceForDevice(call.calleeDeviceId)
+    if not callerSource or not calleeSource then
+        finish(call, 'cancelled', 'participant_unavailable')
+        return PhoneError(PhoneConstants.Errors.CONFLICT, 'Call participant is unavailable')
+    end
+    if not SteviePhone.Integrations.Voice.join(callerSource, calleeSource, call.voiceChannel) then
+        finish(call, 'ended', 'voice_unavailable')
+        return PhoneError(PhoneConstants.Errors.CONFLICT, 'Voice service is unavailable')
+    end
     call.answeredAt = os.time()
     notify(call, 'stevie-phone:client:calls:accepted')
     return PhoneResult(publicCall(call, device.id))

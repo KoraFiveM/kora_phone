@@ -13,6 +13,7 @@ const moduleSource = read("server/modules/call_callbacks.lua");
 const migration = read("migrations/003_calls.sql");
 const client = read("client/calls.lua");
 const voice = read("client/integrations/voice.lua");
+const serverVoice = read("server/integrations/voice.lua");
 
 for (const status of ["ringing", "active", "ended", "rejected", "missed", "cancelled"]) {
   assert.match(migration, new RegExp(`['\"]${status}['\"]`), `migration must support ${status}`);
@@ -35,7 +36,11 @@ assert.doesNotMatch(service, /payload\.(?:citizenId|deviceId|source)/, "client i
 assert.match(client, /current\.id ~= call\.id/, "client must ignore cross-call state injection");
 assert.match(client, /Voice\.Leave\(\)/, "call end must leave voice routing");
 assert.match(voice, /GetResourceState\(name\) == 'started'/, "voice resource must be capability checked");
-assert.match(voice, /setCallChannel\(0\)/, "voice cleanup must reset the call channel");
+assert.doesNotMatch(client, /Voice\.Join/, "clients must not assign themselves to call channels");
+assert.match(service, /Integrations\.Voice\.join/, "the server must assign voice call membership");
+assert.match(service, /Integrations\.Voice\.leave/, "the server must remove voice call membership");
+assert.match(serverVoice, /setPlayerCall/, "voice assignment must use the trusted server export");
+assert.match(serverVoice, /removePlayerFromCall/, "voice cleanup must use the trusted server export");
 assert.doesNotMatch(voice, /MumbleSetPlayerMuted/, "call mute must not misuse receive-side player muting");
 
 console.log("PASS calls: server authority, persistence, routing and cleanup contracts verified");
