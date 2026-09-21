@@ -38,8 +38,6 @@ RegisterNetEvent('stevie-phone:client:calls:accepted', function(call)
     local current = SteviePhone.State.activeCall
     if current and current.id ~= call.id then return end
     SteviePhone.State.activeCall = call
-    local ok, errorCode = SteviePhone.Voice.Join(call.voiceChannel)
-    if not ok then TriggerServerEvent('stevie-phone:server:calls:voiceFailure', call.id, errorCode) end
     participantEvent('calls:accepted', call)
 end)
 
