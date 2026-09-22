@@ -64,3 +64,16 @@ dependencies {
     'qb-core',
     'oxmysql'
 }
+
+-- Lets this resource answer as each aliased phone (client/customapps.lua) for real: many
+-- custom apps gate their AddCustomApp-style call behind GetResourceState('lb-phone') (etc)
+-- being 'started' before ever attempting the export, which the export-event trick alone
+-- can't satisfy. `provide` makes GetResourceState and dependency resolution treat this
+-- resource as if it were that one too. Don't also run the real lb-phone/sd-phone/etc
+-- alongside this -- same warning sky_phone documents for the same trick: two active
+-- providers of the same name race for the same registrations.
+provide 'lb-phone'
+provide 'sd-phone'
+provide '17mov_Phone'
+provide 'yseries'
+provide 'high-phone'

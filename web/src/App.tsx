@@ -184,14 +184,14 @@ export default function App() {
   const ensurePeer = useCallback((iceServers: RTCIceServer[]) => {
     if (peerConnection.current) return peerConnection.current;
     const connection = new RTCPeerConnection({ iceServers });
-    connection.onicecandidate = event => { if (event.candidate) sendSignal({ kind: 'ice', candidate: event.candidate.toJSON() }); };
+    connection.onicecandidate = event => { if (event.candidate && callRef.current?.id) sendSignal({ id: callRef.current.id, kind: 'ice', candidate: event.candidate.toJSON() }); };
     connection.ontrack = event => { setRemoteVideo(true); if (remoteVideoRef.current) remoteVideoRef.current.srcObject = event.streams[0]; };
     connection.onconnectionstatechange = () => { if (['failed', 'closed', 'disconnected'].includes(connection.connectionState)) stopVideo(); };
     peerConnection.current = connection;
     return connection;
   }, [stopVideo]);
   const startVideo = useCallback(() => run(async () => {
-    if (!device?.video) return;
+    if (!device?.video || !callRef.current?.id) return;
     const connection = ensurePeer(device.video.iceServers);
     const stream = await navigator.mediaDevices.getUserMedia({ video: true });
     localStream.current = stream;
@@ -200,7 +200,7 @@ export default function App() {
     setVideoOn(true);
     const offer = await connection.createOffer();
     await connection.setLocalDescription(offer);
-    sendSignal({ kind: 'offer', sdp: offer });
+    sendSignal({ id: callRef.current.id, kind: 'offer', sdp: offer });
   }), [device?.video, ensurePeer, run]);
   const handleVideoSignal = useCallback(async (signal: { kind?: string; sdp?: RTCSessionDescriptionInit; candidate?: RTCIceCandidateInit }) => {
     if (!device?.video || !signal || typeof signal !== 'object') return;
@@ -215,7 +215,7 @@ export default function App() {
       }
       const answer = await connection.createAnswer();
       await connection.setLocalDescription(answer);
-      sendSignal({ kind: 'answer', sdp: answer });
+      if (callRef.current?.id) sendSignal({ id: callRef.current.id, kind: 'answer', sdp: answer });
       setVideoOn(true);
     } else if (signal.kind === 'answer' && signal.sdp) {
       await peerConnection.current?.setRemoteDescription(signal.sdp);
