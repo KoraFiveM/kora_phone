@@ -99,6 +99,12 @@ RegisterNetEvent('stevie-phone:client:mail:new', function(mail)
     SendNUIMessage({ action = 'mail:new', data = { sender = mail.sender:sub(1, 16), subject = tostring(mail.subject or ''):sub(1, 120) } })
 end)
 
+-- Sent by /phonereset: put the phone away and reload it so the setup screen comes back.
+RegisterNetEvent('stevie-phone:client:reset', function()
+    SteviePhone.Close(true)
+    SteviePhone.Bootstrap()
+end)
+
 RegisterNetEvent('stevie-phone:client:messages:read', function(receipt)
     SendNUIMessage({ action = 'messages:read', data = receipt })
 end)
