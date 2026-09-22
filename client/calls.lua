@@ -1,4 +1,4 @@
-SteviePhone = SteviePhone or {}
+QBPhone = QBPhone or {}
 local Calls = {}
 
 local function validCall(call)
@@ -10,64 +10,64 @@ end
 
 local function participantEvent(action, call)
     if not validCall(call) then return false end
-    SteviePhone.State.activeCall = call
+    QBPhone.State.activeCall = call
     QB.nui.send(action, call)
     return true
 end
 
-RegisterNetEvent('stevie-phone:client:calls:incoming', function(call)
-    if SteviePhone.State.activeCall and SteviePhone.State.activeCall.id ~= (call and call.id) then return end
-    if participantEvent('calls:incoming', call) and not SteviePhone.State.open then
-        if SteviePhone.State.quiet then
+RegisterNetEvent('qbphone:client:calls:incoming', function(call)
+    if QBPhone.State.activeCall and QBPhone.State.activeCall.id ~= (call and call.id) then return end
+    if participantEvent('calls:incoming', call) and not QBPhone.State.open then
+        if QBPhone.State.quiet then
             -- Do Not Disturb: leave the phone closed and drop a silent note in the notification shade.
             QB.nui.send('notification:push', { title = tostring(call.remoteNumber or 'Unknown'), body = 'Incoming call · Do Not Disturb', app = 'phone' })
         else
             -- The UI is hidden while the phone is closed, so open it or the call would ring unseen.
-            SteviePhone.Open()
+            QBPhone.Open()
         end
     end
 end)
 
-RegisterNetEvent('stevie-phone:client:calls:outgoing', function(call)
-    if SteviePhone.State.activeCall and SteviePhone.State.activeCall.id ~= (call and call.id) then return end
+RegisterNetEvent('qbphone:client:calls:outgoing', function(call)
+    if QBPhone.State.activeCall and QBPhone.State.activeCall.id ~= (call and call.id) then return end
     participantEvent('calls:outgoing', call)
 end)
 
-RegisterNetEvent('stevie-phone:client:calls:accepted', function(call)
+RegisterNetEvent('qbphone:client:calls:accepted', function(call)
     if not validCall(call) or type(call.voiceChannel) ~= 'number' then return end
-    local current = SteviePhone.State.activeCall
+    local current = QBPhone.State.activeCall
     if current and current.id ~= call.id then return end
-    SteviePhone.State.activeCall = call
+    QBPhone.State.activeCall = call
     participantEvent('calls:accepted', call)
 end)
 
 -- A WebRTC offer/answer/ICE candidate from the other side of the call, passed straight to the NUI's own peer connection.
-RegisterNetEvent('stevie-phone:client:calls:signal', function(signal)
+RegisterNetEvent('qbphone:client:calls:signal', function(signal)
     if type(signal) ~= 'table' then return end
     QB.nui.send('videoSignal', signal)
 end)
 
-RegisterNetEvent('stevie-phone:client:calls:ended', function(payload)
+RegisterNetEvent('qbphone:client:calls:ended', function(payload)
     if type(payload) ~= 'table' or type(payload.id) ~= 'string' then return end
-    local current = SteviePhone.State.activeCall
+    local current = QBPhone.State.activeCall
     if current and current.id ~= payload.id then return end
-    SteviePhone.Voice.Leave()
-    SteviePhone.State.activeCall = nil
+    QBPhone.Voice.Leave()
+    QBPhone.State.activeCall = nil
     QB.nui.send('calls:ended', payload)
 end)
 
 function Calls.Cleanup(notifyServer)
-    local call = SteviePhone.State.activeCall
-    SteviePhone.Voice.Leave()
-    SteviePhone.State.activeCall = nil
+    local call = QBPhone.State.activeCall
+    QBPhone.Voice.Leave()
+    QBPhone.State.activeCall = nil
     if notifyServer and call and call.id then
-        TriggerServerEvent('stevie-phone:server:calls:hangup', call.id)
+        TriggerServerEvent('qbphone:server:calls:hangup', call.id)
     end
 end
 
 function Calls.IsActive(callId)
-    local call = SteviePhone.State.activeCall
+    local call = QBPhone.State.activeCall
     return call ~= nil and (callId == nil or call.id == callId)
 end
 
-SteviePhone.Calls = Calls
+QBPhone.Calls = Calls

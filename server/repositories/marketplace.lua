@@ -1,6 +1,6 @@
-SteviePhone.Repositories = SteviePhone.Repositories or {}
+QBPhone.Repositories = QBPhone.Repositories or {}
 local Market = {}
-SteviePhone.Repositories.Marketplace = Market
+QBPhone.Repositories.Marketplace = Market
 
 local selectListing = [[SELECT l.id, l.owner_device_id AS ownerDeviceId, l.title, l.description,
     l.category, l.price, l.status, UNIX_TIMESTAMP(l.created_at) AS createdAt,

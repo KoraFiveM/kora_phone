@@ -1,4 +1,4 @@
-SteviePhone = SteviePhone or {}
+QBPhone = QBPhone or {}
 
 local State = {
     open = false,
@@ -42,5 +42,5 @@ function State.Public()
     }
 end
 
-SteviePhone.State = State
+QBPhone.State = State
 

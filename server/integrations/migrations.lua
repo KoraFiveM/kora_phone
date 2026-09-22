@@ -1,6 +1,6 @@
-SteviePhone = SteviePhone or {}
+QBPhone = QBPhone or {}
 local Migrations = {}
-SteviePhone.Migrations = Migrations
+QBPhone.Migrations = Migrations
 
 -- Applies the .sql files listed in fxmanifest.lua (`migration '...'` lines, in order) when the resource starts,
 -- and remembers what it has done in `phone_migrations`, so each statement runs once and a restart runs nothing.
@@ -105,7 +105,7 @@ function Migrations.run()
         end
     end
     if applied > 0 or adopted > 0 then
-        print(('[stevie-phone] database ready (%d statements applied, %d already present)'):format(applied, adopted))
+        print(('[qbphone] database ready (%d statements applied, %d already present)'):format(applied, adopted))
     end
     return true
 end

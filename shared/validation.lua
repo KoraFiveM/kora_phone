@@ -72,7 +72,7 @@ function PhoneValidation.settings(payload)
     if not out.name then return nil, err end
     out.theme, err = PhoneValidation.enum(payload.theme or 'light', 'theme', SETTINGS_THEMES)
     if not out.theme then return nil, err end
-    out.wallpaper, err = PhoneValidation.enum(payload.wallpaper or 'orbit', 'wallpaper', SETTINGS_WALLPAPERS)
+    out.wallpaper, err = PhoneValidation.enum(payload.wallpaper or 'qbcore', 'wallpaper', SETTINGS_WALLPAPERS)
     if not out.wallpaper then return nil, err end
     out.phoneStyle, err = PhoneValidation.enum(payload.phoneStyle or 'classic', 'phoneStyle', SETTINGS_STYLES)
     if not out.phoneStyle then return nil, err end

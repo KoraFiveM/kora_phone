@@ -1,5 +1,5 @@
-SteviePhone.RateLimits = SteviePhone.RateLimits or { buckets = {} }
-local RateLimits = SteviePhone.RateLimits
+QBPhone.RateLimits = QBPhone.RateLimits or { buckets = {} }
+local RateLimits = QBPhone.RateLimits
 
 function RateLimits.consume(source, action)
     local rule = Config.Server.RateLimits[action] or Config.Server.RateLimits.mutation

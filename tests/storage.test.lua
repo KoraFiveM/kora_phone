@@ -25,18 +25,18 @@ function PerformHttpRequest(url, callback, method, body, headers)
     callback(http.status, http.body)
 end
 function SaveResourceFile() return true end
-function GetCurrentResourceName() return 'stevie-phone' end
+function GetCurrentResourceName() return 'qbphone' end
 function GetResourceState() return 'missing' end
 
-SteviePhone = {}
+QBPhone = {}
 Config = { Server = { Media = { Provider = 'fivemanage' } } }
 dofile(root .. "/server/integrations/storage.lua")
-local Storage = SteviePhone.Storage
+local Storage = QBPhone.Storage
 
 local function reset(provider, extra)
     Config.Server.Media = { Provider = provider }
     for key, value in pairs(extra or {}) do Config.Server.Media[key] = value end
-    convars = { stevie_phone_fivemanage_token = 'secret-token' }
+    convars = { qbphone_fivemanage_token = 'secret-token' }
     http.status, http.body = 200, '#none'
 end
 local function result(fn)
@@ -52,7 +52,7 @@ local ticket = function(over)
     return t
 end
 local GOOD_FILE = function(over)
-    local f = { id = 'abcDEF123456', filename = 'clip.webm', type = 'video/webm', size = 1 * MB, url = 'https://r2.fivemanage.com/abc/clip.webm', metadata = { stevieTicket = 'tag123' } }
+    local f = { id = 'abcDEF123456', filename = 'clip.webm', type = 'video/webm', size = 1 * MB, url = 'https://r2.fivemanage.com/abc/clip.webm', metadata = { qbphoneTicket = 'tag123' } }
     for k, v in pairs(over or {}) do f[k] = v end
     return f
 end
@@ -112,7 +112,7 @@ test("the token can also come from config, but the convar wins", function()
     reset('fivemanage', { Fivemanage = { Token = 'from-config' } }); convars = {}
     fakes['#begin'] = { data = { presignedUrl = 'https://fmapi.net/api/v3/file/presigned-url/x' } }; http.body = '#begin'
     result(function(cb) Storage.begin(ticket(), cb) end); equal(http.last.headers.Authorization, 'from-config')
-    convars = { stevie_phone_fivemanage_token = 'from-convar' }
+    convars = { qbphone_fivemanage_token = 'from-convar' }
     result(function(cb) Storage.begin(ticket(), cb) end); equal(http.last.headers.Authorization, 'from-convar')
 end)
 
@@ -148,7 +148,7 @@ test("complete rejects a mismatched file id and malformed receipts", function()
     equal(result(function(cb) Storage.completeFivemanage(ticket(), nil, cb) end)[3], 'INVALID_RECEIPT')
 end)
 test("complete refuses a file whose ticket tag is someone else's", function()
-    reset('fivemanage'); serve(GOOD_FILE({ metadata = { stevieTicket = 'other-ticket' } }))
+    reset('fivemanage'); serve(GOOD_FILE({ metadata = { qbphoneTicket = 'other-ticket' } }))
     equal(result(function(cb) Storage.completeFivemanage(ticket(), 'abcDEF123456', cb) end)[3], 'UPLOAD_NOT_BOUND')
 end)
 test("RequireTag makes an untagged upload fail; otherwise it is allowed", function()

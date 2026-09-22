@@ -1,75 +1,75 @@
-SteviePhone = SteviePhone or {}
+QBPhone = QBPhone or {}
 
 local callbacks = {
-    ['bootstrap'] = 'stevie-phone:server:getBootstrap',
-    ['settings:save'] = 'stevie-phone:server:saveSettings',
-    ['security:unlock'] = 'stevie-phone:server:unlockPhone',
-    ['security:lock'] = 'stevie-phone:server:lockPhone',
-    ['security:setPin'] = 'stevie-phone:server:setPhonePin',
-    ['security:removePin'] = 'stevie-phone:server:removePhonePin',
-    ['contacts:create'] = 'stevie-phone:server:saveContact',
-    ['contacts:update'] = 'stevie-phone:server:saveContact',
-    ['contacts:delete'] = 'stevie-phone:server:deleteContact',
-    ['contacts:list'] = 'stevie-phone:server:getContacts',
-    ['messages:getConversations'] = 'stevie-phone:server:getConversations',
-    ['messages:startDirect'] = 'stevie-phone:server:startDirectConversation',
-    ['messages:markRead'] = 'stevie-phone:server:markConversationRead',
-    ['messages:deleteForSelf'] = 'stevie-phone:server:deleteMessageForSelf',
-    ['messages:getPage'] = 'stevie-phone:server:getMessages',
-    ['messages:send'] = 'stevie-phone:server:sendMessage',
-    ['calls:start'] = 'stevie-phone:server:calls:start',
-    ['calls:accept'] = 'stevie-phone:server:calls:accept',
-    ['calls:reject'] = 'stevie-phone:server:calls:reject',
-    ['calls:hangup'] = 'stevie-phone:server:calls:hangup',
-    ['calls:history'] = 'stevie-phone:server:calls:history',
-    ['calls:signal'] = 'stevie-phone:server:calls:signal',
-    ['gallery:list'] = 'stevie-phone:server:getGallery',
-    ['media:request'] = 'stevie-phone:server:requestMediaUpload',
-    ['media:complete'] = 'stevie-phone:server:completeMediaUpload',
-    ['gallery:delete'] = 'stevie-phone:server:deleteMedia',
-    ['bank:getData'] = 'stevie-phone:server:getBankBalance',
-    ['bank:getTransactions'] = 'stevie-phone:server:getBankHistory',
-    ['bank:transfer'] = 'stevie-phone:server:transferBankMoney',
-    ['messages:createGroup'] = 'stevie-phone:server:createGroup',
-    ['messages:leaveGroup'] = 'stevie-phone:server:leaveGroup',
-    ['messages:addMember'] = 'stevie-phone:server:addGroupMember',
-    ['blocks:list'] = 'stevie-phone:server:getBlocked',
-    ['blocks:set'] = 'stevie-phone:server:setBlocked',
-    ['mail:list'] = 'stevie-phone:server:getMail',
-    ['mail:send'] = 'stevie-phone:server:sendMail',
-    ['mail:read'] = 'stevie-phone:server:readMail',
-    ['mail:delete'] = 'stevie-phone:server:deleteMail',
-    ['property:list'] = 'stevie-phone:server:getProperties',
-    ['items:save'] = 'stevie-phone:server:saveItem',
-    ['items:remove'] = 'stevie-phone:server:removeItem',
-    ['garage:list'] = 'stevie-phone:server:getVehicles',
-    ['wallet:get'] = 'stevie-phone:server:getWallet',
-    ['wallet:show'] = 'stevie-phone:server:showWalletId',
-    ['jobs:getData'] = 'stevie-phone:server:getJob',
-    ['jobs:setDuty'] = 'stevie-phone:server:setJobDuty',
-    ['jobs:runAction'] = 'stevie-phone:server:runJobAction',
-    ['social:createAccount'] = 'stevie-phone:server:social:createAccount',
-    ['social:getFeed'] = 'stevie-phone:server:social:getFeed',
-    ['social:getProfile'] = 'stevie-phone:server:social:getProfile',
-    ['social:createPost'] = 'stevie-phone:server:social:createPost',
-    ['social:deletePost'] = 'stevie-phone:server:social:deletePost',
-    ['social:toggleLike'] = 'stevie-phone:server:social:toggleLike',
-    ['social:follow'] = 'stevie-phone:server:social:follow',
-    ['social:unfollow'] = 'stevie-phone:server:social:unfollow',
-    ['social:createComment'] = 'stevie-phone:server:social:createComment',
-    ['social:deleteComment'] = 'stevie-phone:server:social:deleteComment',
-    ['social:getComments'] = 'stevie-phone:server:social:getComments',
-    ['social:block'] = 'stevie-phone:server:social:block',
-    ['social:report'] = 'stevie-phone:server:social:report',
-    ['market:getListings'] = 'stevie-phone:server:market:getListings',
-    ['market:getListing'] = 'stevie-phone:server:market:getListing',
-    ['market:createListing'] = 'stevie-phone:server:market:createListing',
-    ['market:updateListing'] = 'stevie-phone:server:market:updateListing',
-    ['market:removeListing'] = 'stevie-phone:server:market:removeListing',
-    ['market:markSold'] = 'stevie-phone:server:market:markSold',
-    ['market:contactSeller'] = 'stevie-phone:server:market:contactSeller',
-    ['moderation:getQueue'] = 'stevie-phone:server:moderation:getQueue',
-    ['moderation:resolve'] = 'stevie-phone:server:moderation:resolve',
+    ['bootstrap'] = 'qbphone:server:getBootstrap',
+    ['settings:save'] = 'qbphone:server:saveSettings',
+    ['security:unlock'] = 'qbphone:server:unlockPhone',
+    ['security:lock'] = 'qbphone:server:lockPhone',
+    ['security:setPin'] = 'qbphone:server:setPhonePin',
+    ['security:removePin'] = 'qbphone:server:removePhonePin',
+    ['contacts:create'] = 'qbphone:server:saveContact',
+    ['contacts:update'] = 'qbphone:server:saveContact',
+    ['contacts:delete'] = 'qbphone:server:deleteContact',
+    ['contacts:list'] = 'qbphone:server:getContacts',
+    ['messages:getConversations'] = 'qbphone:server:getConversations',
+    ['messages:startDirect'] = 'qbphone:server:startDirectConversation',
+    ['messages:markRead'] = 'qbphone:server:markConversationRead',
+    ['messages:deleteForSelf'] = 'qbphone:server:deleteMessageForSelf',
+    ['messages:getPage'] = 'qbphone:server:getMessages',
+    ['messages:send'] = 'qbphone:server:sendMessage',
+    ['calls:start'] = 'qbphone:server:calls:start',
+    ['calls:accept'] = 'qbphone:server:calls:accept',
+    ['calls:reject'] = 'qbphone:server:calls:reject',
+    ['calls:hangup'] = 'qbphone:server:calls:hangup',
+    ['calls:history'] = 'qbphone:server:calls:history',
+    ['calls:signal'] = 'qbphone:server:calls:signal',
+    ['gallery:list'] = 'qbphone:server:getGallery',
+    ['media:request'] = 'qbphone:server:requestMediaUpload',
+    ['media:complete'] = 'qbphone:server:completeMediaUpload',
+    ['gallery:delete'] = 'qbphone:server:deleteMedia',
+    ['bank:getData'] = 'qbphone:server:getBankBalance',
+    ['bank:getTransactions'] = 'qbphone:server:getBankHistory',
+    ['bank:transfer'] = 'qbphone:server:transferBankMoney',
+    ['messages:createGroup'] = 'qbphone:server:createGroup',
+    ['messages:leaveGroup'] = 'qbphone:server:leaveGroup',
+    ['messages:addMember'] = 'qbphone:server:addGroupMember',
+    ['blocks:list'] = 'qbphone:server:getBlocked',
+    ['blocks:set'] = 'qbphone:server:setBlocked',
+    ['mail:list'] = 'qbphone:server:getMail',
+    ['mail:send'] = 'qbphone:server:sendMail',
+    ['mail:read'] = 'qbphone:server:readMail',
+    ['mail:delete'] = 'qbphone:server:deleteMail',
+    ['property:list'] = 'qbphone:server:getProperties',
+    ['items:save'] = 'qbphone:server:saveItem',
+    ['items:remove'] = 'qbphone:server:removeItem',
+    ['garage:list'] = 'qbphone:server:getVehicles',
+    ['wallet:get'] = 'qbphone:server:getWallet',
+    ['wallet:show'] = 'qbphone:server:showWalletId',
+    ['jobs:getData'] = 'qbphone:server:getJob',
+    ['jobs:setDuty'] = 'qbphone:server:setJobDuty',
+    ['jobs:runAction'] = 'qbphone:server:runJobAction',
+    ['social:createAccount'] = 'qbphone:server:social:createAccount',
+    ['social:getFeed'] = 'qbphone:server:social:getFeed',
+    ['social:getProfile'] = 'qbphone:server:social:getProfile',
+    ['social:createPost'] = 'qbphone:server:social:createPost',
+    ['social:deletePost'] = 'qbphone:server:social:deletePost',
+    ['social:toggleLike'] = 'qbphone:server:social:toggleLike',
+    ['social:follow'] = 'qbphone:server:social:follow',
+    ['social:unfollow'] = 'qbphone:server:social:unfollow',
+    ['social:createComment'] = 'qbphone:server:social:createComment',
+    ['social:deleteComment'] = 'qbphone:server:social:deleteComment',
+    ['social:getComments'] = 'qbphone:server:social:getComments',
+    ['social:block'] = 'qbphone:server:social:block',
+    ['social:report'] = 'qbphone:server:social:report',
+    ['market:getListings'] = 'qbphone:server:market:getListings',
+    ['market:getListing'] = 'qbphone:server:market:getListing',
+    ['market:createListing'] = 'qbphone:server:market:createListing',
+    ['market:updateListing'] = 'qbphone:server:market:updateListing',
+    ['market:removeListing'] = 'qbphone:server:market:removeListing',
+    ['market:markSold'] = 'qbphone:server:market:markSold',
+    ['market:contactSeller'] = 'qbphone:server:market:contactSeller',
+    ['moderation:getQueue'] = 'qbphone:server:moderation:getQueue',
+    ['moderation:resolve'] = 'qbphone:server:moderation:resolve',
 }
 
 local function safeReply(cb, result)
@@ -89,14 +89,14 @@ end
 
 for nuiName, serverName in pairs(callbacks) do
     RegisterNUICallback(nuiName, function(data, cb)
-        SteviePhone.ServerCallback(serverName, type(data) == 'table' and data or {}, function(result)
+        QBPhone.ServerCallback(serverName, type(data) == 'table' and data or {}, function(result)
             safeReply(cb, result)
         end)
     end)
 end
 
 RegisterNUICallback('phone:close', function(data, cb)
-    SteviePhone.Close(false)
+    QBPhone.Close(false)
     -- The UI reports why it could not open (for example no phone item) so the
     -- player gets feedback instead of an invisible phone that holds focus.
     if type(data) == 'table' and type(data.error) == 'string' and data.error ~= '' then
@@ -106,8 +106,8 @@ RegisterNUICallback('phone:close', function(data, cb)
 end)
 
 RegisterNUICallback('phone:ready', function(_, cb)
-    SteviePhone.State.ready = true
-    cb({ ok = true, data = SteviePhone.State.Public() })
+    QBPhone.State.ready = true
+    cb({ ok = true, data = QBPhone.State.Public() })
 end)
 
 RegisterNUICallback('route:changed', function(_, cb)
@@ -115,37 +115,37 @@ RegisterNUICallback('route:changed', function(_, cb)
 end)
 
 RegisterNUICallback('camera:open', function(_, cb)
-    local ok, errorCode = SteviePhone.Camera.Open()
+    local ok, errorCode = QBPhone.Camera.Open()
     cb({ ok = ok == true, error = errorCode })
 end)
 
 RegisterNUICallback('camera:close', function(_, cb)
-    SteviePhone.Camera.Close()
+    QBPhone.Camera.Close()
     cb({ ok = true })
 end)
 
 RegisterNUICallback('camera:capture', function(_, cb)
-    SteviePhone.Camera.Capture(function(result) safeReply(cb, result) end)
+    QBPhone.Camera.Capture(function(result) safeReply(cb, result) end)
 end)
 
 RegisterNUICallback('customList', function(_, cb)
-    cb(SteviePhone.CustomApps.List())
+    cb(QBPhone.CustomApps.List())
 end)
 
 RegisterNUICallback('customLifecycle', function(data, cb)
     if type(data) == 'table' and type(data.app) == 'string' and type(data.event) == 'string' then
-        SteviePhone.CustomApps.Fire(data.app, data.event)
+        QBPhone.CustomApps.Fire(data.app, data.event)
     end
     cb({ ok = true })
 end)
 
 RegisterNUICallback('map:open', function(data, cb)
     data = type(data) == 'table' and data or {}
-    cb({ ok = SteviePhone.Map.Show(tonumber(data.x), tonumber(data.y), tonumber(data.w), tonumber(data.h)) == true })
+    cb({ ok = QBPhone.Map.Show(tonumber(data.x), tonumber(data.y), tonumber(data.w), tonumber(data.h)) == true })
 end)
 
 RegisterNUICallback('map:close', function(_, cb)
-    SteviePhone.Map.Hide()
+    QBPhone.Map.Hide()
     cb({ ok = true })
 end)
 
@@ -170,8 +170,8 @@ end)
 -- The UI asks for a game notification when something arrives (a text, mail, a missed call) and the phone is closed.
 RegisterNUICallback('notify', function(data, cb)
     data = type(data) == 'table' and data or {}
-    if type(data.title) == 'string' and not SteviePhone.State.open then
-        SteviePhone.Notifications.Native(data.title:sub(1, 60), type(data.body) == 'string' and data.body:sub(1, 120) or '', data.urgent == true)
+    if type(data.title) == 'string' and not QBPhone.State.open then
+        QBPhone.Notifications.Native(data.title:sub(1, 60), type(data.body) == 'string' and data.body:sub(1, 120) or '', data.urgent == true)
     end
     cb({ ok = true })
 end)
@@ -189,7 +189,7 @@ end)
 
 -- An alarm went off in the UI. With the phone closed the player still needs to notice it.
 RegisterNUICallback('alarm', function(data, cb)
-    if not SteviePhone.State.open then
+    if not QBPhone.State.open then
         local label = type(data) == 'table' and type(data.label) == 'string' and data.label:sub(1, 60) or ''
         QB.notify.send({ title = 'Alarm', message = label ~= '' and label or 'Untitled', type = 'info', duration = 8000 })
         PlaySoundFrontend(-1, 'Beep_Green', 'DLC_HEIST_HACKING_SNAKE_SOUNDS', true)
@@ -199,14 +199,14 @@ end)
 
 -- Do Not Disturb: the UI owns the setting and schedule and tells the client whether it is quiet now.
 RegisterNUICallback('quiet', function(data, cb)
-    SteviePhone.State.quiet = type(data) == 'table' and data.quiet == true
+    QBPhone.State.quiet = type(data) == 'table' and data.quiet == true
     cb({ ok = true })
 end)
 
 RegisterNUICallback('calls:setMuted', function(data, cb)
-    cb({ ok = SteviePhone.Voice.SetMuted(type(data) == 'table' and data.muted == true) })
+    cb({ ok = QBPhone.Voice.SetMuted(type(data) == 'table' and data.muted == true) })
 end)
 
 RegisterNUICallback('calls:setSpeaker', function(data, cb)
-    cb({ ok = SteviePhone.Voice.SetSpeaker(type(data) == 'table' and data.speaker == true) })
+    cb({ ok = QBPhone.Voice.SetSpeaker(type(data) == 'table' and data.speaker == true) })
 end)

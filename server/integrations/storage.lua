@@ -1,6 +1,6 @@
-SteviePhone = SteviePhone or {}
+QBPhone = QBPhone or {}
 local Storage = {}
-SteviePhone.Storage = Storage
+QBPhone.Storage = Storage
 
 local defaults = {
     Provider = 'disabled', TokenTtlSeconds = 120, MaxBytes = 8 * 1024 * 1024,
@@ -105,7 +105,7 @@ function Storage.validateRequest(mimeType, byteSize)
 end
 
 local function fivemanageToken()
-    local convar = GetConvar('stevie_phone_fivemanage_token', '')
+    local convar = GetConvar('qbphone_fivemanage_token', '')
     if convar ~= '' then return convar end
     return tostring(cfg().Fivemanage.Token or '')
 end
@@ -137,7 +137,7 @@ function Storage.begin(ticket, callback)
             local ok, decoded = pcall(json.decode, body or '')
             local url = ok and type(decoded) == 'table' and type(decoded.data) == 'table' and decoded.data.presignedUrl
             if status < 200 or status >= 300 or type(url) ~= 'string' then
-                print(('[stevie-phone] Fivemanage would not issue an upload URL (HTTP %s). Check the stevie_phone_fivemanage_token convar.'):format(tostring(status)))
+                print(('[qbphone] Fivemanage would not issue an upload URL (HTTP %s). Check the qbphone_fivemanage_token convar.'):format(tostring(status)))
                 return callback(false, nil, 'PROVIDER_BEGIN_FAILED')
             end
             if not hostAllowed(url, fm.UploadHosts) then return callback(false, nil, 'UPLOAD_HOST_DENIED') end
@@ -241,10 +241,10 @@ function Storage.completeFivemanage(ticket, receipt, callback)
         if not url then return callback(false, nil, 'PUBLIC_HOST_DENIED') end
         local metadata = file.metadata
         if type(metadata) == 'string' then local parsed, value = pcall(json.decode, metadata); metadata = parsed and value or nil end
-        local tag = type(metadata) == 'table' and metadata.stevieTicket or nil
+        local tag = type(metadata) == 'table' and metadata.qbphoneTicket or nil
         if tag ~= nil and tag ~= ticket.providerData.tag then return callback(false, nil, 'UPLOAD_NOT_BOUND') end
         if tag == nil and fm.RequireTag == true then
-            print('[stevie-phone] An upload arrived without its ticket tag. Fivemanage may not return metadata; set Config.Server.Media.Fivemanage.RequireTag = false if this is expected.')
+            print('[qbphone] An upload arrived without its ticket tag. Fivemanage may not return metadata; set Config.Server.Media.Fivemanage.RequireTag = false if this is expected.')
             return callback(false, nil, 'UPLOAD_NOT_BOUND')
         end
         callback(true, { storageProvider = 'fivemanage', storageKey = receipt, publicUrl = url, mimeType = ticket.mimeType, byteSize = size })

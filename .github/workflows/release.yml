@@ -44,9 +44,27 @@ jobs:
           git tag ${{ steps.tag.outputs.new_tag }}
           git push origin ${{ steps.tag.outputs.new_tag }}
 
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Build UI
+        working-directory: web
+        run: npm ci && npm run build
+
+      # Only what the server needs to run: no web source, node_modules, tests or docs.
+      # The folder name is the resource name, so it unzips straight into resources/.
+      - name: Package resource
+        run: |
+          mkdir -p pkg/qbphone/web
+          cp -r fxmanifest.lua README.md client config server shared migrations local-media pkg/qbphone/
+          cp -r web/dist pkg/qbphone/web/
+          cd pkg && zip -r ../qbphone-${{ steps.tag.outputs.new_tag }}.zip qbphone
+
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
         with:
           tag_name: ${{ steps.tag.outputs.new_tag }}
           name: ${{ steps.tag.outputs.new_tag }}
           body: ${{ steps.tag.outputs.changelog }}
+          files: qbphone-${{ steps.tag.outputs.new_tag }}.zip

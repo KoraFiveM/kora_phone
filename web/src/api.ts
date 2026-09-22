@@ -24,7 +24,7 @@ const mapMessage=(m:any):ChatMessage=>({...m,sender_number:String(m.senderNumber
 // One file straight to the media host's presigned URL. XHR (not fetch) so the UI can show progress.
 function sendFile(url:string,field:string,blob:Blob,tag:string,onProgress?:(fraction:number)=>void):Promise<string>{return new Promise((resolve,reject)=>{
   const form=new FormData();form.append(field,blob,blob.type.startsWith('video/mp4')?'clip.mp4':blob.type.startsWith('video/')?'clip.webm':'photo.jpg');
-  if(tag)form.append('metadata',JSON.stringify({stevieTicket:tag}));
+  if(tag)form.append('metadata',JSON.stringify({qbphoneTicket:tag}));
   const xhr=new XMLHttpRequest();xhr.open('POST',url);xhr.timeout=90000;
   xhr.upload.onprogress=e=>{if(e.lengthComputable)onProgress?.(e.loaded/e.total)};
   xhr.onload=()=>{try{const r=JSON.parse(xhr.responseText);const id=r?.data?.id??r?.receipt;if(xhr.status>=200&&xhr.status<300&&typeof id==='string')return resolve(id)}catch{/* fall through */}reject(new Error('The media host did not accept the upload'))};
@@ -39,13 +39,12 @@ async function uploadMedia(p:{blob:Blob;onProgress?:(fraction:number)=>void}){
   const saved=await server<any>('media:complete',{token:up.token,receipt});
   return{id:Number(saved.id),url:String(saved.publicUrl),kind:kindOf(saved.mimeType,saved.publicUrl)||'photo'}}
 const toPhotos=(g:any):Photo[]=>(g?.items||[]).map((x:any)=>({id:String(x.id),url:String(x.publicUrl),created_at:Number(x.createdAt||0)}));
-let rawBootstrap:Record<string,any>|undefined;
-let cached:DeviceData=normalizeData({settings:{name:'Nothing Phone',volume:.5,scale:1,wallpaper:'orbit',theme:'light',setupComplete:false},contacts:[],notes:[],photos:[],stations:[],alarms:[]});
+let cached:DeviceData=normalizeData({settings:{name:'Nothing Phone',volume:.5,scale:1,wallpaper:'qbcore',theme:'qbcore',setupComplete:false},contacts:[],notes:[],photos:[],stations:[],alarms:[]});
 const stamp=(v?:number|string)=>typeof v==='number'?new Date(v*1000).toISOString():String(v||new Date().toISOString());
 export function adaptBootstrap(raw:Record<string,any>):Bootstrap{
-  rawBootstrap=raw;const contacts=Array.isArray(raw.contacts)?raw.contacts.map((c:any)=>({id:Number(c.id),name:String(c.displayName||''),number:String(c.phoneNumber||''),photo:c.photo,favorite:c.isFavorite===1||c.isFavorite===true})):cached.contacts;
+  const contacts=Array.isArray(raw.contacts)?raw.contacts.map((c:any)=>({id:Number(c.id),name:String(c.displayName||''),number:String(c.phoneNumber||''),photo:c.photo,favorite:c.isFavorite===1||c.isFavorite===true})):cached.contacts;
   cached=normalizeData({...cached,contacts,notes:raw.items?.notes??cached.notes,alarms:raw.items?.alarms??cached.alarms,stations:raw.items?.stations??cached.stations,settings:{...cached.settings,...(raw.device?.settings||{})},installedApps:(installed??starterApps) as any,customApps:customAppsInstalled});
-  const locked=raw.security?.locked===true;return{id:String(raw.device?.id||'stevie-phone'),number:String(raw.device?.phoneNumber||''),locked,hasPin:raw.security?.hasPin===true,moderator:raw.moderator===true,transfers:raw.features?.transfers===true,preferences:cached.settings,data:locked?undefined:cached,locale:typeof raw.locale==='string'&&raw.locale?raw.locale:'en',admin:raw.admin===true,video:raw.features?.video?{iceServers:Array.isArray(raw.features.video.iceServers)?raw.features.video.iceServers:[]}:false,characterName:[raw.character?.firstName,raw.character?.lastName].filter(Boolean).join(' '),flash:raw.features?.flash?{maxSeconds:Number(raw.features.flash.maxSeconds)||15,maxBytes:Number(raw.features.flash.maxBytes)||undefined}:false,
+  const locked=raw.security?.locked===true;return{id:String(raw.device?.id||'qbphone'),number:String(raw.device?.phoneNumber||''),locked,hasPin:raw.security?.hasPin===true,moderator:raw.moderator===true,transfers:raw.features?.transfers===true,preferences:cached.settings,data:locked?undefined:cached,locale:typeof raw.locale==='string'&&raw.locale?raw.locale:'en',admin:raw.admin===true,video:raw.features?.video?{iceServers:Array.isArray(raw.features.video.iceServers)?raw.features.video.iceServers:[]}:false,characterName:[raw.character?.firstName,raw.character?.lastName].filter(Boolean).join(' '),flash:raw.features?.flash?{maxSeconds:Number(raw.features.flash.maxSeconds)||15,maxBytes:Number(raw.features.flash.maxBytes)||undefined}:false,
     capabilities:{banking:true,camera:raw.features?.media===true,gallery:true,social:true,classifieds:true,services:true,calculator:true,clock:true,moderation:raw.moderator===true,gps:raw.features?.maps===true,mail:true,notes:true,weather:true,property:raw.features?.property===true,vehicles:raw.features?.garage===true,flash:!!raw.features?.flash,music:true},
     unavailable:{flash:'Video uploads need a media host, which this server has not configured'},locations:Array.isArray(raw.locations)?raw.locations:[],services:[]};
 }
@@ -55,7 +54,7 @@ async function reload(){
   return value}
 // The server names conversation fields differently from the chat screens: map them once, here.
 const adaptConversation=(c:any):Conversation=>({...c,kind:c.type==='group'?'group':'direct',name:c.title??null,members:String(c.peerPhoneNumber||''),last_body:c.lastMessagePreview||'',last_kind:kindOf(c.lastMediaMime,c.lastMediaMime)??null,last_number:null,last_at:c.lastMessageAt?stamp(c.lastMessageAt):null});
-function adaptCall(v:any):Call{return{id:String(v.id),status:v.status==='rejected'?'declined':v.status,number:String(v.remoteNumber||''),direction:v.direction||'outgoing',deviceId:'stevie-phone'} as Call}
+function adaptCall(v:any):Call{return{id:String(v.id),status:v.status==='rejected'?'declined':v.status,number:String(v.remoteNumber||''),direction:v.direction||'outgoing',deviceId:'qbphone'} as Call}
 export const adaptLiveCall = adaptCall;
 let queue:Promise<void>=Promise.resolve();
 // The server keeps no per-phone app list yet, so installs are remembered in this NUI's storage.
@@ -112,7 +111,7 @@ async function execute(action:keyof Api,p:any,id:string):Promise<any>{switch(act
     if('installed' in p) map[p.app]=p.installed===true;
     else if(!map[p.app]) throw new Error('This app is not installed');
     customAppsInstalled=map;remember('customApps',JSON.stringify(map));cached={...cached,customApps:map};return cached}
-  case'pin':if(p.pin===''){await server('security:removePin',{currentPin:p.currentPin});return{hasPin:false}}await server('security:setPin',{pin:p.pin,currentPin:p.currentPin});return{hasPin:true};case'number':return{number:String(rawBootstrap?.device?.phoneNumber||'')};
+  case'pin':if(p.pin===''){await server('security:removePin',{currentPin:p.currentPin});return{hasPin:false}}await server('security:setPin',{pin:p.pin,currentPin:p.currentPin});return{hasPin:true};
   case'job':return server('jobs:getData');case'setDuty':return server('jobs:setDuty',{onDuty:p.onDuty});case'jobAction':return server('jobs:runAction',{action:p.action});
   case'property':return server('property:list');case'services':return[];case'vehicles':return server('garage:list');case'weather':return server('weather:get');
   case'notes':case'alarms':case'stations':{const kind=action==='notes'?'note':action==='alarms'?'alarm':'station';const key=action as'notes'|'alarms'|'stations';const{remove,...item}=p;
@@ -121,6 +120,6 @@ async function execute(action:keyof Api,p:any,id:string):Promise<any>{switch(act
 case'waypoint':await server('waypoint',{x:p.x,y:p.y});return true;
   case'openMap':await server('map:open',{x:p.x,y:p.y,w:p.w,h:p.h});return true;case'closeMap':await server('map:close',{});return true;
   case'videoSignal':await server('calls:signal',{id:p.id,kind:p.kind,sdp:p.sdp,candidate:p.candidate});return true;
-  case'wallet':return server('wallet:get');case'showWallet':return server('wallet:show');case'myLocation':return server('location:mine');default:throw new Error(`${String(action)} is not supported by Stevie Phone v1`)
+  case'wallet':return server('wallet:get');case'showWallet':return server('wallet:show');case'myLocation':return server('location:mine');default:throw new Error(`${String(action)} is not supported by QBPhone v1`)
 }}
 export type{Response};

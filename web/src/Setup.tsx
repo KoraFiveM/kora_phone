@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { ArrowLeft, ArrowRight, Check, RefreshCw, ShieldCheck, Signal } from 'lucide-react';
+import { ArrowLeft, ArrowRight, Check, ShieldCheck, Signal } from 'lucide-react';
 import { themeChip, themes } from './themes';
 import type { Theme } from './themes';
 import { api } from './api';
@@ -19,22 +19,22 @@ const COPY: Record<Step, [string, string, string]> = {
   done: ['07 / READY', 'Nothing else.\nYou’re ready.', 'Your phone, with your own point of view.'],
 };
 export const WALLPAPERS = [
+  { id: 'qbcore', label: 'QBCore', swatch: 'radial-gradient(circle at 85% 10%, #8f3220 0, transparent 60%), #17140f' },
   { id: 'orbit', label: 'Orbit', swatch: 'radial-gradient(circle at 28% 35%, #8b96a8 0 14%, transparent 14.5%), radial-gradient(circle at 76% 70%, #ac7150 0 22%, transparent 22.5%), #dfd9cc' },
   { id: 'plain', label: 'Plain', swatch: '#e3e0d6' },
   { id: 'midnight', label: 'Midnight', swatch: 'linear-gradient(155deg, #293e66, #090e1c)' },
   { id: 'slate', label: 'Slate', swatch: 'linear-gradient(145deg, #e0e3e8, #87919f)' },
   { id: 'ember', label: 'Ember', swatch: 'radial-gradient(ellipse at bottom right, #a95731, #241914 75%)' },
-  { id: 'qbcore', label: 'QBCore', swatch: 'radial-gradient(circle at 85% 10%, #8f3220 0, transparent 60%), #17140f' },
 ] as const;
 type Wallpaper = typeof WALLPAPERS[number]['id'];
 
 export function SetupScreen() {
-  const { data, updateData, run, busy, device, setHasPin, updateNumber } = usePhone();
+  const { data, updateData, run, busy, device, setHasPin } = usePhone();
   const [step, setStep] = useState<Step>(() => STEPS.find(item => item === recall('setupStep')) ?? 'number');
   const [name, setName] = useState(data.settings.name || '');
-  const [theme, setTheme] = useState<Theme>(data.settings.theme || 'light');
+  const [theme, setTheme] = useState<Theme>(data.settings.theme || 'qbcore');
   const [phoneStyle, setPhoneStyle] = useState<'classic' | 'flip'>(data.settings.phoneStyle || 'classic');
-  const [wallpaper, setWallpaper] = useState<Wallpaper>(data.settings.wallpaper === 'custom' ? 'orbit' : data.settings.wallpaper || 'orbit');
+  const [wallpaper, setWallpaper] = useState<Wallpaper>(data.settings.wallpaper === 'custom' ? 'qbcore' : data.settings.wallpaper || 'qbcore');
   const [pin, setPin] = useState('');
   const [confirm, setConfirm] = useState('');
   const [error, setError] = useState('');
@@ -81,7 +81,6 @@ export function SetupScreen() {
         {step === 'number' && <>
           <div className="onboard-orbit" aria-hidden="true"><div /><span>n<span>●</span></span><i /></div>
           <div className="onboard-number"><span>YOUR PHONE NUMBER<Signal size={15} /></span><strong>{device.number}</strong><small>Ready for your first hello.</small></div>
-          <button type="button" className="onboard-text" disabled={busy} onClick={() => run(async () => { const result = await api('number', {}); updateNumber(result.number); })}><RefreshCw size={14} />Try another number</button>
         </>}
         {step === 'name' && <>
           <div className="onboard-identity" aria-hidden="true"><span>HELLO, MY NAME IS</span><strong>{name.trim() || 'Your Nothing.'}</strong><small>ONE OF A KIND / 001</small></div>

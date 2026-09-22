@@ -1,6 +1,6 @@
-SteviePhone.Repositories = SteviePhone.Repositories or {}
+QBPhone.Repositories = QBPhone.Repositories or {}
 local Blocks = {}
-SteviePhone.Repositories.Blocks = Blocks
+QBPhone.Repositories.Blocks = Blocks
 
 function Blocks.isEitherBlocked(deviceA, deviceB)
     return MySQL.scalar.await([[

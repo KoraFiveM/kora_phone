@@ -5,13 +5,13 @@ import type { AppId } from './types';
 import type { Api, Bootstrap, Bank, Call, CallHistory, ChatMessage, Comment, Conversation, DeviceData, Message, ModerationReport, Post } from './types';
 const key = 'nothing-phone-preview-v1';
 const timestamp = () => new Date().toISOString();
-let number = '5550102048';
+const number = '5550102048';
 const seed: DeviceData = {
   installedApps: starterApps,
-  // Keep the first-run preview aligned with the default Light theme. The server-side
-  // data normalizer also defaults to Orbit, so a new preview should not boot into
+  // Keep the first-run preview aligned with the default QBCore theme. The server-side
+  // data normalizer also defaults to the QBCore wallpaper, so a new preview should not boot into
   // the Midnight wallpaper before the user has made a choice.
-  settings: { name: 'Nothing Phone', volume: 0.5, scale: 1, wallpaper: 'orbit' },
+  settings: { name: 'Nothing Phone', volume: 0.5, scale: 1, wallpaper: 'qbcore' },
   contacts: [{ name: 'Alex Morgan', number: '5550192042' }, { name: 'Jules Chen', number: '5550178031' }, { name: 'Los Santos Customs', number: '5550103000' }],
   notes: [{ id: 'first-note', title: 'A fresh start', body: 'Pick up the car. Meet Jules at the pier.\nFind a little room for something new.' }], photos: [],
   stations: [{ id: 'first-station', label: 'Lo-fi beats', url: 'https://www.youtube.com/watch?v=jfKfPfyJRdk' }],
@@ -85,11 +85,6 @@ export async function mockRequest<K extends keyof Api>(action: K, payload: Api[K
     case 'refresh': result = { ...previewBootstrap(), locked: false, data: store.data }; break;
     case 'lock': result = { ...previewBootstrap(), locked: true, data: undefined }; break;
     case 'pin': if (store.pin && p.currentPin !== store.pin) throw new Error('Incorrect current PIN'); store.pin = String(p.pin); result = { hasPin: !!store.pin }; break;
-    case 'number': {
-      if (typeof p.number === 'string' && /^\d{7,}$/.test(p.number)) { number = p.number; }
-      else { const suffix = String(Math.floor(1000 + Math.random() * 9000)); number = `55501${suffix}`; }
-      result = { number }; break;
-    }
     case 'settings': store.data.settings = payload as DeviceData['settings']; result = store.data; break;
     case 'contactSave': {
       store.data.contacts = store.data.contacts.filter(c => c.number !== p.number);

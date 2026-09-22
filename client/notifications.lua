@@ -1,4 +1,4 @@
-SteviePhone = SteviePhone or {}
+QBPhone = QBPhone or {}
 local Notifications = {}
 
 local function valid(notification)
@@ -11,7 +11,7 @@ end
 -- The on-screen note and tone for something that arrives while the phone is closed. Do Not Disturb silences
 -- it unless it's urgent. (The UI hides with the phone, so this is the only way a closed phone gets noticed.)
 function Notifications.Native(title, body, urgent)
-    if SteviePhone.State.quiet and not urgent then return false end
+    if QBPhone.State.quiet and not urgent then return false end
     QB.notify.send({ title = title, message = body, type = urgent and 'error' or 'info', duration = 4500 })
     if Config.Client.NotificationSound ~= false then
         PlaySoundFrontend(-1, 'Text_Arrive_Tone', 'Phone_SoundSet_Default', true)
@@ -23,18 +23,18 @@ function Notifications.Push(notification)
     if not valid(notification) then return false end
     QB.nui.send('notification:push', notification)
     -- Do Not Disturb silences the on-screen native alert; urgent ones (a shown ID) still get through.
-    if not SteviePhone.State.open and notification.native ~= false then
+    if not QBPhone.State.open and notification.native ~= false then
         Notifications.Native(notification.title, tostring(notification.message or ''), notification.urgent == true)
     end
     return true
 end
 
-RegisterNetEvent('stevie-phone:client:notification', function(notification)
+RegisterNetEvent('qbphone:client:notification', function(notification)
     Notifications.Push(notification)
 end)
 
 -- Someone nearby showed you their ID from their Wallet. The server builds the card.
-RegisterNetEvent('stevie-phone:client:wallet:shown', function(card)
+RegisterNetEvent('qbphone:client:wallet:shown', function(card)
     if type(card) ~= 'table' or type(card.name) ~= 'string' or type(card.licences) ~= 'table' then return end
     local parts = {}
     for _, licence in ipairs(card.licences) do
@@ -59,16 +59,16 @@ if Config.Debug then
         local kind = args[1] or 'message'
         if kind == 'sms' then
             -- Exercises the same event the server sends for a real incoming text.
-            TriggerEvent('stevie-phone:client:messages:new', { id = 0, conversationId = 0, senderNumber = '5550109999', body = 'Test text from /phonetest', isMine = 0 })
+            TriggerEvent('qbphone:client:messages:new', { id = 0, conversationId = 0, senderNumber = '5550109999', body = 'Test text from /phonetest', isMine = 0 })
             return
         end
         local sample = samples[kind]
         if not sample then
-            print('[stevie-phone] /phonetest kinds: message, sms, wallet, system, long')
+            print('[qbphone] /phonetest kinds: message, sms, wallet, system, long')
             return
         end
         Notifications.Push({ title = sample.title, body = sample.body, message = sample.body, app = sample.app, native = false })
     end, false)
 end
 
-SteviePhone.Notifications = Notifications
+QBPhone.Notifications = Notifications

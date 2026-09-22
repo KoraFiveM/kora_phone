@@ -1,6 +1,6 @@
-SteviePhone.Services = SteviePhone.Services or {}
+QBPhone.Services = QBPhone.Services or {}
 local Property = {}
-SteviePhone.Services.Property = Property
+QBPhone.Services.Property = Property
 
 local available
 
@@ -42,7 +42,7 @@ local function point(raw)
 end
 
 function Property.list(source)
-    local device, err = SteviePhone.Permissions.requireDevice(source)
+    local device, err = QBPhone.Permissions.requireDevice(source)
     if not device then return err end
     if not Property.available() then return PhoneError(PhoneConstants.Errors.CONFLICT, 'Property is not available') end
     local cfg = Config.Server.Property
