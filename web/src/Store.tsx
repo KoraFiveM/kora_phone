@@ -23,7 +23,7 @@ const details = {
   clock: { icon: AlarmClock, category: 'Tools', description: 'Set alarms that ring on your local clock, even with the phone closed.' },
 };
 export function StoreScreen() {
-  const { data, device, run, busy, updateData, navigate, notify } = usePhone();
+  const { data, device, run, busy, updateData, navigate } = usePhone();
   const [search, setSearch] = useState(''); const [category, setCategory] = useState('All');
   const [tab, setTab] = useState('Discover'); const [removing, setRemoving] = useState<OptionalApp>();
   const [working, setWorking] = useState<OptionalApp>();
@@ -31,10 +31,8 @@ export function StoreScreen() {
   const supported = (id: OptionalApp) => device.capabilities[id] !== false;
   const change = (app: OptionalApp, value: boolean) => run(async () => {
     setWorking(app);
-    try {
-      updateData(await api('installApp', { app, installed: value })); setRemoving(undefined);
-      notify(`${appCopy(app, device.locale).label} ${value ? 'installed' : 'removed'}`);
-    } finally { setWorking(undefined); }
+    try { updateData(await api('installApp', { app, installed: value })); setRemoving(undefined); }
+    finally { setWorking(undefined); }
   });
   const visible = optionalApps.filter(id => (tab !== 'Installed' || installed(id)) && (category === 'All' || details[id].category === category) && `${appCopy(id, device.locale).label} ${details[id].description}`.toLowerCase().includes(search.toLowerCase()));
   return <div className="store"><div className="segments"><button className={tab === 'Discover' ? 'selected' : ''} onClick={() => setTab('Discover')}>Discover</button><button className={tab === 'Installed' ? 'selected' : ''} onClick={() => setTab('Installed')}>Installed · {data.installedApps?.length || 0}</button></div>
