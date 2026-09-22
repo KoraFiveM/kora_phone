@@ -178,7 +178,7 @@ export default function App() {
   const time = date.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
   const navigate = useCallback((requested: AppId, destination = '') => { const id: AppId = requested === 'home' || requested === 'custom' || apps.some(item => item.id === requested) ? requested : 'home'; setApp(isOptional(id) && !data.installedApps?.includes(id) ? 'store' : id); setTarget(destination); setShowNotifications(false); setHomePage(0); setEditing(false); setDragId(null); setOverId(null); }, [data.installedApps]);
   const notify = useCallback((message: string) => setToast(message), []);
-  const markRead = useCallback((items: Notification[]) => { setNotifications(list => list.filter(n => !items.includes(n))); setEarlier(list => [...items, ...list].slice(0, 30)); }, []);
+  const markRead = useCallback((items: Notification[]) => { setNotifications(list => list.filter(n => !items.some(item => item === n || (item.app === n.app && item.title === n.title)))); setEarlier(list => [...items, ...list].slice(0, 30)); }, []);
   // Being in an app means you've seen its notifications.
   useEffect(() => { if (!shown || app === 'home') return; const seen = notifications.filter(n => n.app === app || (app === 'social' && n.app === 'messages')); if (seen.length) markRead(seen); }, [app, shown, notifications, markRead]);
   const run = useCallback(async (work: () => Promise<void>) => {
@@ -287,7 +287,10 @@ export default function App() {
     const push = (incoming: Record<string, any>) => {
       const notification = { deviceId: String(incoming.deviceId || device?.id || ''), title: String(incoming.title || 'Notification'), body: String(incoming.body || incoming.message || ''), app: (incoming.app || 'messages') as AppId, at: Date.now() } as Notification;
       if (!incoming.deviceId || device?.id === notification.deviceId) {
-        setNotifications(previous => [notification, ...previous].slice(0, 20));
+        setNotifications(previous => {
+          const matching = previous.find(item => item.app === notification.app && item.title === notification.title);
+          return matching ? [{ ...notification, count: (matching.count ?? 1) + 1 }, ...previous.filter(item => item !== matching)] : [notification, ...previous].slice(0, 20);
+        });
         // Do Not Disturb still collects the notification, it just doesn't pop up (unless it's urgent).
         // No pop-up for a text while you're already looking at your chats.
         const reading = incoming.app === 'messages' && shownRef.current && (appRef.current === 'messages' || appRef.current === 'social');
@@ -396,8 +399,8 @@ export default function App() {
   const stopPhoneDrag = () => { phoneDrag.current = null; };
   const meta = appCopy(app, device?.locale);
   const active = call && ['ringing', 'active'].includes(call.status);
-  const unread = (id: AppId) => notifications.filter(n => n.app === id).length;
-  const notificationCard = (n: Notification) => <><NotificationIcon id={n.app} /><span><strong>{data.contacts.find(c => c.number === n.title)?.name ?? n.title}</strong><small>{n.body}</small></span>{n.at && <time>{new Date(n.at).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })}</time>}</>;
+  const unread = (id: AppId) => notifications.filter(n => n.app === id).reduce((total, n) => total + (n.count ?? 1), 0);
+  const notificationCard = (n: Notification) => <><NotificationIcon id={n.app} /><span><strong>{data.contacts.find(c => c.number === n.title)?.name ?? n.title}</strong><small>{n.body}</small></span>{n.count && n.count > 1 && <b className="notification-count">{n.count}</b>}{n.at && <time>{new Date(n.at).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })}</time>}</>;
   const lock = () => run(async () => { const value = await api('lock', {}); setDevice(value); setPin(''); setApp('home'); });
   const unlock = (event: React.FormEvent) => { event.preventDefault(); void run(async () => { try { const value = await api('unlock', { pin }); setDevice(value); setPin(''); setLockError(''); } catch (e) { setLockError((e as Error).message); setPin(''); } }); };
   const content = () => {

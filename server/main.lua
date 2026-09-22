@@ -1,9 +1,5 @@
 math.randomseed(os.time())
 
-if QBPhone.Modules and QBPhone.Modules.CallCallbacks then
-    QBPhone.Modules.CallCallbacks.register()
-end
-
 CreateThread(function()
     local deadline = GetGameTimer() + Config.Server.DatabaseReadyTimeoutMs
     while GetGameTimer() < deadline and not QBPhone.Database.isReady() do Wait(250) end
