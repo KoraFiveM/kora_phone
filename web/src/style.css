@@ -321,7 +321,12 @@ svg { flex-shrink: 0; }
 .store-categories button { border: 1px solid var(--tone-ddd,#ddd); padding: 6px 12px; border-radius: 18px; font-size: 10px; }
 .store-categories .selected { background: var(--tone-303030,#303030); color: var(--tone-fff,#fff); border-color: var(--tone-303030,#303030); }
 .store-count { font: 9px 'Space Mono', monospace; color: var(--tone-999,#999); }
-.store-app { display: flex; align-items: flex-start; gap: 10px; padding: 19px 0; border-bottom: 1px solid var(--tone-dededb,#dededb); }
+.store-app { display: flex; align-items: flex-start; gap: 10px; padding: 19px 0; border-bottom: 1px solid var(--tone-dededb,#dededb); position: relative; }
+.store-progress { position: absolute; left: 0; right: 0; bottom: 0; height: 2px; overflow: hidden; background: var(--tone-e5e5e1,#e5e5e1); border-radius: 2px; }
+.store-progress i { display: block; position: absolute; inset: 0; width: 40%; background: var(--red); border-radius: 2px; animation: loading-bar 0.9s ease-in-out infinite; }
+.store-progress-feature { left: 20px; right: 20px; bottom: 12px; background: var(--tone-ffffff20,#ffffff20); }
+.store-spinner { width: 13px; height: 13px; border-radius: 50%; border: 2px solid currentColor; border-top-color: transparent; opacity: .7; animation: spin .6s linear infinite; }
+@keyframes spin { to { transform: rotate(360deg); } }
 .store-app-icon { width: 43px; height: 43px; border-radius: 13px; display: grid; place-items: center; background: var(--tone-e5e5e1,#e5e5e1); flex-shrink: 0; }
 .store-app-icon.dark { background: var(--tone-303030,#303030); color: var(--tone-fff,#fff); }
 .store-app-icon img { width: 100%; height: 100%; object-fit: cover; border-radius: inherit; }
@@ -329,7 +334,7 @@ svg { flex-shrink: 0; }
 .store-app h3 { font-size: 13px; font-weight: 600; margin: 1px 0 3px; }
 .store-app small { display: block; font-size: 8px; color: var(--tone-929292,#929292); }
 .store-app p { font-size: 10px; color: var(--tone-777,#777); line-height: 1.6; margin: 8px 0 0; }
-.store-get { display: inline-flex; justify-content: center; align-items: center; gap: 4px; min-width: 55px; border-radius: 20px; background: #d53c2f; color: var(--tone-fff,#fff); padding: 8px 9px; font-size: 9px; margin-top: 3px; }
+.store-get { display: inline-flex; justify-content: center; align-items: center; gap: 4px; min-width: 55px; border-radius: 20px; background: #d53c2f; color: var(--tone-fff,#fff); padding: 8px 9px; font-size: 9px; margin-top: 3px; transition: background .2s; }
 .store-get.installed { background: var(--tone-e5e5e2,#e5e5e2); color: var(--tone-444,#444); }
 .store-remove { font-size: 9px; color: #a84038; padding: 9px 0 0; text-decoration: underline; text-underline-offset: 3px; }
 .store-unavailable { margin-top: 7px; }
