@@ -27,5 +27,7 @@ if (!fs.existsSync(uiEntry)) {
 const html = fs.readFileSync(uiEntry, "utf8");
 assert.match(html, /<meta[^>]+charset=/i, "UI entry should declare charset");
 assert.match(html, /<meta[^>]+viewport/i, "UI entry should declare viewport");
-assert.doesNotMatch(html, /<script[^>]+src=["']https?:\/\//i, "Remote scripts are not allowed in the phone entry page");
+const remoteScripts = [...html.matchAll(/<script[^>]+src=["'](https?:\/\/[^"']+)/gi)].map((match) => match[1]);
+assert.ok(remoteScripts.every((src) => /^https:\/\/cfx-nui-qbtheme\/theme\.js(?:\?|$)/.test(src)),
+  "Only qbtheme's shared runtime may be loaded remotely");
 console.log("PASS web-contract: manifest and UI entry contract valid");
