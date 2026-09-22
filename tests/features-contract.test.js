@@ -20,7 +20,7 @@ const app = read("web/src/App.tsx");
 // Every new NUI route the UI calls exists on the client and reaches a registered server callback.
 for (const [route, callback] of [["wallet:get", "getWallet"], ["wallet:show", "showWalletId"]]) {
   assert.match(nui, new RegExp(`\\['${route}'\\] = 'qbphone:server:${callback}'`), `${route} must map to ${callback}`);
-  assert.match(economy, new RegExp(`register\\('${callback}'`), `${callback} must be registered on the server`);
+  assert.match(economy, new RegExp(`registerCallback\\('${callback}'`), `${callback} must be registered on the server`);
   assert.match(api, new RegExp(`server\\('${route}'\\)`), `the UI must call ${route}`);
 }
 for (const route of ["location:mine", "waypoint", "quiet"]) {
@@ -57,7 +57,7 @@ const messaging = read("server/services/messaging.lua");
 const migration9 = read("migrations/009_items.sql");
 for (const [route, callback] of [["items:save", "saveItem"], ["items:remove", "removeItem"], ["garage:list", "getVehicles"], ["messages:createGroup", "createGroup"], ["messages:leaveGroup", "leaveGroup"]]) {
   assert.match(nui, new RegExp(`\\['${route}'\\] = 'qbphone:server:${callback}'`), `${route} must map to ${callback}`);
-  assert.match(callbacks, new RegExp(`register\\('${callback}'`), `${callback} must be registered on the server`);
+  assert.match(callbacks, new RegExp(`registerCallback\\('${callback}'`), `${callback} must be registered on the server`);
   assert.match(api, new RegExp(`'${route}'`), `the UI must call ${route}`);
 }
 assert.match(nui, /RegisterNUICallback\('weather:get'/);
@@ -76,7 +76,7 @@ const mailRepo = read("server/repositories/mail.lua");
 const property = read("server/services/property.lua");
 for (const [route, callback] of [["messages:addMember", "addGroupMember"], ["mail:list", "getMail"], ["mail:send", "sendMail"], ["mail:read", "readMail"], ["mail:delete", "deleteMail"], ["property:list", "getProperties"]]) {
   assert.match(nui, new RegExp(`\\['${route}'\\] = 'qbphone:server:${callback}'`), `${route} must map to ${callback}`);
-  assert.match(callbacks, new RegExp(`register\\('${callback}'`), `${callback} must be registered on the server`);
+  assert.match(callbacks, new RegExp(`registerCallback\\('${callback}'`), `${callback} must be registered on the server`);
   assert.match(api, new RegExp(`'${route}'`), `the UI must call ${route}`);
 }
 assert.match(mailSvc, /PhoneContracts\.mail\(/, "mail must be validated on the server");
@@ -95,7 +95,7 @@ const contactsRepo = read("server/repositories/contacts.lua");
 const phoneSvc = read("server/services/phone.lua");
 for (const [route, callback] of [["blocks:list", "getBlocked"], ["blocks:set", "setBlocked"]]) {
   assert.match(nui, new RegExp(`\\['${route}'\\] = 'qbphone:server:${callback}'`), `${route} must map to ${callback}`);
-  assert.match(callbacks, new RegExp(`register\\('${callback}'`), `${callback} must be registered on the server`);
+  assert.match(callbacks, new RegExp(`registerCallback\\('${callback}'`), `${callback} must be registered on the server`);
   assert.match(api, new RegExp(`'${route}'`), `the UI must call ${route}`);
 }
 assert.match(blocking, /You cannot block your own number/, "a player must not be able to block themselves");

@@ -19,20 +19,17 @@ const sessions = read("server/sessions.lua");
 assert.match(sessions, /session\.citizenId ~= citizenId/, "online session must remain character-bound");
 assert.match(sessions, /not QBPhone\.HasPhone\(source\)/, "online session must revalidate phone possession");
 
-const web = read("web/app.js");
-assert.match(web, /finally\{await bridge\.send\('camera:close'/,
-  "camera capture must restore focus on success and failure");
-assert.doesNotMatch(web, /\.innerHTML\s*=\s*`[^`]*\$\{(?:n\.|m\.body|state\.error)/s,
-  "unescaped notification/message/error data must not reach innerHTML");
+const web = read("web/src/api.ts");
+assert.match(web, /captureDone:'camera:close'/, "camera capture must restore phone visibility");
+assert.doesNotMatch(`${read("web/src/App.tsx")}\n${read("web/src/Communication.tsx")}`, /dangerouslySetInnerHTML/, "React must not inject unescaped phone data");
 
 const callbackFiles = ["server/callbacks.lua", "server/modules/economy_callbacks.lua",
-  "server/modules/media_callbacks.lua", "server/modules/community_callbacks.lua"];
+  "server/modules/media_callbacks.lua", "server/modules/community_callbacks.lua", "server/modules/call_callbacks.lua"];
 const names = [];
 for (const file of callbackFiles) {
   const source = read(file);
   for (const match of source.matchAll(/register(?:Async|Sync)?\('([^']+)'/g)) names.push(match[1]);
 }
-for (const match of read("server/modules/call_callbacks.lua").matchAll(/\['(calls:[^']+)'\]\s*=/g)) names.push(match[1]);
 const duplicates = names.filter((name, index) => names.indexOf(name) !== index);
 assert.deepEqual([...new Set(duplicates)], [], `duplicate server callbacks: ${duplicates.join(", ")}`);
 
