@@ -39,11 +39,10 @@ async function uploadMedia(p:{blob:Blob;onProgress?:(fraction:number)=>void}){
   const saved=await server<any>('media:complete',{token:up.token,receipt});
   return{id:Number(saved.id),url:String(saved.publicUrl),kind:kindOf(saved.mimeType,saved.publicUrl)||'photo'}}
 const toPhotos=(g:any):Photo[]=>(g?.items||[]).map((x:any)=>({id:String(x.id),url:String(x.publicUrl),created_at:Number(x.createdAt||0)}));
-let rawBootstrap:Record<string,any>|undefined;
-let cached:DeviceData=normalizeData({settings:{name:'Nothing Phone',volume:.5,scale:1,wallpaper:'orbit',theme:'light',setupComplete:false},contacts:[],notes:[],photos:[],stations:[],alarms:[]});
+let cached:DeviceData=normalizeData({settings:{name:'Nothing Phone',volume:.5,scale:1,wallpaper:'orbit',theme:'qbcore',setupComplete:false},contacts:[],notes:[],photos:[],stations:[],alarms:[]});
 const stamp=(v?:number|string)=>typeof v==='number'?new Date(v*1000).toISOString():String(v||new Date().toISOString());
 export function adaptBootstrap(raw:Record<string,any>):Bootstrap{
-  rawBootstrap=raw;const contacts=Array.isArray(raw.contacts)?raw.contacts.map((c:any)=>({id:Number(c.id),name:String(c.displayName||''),number:String(c.phoneNumber||''),photo:c.photo,favorite:c.isFavorite===1||c.isFavorite===true})):cached.contacts;
+  const contacts=Array.isArray(raw.contacts)?raw.contacts.map((c:any)=>({id:Number(c.id),name:String(c.displayName||''),number:String(c.phoneNumber||''),photo:c.photo,favorite:c.isFavorite===1||c.isFavorite===true})):cached.contacts;
   cached=normalizeData({...cached,contacts,notes:raw.items?.notes??cached.notes,alarms:raw.items?.alarms??cached.alarms,stations:raw.items?.stations??cached.stations,settings:{...cached.settings,...(raw.device?.settings||{})},installedApps:(installed??starterApps) as any,customApps:customAppsInstalled});
   const locked=raw.security?.locked===true;return{id:String(raw.device?.id||'stevie-phone'),number:String(raw.device?.phoneNumber||''),locked,hasPin:raw.security?.hasPin===true,moderator:raw.moderator===true,transfers:raw.features?.transfers===true,preferences:cached.settings,data:locked?undefined:cached,locale:typeof raw.locale==='string'&&raw.locale?raw.locale:'en',admin:raw.admin===true,video:raw.features?.video?{iceServers:Array.isArray(raw.features.video.iceServers)?raw.features.video.iceServers:[]}:false,characterName:[raw.character?.firstName,raw.character?.lastName].filter(Boolean).join(' '),flash:raw.features?.flash?{maxSeconds:Number(raw.features.flash.maxSeconds)||15,maxBytes:Number(raw.features.flash.maxBytes)||undefined}:false,
     capabilities:{banking:true,camera:raw.features?.media===true,gallery:true,social:true,classifieds:true,services:true,calculator:true,clock:true,moderation:raw.moderator===true,gps:raw.features?.maps===true,mail:true,notes:true,weather:true,property:raw.features?.property===true,vehicles:raw.features?.garage===true,flash:!!raw.features?.flash,music:true},
@@ -112,7 +111,7 @@ async function execute(action:keyof Api,p:any,id:string):Promise<any>{switch(act
     if('installed' in p) map[p.app]=p.installed===true;
     else if(!map[p.app]) throw new Error('This app is not installed');
     customAppsInstalled=map;remember('customApps',JSON.stringify(map));cached={...cached,customApps:map};return cached}
-  case'pin':if(p.pin===''){await server('security:removePin',{currentPin:p.currentPin});return{hasPin:false}}await server('security:setPin',{pin:p.pin,currentPin:p.currentPin});return{hasPin:true};case'number':return{number:String(rawBootstrap?.device?.phoneNumber||'')};
+  case'pin':if(p.pin===''){await server('security:removePin',{currentPin:p.currentPin});return{hasPin:false}}await server('security:setPin',{pin:p.pin,currentPin:p.currentPin});return{hasPin:true};
   case'job':return server('jobs:getData');case'setDuty':return server('jobs:setDuty',{onDuty:p.onDuty});case'jobAction':return server('jobs:runAction',{action:p.action});
   case'property':return server('property:list');case'services':return[];case'vehicles':return server('garage:list');case'weather':return server('weather:get');
   case'notes':case'alarms':case'stations':{const kind=action==='notes'?'note':action==='alarms'?'alarm':'station';const key=action as'notes'|'alarms'|'stations';const{remove,...item}=p;

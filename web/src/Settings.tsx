@@ -113,7 +113,7 @@ export function SettingsScreen() {
     <section className="panel form" aria-label="Appearance">
       <h3 className="settings-heading">Appearance</h3>
       <fieldset className="theme-choices settings-choices"><legend>Color theme</legend>
-        {themes.map(theme => <button type="button" className="theme-choice" key={theme.id} aria-pressed={(settings.theme || 'light') === theme.id} onClick={() => change({ theme: theme.id as Theme })}><span className="theme-swatch" style={{ background: themeChip(theme) }} />{theme.label}</button>)}
+        {themes.map(theme => <button type="button" className="theme-choice" key={theme.id} aria-pressed={(settings.theme || 'qbcore') === theme.id} onClick={() => change({ theme: theme.id as Theme })}><span className="theme-swatch" style={{ background: themeChip(theme) }} />{theme.label}</button>)}
       </fieldset>
       <fieldset className="theme-choices settings-choices"><legend>Wallpaper</legend>
         {WALLPAPER_CHOICES.map(item => <button type="button" className="theme-choice" key={item.id} aria-pressed={settings.wallpaper === item.id} onClick={() => change({ wallpaper: item.id })}><span className="theme-swatch" style={{ background: item.swatch }} />{item.label}</button>)}
