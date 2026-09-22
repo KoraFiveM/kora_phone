@@ -238,5 +238,15 @@ test("a message may be a clip or photo with no text, but plain text still needs 
     base.mediaId = 0
     equal(PhoneContracts.message(base), nil)
 end)
+test("a call signal must be a valid offer, answer, or ICE candidate for a real call id", function()
+    local callId = "12345678-1234-4123-8123-123456789012"
+    equal(PhoneContracts.callSignal({ id = callId, kind = "offer", sdp = { type = "offer", sdp = "v=0" } }).sdp.sdp, "v=0")
+    equal(PhoneContracts.callSignal({ id = callId, kind = "ice", candidate = { candidate = "candidate:1 1 UDP 1 1.1.1.1 1 typ host" } }).candidate.candidate, "candidate:1 1 UDP 1 1.1.1.1 1 typ host")
+    equal(PhoneContracts.callSignal({ id = "short", kind = "offer", sdp = { type = "offer", sdp = "v=0" } }), nil)
+    equal(PhoneContracts.callSignal({ id = callId, kind = "hangup", sdp = { type = "offer", sdp = "v=0" } }), nil)
+    equal(PhoneContracts.callSignal({ id = callId, kind = "offer", sdp = { type = "answer", sdp = "v=0" } }), nil)
+    equal(PhoneContracts.callSignal({ id = callId, kind = "offer" }), nil)
+    equal(PhoneContracts.callSignal({ id = callId, kind = "ice", candidate = { candidate = string.rep("a", 2001) } }), nil)
+end)
 io.write(("\n%d passed, %d failed\n"):format(passed, failed))
 if failed > 0 then os.exit(1) end

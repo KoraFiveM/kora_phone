@@ -115,6 +115,20 @@ local function fire(identifier, event)
     if callback then callback() end
 end
 
+-- A few ecosystems also ship a general "send a phone notification" export, separate from
+-- the app-registration/messaging contract, that real custom apps call directly (e.g. to
+-- alert the player from a server-pushed event). Not aliasing it doesn't just mean it does
+-- nothing -- FiveM's export lookup throws in the CALLING resource if nothing answers, so an
+-- addon that calls it would error every time. Routed to the same native alert the rest of
+-- this phone already uses; it will not appear as a custom-app notification in the shade,
+-- since that needs the app's own icon/tap-through, which isn't built.
+local function sendNotification(data)
+    if type(data) ~= 'table' then return false end
+    local title = type(data.title) == 'string' and data.title or 'Notification'
+    local body = type(data.content) == 'string' and data.content or (type(data.body) == 'string' and data.body or '')
+    return SteviePhone.Notifications.Native(title, body, false)
+end
+
 -- Native contract.
 exports('RegisterApp', register)
 exports('RemoveApp', unregister)
@@ -140,6 +154,7 @@ alias('lb-phone', 'AddCustomApp', function(app)
 end)
 alias('lb-phone', 'RemoveCustomApp', unregister)
 alias('lb-phone', 'SendCustomAppMessage', sendMessage)
+alias('lb-phone', 'SendNotification', sendNotification)
 
 -- sd-phone (docs.samueldev.shop/resources/phone/custom-apps)
 alias('sd-phone', 'addCustomApp', function(app)
@@ -194,6 +209,7 @@ end)
 -- is a harmless no-op -- nothing calls this event name, so nothing breaks.
 alias('high-phone', 'removeApplication', unregister)
 alias('high-phone', 'sendAppNui', sendMessage)
+alias('high-phone', 'sendNotification', sendNotification)
 
 AddEventHandler('onResourceStop', function(resource)
     for identifier, app in pairs(apps) do

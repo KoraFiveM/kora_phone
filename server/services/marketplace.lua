@@ -87,14 +87,18 @@ function Market.updateListing(source, payload)
     return PhoneResult(publicListing(saved, device.id))
 end
 
+-- Marking sold is owner-only; removing a listing can also be done by a moderator straight
+-- from the feed (the same removal a report's "remove content" action performs).
 function Market.setStatus(source, payload, status)
     local device, err = SteviePhone.Permissions.requireDevice(source)
     if not device then return err end
     local id, validationError = PhoneValidation.integer(type(payload) == 'table' and payload.id, 'id', 1)
     if not id then return invalid(validationError) end
-    if not SteviePhone.Repositories.Marketplace.setStatus(device.id, id, status) then
-        return PhoneError(PhoneConstants.Errors.NOT_FOUND, 'Listing was not found')
+    local changed = SteviePhone.Repositories.Marketplace.setStatus(device.id, id, status)
+    if not changed and status == 'removed' and SteviePhone.Services.Moderation.isModerator(source) then
+        changed = SteviePhone.Repositories.Marketplace.hideByModerator(id)
     end
+    if not changed then return PhoneError(PhoneConstants.Errors.NOT_FOUND, 'Listing was not found') end
     return PhoneResult({ id = id, status = status })
 end
 

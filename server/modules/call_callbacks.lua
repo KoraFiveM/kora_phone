@@ -24,6 +24,7 @@ function Module.register()
         ['calls:reject'] = { 'mutation', SteviePhone.Services.Calling.reject },
         ['calls:hangup'] = { 'mutation', SteviePhone.Services.Calling.hangup },
         ['calls:history'] = { 'read', SteviePhone.Services.Calling.history },
+        ['calls:signal'] = { 'videoSignal', SteviePhone.Services.Calling.videoSignal },
     }
     for name, definition in pairs(handlers) do
         SteviePhone.QB.Functions.CreateCallback('stevie-phone:server:' .. name, function(source, cb, payload)

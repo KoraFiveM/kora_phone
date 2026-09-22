@@ -12,7 +12,8 @@ export async function nui<T>(route:string, body:unknown={}):Promise<T>{
   const response=await fetch(`https://${window.GetParentResourceName!()}/${aliases[route]||route}`,{method:'POST',headers:{'Content-Type':'application/json; charset=UTF-8'},body:JSON.stringify(body),signal:AbortSignal.timeout(33000)});
   if(!response.ok) throw new Error('Phone connection unavailable'); return response.json();
 }
-export function sendSignal(_data?:unknown):void{/* Video calling is not part of the secure v1 call contract. */}
+// Fire-and-forget: the server relays this to whoever is on the other end of the active call.
+export function sendSignal(data:Api['videoSignal'][0]):void{ void api('videoSignal',data).catch(()=>undefined) }
 type ServerResult<T>={ok:true;data:T}|{ok:false;error?:string|{code?:string;message?:string}};
 // Codes the game scripts return, in words a player can act on.
 const friendly:Record<string,string>={SCREENSHOT_PROVIDER_UNAVAILABLE:'The camera needs the screenshot-basic resource running',MEDIA_DISABLED:'Photo storage is not set up on this server',CAMERA_NOT_OPEN:'The camera is not ready. Try again.',UPLOAD_FAILED:'The photo could not be uploaded',PLAYER_DEAD:'You cannot use the camera right now',SESSION_CHANGED:'Your phone changed while that was working. Try again.',EMPTY_SERVER_RESPONSE:'The server did not answer. Try again.',INVALID_SERVER_RESPONSE:'The server sent something unexpected. Try again.',MEDIA_TOO_LARGE:'That file is too big',UNSUPPORTED_MEDIA_TYPE:'That kind of file is not supported',VIDEO_UNSUPPORTED:'This server does not take video clips yet',PROVIDER_MISCONFIGURED:'Uploads are not set up correctly on this server',PROVIDER_BEGIN_FAILED:'The media host would not start an upload. Try again later.',UPLOAD_NOT_VERIFIED:'The upload could not be verified',UPLOAD_MISMATCH:'The uploaded file did not match what was expected',UPLOAD_NOT_BOUND:'The upload could not be matched to this phone',PUBLIC_HOST_DENIED:'The media host is not on this server\'s allowlist',UPLOAD_HOST_DENIED:'The upload address is not on this server\'s allowlist',UPLOAD_TOKEN_EXPIRED:'That upload took too long. Try again.','INVALID_UPLOAD_TOKEN':'That upload is no longer valid. Try again.',INVALID_RECEIPT:'The upload receipt was not valid'};
@@ -43,7 +44,7 @@ const stamp=(v?:number|string)=>typeof v==='number'?new Date(v*1000).toISOString
 export function adaptBootstrap(raw:Record<string,any>):Bootstrap{
   rawBootstrap=raw;const contacts=Array.isArray(raw.contacts)?raw.contacts.map((c:any)=>({id:Number(c.id),name:String(c.displayName||''),number:String(c.phoneNumber||''),photo:c.photo,favorite:c.isFavorite===1||c.isFavorite===true})):cached.contacts;
   cached=normalizeData({...cached,contacts,notes:raw.items?.notes??cached.notes,alarms:raw.items?.alarms??cached.alarms,stations:raw.items?.stations??cached.stations,settings:{...cached.settings,...(raw.device?.settings||{})},installedApps:(installed??defaultApps) as any,customApps:customAppsInstalled});
-  const locked=raw.security?.locked===true;return{id:String(raw.device?.id||'stevie-phone'),number:String(raw.device?.phoneNumber||''),locked,hasPin:raw.security?.hasPin===true,moderator:raw.moderator===true,transfers:raw.features?.transfers===true,preferences:cached.settings,data:locked?undefined:cached,locale:'en',admin:false,video:false,characterName:[raw.character?.firstName,raw.character?.lastName].filter(Boolean).join(' '),flash:raw.features?.flash?{maxSeconds:Number(raw.features.flash.maxSeconds)||15,maxBytes:Number(raw.features.flash.maxBytes)||undefined}:false,
+  const locked=raw.security?.locked===true;return{id:String(raw.device?.id||'stevie-phone'),number:String(raw.device?.phoneNumber||''),locked,hasPin:raw.security?.hasPin===true,moderator:raw.moderator===true,transfers:raw.features?.transfers===true,preferences:cached.settings,data:locked?undefined:cached,locale:typeof raw.locale==='string'&&raw.locale?raw.locale:'en',admin:raw.admin===true,video:raw.features?.video?{iceServers:Array.isArray(raw.features.video.iceServers)?raw.features.video.iceServers:[]}:false,characterName:[raw.character?.firstName,raw.character?.lastName].filter(Boolean).join(' '),flash:raw.features?.flash?{maxSeconds:Number(raw.features.flash.maxSeconds)||15,maxBytes:Number(raw.features.flash.maxBytes)||undefined}:false,
     capabilities:{banking:true,camera:raw.features?.media===true,gallery:true,social:true,classifieds:true,services:true,calculator:true,clock:true,moderation:raw.moderator===true,gps:raw.features?.maps===true,mail:true,notes:true,weather:true,property:raw.features?.property===true,vehicles:raw.features?.garage===true,flash:!!raw.features?.flash,music:true},
     unavailable:{flash:'Video uploads need a media host, which this server has not configured'},locations:Array.isArray(raw.locations)?raw.locations:[],services:[]};
 }
@@ -84,6 +85,7 @@ async function execute(action:keyof Api,p:any,id:string):Promise<any>{switch(act
   case'removePost':await server(p.kind==='flash'?'social:deletePost':'market:removeListing',{id:p.id});return true;case'like':await server('social:toggleLike',{postId:p.id,liked:p.liked});return true;
   case'comments':{const q=await server<any>('social:getComments',{postId:p.id,limit:50});return(q.items||[]).map((x:any)=>({id:x.id,number:x.handle||x.displayName,body:x.body,created_at:stamp(x.createdAt)})) as Comment[]}
   case'comment':await server('social:createComment',{postId:p.id,body:p.body,clientRequestId:id});return true;
+  case'removeComment':await server('social:deleteComment',{id:p.id});return true;
   case'conversations':{const q=await server<any>('messages:getConversations',{limit:50,cursor:p.before});return(q.items||q||[]).map(adaptConversation) as Conversation[]}
   case'startChat':return adaptConversation(await server<any>('messages:startDirect',{to:p.number}));
   case'conversation':{const q=await server<any>('messages:getPage',{conversationId:p.id,limit:50,cursor:p.before});return(q.items||q||[]).map(mapMessage) as ChatMessage[]}
@@ -118,6 +120,7 @@ async function execute(action:keyof Api,p:any,id:string):Promise<any>{switch(act
     const rest=(cached[key] as {id:string}[]).filter(x=>x.id!==p.id);cached={...cached,[key]:remove?rest:[item,...rest]};return cached}
 case'waypoint':await server('waypoint',{x:p.x,y:p.y});return true;
   case'openMap':await server('map:open',{x:p.x,y:p.y,w:p.w,h:p.h});return true;case'closeMap':await server('map:close',{});return true;
+  case'videoSignal':await server('calls:signal',{id:p.id,kind:p.kind,sdp:p.sdp,candidate:p.candidate});return true;
   case'wallet':return server('wallet:get');case'showWallet':return server('wallet:show');case'myLocation':return server('location:mine');default:throw new Error(`${String(action)} is not supported by Stevie Phone v1`)
 }}
 export type{Response};
