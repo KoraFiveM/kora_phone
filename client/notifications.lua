@@ -21,7 +21,7 @@ end
 
 function Notifications.Push(notification)
     if not valid(notification) then return false end
-    QB.nui.send('notification:push', notification)
+    QBPhone.SendNui('notification:push', notification)
     -- Do Not Disturb silences the on-screen native alert; urgent ones (a shown ID) still get through.
     if not QBPhone.State.open and notification.native ~= false then
         Notifications.Native(notification.title, tostring(notification.message or ''), notification.urgent == true)

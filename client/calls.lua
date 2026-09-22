@@ -11,7 +11,7 @@ end
 local function participantEvent(action, call)
     if not validCall(call) then return false end
     QBPhone.State.activeCall = call
-    QB.nui.send(action, call)
+    QBPhone.SendNui(action, call)
     return true
 end
 
@@ -20,7 +20,7 @@ RegisterNetEvent('qbphone:client:calls:incoming', function(call)
     if participantEvent('calls:incoming', call) and not QBPhone.State.open then
         if QBPhone.State.quiet then
             -- Do Not Disturb: leave the phone closed and drop a silent note in the notification shade.
-            QB.nui.send('notification:push', { title = tostring(call.remoteNumber or 'Unknown'), body = 'Incoming call · Do Not Disturb', app = 'phone' })
+            QBPhone.SendNui('notification:push', { title = tostring(call.remoteNumber or 'Unknown'), body = 'Incoming call · Do Not Disturb', app = 'phone' })
         else
             -- The UI is hidden while the phone is closed, so open it or the call would ring unseen.
             QBPhone.Open()
@@ -44,7 +44,7 @@ end)
 -- A WebRTC offer/answer/ICE candidate from the other side of the call, passed straight to the NUI's own peer connection.
 RegisterNetEvent('qbphone:client:calls:signal', function(signal)
     if type(signal) ~= 'table' then return end
-    QB.nui.send('videoSignal', signal)
+    QBPhone.SendNui('videoSignal', signal)
 end)
 
 RegisterNetEvent('qbphone:client:calls:ended', function(payload)
@@ -53,7 +53,7 @@ RegisterNetEvent('qbphone:client:calls:ended', function(payload)
     if current and current.id ~= payload.id then return end
     QBPhone.Voice.Leave()
     QBPhone.State.activeCall = nil
-    QB.nui.send('calls:ended', payload)
+    QBPhone.SendNui('calls:ended', payload)
 end)
 
 function Calls.Cleanup(notifyServer)

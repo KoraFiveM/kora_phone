@@ -1,5 +1,15 @@
 QBPhone = QBPhone or {}
 
+-- qblib's NUI helpers run in qblib's resource VM. This phone owns a different
+-- browser frame, so its messages and callback routes must use this resource's natives.
+function QBPhone.SendNui(action, data)
+    SendNUIMessage({ action = action, data = data })
+end
+
+function QBPhone.SetNuiFocus(mouse, keyboard)
+    SetNuiFocus(mouse, keyboard)
+end
+
 local callbacks = {
     ['bootstrap'] = 'qbphone:server:getBootstrap',
     ['settings:save'] = 'qbphone:server:saveSettings',
