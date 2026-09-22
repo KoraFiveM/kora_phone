@@ -104,7 +104,7 @@ export default function App() {
   const [folded, setFolded] = useState(false);
   const [unfolding, setUnfolding] = useState(false);
   // Keep the cover mounted while it swings open, so unfolding plays the fold in reverse.
-  const unfold = () => { setFolded(false); setUnfolding(true); window.setTimeout(() => setUnfolding(false), 800); };
+  const unfold = () => { snapshotForUnfold(); setFolded(false); setUnfolding(true); window.setTimeout(() => setUnfolding(false), 800); };
   const phoneRef = useRef<HTMLDivElement>(null);
   const screenRef = useRef<HTMLDivElement>(null);
   // Folding hides the real display straight away, so copy it first: the top half of the copy rides on the
@@ -121,6 +121,18 @@ export default function App() {
     const faceInner = layer('fold-face-inner', 'fold-copy-top'); face.appendChild(faceInner); phone.appendChild(face);
     const made = [layer('fold-rest', 'fold-copy-bottom'), face];
     window.setTimeout(() => made.forEach(el => el.remove()), 600);
+  };
+  const snapshotForUnfold = () => {
+    const phone = phoneRef.current, screen = screenRef.current;
+    if (!phone || !screen || matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+    const layer = (className: string, copyClass: string) => {
+      const el = document.createElement('div'); el.className = className; el.setAttribute('aria-hidden', 'true');
+      const copy = screen.cloneNode(true) as HTMLElement; copy.removeAttribute('inert'); copy.classList.add(copyClass);
+      el.appendChild(copy); phone.appendChild(el); return el;
+    };
+    const face = layer('unfold-face', 'unfold-copy-top');
+    const rest = layer('unfold-rest', 'unfold-copy-bottom');
+    window.setTimeout(() => { face.remove(); rest.remove(); }, 800);
   };
   const [pin, setPin] = useState(''); const [lockError, setLockError] = useState('');
   const [viewport, setViewport] = useState({ width: window.innerWidth, height: window.innerHeight });

@@ -47,9 +47,17 @@
   50% { transform:rotateX(90deg); filter:brightness(.55); opacity:1; }
   50.1%,100% { transform:rotateX(90deg); opacity:0; }
 }
-/* The display stays dark until the top half has landed, then switches on. */
-.style-flip.is-unfolding .phone-screen { animation:screen-on .8s ease-out; }
-@keyframes screen-on { 0%,75% { opacity:0; } 100% { opacity:1; } }
+/* Opening uses screen copies too: the lower display returns at the hinge, while the upper display
+   rotates down from its real folded position instead of appearing as a flat cross-fade. */
+.unfold-rest,.unfold-face { position:absolute; left:8px; right:8px; overflow:hidden; pointer-events:none; z-index:71; }
+.unfold-rest { top:412px; height:401px; border-radius:0 0 24px 24px; animation:unfold-rest .8s linear forwards; }
+.unfold-face { top:8px; height:404px; border-radius:24px 24px 0 0; transform-origin:50% 100%; animation:unfold-face .8s linear forwards; }
+.phone .unfold-copy-top,.phone .unfold-copy-bottom { position:absolute; left:0; width:100%; height:802px; visibility:visible; opacity:1; animation:none; }
+.phone .unfold-copy-top { top:0; }.phone .unfold-copy-bottom { bottom:0; }
+.style-flip.is-unfolding .phone-screen { animation:screen-on .8s linear; }
+@keyframes unfold-rest { 0%,37.5% { opacity:0; } 37.6%,100% { opacity:1; } }
+@keyframes unfold-face { 0% { transform:rotateX(180deg); filter:brightness(0); opacity:0; } 37.5% { transform:rotateX(90deg); filter:brightness(.45); opacity:0; } 37.6% { filter:brightness(1); opacity:1; } 100% { transform:rotateX(0); filter:brightness(1); opacity:1; } }
+@keyframes screen-on { 0%,99% { opacity:0; } 100% { opacity:1; } }
 .cover-lenses { display:flex; gap:8px; margin-bottom:18px; }.cover-lenses i { width:29px; height:29px; border-radius:50%; background:radial-gradient(circle,var(--tone-121b27,#121b27) 0 25%,var(--tone-05070a,#05070a) 28% 50%,var(--tone-555,#555) 55%,var(--tone-101014,#101014) 65%); border:2px solid var(--tone-909096,#909096); box-shadow:0 2px 4px var(--tone-0009,#0009); }
 .flip-cover > .eyebrow { position:absolute; top:36px; right:23px; font-size:8px; color:var(--tone-3a3a42,#3a3a42); letter-spacing:1.3px; }
 .cover-display { background:var(--tone-101014,#101014); border:1px solid var(--tone-84848d,#84848d); border-radius:20px; padding:22px 17px 17px; box-shadow:inset 2px 2px 0 var(--tone-ffffff30,#ffffff30), inset 0 0 0 1px var(--tone-555,#555); }
