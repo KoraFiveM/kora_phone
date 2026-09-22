@@ -19,12 +19,12 @@ const COPY: Record<Step, [string, string, string]> = {
   done: ['07 / READY', 'Nothing else.\nYou’re ready.', 'Your phone, with your own point of view.'],
 };
 export const WALLPAPERS = [
+  { id: 'qbcore', label: 'QBCore', swatch: 'radial-gradient(circle at 85% 10%, #8f3220 0, transparent 60%), #17140f' },
   { id: 'orbit', label: 'Orbit', swatch: 'radial-gradient(circle at 28% 35%, #8b96a8 0 14%, transparent 14.5%), radial-gradient(circle at 76% 70%, #ac7150 0 22%, transparent 22.5%), #dfd9cc' },
   { id: 'plain', label: 'Plain', swatch: '#e3e0d6' },
   { id: 'midnight', label: 'Midnight', swatch: 'linear-gradient(155deg, #293e66, #090e1c)' },
   { id: 'slate', label: 'Slate', swatch: 'linear-gradient(145deg, #e0e3e8, #87919f)' },
   { id: 'ember', label: 'Ember', swatch: 'radial-gradient(ellipse at bottom right, #a95731, #241914 75%)' },
-  { id: 'qbcore', label: 'QBCore', swatch: 'radial-gradient(circle at 85% 10%, #8f3220 0, transparent 60%), #17140f' },
 ] as const;
 type Wallpaper = typeof WALLPAPERS[number]['id'];
 
@@ -34,7 +34,7 @@ export function SetupScreen() {
   const [name, setName] = useState(data.settings.name || '');
   const [theme, setTheme] = useState<Theme>(data.settings.theme || 'qbcore');
   const [phoneStyle, setPhoneStyle] = useState<'classic' | 'flip'>(data.settings.phoneStyle || 'classic');
-  const [wallpaper, setWallpaper] = useState<Wallpaper>(data.settings.wallpaper === 'custom' ? 'orbit' : data.settings.wallpaper || 'orbit');
+  const [wallpaper, setWallpaper] = useState<Wallpaper>(data.settings.wallpaper === 'custom' ? 'qbcore' : data.settings.wallpaper || 'qbcore');
   const [pin, setPin] = useState('');
   const [confirm, setConfirm] = useState('');
   const [error, setError] = useState('');
