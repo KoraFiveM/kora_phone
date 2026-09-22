@@ -4,7 +4,7 @@ game 'gta5'
 name 'qbphone'
 author 'QBPhone Team'
 description 'Server-authoritative QBCore phone'
-version '0.1.2'
+version '0.1.3'
 
 lua54 'yes'
 
