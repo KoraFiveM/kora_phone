@@ -95,14 +95,31 @@ function Social.createPost(source, payload)
     return PhoneResult(post)
 end
 
+-- A poster removes their own post outright; a moderator can also take down someone else's
+-- straight from the feed (the same removal a report's "remove content" action performs).
 function Social.deletePost(source, payload)
     local _, profile, err = ownProfile(source, true)
     if not profile then return err end
     local id, validationError = PhoneValidation.integer(type(payload) == 'table' and payload.id, 'id', 1)
     if not id then return invalid(validationError) end
-    if not SteviePhone.Repositories.Social.deletePost(profile.id, id) then
-        return PhoneError(PhoneConstants.Errors.NOT_FOUND, 'Post was not found')
+    local removed = SteviePhone.Repositories.Social.deletePost(profile.id, id)
+    if not removed and SteviePhone.Services.Moderation.isModerator(source) then
+        removed = SteviePhone.Repositories.Social.hidePostByModerator(id)
     end
+    if not removed then return PhoneError(PhoneConstants.Errors.NOT_FOUND, 'Post was not found') end
+    return PhoneResult({ id = id })
+end
+
+function Social.deleteComment(source, payload)
+    local _, profile, err = ownProfile(source, true)
+    if not profile then return err end
+    local id, validationError = PhoneValidation.integer(type(payload) == 'table' and payload.id, 'id', 1)
+    if not id then return invalid(validationError) end
+    local removed = SteviePhone.Repositories.Social.deleteComment(profile.id, id)
+    if not removed and SteviePhone.Services.Moderation.isModerator(source) then
+        removed = SteviePhone.Repositories.Social.hideCommentByModerator(id)
+    end
+    if not removed then return PhoneError(PhoneConstants.Errors.NOT_FOUND, 'Comment was not found') end
     return PhoneResult({ id = id })
 end
 

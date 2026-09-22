@@ -69,6 +69,29 @@ function PhoneContracts.group(payload)
     return { name = name, numbers = numbers }
 end
 
+-- A WebRTC signal (offer/answer/ICE candidate) relayed between the two participants of an active call.
+function PhoneContracts.callSignal(payload)
+    if type(payload) ~= 'table' then return nil, 'payload must be an object' end
+    local id, err = PhoneValidation.string(payload.id, 'id', 32, 40)
+    if not id then return nil, err end
+    local kind = payload.kind
+    if kind ~= 'offer' and kind ~= 'answer' and kind ~= 'ice' then return nil, 'kind must be offer, answer, or ice' end
+    if kind == 'ice' then
+        if type(payload.candidate) ~= 'table' then return nil, 'candidate must be an object' end
+        local text; text, err = PhoneValidation.string(payload.candidate.candidate, 'candidate', 0, 2000, true)
+        if not text then return nil, err end
+        return { id = id, kind = kind, candidate = {
+            candidate = text,
+            sdpMid = type(payload.candidate.sdpMid) == 'string' and payload.candidate.sdpMid:sub(1, 64) or nil,
+            sdpMLineIndex = type(payload.candidate.sdpMLineIndex) == 'number' and payload.candidate.sdpMLineIndex or nil,
+        } }
+    end
+    if type(payload.sdp) ~= 'table' or payload.sdp.type ~= kind then return nil, 'sdp must be an ' .. kind .. ' description' end
+    local text; text, err = PhoneValidation.string(payload.sdp.sdp, 'sdp', 1, 20000)
+    if not text then return nil, err end
+    return { id = id, kind = kind, sdp = { type = kind, sdp = text } }
+end
+
 -- One piece of phone mail: recipient number, subject, body and a request id (so a retry can't send it twice).
 function PhoneContracts.mail(payload)
     if type(payload) ~= 'table' then return nil, 'payload must be an object' end

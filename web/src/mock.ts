@@ -160,6 +160,7 @@ export async function mockRequest<K extends keyof Api>(action: K, payload: Api[K
     case 'deletePhoto': store.data.photos = store.data.photos.filter(photo => photo.id !== p.id); result = store.data; break;
     case 'weather': result = { condition: 'EXTRASUNNY', hour: 10, minute: 8, rain: 0 }; break;
     case 'waypoint': break;
+    case 'videoSignal': break;
     case 'openMap': case 'closeMap': result = true; break;
     case 'wallet': result = { name: 'Charlie Parker', citizenId: 'ABC12345', birthdate: '1994-03-12', gender: 'Male', nationality: 'American', job: 'Police', licences: [{ id: 'driver', label: 'Driver licence', valid: true }, { id: 'weapon', label: 'Firearms licence', valid: false }, { id: 'business', label: 'Business licence', valid: false }] }; break;
     case 'showWallet': result = { shown: true }; break;

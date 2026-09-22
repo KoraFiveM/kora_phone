@@ -41,6 +41,12 @@ RegisterNetEvent('stevie-phone:client:calls:accepted', function(call)
     participantEvent('calls:accepted', call)
 end)
 
+-- A WebRTC offer/answer/ICE candidate from the other side of the call, passed straight to the NUI's own peer connection.
+RegisterNetEvent('stevie-phone:client:calls:signal', function(signal)
+    if type(signal) ~= 'table' then return end
+    SendNUIMessage({ type = 'videoSignal', data = signal })
+end)
+
 RegisterNetEvent('stevie-phone:client:calls:ended', function(payload)
     if type(payload) ~= 'table' or type(payload.id) ~= 'string' then return end
     local current = SteviePhone.State.activeCall
