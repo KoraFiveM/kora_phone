@@ -1,6 +1,6 @@
-SteviePhone.Repositories = SteviePhone.Repositories or {}
+QBPhone.Repositories = QBPhone.Repositories or {}
 local Reports = {}
-SteviePhone.Repositories.Reports = Reports
+QBPhone.Repositories.Reports = Reports
 
 function Reports.create(reporterDeviceId, report)
     local ok, id = pcall(MySQL.insert.await, [[INSERT INTO phone_reports

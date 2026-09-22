@@ -1,4 +1,4 @@
-SteviePhone = SteviePhone or {}
+QBPhone = QBPhone or {}
 
 -- Lets other resources add installable apps to the phone: a native export, plus
 -- alias exports that answer the same calls other FiveM phone scripts use, so an
@@ -21,7 +21,7 @@ local apps = {}
 -- enforces server-side.
 local function jobMatches(job)
     if job == nil then return true end
-    local player = SteviePhone.QBCore.Functions.GetPlayerData()
+    local player = QBPhone.QBCore.Functions.GetPlayerData()
     local current = player and player.job
     if not current then return false end
     local function matchesOne(spec)
@@ -126,7 +126,7 @@ local function sendNotification(data)
     if type(data) ~= 'table' then return false end
     local title = type(data.title) == 'string' and data.title or 'Notification'
     local body = type(data.content) == 'string' and data.content or (type(data.body) == 'string' and data.body or '')
-    return SteviePhone.Notifications.Native(title, body, false)
+    return QBPhone.Notifications.Native(title, body, false)
 end
 
 -- Native contract.
@@ -217,4 +217,4 @@ AddEventHandler('onResourceStop', function(resource)
     end
 end)
 
-SteviePhone.CustomApps = { List = list, Fire = fire }
+QBPhone.CustomApps = { List = list, Fire = fire }

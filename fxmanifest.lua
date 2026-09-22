@@ -1,8 +1,8 @@
 fx_version 'cerulean'
 game 'gta5'
 
-name 'stevie-phone'
-author 'Stevie Phone Team'
+name 'qbphone'
+author 'QBPhone Team'
 description 'Server-authoritative QBCore phone'
 version '0.1.0'
 

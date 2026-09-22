@@ -1,8 +1,8 @@
-SteviePhone = SteviePhone or {}
-SteviePhone.Integrations = SteviePhone.Integrations or {}
+QBPhone = QBPhone or {}
+QBPhone.Integrations = QBPhone.Integrations or {}
 
 local Jobs = {}
-SteviePhone.Integrations.Jobs = Jobs
+QBPhone.Integrations.Jobs = Jobs
 
 Config.Server.Jobs = Config.Server.Jobs or {}
 local jobsConfig = Config.Server.Jobs

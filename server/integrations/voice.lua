@@ -1,8 +1,8 @@
-SteviePhone = SteviePhone or {}
-SteviePhone.Integrations = SteviePhone.Integrations or {}
+QBPhone = QBPhone or {}
+QBPhone.Integrations = QBPhone.Integrations or {}
 
 local Voice = {}
-SteviePhone.Integrations.Voice = Voice
+QBPhone.Integrations.Voice = Voice
 
 local function invoke(name, source, channel)
     local ok, result = pcall(function()
