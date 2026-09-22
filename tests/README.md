@@ -9,6 +9,7 @@ node tests/features-contract.test.js
 lua tests/validation.test.lua
 lua tests/storage.test.lua
 lua tests/migrations.test.lua
+lua tests/customapps.test.lua
 node tests/migrations-manifest.test.js
 ```
 

@@ -41,6 +41,7 @@ end
 
 function SteviePhone.Close(force)
     SteviePhone.Camera.Cleanup()
+    SteviePhone.Map.Cleanup()
     TriggerServerEvent('stevie-phone:server:phone:closed')
     SteviePhone.State.open = false
     SteviePhone.State.currentApp = nil

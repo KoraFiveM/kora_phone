@@ -126,6 +126,27 @@ RegisterNUICallback('camera:capture', function(_, cb)
     SteviePhone.Camera.Capture(function(result) safeReply(cb, result) end)
 end)
 
+RegisterNUICallback('customList', function(_, cb)
+    cb(SteviePhone.CustomApps.List())
+end)
+
+RegisterNUICallback('customLifecycle', function(data, cb)
+    if type(data) == 'table' and type(data.app) == 'string' and type(data.event) == 'string' then
+        SteviePhone.CustomApps.Fire(data.app, data.event)
+    end
+    cb({ ok = true })
+end)
+
+RegisterNUICallback('map:open', function(data, cb)
+    data = type(data) == 'table' and data or {}
+    cb({ ok = SteviePhone.Map.Show(tonumber(data.x), tonumber(data.y), tonumber(data.w), tonumber(data.h)) == true })
+end)
+
+RegisterNUICallback('map:close', function(_, cb)
+    SteviePhone.Map.Hide()
+    cb({ ok = true })
+end)
+
 -- Location sharing: the UI asks where the player is and, on the receiving side, sets a waypoint.
 RegisterNUICallback('location:mine', function(_, cb)
     local at = GetEntityCoords(PlayerPedId())
