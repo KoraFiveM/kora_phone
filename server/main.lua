@@ -35,6 +35,24 @@ AddEventHandler('QBCore:Server:PlayerLoaded', function(player)
     if source and device and SteviePhone.HasPhone(source) then SteviePhone.Sessions.open(source, device) end
 end)
 
+-- /phonereset [id]: wipes a player's phone settings and PIN so the setup screen shows again.
+-- No id resets your own phone. Moderators only (steviephone.moderate ace or QBCore admin/god); console needs an id.
+RegisterCommand('phonereset', function(caller, args)
+    local function reply(msg)
+        if caller == 0 then print('[stevie-phone] ' .. msg) else TriggerClientEvent('QBCore:Notify', caller, msg) end
+    end
+    if caller ~= 0 and not SteviePhone.Services.Moderation.isModerator(caller) then return reply('No permission') end
+    local target = tonumber(args[1]) or caller
+    local citizenId = target ~= 0 and SteviePhone.GetCitizenId(target)
+    local device = citizenId and SteviePhone.Repositories.Phones.findByCitizenId(citizenId)
+    if not device then return reply('No phone found for player ' .. tostring(args[1] or target)) end
+    -- setupComplete=false, not '{}': the UI merges bootstrap settings over its cached ones, so a missing key would keep the old true.
+    SteviePhone.Repositories.Phones.updateSettings(device.id, json.encode({ setupComplete = false }))
+    SteviePhone.Repositories.Phones.clearPin(device.id)
+    TriggerClientEvent('stevie-phone:client:reset', target)
+    reply(('Phone reset for player %d'):format(target))
+end, false)
+
 AddEventHandler('QBCore:Server:OnPlayerUnload', function(source)
     SteviePhone.Sessions.close(source)
 end)

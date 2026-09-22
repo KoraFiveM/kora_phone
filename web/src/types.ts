@@ -33,7 +33,6 @@ export type Api = {
   installApp: [{ app: AppId; installed: boolean }, DeviceData];
   unlock: [{ pin: string }, Bootstrap]; lock: [Record<string, never>, Bootstrap]; refresh: [Record<string, never>, Bootstrap];
   pin: [{ currentPin: string; pin: string }, { hasPin: boolean }];
-  number: [{ number?: string }, { number: string }];
   settings: [Settings, DeviceData]; contactSave: [Contact & { remove?: boolean }, DeviceData];
   messages: [{ kind: 'sms' | 'mail'; before?: number }, Message[]];
   sendMessage: [{ recipient: string; kind: 'sms' | 'mail'; subject: string; body: string }, { sent: boolean }];

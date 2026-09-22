@@ -5,7 +5,6 @@ export interface PhoneContextValue {
   navigate: (app: AppId, target?: string) => void; notify: (message: string) => void;
   run: (work: () => Promise<void>) => Promise<void>; busy: boolean;
   setCall: (call?: Call) => void; setHasPin: (value: boolean) => void; revision: number;
-  updateNumber: (number: string) => void;
 }
 export const PhoneContext = createContext<PhoneContextValue>(null!);
 export const usePhone = () => useContext(PhoneContext);
