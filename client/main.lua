@@ -29,10 +29,11 @@ function QBPhone.Open(app, payload)
     if QBPhone.State.open or not QBPhone.State.playerLoaded or QBPhone.Unavailable() then return false end
     QBPhone.State.open = true
     QBPhone.State.currentApp = type(app) == 'string' and app or nil
-    QBPhone.Animations.Start()
-    QBPhone.SetNuiFocus(true, true)
+    SetNuiFocus(true, true)
     SetNuiFocusKeepInput(false)
     QBPhone.SendNui('phone:open', { app = QBPhone.State.currentApp, payload = payload, state = QBPhone.State.Public() })
+    local started, animationError = pcall(QBPhone.Animations.Start)
+    if not started then print(('[qbphone] phone animation failed: %s'):format(animationError)) end
     return true
 end
 
@@ -42,7 +43,7 @@ function QBPhone.Close(force)
     TriggerServerEvent('qbphone:server:phone:closed')
     QBPhone.State.open = false
     QBPhone.State.currentApp = nil
-    QBPhone.SetNuiFocus(false, false)
+    SetNuiFocus(false, false)
     SetNuiFocusKeepInput(false)
     QBPhone.Animations.Stop()
     QBPhone.SendNui(force and 'phone:reset' or 'phone:close')
