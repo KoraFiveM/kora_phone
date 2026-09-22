@@ -26,15 +26,18 @@ local script = arg and arg[0] or "tests/customapps.test.lua"
 local root = script:gsub("[\\/]tests[\\/]customapps%.test%.lua$", "")
 if root == script then root = "." end
 
-local playerJob
+local playerJob, natives
 
 local function loadCustomApps()
-    sent, exportsTable, handlers = {}, {}, {}
+    sent, exportsTable, handlers, natives = {}, {}, {}, {}
     _G.SendNUIMessage = function(msg) sent[#sent + 1] = msg end
     _G.GetInvokingResource = function() return 'addon-resource' end
     _G.exports = function(name, fn) exportsTable[name] = fn end
     _G.AddEventHandler = function(event, fn) handlers[event] = fn end
-    _G.SteviePhone = { QBCore = { Functions = { GetPlayerData = function() return { job = playerJob } end } } }
+    _G.SteviePhone = {
+        QBCore = { Functions = { GetPlayerData = function() return { job = playerJob } end } },
+        Notifications = { Native = function(title, body, urgent) natives[#natives + 1] = { title = title, body = body, urgent = urgent }; return true end },
+    }
     dofile(root .. "/client/customapps.lua")
 end
 
@@ -84,6 +87,14 @@ test("YSeries AddCustomApp/RemoveCustomApp key off `key`, not `identifier`", fun
     equal(findApp('ys-app') ~= nil, true)
     equal(alias('__cfx_export_yseries_RemoveCustomApp', 'ys-app'), true)
     equal(findApp('ys-app'), nil)
+end)
+
+test("lb-phone SendNotification and High Phone sendNotification route to a native alert instead of throwing", function()
+    equal(alias('__cfx_export_lb-phone_SendNotification', { title = 'noted_crimeapp', content = 'A robbery was reported nearby' }), true)
+    equal(natives[#natives].title, 'noted_crimeapp')
+    equal(natives[#natives].body, 'A robbery was reported nearby')
+    equal(alias('__cfx_export_high-phone_sendNotification', { title = 'High App', content = 'Hello' }), true)
+    equal(natives[#natives].title, 'High App')
 end)
 
 test("onResourceStop removes only that resource's apps", function()

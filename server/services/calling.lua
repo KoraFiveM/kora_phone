@@ -203,6 +203,22 @@ function Calling.history(source, payload)
     return PhoneResult({ items = rows, nextCursor = #rows == limit and rows[#rows].id or nil })
 end
 
+-- Relays a WebRTC offer/answer/ICE candidate to the other side of an active call.
+-- Opaque to the server: the browsers on both ends are the ones that parse and
+-- validate it as SDP/ICE, this just checks shape and bounds the size.
+function Calling.videoSignal(source, payload)
+    local call, device, err = activeOwnedCall(source, payload)
+    if not call then return err end
+    if call.status ~= 'active' then return PhoneError(PhoneConstants.Errors.CONFLICT, 'Call is not active') end
+    local signal, validationError = PhoneContracts.callSignal(payload)
+    if not signal then return PhoneError(PhoneConstants.Errors.INVALID_INPUT, validationError) end
+    local targetDeviceId = device.id == call.callerDeviceId and call.calleeDeviceId or call.callerDeviceId
+    local targetSource = sourceForDevice(targetDeviceId)
+    if not targetSource then return PhoneError(PhoneConstants.Errors.NOT_FOUND, 'The other participant is unavailable') end
+    TriggerClientEvent('stevie-phone:client:calls:signal', targetSource, { kind = signal.kind, sdp = signal.sdp, candidate = signal.candidate })
+    return PhoneResult(true)
+end
+
 function Calling.voiceFailure(source, callId)
     local session = SteviePhone.Sessions.bySource[source]
     local call = type(callId) == 'string' and Calling.activeById[callId] or nil

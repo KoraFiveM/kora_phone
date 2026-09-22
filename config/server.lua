@@ -11,6 +11,8 @@ Config.Server = {
         mutation = { capacity = 12, refillPerSecond = 2 },
         sendMessage = { capacity = 8, refillPerSecond = 1 },
         callStart = { capacity = 4, refillPerSecond = 0.25 },
+        -- ICE gathering fires several candidates in a burst when a video call starts.
+        videoSignal = { capacity = 30, refillPerSecond = 10 },
         bankTransfer = { capacity = 3, refillPerSecond = 0.05 },
         mediaUpload = { capacity = 4, refillPerSecond = 0.1 },
         jobMutation = { capacity = 8, refillPerSecond = 0.5 },
@@ -77,5 +79,12 @@ Config.Server = {
 Config.Calls = {
     RingTimeoutMs = 30000,
     VoiceChannelMinimum = 31000,
-    VoiceChannelMaximum = 60999
+    VoiceChannelMaximum = 60999,
+    -- WebRTC video during an active call. STUN alone gets most players connected
+    -- peer-to-peer; add a TURN server here too for players behind strict/symmetric
+    -- NATs who can't otherwise reach each other.
+    Video = {
+        Enabled = true,
+        IceServers = { { urls = 'stun:stun.l.google.com:19302' } }
+    }
 }

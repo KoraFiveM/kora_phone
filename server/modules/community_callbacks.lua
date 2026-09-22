@@ -27,6 +27,7 @@ register('social:toggleLike', 'reaction', SteviePhone.Services.Social.toggleLike
 register('social:follow', 'follow', function(source, payload) return SteviePhone.Services.Social.follow(source, payload, true) end)
 register('social:unfollow', 'follow', function(source, payload) return SteviePhone.Services.Social.follow(source, payload, false) end)
 register('social:createComment', 'comment', SteviePhone.Services.Social.createComment)
+register('social:deleteComment', 'comment', SteviePhone.Services.Social.deleteComment)
 register('social:getComments', 'read', SteviePhone.Services.Social.getComments)
 register('social:block', 'block', SteviePhone.Services.Social.setBlock)
 register('contacts:block', 'block', SteviePhone.Services.Social.setBlock)

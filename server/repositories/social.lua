@@ -109,6 +109,11 @@ function Social.comments(postId, viewerDeviceId, limit, cursor)
     return MySQL.query.await(sql, params) or {}
 end
 
+function Social.deleteComment(profileId, commentId)
+    return MySQL.update.await([[UPDATE phone_social_comments SET deleted_at = CURRENT_TIMESTAMP
+        WHERE id = ? AND author_profile_id = ? AND deleted_at IS NULL]], { commentId, profileId }) > 0
+end
+
 function Social.commentInternal(id)
     return MySQL.single.await([[SELECT c.id, c.post_id AS postId, c.body, p.device_id AS authorDeviceId
         FROM phone_social_comments c JOIN phone_social_profiles p ON p.id = c.author_profile_id WHERE c.id = ?]], { id })
