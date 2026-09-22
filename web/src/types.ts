@@ -63,6 +63,8 @@ export type Api = {
   mailList: [{ box: 'inbox' | 'sent'; before?: number }, MailItem[]]; mailSend: [{ to: string; subject: string; body: string }, boolean]; mailRead: [{ id: number }, boolean]; mailDelete: [{ id: number }, boolean];
   wallet: [Record<string, never>, WalletCard]; showWallet: [Record<string, never>, { shown: boolean }]; myLocation: [Record<string, never>, { x: number; y: number; label: string }];
   waypoint: [{ x: number; y: number }, boolean]; weather: [Record<string, never>, Weather];
+  openMap: [{ x: number; y: number; w: number; h: number }, boolean]; closeMap: [Record<string, never>, boolean];
+  videoSignal: [{ id: string; kind: 'offer' | 'answer' | 'ice'; sdp?: RTCSessionDescriptionInit; candidate?: RTCIceCandidateInit }, boolean];
 };
 export type Response<T> = { ok: true; data: T } | { ok: false; error: string };
 export function asList<T>(value: T[] | null | undefined): T[];

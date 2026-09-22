@@ -72,14 +72,19 @@ function Phone.bootstrap(source)
     return PhoneResult({
         device = deviceInfo,
         security = { hasPin = hasPin(device), locked = false },
+        locale = Config.Locale,
         moderator = SteviePhone.Services.Moderation.isModerator(source),
+        -- Same permission as moderator: lets the feed's own delete buttons remove someone
+        -- else's post/comment directly, instead of only through a filed report.
+        admin = SteviePhone.Services.Moderation.isModerator(source),
         character = {
             firstName = pd.charinfo and pd.charinfo.firstname or '',
             lastName = pd.charinfo and pd.charinfo.lastname or '',
             job = pd.job and { name = pd.job.name, label = pd.job.label, grade = pd.job.grade and pd.job.grade.level or 0, onDuty = pd.job.onduty == true } or nil
         },
         features = { maps = #Config.Server.Maps.Locations > 0, garage = SteviePhone.Services.Garage.available(), property = SteviePhone.Services.Property.available(), media = SteviePhone.Storage.provider() ~= 'disabled', transfers = SteviePhone.Integrations.Banking.canTransfer(),
-            flash = SteviePhone.Storage.supportsVideo() and { maxSeconds = SteviePhone.Storage.Config().MaxVideoSeconds, maxBytes = SteviePhone.Storage.Config().MaxVideoBytes } or false },
+            flash = SteviePhone.Storage.supportsVideo() and { maxSeconds = SteviePhone.Storage.Config().MaxVideoSeconds, maxBytes = SteviePhone.Storage.Config().MaxVideoBytes } or false,
+            video = Config.Calls.Video and Config.Calls.Video.Enabled and { iceServers = Config.Calls.Video.IceServers or {} } or false },
         locations = Config.Server.Maps.Locations,
         items = SteviePhone.Services.Items.forDevice(device.id),
         contacts = SteviePhone.Repositories.Contacts.list(device.id),

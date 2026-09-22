@@ -22,6 +22,7 @@ local callbacks = {
     ['calls:reject'] = 'stevie-phone:server:calls:reject',
     ['calls:hangup'] = 'stevie-phone:server:calls:hangup',
     ['calls:history'] = 'stevie-phone:server:calls:history',
+    ['calls:signal'] = 'stevie-phone:server:calls:signal',
     ['gallery:list'] = 'stevie-phone:server:getGallery',
     ['media:request'] = 'stevie-phone:server:requestMediaUpload',
     ['media:complete'] = 'stevie-phone:server:completeMediaUpload',
@@ -56,6 +57,7 @@ local callbacks = {
     ['social:follow'] = 'stevie-phone:server:social:follow',
     ['social:unfollow'] = 'stevie-phone:server:social:unfollow',
     ['social:createComment'] = 'stevie-phone:server:social:createComment',
+    ['social:deleteComment'] = 'stevie-phone:server:social:deleteComment',
     ['social:getComments'] = 'stevie-phone:server:social:getComments',
     ['social:block'] = 'stevie-phone:server:social:block',
     ['social:report'] = 'stevie-phone:server:social:report',
@@ -124,6 +126,27 @@ end)
 
 RegisterNUICallback('camera:capture', function(_, cb)
     SteviePhone.Camera.Capture(function(result) safeReply(cb, result) end)
+end)
+
+RegisterNUICallback('customList', function(_, cb)
+    cb(SteviePhone.CustomApps.List())
+end)
+
+RegisterNUICallback('customLifecycle', function(data, cb)
+    if type(data) == 'table' and type(data.app) == 'string' and type(data.event) == 'string' then
+        SteviePhone.CustomApps.Fire(data.app, data.event)
+    end
+    cb({ ok = true })
+end)
+
+RegisterNUICallback('map:open', function(data, cb)
+    data = type(data) == 'table' and data or {}
+    cb({ ok = SteviePhone.Map.Show(tonumber(data.x), tonumber(data.y), tonumber(data.w), tonumber(data.h)) == true })
+end)
+
+RegisterNUICallback('map:close', function(_, cb)
+    SteviePhone.Map.Hide()
+    cb({ ok = true })
 end)
 
 -- Location sharing: the UI asks where the player is and, on the receiving side, sets a waypoint.

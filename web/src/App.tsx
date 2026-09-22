@@ -184,14 +184,14 @@ export default function App() {
   const ensurePeer = useCallback((iceServers: RTCIceServer[]) => {
     if (peerConnection.current) return peerConnection.current;
     const connection = new RTCPeerConnection({ iceServers });
-    connection.onicecandidate = event => { if (event.candidate) sendSignal({ kind: 'ice', candidate: event.candidate.toJSON() }); };
+    connection.onicecandidate = event => { if (event.candidate && callRef.current?.id) sendSignal({ id: callRef.current.id, kind: 'ice', candidate: event.candidate.toJSON() }); };
     connection.ontrack = event => { setRemoteVideo(true); if (remoteVideoRef.current) remoteVideoRef.current.srcObject = event.streams[0]; };
     connection.onconnectionstatechange = () => { if (['failed', 'closed', 'disconnected'].includes(connection.connectionState)) stopVideo(); };
     peerConnection.current = connection;
     return connection;
   }, [stopVideo]);
   const startVideo = useCallback(() => run(async () => {
-    if (!device?.video) return;
+    if (!device?.video || !callRef.current?.id) return;
     const connection = ensurePeer(device.video.iceServers);
     const stream = await navigator.mediaDevices.getUserMedia({ video: true });
     localStream.current = stream;
@@ -200,7 +200,7 @@ export default function App() {
     setVideoOn(true);
     const offer = await connection.createOffer();
     await connection.setLocalDescription(offer);
-    sendSignal({ kind: 'offer', sdp: offer });
+    sendSignal({ id: callRef.current.id, kind: 'offer', sdp: offer });
   }), [device?.video, ensurePeer, run]);
   const handleVideoSignal = useCallback(async (signal: { kind?: string; sdp?: RTCSessionDescriptionInit; candidate?: RTCIceCandidateInit }) => {
     if (!device?.video || !signal || typeof signal !== 'object') return;
@@ -215,7 +215,7 @@ export default function App() {
       }
       const answer = await connection.createAnswer();
       await connection.setLocalDescription(answer);
-      sendSignal({ kind: 'answer', sdp: answer });
+      if (callRef.current?.id) sendSignal({ id: callRef.current.id, kind: 'answer', sdp: answer });
       setVideoOn(true);
     } else if (signal.kind === 'answer' && signal.sdp) {
       await peerConnection.current?.setRemoteDescription(signal.sdp);
@@ -412,7 +412,7 @@ export default function App() {
     {isPreview && <><header className="preview-header"><a className="brand" href="#" onClick={e => { e.preventDefault(); navigate('home'); }}>NOTHING <span>( PHONE )</span></a><span className="preview-build"><i />QBCORE EDITION <span>/</span> 001</span></header><aside className="preview-intro"><p className="eyebrow"><span className="red-dot" />LESS NOISE. MORE LIFE.</p><h1>Your city.<br />Your people.<br /><span>Your phone.</span></h1><p className="intro-description">Everything you need to feel connected.<br />Nothing to get in the way.</p><div className="intro-rule" /><div className="preview-features"><div><span>01</span><p>Made for the moments<br />between the missions.</p></div><div><span>02</span><p>One device. Your number.<br />A whole city within reach.</p></div></div><div className="preview-controls"><button onClick={() => { if (!shown) apply(previewBootstrap()); else void lock(); }}><LockKeyhole size={15} />{shown ? 'Lock phone' : 'Open phone'}</button><button onClick={() => { if (!shown) apply(previewBootstrap()); previewIncoming(); }}><PhoneIncoming size={15} />Try a call</button><button onClick={resetPreview} aria-label="Reset preview data"><SlidersHorizontal size={15} />Reset</button></div><p className="demo-caption">INTERACTIVE PREVIEW / SAMPLE DATA</p></aside><footer className="preview-footer"><span>DESIGNED TO GET OUT OF YOUR WAY.</span><span>LOS SANTOS <ArrowUpRight size={13} /></span></footer></>}
     <div ref={phoneStage} className="phone-stage" style={!isPreview && phonePosition ? { left: phonePosition.x, top: phonePosition.y, right: 'auto', bottom: 'auto' } : undefined}>
       {!shown && isPreview && <button className="reopen" onClick={() => apply(previewBootstrap())}><Power size={24} />Open phone</button>}
-      {shown && device && <div className="phone-scale" style={{ width: 370 * scale, height: (flip && folded ? 420 : phoneHeight) * scale }}><div className={`phone ${flip ? 'style-flip' : ''} ${flip && folded ? 'is-folded' : ''} ${app === 'home' ? 'on-home' : ''} ${hiddenCapture ? 'capture-hidden' : ''} theme-${data.settings.theme || 'light'}`} style={{ '--phone-scale': scale } as CSSProperties}>
+      {shown && device && <div className="phone-scale" style={{ width: 370 * scale, height: (flip && folded ? 420 : phoneHeight) * scale }}><div className={`phone ${flip ? 'style-flip' : ''} ${flip && folded ? 'is-folded' : ''} ${app === 'home' ? 'on-home' : ''} ${app === 'gps' ? 'map-open' : ''} ${hiddenCapture ? 'capture-hidden' : ''} theme-${data.settings.theme || 'light'}`} style={{ '--phone-scale': scale } as CSSProperties}>
         <div className="side-key volume-up" /><div className="side-key volume-down" /><div className="side-key power-key" />
         <div inert={flip && folded} aria-hidden={flip && folded} className={`phone-screen ${locked || app === 'home' ? 'show-wallpaper' : ''} ${isDarkTheme(data.settings.theme) ? 'theme-dark' : ''} theme-${data.settings.theme || 'light'} wallpaper-${data.settings.wallpaper} icons-${data.settings.iconStyle ?? 'circle'}`}>
           {(locked || app === 'home') && data.settings.wallpaper === 'custom' && data.settings.wallpaperUrl && <PhotoImage src={data.settings.wallpaperUrl} className="custom-wallpaper" />}

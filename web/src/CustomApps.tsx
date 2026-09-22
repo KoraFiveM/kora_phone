@@ -1,8 +1,9 @@
 import { useEffect, useRef, useState } from 'react';
+import { Blocks } from 'lucide-react';
 import { api, isPreview, nui } from './api';
 import { usePhone } from './PhoneContext';
 import { isHostMessage } from './nuiEvents';
-interface CustomApp { identifier: string; name: string; description: string; resource: string; ui: string }
+interface CustomApp { identifier: string; name: string; description: string; resource: string; ui: string; icon?: string; defaultApp?: boolean; price?: number }
 function useCustomApps() {
   const [apps, setApps] = useState<CustomApp[]>([]);
   useEffect(() => {
@@ -17,12 +18,13 @@ function useCustomApps() {
 }
 export function CustomAppStore({ search, installedOnly }: { search: string; installedOnly: boolean }) {
   const apps = useCustomApps(); const { data, updateData, run, busy, navigate } = usePhone();
-  const visible = apps.filter(app => (!installedOnly || data.customApps?.[app.identifier]) && `${app.name} ${app.description}`.toLowerCase().includes(search.toLowerCase()));
+  const isInstalled = (app: CustomApp) => data.customApps?.[app.identifier] ?? app.defaultApp === true;
+  const visible = apps.filter(app => (!installedOnly || isInstalled(app)) && `${app.name} ${app.description}`.toLowerCase().includes(search.toLowerCase()));
   if (!visible.length) return null;
   return <section><p className="section-label">COMMUNITY APPS</p>{visible.map(app => {
-    const installed = !!data.customApps?.[app.identifier];
+    const installed = isInstalled(app);
     const change = (value: boolean) => run(async () => { updateData(await api('customApp', { app: app.identifier, installed: value })); await nui('customLifecycle', { app: app.identifier, event: value ? 'onInstall' : 'onDelete' }); });
-    return <article className="store-app" key={app.identifier}><div className="store-app-copy"><h3>{app.name}</h3><small>Community · Free</small><p>{app.description}</p>{installed && <button disabled={busy} className="store-remove" onClick={() => change(false)}>Remove</button>}</div><button className="store-get" disabled={busy} onClick={() => installed ? navigate('custom', app.identifier) : change(true)}>{installed ? 'Open' : 'Get'}</button></article>;
+    return <article className="store-app" key={app.identifier}><div className="store-app-icon">{app.icon ? <img src={app.icon} alt="" /> : <Blocks size={22} strokeWidth={1.5} />}</div><div className="store-app-copy"><h3>{app.name}</h3><small>Community · Free</small><p>{app.description}</p>{installed && <button disabled={busy} className="store-remove" onClick={() => change(false)}>Remove</button>}</div><button className={`store-get ${installed ? 'installed' : ''}`} disabled={busy} onClick={() => installed ? navigate('custom', app.identifier) : change(true)}>{installed ? 'Open' : 'Get'}</button></article>;
   })}</section>;
 }
 export function CustomAppScreen({ id }: { id: string }) {
@@ -54,5 +56,7 @@ export function CustomAppScreen({ id }: { id: string }) {
   if (!definition) return <p>This app is unavailable. Its resource may have stopped.</p>;
   if (!authorized) return <p>Opening app…</p>;
   const query = new URLSearchParams({ npParent: location.origin, npResource: definition.resource, npApp: id });
-  return <iframe ref={frame} className="custom-app-frame" title={definition.name} sandbox="allow-scripts allow-same-origin" src={`${origin}/${definition.ui}?${query}`} />;
+  // Most ecosystems register a bare relative path ("ui/index.html"); a couple (e.g. YSeries) hand back an already-qualified URL.
+  const page = /^https?:\/\//.test(definition.ui) ? definition.ui : `${origin}/${definition.ui}`;
+  return <iframe ref={frame} className="custom-app-frame" title={definition.name} sandbox="allow-scripts allow-same-origin" src={`${page}?${query}`} />;
 }
