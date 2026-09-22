@@ -41,7 +41,8 @@ assert.match(moderation, /HasPermission/);
 assert.match(moderation, /Repositories\.Reports\.audit/);
 assert.match(moderation, /Repositories\.Reports\.claim/);
 assert.match(reports, /assigned_citizenid = \?/);
-assert.match(callbacks, /RateLimits\.consume/);
+assert.match(callbacks, /= QBPhone\.registerCallback/);
+assert.match(read("server/callbacks.lua"), /RateLimits\.consume/);
 for (const callback of ["social:createPost", "social:report", "market:createListing", "market:contactSeller", "moderation:resolve"]) {
   assert.ok(callbacks.includes(callback), `missing callback ${callback}`);
 }
