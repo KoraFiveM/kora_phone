@@ -27,7 +27,7 @@ export interface Bank { balance: number; account: string; name: string; history:
 export interface Property { name: string; label: string; coords?: { x: number; y: number } }
 export interface Vehicle { vehicle: string; plate: string; garage: string; state: number; fuel: number }
 export interface Weather { condition: string; hour: number; minute: number; rain: number }
-export interface Notification { deviceId: string; title: string; body: string; app: AppId; at?: number }
+export interface Notification { deviceId: string; title: string; body: string; app: AppId; at?: number; count?: number }
 export type Api = {
   customApp: [{ app: string; installed?: boolean }, DeviceData];
   installApp: [{ app: AppId; installed: boolean }, DeviceData];
