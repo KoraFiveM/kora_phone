@@ -1,6 +1,6 @@
-SteviePhone.Repositories = SteviePhone.Repositories or {}
+QBPhone.Repositories = QBPhone.Repositories or {}
 local Transactions = {}
-SteviePhone.Repositories.Transactions = Transactions
+QBPhone.Repositories.Transactions = Transactions
 
 local function row(id)
     return MySQL.single.await([[

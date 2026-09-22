@@ -1,4 +1,4 @@
-SteviePhone = SteviePhone or {}
+QBPhone = QBPhone or {}
 local Map = { active = false, previousRadar = true }
 
 -- ponytail: these are the widely-used vanilla HUD minimap coordinates, restored
@@ -48,4 +48,4 @@ function Map.Cleanup()
     if Map.active then Map.Hide() end
 end
 
-SteviePhone.Map = Map
+QBPhone.Map = Map

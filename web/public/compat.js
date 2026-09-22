@@ -2,7 +2,7 @@
 // JS API (lb-phone/sd-phone-style `fetchNui`/`onNuiEvent`, plain globals for
 // `resourceName`/`appName`/`settings`). Add one script tag to your app's own
 // index.html, as early as possible:
-//   <script src="https://cfx-nui-stevie-phone/compat.js"></script>
+//   <script src="https://cfx-nui-qbphone/compat.js"></script>
 // This only reproduces the DATA bridge -- it does not reimplement any other
 // phone's UI component library (popups, pickers, maps, etc).
 (function () {

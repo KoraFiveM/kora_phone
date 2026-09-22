@@ -1,6 +1,6 @@
-SteviePhone.Repositories = SteviePhone.Repositories or {}
+QBPhone.Repositories = QBPhone.Repositories or {}
 local Items = {}
-SteviePhone.Repositories.Items = Items
+QBPhone.Repositories.Items = Items
 
 function Items.list(deviceId)
     return MySQL.query.await('SELECT kind, item_key AS itemKey, payload FROM phone_items WHERE device_id = ? ORDER BY updated_at DESC', { deviceId }) or {}

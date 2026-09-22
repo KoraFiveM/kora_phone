@@ -1,6 +1,6 @@
-SteviePhone.Repositories = SteviePhone.Repositories or {}
+QBPhone.Repositories = QBPhone.Repositories or {}
 local Contacts = {}
-SteviePhone.Repositories.Contacts = Contacts
+QBPhone.Repositories.Contacts = Contacts
 
 local function findOwnedId(deviceId, phoneNumber)
     return MySQL.scalar.await(
