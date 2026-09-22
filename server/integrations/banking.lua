@@ -1,8 +1,8 @@
-SteviePhone = SteviePhone or {}
-SteviePhone.Integrations = SteviePhone.Integrations or {}
+QBPhone = QBPhone or {}
+QBPhone.Integrations = QBPhone.Integrations or {}
 
 local Banking = {}
-SteviePhone.Integrations.Banking = Banking
+QBPhone.Integrations.Banking = Banking
 
 -- QBCore's in-memory player money API cannot participate in the SQL audit
 -- transaction. Transfers therefore stay disabled unless the operator opts in
@@ -33,7 +33,7 @@ end
 
 function Banking.getOnlinePlayerByCitizenId(citizenId)
     if type(citizenId) ~= 'string' or citizenId == '' then return nil end
-    return SteviePhone.QB.Functions.GetPlayerByCitizenId(citizenId)
+    return QBPhone.QB.Functions.GetPlayerByCitizenId(citizenId)
 end
 
 function Banking.debit(player, amount, reason)

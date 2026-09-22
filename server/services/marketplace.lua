@@ -1,6 +1,6 @@
-SteviePhone.Services = SteviePhone.Services or {}
+QBPhone.Services = QBPhone.Services or {}
 local Market = {}
-SteviePhone.Services.Marketplace = Market
+QBPhone.Services.Marketplace = Market
 
 local categories = { 'vehicle', 'property', 'electronics', 'services', 'other' }
 local function invalid(message) return PhoneError(PhoneConstants.Errors.INVALID_INPUT, message) end
@@ -35,7 +35,7 @@ local function validatedListing(payload, needsRequestId)
 end
 
 function Market.getListings(source, payload)
-    local device, err = SteviePhone.Permissions.requireDevice(source)
+    local device, err = QBPhone.Permissions.requireDevice(source)
     if not device then return err end
     local pagination, validationError = PhoneValidation.page(payload)
     if not pagination then return invalid(validationError) end
@@ -45,44 +45,44 @@ function Market.getListings(source, payload)
         category, validationError = PhoneValidation.enum(payload.category, 'category', categories)
         if not category then return invalid(validationError) end
     end
-    local rows = SteviePhone.Repositories.Marketplace.list(device.id, pagination.limit, pagination.cursor, category)
+    local rows = QBPhone.Repositories.Marketplace.list(device.id, pagination.limit, pagination.cursor, category)
     local items = {}
     for i, row in ipairs(rows) do items[i] = publicListing(row, device.id) end
     return PhoneResult({ items = items, nextCursor = #rows == pagination.limit and rows[#rows].id or nil })
 end
 
 function Market.getListing(source, payload)
-    local device, err = SteviePhone.Permissions.requireDevice(source)
+    local device, err = QBPhone.Permissions.requireDevice(source)
     if not device then return err end
     local id, validationError = PhoneValidation.integer(type(payload) == 'table' and payload.id, 'id', 1)
     if not id then return invalid(validationError) end
-    local listing = SteviePhone.Repositories.Marketplace.get(id)
+    local listing = QBPhone.Repositories.Marketplace.get(id)
     if not listing or (listing.status ~= 'active' and listing.ownerDeviceId ~= device.id)
-        or SteviePhone.Repositories.Blocks.isEitherBlocked(device.id, listing.ownerDeviceId) then
+        or QBPhone.Repositories.Blocks.isEitherBlocked(device.id, listing.ownerDeviceId) then
         return PhoneError(PhoneConstants.Errors.NOT_FOUND, 'Listing was not found')
     end
     return PhoneResult(publicListing(listing, device.id))
 end
 
 function Market.createListing(source, payload)
-    local device, err = SteviePhone.Permissions.requireDevice(source)
+    local device, err = QBPhone.Permissions.requireDevice(source)
     if not device then return err end
     local listing, validationError = validatedListing(payload, true)
     if not listing then return invalid(validationError) end
-    local saved, replayed = SteviePhone.Repositories.Marketplace.create(device.id, listing)
+    local saved, replayed = QBPhone.Repositories.Marketplace.create(device.id, listing)
     if not saved then return PhoneError(PhoneConstants.Errors.INTERNAL, 'Unable to create listing') end
     local result = publicListing(saved, device.id); result.replayed = replayed
     return PhoneResult(result)
 end
 
 function Market.updateListing(source, payload)
-    local device, err = SteviePhone.Permissions.requireDevice(source)
+    local device, err = QBPhone.Permissions.requireDevice(source)
     if not device then return err end
     local id, validationError = PhoneValidation.integer(type(payload) == 'table' and payload.id, 'id', 1)
     if not id then return invalid(validationError) end
     local listing; listing, validationError = validatedListing(payload, false)
     if not listing then return invalid(validationError) end
-    local saved = SteviePhone.Repositories.Marketplace.update(device.id, id, listing)
+    local saved = QBPhone.Repositories.Marketplace.update(device.id, id, listing)
     if not saved then return PhoneError(PhoneConstants.Errors.NOT_FOUND, 'Listing was not found') end
     return PhoneResult(publicListing(saved, device.id))
 end
@@ -90,26 +90,26 @@ end
 -- Marking sold is owner-only; removing a listing can also be done by a moderator straight
 -- from the feed (the same removal a report's "remove content" action performs).
 function Market.setStatus(source, payload, status)
-    local device, err = SteviePhone.Permissions.requireDevice(source)
+    local device, err = QBPhone.Permissions.requireDevice(source)
     if not device then return err end
     local id, validationError = PhoneValidation.integer(type(payload) == 'table' and payload.id, 'id', 1)
     if not id then return invalid(validationError) end
-    local changed = SteviePhone.Repositories.Marketplace.setStatus(device.id, id, status)
-    if not changed and status == 'removed' and SteviePhone.Services.Moderation.isModerator(source) then
-        changed = SteviePhone.Repositories.Marketplace.hideByModerator(id)
+    local changed = QBPhone.Repositories.Marketplace.setStatus(device.id, id, status)
+    if not changed and status == 'removed' and QBPhone.Services.Moderation.isModerator(source) then
+        changed = QBPhone.Repositories.Marketplace.hideByModerator(id)
     end
     if not changed then return PhoneError(PhoneConstants.Errors.NOT_FOUND, 'Listing was not found') end
     return PhoneResult({ id = id, status = status })
 end
 
 function Market.contactSeller(source, payload)
-    local buyer, err = SteviePhone.Permissions.requireDevice(source)
+    local buyer, err = QBPhone.Permissions.requireDevice(source)
     if not buyer then return err end
     local id, validationError = PhoneValidation.integer(type(payload) == 'table' and payload.id, 'id', 1)
     if not id then return invalid(validationError) end
-    local listing = SteviePhone.Repositories.Marketplace.get(id)
+    local listing = QBPhone.Repositories.Marketplace.get(id)
     if not listing or listing.status ~= 'active'
-        or SteviePhone.Repositories.Blocks.isEitherBlocked(buyer.id, listing and listing.ownerDeviceId or 0) then
+        or QBPhone.Repositories.Blocks.isEitherBlocked(buyer.id, listing and listing.ownerDeviceId or 0) then
         return PhoneError(PhoneConstants.Errors.NOT_FOUND, 'Listing was not found')
     end
     if listing.ownerDeviceId == buyer.id then return invalid('Cannot contact yourself') end
@@ -117,11 +117,11 @@ function Market.contactSeller(source, payload)
     if not body then return invalid(validationError) end
     local request; request, validationError = PhoneValidation.string(payload.clientRequestId, 'clientRequestId', 8, 64)
     if not request then return invalid(validationError) end
-    local phoneNumber = SteviePhone.Repositories.Marketplace.ownerPhone(listing.ownerDeviceId)
+    local phoneNumber = QBPhone.Repositories.Marketplace.ownerPhone(listing.ownerDeviceId)
     if not phoneNumber then return PhoneError(PhoneConstants.Errors.NOT_FOUND, 'Seller is unavailable') end
     -- Reuse the messaging service so membership, persistence and idempotency
     -- follow exactly the same server-authoritative path as normal messages.
-    return SteviePhone.Services.Messaging.send(source, {
+    return QBPhone.Services.Messaging.send(source, {
         to = phoneNumber,
         body = ('Marketplace: %s\n%s'):format(listing.title, body),
         clientRequestId = request,
