@@ -30,9 +30,9 @@ function QBPhone.Open(app, payload)
     QBPhone.State.open = true
     QBPhone.State.currentApp = type(app) == 'string' and app or nil
     QBPhone.Animations.Start()
-    QB.nui.setFocus(true, true)
+    QBPhone.SetNuiFocus(true, true)
     SetNuiFocusKeepInput(false)
-    QB.nui.send('phone:open', { app = QBPhone.State.currentApp, payload = payload, state = QBPhone.State.Public() })
+    QBPhone.SendNui('phone:open', { app = QBPhone.State.currentApp, payload = payload, state = QBPhone.State.Public() })
     return true
 end
 
@@ -42,10 +42,10 @@ function QBPhone.Close(force)
     TriggerServerEvent('qbphone:server:phone:closed')
     QBPhone.State.open = false
     QBPhone.State.currentApp = nil
-    QB.nui.setFocus(false, false)
+    QBPhone.SetNuiFocus(false, false)
     SetNuiFocusKeepInput(false)
     QBPhone.Animations.Stop()
-    QB.nui.send(force and 'phone:reset' or 'phone:close')
+    QBPhone.SendNui(force and 'phone:reset' or 'phone:close')
 end
 
 function QBPhone.Bootstrap()
@@ -53,9 +53,9 @@ function QBPhone.Bootstrap()
     QBPhone.ServerCallback('qbphone:server:getBootstrap', {}, function(result)
         if result.ok then
             QBPhone.State.initialData = result.data
-            QB.nui.send('bootstrap', result.data)
+            QBPhone.SendNui('bootstrap', result.data)
         else
-            QB.nui.send('bootstrap:error', result)
+            QBPhone.SendNui('bootstrap:error', result)
         end
     end)
 end
@@ -77,23 +77,23 @@ end)
 
 RegisterNetEvent('QBCore:Player:SetPlayerData', function(playerData)
     if not QBPhone.State.playerLoaded then return end
-    QB.nui.send('player:update', {
+    QBPhone.SendNui('player:update', {
         job = playerData and playerData.job or nil,
         money = playerData and playerData.money or nil,
     })
 end)
 
 RegisterNetEvent('QBCore:Client:OnJobUpdate', function(job)
-    QB.nui.send('job:update', job)
+    QBPhone.SendNui('job:update', job)
 end)
 
 RegisterNetEvent('qbphone:client:messages:new', function(message)
-    QB.nui.send('messages:new', message)
+    QBPhone.SendNui('messages:new', message)
 end)
 
 RegisterNetEvent('qbphone:client:mail:new', function(mail)
     if type(mail) ~= 'table' or type(mail.sender) ~= 'string' then return end
-    QB.nui.send('mail:new', { sender = mail.sender:sub(1, 16), subject = tostring(mail.subject or ''):sub(1, 120) })
+    QBPhone.SendNui('mail:new', { sender = mail.sender:sub(1, 16), subject = tostring(mail.subject or ''):sub(1, 120) })
 end)
 
 -- Sent by /phonereset: put the phone away and reload it so the setup screen comes back.
@@ -103,7 +103,7 @@ RegisterNetEvent('qbphone:client:reset', function()
 end)
 
 RegisterNetEvent('qbphone:client:messages:read', function(receipt)
-    QB.nui.send('messages:read', receipt)
+    QBPhone.SendNui('messages:read', receipt)
 end)
 
 local function togglePhone()

@@ -8,7 +8,7 @@ local function finishMode()
     ClearFocus()
     DisplayRadar(Camera.previousRadar)
     QBPhone.State.cameraMode = false
-    QB.nui.send('camera:closed')
+    QBPhone.SendNui('camera:closed')
 end
 
 function Camera.Open()
@@ -17,10 +17,10 @@ function Camera.Open()
     if IsEntityDead(ped) then return false, 'PLAYER_DEAD' end
     Camera.previousRadar = not IsRadarHidden()
     QBPhone.State.cameraMode = true
-    QB.nui.setFocus(false, false)
+    QBPhone.SetNuiFocus(false, false)
     SetNuiFocusKeepInput(false)
     DisplayRadar(false)
-    QB.nui.send('phone:visibility', false)
+    QBPhone.SendNui('phone:visibility', false)
     return true
 end
 
@@ -28,8 +28,8 @@ function Camera.Close()
     if not QBPhone.State.cameraMode then return end
     finishMode()
     if QBPhone.State.open then
-        QB.nui.setFocus(true, true)
-        QB.nui.send('phone:visibility', true)
+        QBPhone.SetNuiFocus(true, true)
+        QBPhone.SendNui('phone:visibility', true)
     end
 end
 
