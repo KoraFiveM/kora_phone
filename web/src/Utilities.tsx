@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Camera, Car, CloudSun, Home, MapPin, Navigation, Plus, Save, ShieldCheck, StickyNote, Sun, Trash2 } from 'lucide-react';
 import { api, isPreview, nui, requestId } from './api';
 import { PhotoImage } from './Images';
@@ -22,8 +22,33 @@ export function GalleryScreen({ camera = false }: { camera?: boolean }) {
 export function GPSScreen() {
   const { device, run, notify, busy } = usePhone();
   const [x, setX] = useState(''); const [y, setY] = useState('');
+  const mapRef = useRef<HTMLDivElement>(null);
+  const lastRect = useRef('');
   const waypoint = (x: number, y: number) => run(async () => { await api('waypoint', { x, y }); notify(isPreview ? 'Waypoint selected in preview' : 'Waypoint set on your map'); });
-  return <><div className="map-graphic" aria-label="Stylized city map"><div className="map-road one" /><div className="map-road two" /><div className="map-road three" /><div className="map-road four" /><div className="map-river" /><span className="map-point"><MapPin size={26} /></span><span className="map-label">LOS SANTOS</span><span className="map-credit">CITY DIRECTORY</span></div><p className="section-label">PLACES TO BE</p>{device.locations.map(place => <Row key={place.label} title={place.label} detail={`${place.x.toFixed(0)}, ${place.y.toFixed(0)}`} icon={<MapPin size={20} />} onClick={() => waypoint(place.x, place.y)} />)}<form className="panel form" onSubmit={e => { e.preventDefault(); waypoint(Number(x), Number(y)); }}><h3>Go somewhere new</h3><div className="two-fields"><label>X coordinate<input required type="number" step="any" min="-20000" max="20000" value={x} onChange={e => setX(e.target.value)} /></label><label>Y coordinate<input required type="number" step="any" min="-20000" max="20000" value={y} onChange={e => setY(e.target.value)} /></label></div><button className="primary" disabled={busy}><Navigation size={17} />Set waypoint</button></form></>;
+  // Reports the map slot's on-screen box so the client can reposition the game's live minimap to sit exactly behind it.
+  useEffect(() => {
+    if (isPreview) return;
+    const report = () => {
+      const box = mapRef.current?.getBoundingClientRect();
+      if (!box || !box.width || !box.height) return;
+      const rect = { x: box.left / window.innerWidth, y: box.top / window.innerHeight, w: box.width / window.innerWidth, h: box.height / window.innerHeight };
+      const key = `${rect.x.toFixed(4)}:${rect.y.toFixed(4)}:${rect.w.toFixed(4)}:${rect.h.toFixed(4)}`;
+      if (key === lastRect.current) return;
+      lastRect.current = key;
+      void api('openMap', rect);
+    };
+    report();
+    // ponytail: polls instead of hooking the phone's drag/resize handlers directly, so the live map follows if you drag or resize the phone while on this screen. Ceiling: up to 300ms of lag behind the phone frame. Upgrade path: call report() straight from the drag/scale handlers in App.tsx.
+    const interval = window.setInterval(report, 300);
+    window.addEventListener('resize', report);
+    return () => { window.clearInterval(interval); window.removeEventListener('resize', report); lastRect.current = ''; void api('closeMap', {}); };
+  }, []);
+  return <>
+    <div ref={mapRef} className="map-graphic">{isPreview && <span className="map-live-note">The live map renders here in-game.</span>}</div>
+    <p className="section-label">PLACES TO BE</p>
+    <div className="panel">{device.locations.map(place => <Row key={place.label} title={place.label} detail={`${place.x.toFixed(0)}, ${place.y.toFixed(0)}`} icon={<MapPin size={20} />} onClick={() => waypoint(place.x, place.y)} />)}{!device.locations.length && <p className="muted">No saved places yet.</p>}</div>
+    <form className="panel form" onSubmit={e => { e.preventDefault(); waypoint(Number(x), Number(y)); }}><h3>Go somewhere new</h3><div className="two-fields"><label>X coordinate<input required type="number" step="any" min="-20000" max="20000" value={x} onChange={e => setX(e.target.value)} /></label><label>Y coordinate<input required type="number" step="any" min="-20000" max="20000" value={y} onChange={e => setY(e.target.value)} /></label></div><button className="primary" disabled={busy}><Navigation size={17} />Set waypoint</button></form>
+  </>;
 }
 export function ServicesScreen() {
   const { run, busy, notify } = usePhone();
