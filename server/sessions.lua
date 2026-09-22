@@ -1,38 +1,38 @@
-SteviePhone.Sessions = { bySource = {}, byNumber = {} }
+QBPhone.Sessions = { bySource = {}, byNumber = {} }
 
-function SteviePhone.Sessions.open(source, device)
-    SteviePhone.Sessions.close(source)
-    SteviePhone.Sessions.bySource[source] = { deviceId = device.id, citizenId = device.ownerCitizenId, phoneNumber = device.phoneNumber, unlocked = false }
-    SteviePhone.Sessions.byNumber[device.phoneNumber] = source
+function QBPhone.Sessions.open(source, device)
+    QBPhone.Sessions.close(source)
+    QBPhone.Sessions.bySource[source] = { deviceId = device.id, citizenId = device.ownerCitizenId, phoneNumber = device.phoneNumber, unlocked = false }
+    QBPhone.Sessions.byNumber[device.phoneNumber] = source
 end
 
 -- Reuse the live session (keeping its unlocked state) when the same device re-bootstraps.
-function SteviePhone.Sessions.ensure(source, device)
-    local session = SteviePhone.Sessions.bySource[source]
+function QBPhone.Sessions.ensure(source, device)
+    local session = QBPhone.Sessions.bySource[source]
     if session and session.deviceId == device.id then return session end
-    SteviePhone.Sessions.open(source, device)
-    return SteviePhone.Sessions.bySource[source]
+    QBPhone.Sessions.open(source, device)
+    return QBPhone.Sessions.bySource[source]
 end
 
-function SteviePhone.Sessions.close(source)
-    local session = SteviePhone.Sessions.bySource[source]
-    if session and SteviePhone.Sessions.byNumber[session.phoneNumber] == source then
-        SteviePhone.Sessions.byNumber[session.phoneNumber] = nil
+function QBPhone.Sessions.close(source)
+    local session = QBPhone.Sessions.bySource[source]
+    if session and QBPhone.Sessions.byNumber[session.phoneNumber] == source then
+        QBPhone.Sessions.byNumber[session.phoneNumber] = nil
     end
-    SteviePhone.Sessions.bySource[source] = nil
-    SteviePhone.RateLimits.clear(source)
+    QBPhone.Sessions.bySource[source] = nil
+    QBPhone.RateLimits.clear(source)
 end
 
-function SteviePhone.Sessions.sourceByNumber(number)
-    local source = SteviePhone.Sessions.byNumber[number]
+function QBPhone.Sessions.sourceByNumber(number)
+    local source = QBPhone.Sessions.byNumber[number]
     if not source then return nil end
-    local session = SteviePhone.Sessions.bySource[source]
-    local citizenId = SteviePhone.GetCitizenId(source)
-    if not session or session.phoneNumber ~= number or session.citizenId ~= citizenId or not SteviePhone.HasPhone(source) then
-        SteviePhone.Sessions.close(source)
+    local session = QBPhone.Sessions.bySource[source]
+    local citizenId = QBPhone.GetCitizenId(source)
+    if not session or session.phoneNumber ~= number or session.citizenId ~= citizenId or not QBPhone.HasPhone(source) then
+        QBPhone.Sessions.close(source)
         return nil
     end
     return source
 end
 
-AddEventHandler('playerDropped', function() SteviePhone.Sessions.close(source) end)
+AddEventHandler('playerDropped', function() QBPhone.Sessions.close(source) end)

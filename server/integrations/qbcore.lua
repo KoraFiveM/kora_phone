@@ -1,19 +1,19 @@
-SteviePhone = SteviePhone or {}
-SteviePhone.QB = exports['qb-core']:GetCoreObject()
+QBPhone = QBPhone or {}
+QBPhone.QB = exports['qb-core']:GetCoreObject()
 
-function SteviePhone.GetPlayer(source)
+function QBPhone.GetPlayer(source)
     if type(source) ~= 'number' then return nil end
-    return SteviePhone.QB.Functions.GetPlayer(source)
+    return QBPhone.QB.Functions.GetPlayer(source)
 end
 
-function SteviePhone.GetCitizenId(source)
-    local player = SteviePhone.GetPlayer(source)
+function QBPhone.GetCitizenId(source)
+    local player = QBPhone.GetPlayer(source)
     return player and player.PlayerData and player.PlayerData.citizenid or nil
 end
 
-function SteviePhone.HasPhone(source)
+function QBPhone.HasPhone(source)
     if not Config.RequirePhoneItem then return true end
-    local player = SteviePhone.GetPlayer(source)
+    local player = QBPhone.GetPlayer(source)
     return player and player.Functions.GetItemByName(Config.PhoneItem) ~= nil or false
 end
 

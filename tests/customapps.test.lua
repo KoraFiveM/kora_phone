@@ -34,7 +34,7 @@ local function loadCustomApps()
     _G.GetInvokingResource = function() return 'addon-resource' end
     _G.exports = function(name, fn) exportsTable[name] = fn end
     _G.AddEventHandler = function(event, fn) handlers[event] = fn end
-    _G.SteviePhone = {
+    _G.QBPhone = {
         QBCore = { Functions = { GetPlayerData = function() return { job = playerJob } end } },
         Notifications = { Native = function(title, body, urgent) natives[#natives + 1] = { title = title, body = body, urgent = urgent }; return true end },
     }
@@ -42,7 +42,7 @@ local function loadCustomApps()
 end
 
 local function findApp(identifier)
-    for _, app in ipairs(SteviePhone.CustomApps.List()) do
+    for _, app in ipairs(QBPhone.CustomApps.List()) do
         if app.identifier == identifier then return app end
     end
 end

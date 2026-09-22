@@ -1,4 +1,4 @@
-SteviePhone = SteviePhone or {}
+QBPhone = QBPhone or {}
 local Camera = { handle = nil, previousRadar = true }
 
 local function finishMode()
@@ -7,16 +7,16 @@ local function finishMode()
     Camera.handle = nil
     ClearFocus()
     DisplayRadar(Camera.previousRadar)
-    SteviePhone.State.cameraMode = false
+    QBPhone.State.cameraMode = false
     SendNUIMessage({ action = 'camera:closed' })
 end
 
 function Camera.Open()
-    if SteviePhone.State.cameraMode then return true end
+    if QBPhone.State.cameraMode then return true end
     local ped = PlayerPedId()
     if IsEntityDead(ped) then return false, 'PLAYER_DEAD' end
     Camera.previousRadar = not IsRadarHidden()
-    SteviePhone.State.cameraMode = true
+    QBPhone.State.cameraMode = true
     SetNuiFocus(false, false)
     SetNuiFocusKeepInput(false)
     DisplayRadar(false)
@@ -25,9 +25,9 @@ function Camera.Open()
 end
 
 function Camera.Close()
-    if not SteviePhone.State.cameraMode then return end
+    if not QBPhone.State.cameraMode then return end
     finishMode()
-    if SteviePhone.State.open then
+    if QBPhone.State.open then
         SetNuiFocus(true, true)
         SendNUIMessage({ action = 'phone:visibility', data = true })
     end
@@ -35,11 +35,11 @@ end
 
 function Camera.Capture(done)
     done = done or function() end
-    if not SteviePhone.State.cameraMode then return done({ ok = false, error = 'CAMERA_NOT_OPEN' }) end
+    if not QBPhone.State.cameraMode then return done({ ok = false, error = 'CAMERA_NOT_OPEN' }) end
     if GetResourceState('screenshot-basic') ~= 'started' then
         return done({ ok = false, error = 'SCREENSHOT_PROVIDER_UNAVAILABLE' })
     end
-    SteviePhone.ServerCallback('stevie-phone:server:requestMediaUpload', {
+    QBPhone.ServerCallback('qbphone:server:requestMediaUpload', {
         mimeType = 'image/jpeg',
         -- This is only an upper-bound declaration. The provider verifies the actual size.
         byteSize = 8 * 1024 * 1024
@@ -51,7 +51,7 @@ function Camera.Capture(done)
         end
 
         if instruction.mode == 'server-capture' then
-            return SteviePhone.ServerCallback('stevie-phone:server:completeMediaUpload', {
+            return QBPhone.ServerCallback('qbphone:server:completeMediaUpload', {
                 token = instruction.token
             }, done)
         end
@@ -76,7 +76,7 @@ function Camera.Capture(done)
                 if type(receipt) ~= 'string' then
                     return done({ ok = false, error = { code = 'UPLOAD_FAILED' } })
                 end
-                SteviePhone.ServerCallback('stevie-phone:server:completeMediaUpload', {
+                QBPhone.ServerCallback('qbphone:server:completeMediaUpload', {
                     token = instruction.token,
                     receipt = receipt
                 }, done)
@@ -86,12 +86,12 @@ function Camera.Capture(done)
 end
 
 function Camera.Cleanup()
-    if SteviePhone.State.cameraMode or Camera.handle then finishMode() end
+    if QBPhone.State.cameraMode or Camera.handle then finishMode() end
 end
 
 CreateThread(function()
     while true do
-        if SteviePhone.State and SteviePhone.State.cameraMode then
+        if QBPhone.State and QBPhone.State.cameraMode then
             Wait(0)
             DisableControlAction(0, 24, true)
             DisableControlAction(0, 25, true)
@@ -105,4 +105,4 @@ CreateThread(function()
     end
 end)
 
-SteviePhone.Camera = Camera
+QBPhone.Camera = Camera
