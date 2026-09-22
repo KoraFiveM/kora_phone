@@ -36,3 +36,5 @@
 
 .onboard-colours { grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 6px; }
 .onboard-wallpapers { grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 6px; }
+/* Setup keeps its own cream palette, so the status bar and nav bar match it instead of the phone theme. */
+.phone-screen.in-setup.in-setup { --ui-ink: #262622; background: #f3f1ea; }
