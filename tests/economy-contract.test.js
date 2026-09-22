@@ -35,7 +35,7 @@ assert.doesNotMatch(jobs, /payload\.(?:job|grade|citizenId)/, "client must not s
 assert.match(migration, /UNIQUE KEY `uq_phone_economy_idempotency`/, "database must enforce transfer idempotency");
 assert.match(migration, /'manual_review'/, "audit schema must represent failed compensation");
 for (const name of ["getBankBalance", "getBankHistory", "transferBankMoney", "getJob", "setJobDuty", "runJobAction"]) {
-  assert.match(callbacks, new RegExp(`register\\('${name}'`), `missing callback ${name}`);
+  assert.match(callbacks, new RegExp(`register(?:Callback)?\\('${name}'`), `missing callback ${name}`);
 }
 
 console.log("PASS economy-contract: banking and jobs security contracts present");
