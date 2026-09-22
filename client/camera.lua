@@ -29,8 +29,6 @@ function Camera.Close()
     finishMode()
     if QBPhone.State.open then
         SetNuiFocus(true, true)
-        SetNuiFocusKeepInput(false)
-        SetCursorLocation(0.5, 0.5)
         QBPhone.SendNui('phone:visibility', true)
     end
 end

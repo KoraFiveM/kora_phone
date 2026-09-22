@@ -29,16 +29,11 @@ function QBPhone.Open(app, payload)
     if QBPhone.State.open or not QBPhone.State.playerLoaded or QBPhone.Unavailable() then return false end
     QBPhone.State.open = true
     QBPhone.State.currentApp = type(app) == 'string' and app or nil
+    local started, animationError = pcall(QBPhone.Animations.Start)
+    if not started then print(('[qbphone] phone animation failed: %s'):format(animationError)) end
     SetNuiFocus(true, true)
     SetNuiFocusKeepInput(false)
     QBPhone.SendNui('phone:open', { app = QBPhone.State.currentApp, payload = payload, state = QBPhone.State.Public() })
-    local started, animationError = pcall(QBPhone.Animations.Start)
-    if not started then print(('[qbphone] phone animation failed: %s'):format(animationError)) end
-    -- Streaming the animation can yield long enough for another UI teardown to
-    -- release global NUI focus. Reclaim it once the phone is fully presented.
-    SetNuiFocus(true, true)
-    SetNuiFocusKeepInput(false)
-    SetCursorLocation(0.5, 0.5)
     return true
 end
 
@@ -121,7 +116,7 @@ local function togglePhone()
 end
 
 RegisterCommand(Config.Client.Command, togglePhone, false)
-QB.keybind.add({ name = 'qbphone:open', description = 'Open phone', defaultKey = Config.Client.Keybind, onPressed = togglePhone })
+RegisterKeyMapping(Config.Client.Command, 'Open phone', 'keyboard', Config.Client.Keybind)
 
 exports('OpenPhone', QBPhone.Open)
 exports('ClosePhone', function() QBPhone.Close(false) end)
