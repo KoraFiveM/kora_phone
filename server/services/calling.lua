@@ -1,10 +1,10 @@
-SteviePhone.Services = SteviePhone.Services or {}
+QBPhone.Services = QBPhone.Services or {}
 local Calling = {
     activeById = {},
     callByDevice = {},
     nextVoiceChannel = 31000,
 }
-SteviePhone.Services.Calling = Calling
+QBPhone.Services.Calling = Calling
 
 local terminal = { ended = true, rejected = true, missed = true, cancelled = true }
 local config = Config.Calls or {}
@@ -27,7 +27,7 @@ local function publicCall(call, viewerDeviceId)
 end
 
 local function sourceForDevice(deviceId)
-    for source, session in pairs(SteviePhone.Sessions.bySource) do
+    for source, session in pairs(QBPhone.Sessions.bySource) do
         if session.deviceId == deviceId then return source end
     end
 end
@@ -73,14 +73,14 @@ end
 local function finish(call, finalStatus, reason)
     if not call or terminal[call.status] then return false end
     local prior = call.status
-    if not SteviePhone.Repositories.Calls.transition(call.id, { prior }, finalStatus, reason) then return false end
+    if not QBPhone.Repositories.Calls.transition(call.id, { prior }, finalStatus, reason) then return false end
     if prior == 'active' then
-        SteviePhone.Integrations.Voice.leave(sourceForDevice(call.callerDeviceId), call.voiceChannel)
-        SteviePhone.Integrations.Voice.leave(sourceForDevice(call.calleeDeviceId), call.voiceChannel)
+        QBPhone.Integrations.Voice.leave(sourceForDevice(call.callerDeviceId), call.voiceChannel)
+        QBPhone.Integrations.Voice.leave(sourceForDevice(call.calleeDeviceId), call.voiceChannel)
     end
     call.status = finalStatus
     call.endedReason = reason
-    notify(call, 'stevie-phone:client:calls:ended', {
+    notify(call, 'qbphone:client:calls:ended', {
         id = call.id, status = finalStatus, reason = reason,
     })
     clear(call)
@@ -92,7 +92,7 @@ local function participant(call, deviceId)
 end
 
 local function activeOwnedCall(source, payload)
-    local device, err = SteviePhone.Permissions.requireDevice(source, true)
+    local device, err = QBPhone.Permissions.requireDevice(source, true)
     if not device then return nil, nil, err end
     if type(payload) ~= 'table' or type(payload.id) ~= 'string' or #payload.id < 32 or #payload.id > 40 then
         return nil, nil, PhoneError(PhoneConstants.Errors.INVALID_INPUT, 'Call id is invalid')
@@ -105,20 +105,20 @@ local function activeOwnedCall(source, payload)
 end
 
 function Calling.start(source, payload)
-    local caller, err = SteviePhone.Permissions.requireDevice(source)
+    local caller, err = QBPhone.Permissions.requireDevice(source)
     if not caller then return err end
     local number, validationError = PhoneValidation.phoneNumber(type(payload) == 'table' and payload.to)
     if not number then return PhoneError(PhoneConstants.Errors.INVALID_INPUT, validationError) end
     if number == caller.phoneNumber then return PhoneError(PhoneConstants.Errors.INVALID_INPUT, 'Cannot call your own number') end
     if Calling.callByDevice[caller.id] then return PhoneError(PhoneConstants.Errors.CONFLICT, 'Already in a call') end
 
-    local callee = SteviePhone.Repositories.Phones.findByNumber(number)
+    local callee = QBPhone.Repositories.Phones.findByNumber(number)
     if not callee then return PhoneError(PhoneConstants.Errors.NOT_FOUND, 'Number was not found') end
-    if SteviePhone.Repositories.Blocks.isEitherBlocked(caller.id, callee.id) then
+    if QBPhone.Repositories.Blocks.isEitherBlocked(caller.id, callee.id) then
         return PhoneError(PhoneConstants.Errors.NOT_FOUND, 'Number was not found')
     end
     if Calling.callByDevice[callee.id] then return PhoneError(PhoneConstants.Errors.CONFLICT, 'Number is busy') end
-    local calleeSource = SteviePhone.Sessions.sourceByNumber(number)
+    local calleeSource = QBPhone.Sessions.sourceByNumber(number)
     if not calleeSource then return PhoneError(PhoneConstants.Errors.NOT_FOUND, 'Number is unavailable') end
     local voiceChannel = allocateChannel()
     if not voiceChannel then return PhoneError(PhoneConstants.Errors.INTERNAL, 'No call channel is available') end
@@ -128,14 +128,14 @@ function Calling.start(source, payload)
         callerNumber = caller.phoneNumber, calleeNumber = callee.phoneNumber,
         status = 'ringing', voiceChannel = voiceChannel, startedAt = os.time(),
     }
-    if not SteviePhone.Repositories.Calls.create(call) then
+    if not QBPhone.Repositories.Calls.create(call) then
         return PhoneError(PhoneConstants.Errors.INTERNAL, 'Unable to create call')
     end
     Calling.activeById[call.id] = call
     Calling.callByDevice[caller.id] = call.id
     Calling.callByDevice[callee.id] = call.id
-    TriggerClientEvent('stevie-phone:client:calls:outgoing', source, publicCall(call, caller.id))
-    TriggerClientEvent('stevie-phone:client:calls:incoming', calleeSource, publicCall(call, callee.id))
+    TriggerClientEvent('qbphone:client:calls:outgoing', source, publicCall(call, caller.id))
+    TriggerClientEvent('qbphone:client:calls:incoming', calleeSource, publicCall(call, callee.id))
 
     SetTimeout(ringTimeoutMs, function()
         local current = Calling.activeById[call.id]
@@ -150,7 +150,7 @@ function Calling.accept(source, payload)
     if device.id ~= call.calleeDeviceId or call.status ~= 'ringing' then
         return PhoneError(PhoneConstants.Errors.CONFLICT, 'Call cannot be accepted')
     end
-    if not SteviePhone.Repositories.Calls.transition(call.id, { 'ringing' }, 'active') then
+    if not QBPhone.Repositories.Calls.transition(call.id, { 'ringing' }, 'active') then
         return PhoneError(PhoneConstants.Errors.CONFLICT, 'Call state changed')
     end
     call.status = 'active'
@@ -160,12 +160,12 @@ function Calling.accept(source, payload)
         finish(call, 'cancelled', 'participant_unavailable')
         return PhoneError(PhoneConstants.Errors.CONFLICT, 'Call participant is unavailable')
     end
-    if not SteviePhone.Integrations.Voice.join(callerSource, calleeSource, call.voiceChannel) then
+    if not QBPhone.Integrations.Voice.join(callerSource, calleeSource, call.voiceChannel) then
         finish(call, 'ended', 'voice_unavailable')
         return PhoneError(PhoneConstants.Errors.CONFLICT, 'Voice service is unavailable')
     end
     call.answeredAt = os.time()
-    notify(call, 'stevie-phone:client:calls:accepted')
+    notify(call, 'qbphone:client:calls:accepted')
     return PhoneResult(publicCall(call, device.id))
 end
 
@@ -188,7 +188,7 @@ function Calling.hangup(source, payload)
 end
 
 function Calling.history(source, payload)
-    local device, err = SteviePhone.Permissions.requireDevice(source)
+    local device, err = QBPhone.Permissions.requireDevice(source)
     if not device then return err end
     payload = type(payload) == 'table' and payload or {}
     local limit, validationError = PhoneValidation.integer(
@@ -199,7 +199,7 @@ function Calling.history(source, payload)
     if cursor ~= nil and (type(cursor) ~= 'string' or not cursor:match('^[0-9a-fA-F%-]+$') or #cursor ~= 36) then
         return PhoneError(PhoneConstants.Errors.INVALID_INPUT, 'cursor is invalid')
     end
-    local rows = SteviePhone.Repositories.Calls.listForDevice(device.id, limit, cursor)
+    local rows = QBPhone.Repositories.Calls.listForDevice(device.id, limit, cursor)
     return PhoneResult({ items = rows, nextCursor = #rows == limit and rows[#rows].id or nil })
 end
 
@@ -215,19 +215,19 @@ function Calling.videoSignal(source, payload)
     local targetDeviceId = device.id == call.callerDeviceId and call.calleeDeviceId or call.callerDeviceId
     local targetSource = sourceForDevice(targetDeviceId)
     if not targetSource then return PhoneError(PhoneConstants.Errors.NOT_FOUND, 'The other participant is unavailable') end
-    TriggerClientEvent('stevie-phone:client:calls:signal', targetSource, { kind = signal.kind, sdp = signal.sdp, candidate = signal.candidate })
+    TriggerClientEvent('qbphone:client:calls:signal', targetSource, { kind = signal.kind, sdp = signal.sdp, candidate = signal.candidate })
     return PhoneResult(true)
 end
 
 function Calling.voiceFailure(source, callId)
-    local session = SteviePhone.Sessions.bySource[source]
+    local session = QBPhone.Sessions.bySource[source]
     local call = type(callId) == 'string' and Calling.activeById[callId] or nil
     if not session or not participant(call, session.deviceId) or call.status ~= 'active' then return end
     finish(call, 'ended', 'voice_unavailable')
 end
 
 function Calling.disconnect(source, reason)
-    local session = SteviePhone.Sessions.bySource[source]
+    local session = QBPhone.Sessions.bySource[source]
     if not session then return end
     local callId = Calling.callByDevice[session.deviceId]
     local call = callId and Calling.activeById[callId]
@@ -241,7 +241,7 @@ function Calling.shutdown(reason)
         local call = Calling.activeById[id]
         if call then finish(call, call.status == 'ringing' and 'cancelled' or 'ended', reason or 'resource_restart') end
     end
-    SteviePhone.Repositories.Calls.endUnfinished(reason or 'resource_restart')
+    QBPhone.Repositories.Calls.endUnfinished(reason or 'resource_restart')
 end
 
 AddEventHandler('playerDropped', function()
@@ -256,7 +256,7 @@ AddEventHandler('onResourceStart', function(resource)
     if resource ~= GetCurrentResourceName() then return end
     CreateThread(function()
         Wait(1000)
-        pcall(SteviePhone.Repositories.Calls.endUnfinished, 'resource_restart')
+        pcall(QBPhone.Repositories.Calls.endUnfinished, 'resource_restart')
     end)
 end)
 

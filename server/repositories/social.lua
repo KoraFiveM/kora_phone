@@ -1,6 +1,6 @@
-SteviePhone.Repositories = SteviePhone.Repositories or {}
+QBPhone.Repositories = QBPhone.Repositories or {}
 local Social = {}
-SteviePhone.Repositories.Social = Social
+QBPhone.Repositories.Social = Social
 
 function Social.profileByDevice(deviceId)
     return MySQL.single.await([[SELECT id, device_id AS deviceId, handle, display_name AS displayName,

@@ -1,6 +1,6 @@
-SteviePhone.Repositories = SteviePhone.Repositories or {}
+QBPhone.Repositories = QBPhone.Repositories or {}
 local Phones = {}
-SteviePhone.Repositories.Phones = Phones
+QBPhone.Repositories.Phones = Phones
 
 function Phones.findByCitizenId(citizenId)
     return MySQL.single.await([[

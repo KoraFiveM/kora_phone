@@ -1,6 +1,6 @@
-SteviePhone.Repositories = SteviePhone.Repositories or {}
+QBPhone.Repositories = QBPhone.Repositories or {}
 local Media = {}
-SteviePhone.Repositories.Media = Media
+QBPhone.Repositories.Media = Media
 
 local SELECT_COLUMNS = [[
     id, owner_device_id AS ownerDeviceId, storage_provider AS storageProvider,

@@ -1,4 +1,4 @@
-SteviePhone = SteviePhone or {}
+QBPhone = QBPhone or {}
 local Animations = {}
 
 local dictionary = 'cellphone@'
@@ -34,7 +34,7 @@ function Animations.Start()
         if DoesEntityExist(object) then
             AttachEntityToEntity(object, ped, GetPedBoneIndex(ped, 28422), 0.0, 0.0, 0.0,
                 0.0, 0.0, 0.0, true, true, false, true, 1, true)
-            SteviePhone.State.phoneObject = object
+            QBPhone.State.phoneObject = object
         end
         SetModelAsNoLongerNeeded(model)
     end
@@ -46,14 +46,14 @@ function Animations.Stop()
     if DoesEntityExist(ped) then
         StopAnimTask(ped, dictionary, animation, 2.0)
     end
-    local object = SteviePhone.State and SteviePhone.State.phoneObject
+    local object = QBPhone.State and QBPhone.State.phoneObject
     if object and DoesEntityExist(object) then
         DetachEntity(object, true, true)
         DeleteEntity(object)
     end
-    if SteviePhone.State then SteviePhone.State.phoneObject = nil end
+    if QBPhone.State then QBPhone.State.phoneObject = nil end
     RemoveAnimDict(dictionary)
 end
 
-SteviePhone.Animations = Animations
+QBPhone.Animations = Animations
 

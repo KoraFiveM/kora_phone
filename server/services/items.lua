@@ -1,6 +1,6 @@
-SteviePhone.Services = SteviePhone.Services or {}
+QBPhone.Services = QBPhone.Services or {}
 local Items = {}
-SteviePhone.Services.Items = Items
+QBPhone.Services.Items = Items
 
 local GROUP = { note = 'notes', alarm = 'alarms', station = 'stations' }
 
@@ -9,7 +9,7 @@ local function invalid(message) return PhoneError(PhoneConstants.Errors.INVALID_
 -- Everything a phone keeps, grouped for the bootstrap: { notes = {}, alarms = {}, stations = {} }.
 function Items.forDevice(deviceId)
     local out = { notes = {}, alarms = {}, stations = {} }
-    for _, row in ipairs(SteviePhone.Repositories.Items.list(deviceId)) do
+    for _, row in ipairs(QBPhone.Repositories.Items.list(deviceId)) do
         local ok, decoded = pcall(json.decode, row.payload)
         local group = out[GROUP[row.kind]]
         if ok and type(decoded) == 'table' and group then group[#group + 1] = decoded end
@@ -18,14 +18,14 @@ function Items.forDevice(deviceId)
 end
 
 function Items.save(source, payload)
-    local device, err = SteviePhone.Permissions.requireDevice(source)
+    local device, err = QBPhone.Permissions.requireDevice(source)
     if not device then return err end
     payload = type(payload) == 'table' and payload or {}
     local kind = payload.kind
     if not GROUP[kind] then return invalid('kind is invalid') end
     local item, validationError = PhoneValidation.item(kind, payload.item)
     if not item then return invalid(validationError) end
-    local repo = SteviePhone.Repositories.Items
+    local repo = QBPhone.Repositories.Items
     if not repo.exists(device.id, kind, item.id) and repo.count(device.id, kind) >= Config.Server.Items[kind] then
         return PhoneError(PhoneConstants.Errors.CONFLICT, ('You can keep up to %d %s'):format(Config.Server.Items[kind], GROUP[kind]))
     end
@@ -36,12 +36,12 @@ function Items.save(source, payload)
 end
 
 function Items.remove(source, payload)
-    local device, err = SteviePhone.Permissions.requireDevice(source)
+    local device, err = QBPhone.Permissions.requireDevice(source)
     if not device then return err end
     payload = type(payload) == 'table' and payload or {}
     if not GROUP[payload.kind] then return invalid('kind is invalid') end
     local id, validationError = PhoneValidation.string(payload.id, 'id', 1, 64)
     if not id then return invalid(validationError) end
-    SteviePhone.Repositories.Items.remove(device.id, payload.kind, id)
+    QBPhone.Repositories.Items.remove(device.id, payload.kind, id)
     return PhoneResult({ id = id })
 end
