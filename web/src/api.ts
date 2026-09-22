@@ -39,7 +39,7 @@ async function uploadMedia(p:{blob:Blob;onProgress?:(fraction:number)=>void}){
   const saved=await server<any>('media:complete',{token:up.token,receipt});
   return{id:Number(saved.id),url:String(saved.publicUrl),kind:kindOf(saved.mimeType,saved.publicUrl)||'photo'}}
 const toPhotos=(g:any):Photo[]=>(g?.items||[]).map((x:any)=>({id:String(x.id),url:String(x.publicUrl),created_at:Number(x.createdAt||0)}));
-let cached:DeviceData=normalizeData({settings:{name:'Nothing Phone',volume:.5,scale:1,wallpaper:'orbit',theme:'qbcore',setupComplete:false},contacts:[],notes:[],photos:[],stations:[],alarms:[]});
+let cached:DeviceData=normalizeData({settings:{name:'Nothing Phone',volume:.5,scale:1,wallpaper:'qbcore',theme:'qbcore',setupComplete:false},contacts:[],notes:[],photos:[],stations:[],alarms:[]});
 const stamp=(v?:number|string)=>typeof v==='number'?new Date(v*1000).toISOString():String(v||new Date().toISOString());
 export function adaptBootstrap(raw:Record<string,any>):Bootstrap{
   const contacts=Array.isArray(raw.contacts)?raw.contacts.map((c:any)=>({id:Number(c.id),name:String(c.displayName||''),number:String(c.phoneNumber||''),photo:c.photo,favorite:c.isFavorite===1||c.isFavorite===true})):cached.contacts;
