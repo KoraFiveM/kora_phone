@@ -74,6 +74,13 @@ export async function mockRequest<K extends keyof Api>(action: K, payload: Api[K
       if (p.installed) installed.add(app); else installed.delete(app);
       store.data.installedApps = [...installed]; result = store.data; break;
     }
+    case 'customApp': {
+      const map = { ...(store.data.customApps || {}) };
+      const identifier = String(p.app);
+      if ('installed' in p) map[identifier] = p.installed === true;
+      else if (!map[identifier]) throw new Error('This app is not installed');
+      store.data.customApps = map; result = store.data; break;
+    }
     case 'unlock': if (store.pin && p.pin !== store.pin) throw new Error('Incorrect PIN'); result = { ...previewBootstrap(), locked: false, data: store.data }; break;
     case 'refresh': result = { ...previewBootstrap(), locked: false, data: store.data }; break;
     case 'lock': result = { ...previewBootstrap(), locked: true, data: undefined }; break;
@@ -153,6 +160,7 @@ export async function mockRequest<K extends keyof Api>(action: K, payload: Api[K
     case 'deletePhoto': store.data.photos = store.data.photos.filter(photo => photo.id !== p.id); result = store.data; break;
     case 'weather': result = { condition: 'EXTRASUNNY', hour: 10, minute: 8, rain: 0 }; break;
     case 'waypoint': break;
+    case 'openMap': case 'closeMap': result = true; break;
     case 'wallet': result = { name: 'Charlie Parker', citizenId: 'ABC12345', birthdate: '1994-03-12', gender: 'Male', nationality: 'American', job: 'Police', licences: [{ id: 'driver', label: 'Driver licence', valid: true }, { id: 'weapon', label: 'Firearms licence', valid: false }, { id: 'business', label: 'Business licence', valid: false }] }; break;
     case 'showWallet': result = { shown: true }; break;
     case 'myLocation': result = { x: 195.2, y: -933.8, label: 'Legion Square, Downtown Vinewood' }; break;
