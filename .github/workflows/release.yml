@@ -10,6 +10,11 @@ on:
 permissions:
   contents: write
 
+# One release at a time: overlapping runs would each bump from a stale checkout.
+concurrency:
+  group: release
+  cancel-in-progress: false
+
 jobs:
   release:
     if: "!contains(github.event.head_commit.message, '[skip ci]')"
@@ -17,6 +22,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
+          ref: main # not the triggering SHA: an earlier run may have pushed a bump since
           fetch-depth: 0
 
       # Reads commit messages since the last tag to pick the next version
@@ -37,6 +43,7 @@ jobs:
           git config user.email 'github-actions[bot]@users.noreply.github.com'
           git add fxmanifest.lua
           git commit -m "chore: release ${{ steps.tag.outputs.new_tag }} [skip ci]"
+          git pull --rebase origin main
           git push origin HEAD:main
 
       - name: Tag the release commit
