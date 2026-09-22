@@ -19,7 +19,7 @@ end
 -- Config.Client.DisableWhileDead: no phone while dead or in last stand (QBCore's isdead / inlaststand).
 function QBPhone.Unavailable()
     if not Config.Client.DisableWhileDead then return false end
-    if IsEntityDead(PlayerPedId()) then return true end
+    if QB.cache.isDead() then return true end
     local data = QBPhone.QBCore.Functions.GetPlayerData()
     local metadata = data and data.metadata or {}
     return metadata.isdead == true or metadata.inlaststand == true
@@ -30,12 +30,9 @@ function QBPhone.Open(app, payload)
     QBPhone.State.open = true
     QBPhone.State.currentApp = type(app) == 'string' and app or nil
     QBPhone.Animations.Start()
-    SetNuiFocus(true, true)
+    QB.nui.setFocus(true, true)
     SetNuiFocusKeepInput(false)
-    SendNUIMessage({
-        action = 'phone:open',
-        data = { app = QBPhone.State.currentApp, payload = payload, state = QBPhone.State.Public() }
-    })
+    QB.nui.send('phone:open', { app = QBPhone.State.currentApp, payload = payload, state = QBPhone.State.Public() })
     return true
 end
 
@@ -45,10 +42,10 @@ function QBPhone.Close(force)
     TriggerServerEvent('qbphone:server:phone:closed')
     QBPhone.State.open = false
     QBPhone.State.currentApp = nil
-    SetNuiFocus(false, false)
+    QB.nui.setFocus(false, false)
     SetNuiFocusKeepInput(false)
     QBPhone.Animations.Stop()
-    SendNUIMessage({ action = force and 'phone:reset' or 'phone:close' })
+    QB.nui.send(force and 'phone:reset' or 'phone:close')
 end
 
 function QBPhone.Bootstrap()
@@ -56,9 +53,9 @@ function QBPhone.Bootstrap()
     QBPhone.ServerCallback('qbphone:server:getBootstrap', {}, function(result)
         if result.ok then
             QBPhone.State.initialData = result.data
-            SendNUIMessage({ action = 'bootstrap', data = result.data })
+            QB.nui.send('bootstrap', result.data)
         else
-            SendNUIMessage({ action = 'bootstrap:error', data = result })
+            QB.nui.send('bootstrap:error', result)
         end
     end)
 end
@@ -80,23 +77,23 @@ end)
 
 RegisterNetEvent('QBCore:Player:SetPlayerData', function(playerData)
     if not QBPhone.State.playerLoaded then return end
-    SendNUIMessage({ action = 'player:update', data = {
+    QB.nui.send('player:update', {
         job = playerData and playerData.job or nil,
         money = playerData and playerData.money or nil,
-    } })
+    })
 end)
 
 RegisterNetEvent('QBCore:Client:OnJobUpdate', function(job)
-    SendNUIMessage({ action = 'job:update', data = job })
+    QB.nui.send('job:update', job)
 end)
 
 RegisterNetEvent('qbphone:client:messages:new', function(message)
-    SendNUIMessage({ action = 'messages:new', data = message })
+    QB.nui.send('messages:new', message)
 end)
 
 RegisterNetEvent('qbphone:client:mail:new', function(mail)
     if type(mail) ~= 'table' or type(mail.sender) ~= 'string' then return end
-    SendNUIMessage({ action = 'mail:new', data = { sender = mail.sender:sub(1, 16), subject = tostring(mail.subject or ''):sub(1, 120) } })
+    QB.nui.send('mail:new', { sender = mail.sender:sub(1, 16), subject = tostring(mail.subject or ''):sub(1, 120) })
 end)
 
 -- Sent by /phonereset: put the phone away and reload it so the setup screen comes back.
@@ -106,17 +103,19 @@ RegisterNetEvent('qbphone:client:reset', function()
 end)
 
 RegisterNetEvent('qbphone:client:messages:read', function(receipt)
-    SendNUIMessage({ action = 'messages:read', data = receipt })
+    QB.nui.send('messages:read', receipt)
 end)
 
-RegisterCommand(Config.Client.Command, function()
+local function togglePhone()
     if QBPhone.State.open then
         QBPhone.Close(false)
     elseif not QBPhone.Open() and QBPhone.Unavailable() then
-        QBPhone.QBCore.Functions.Notify('You cannot use your phone right now', 'error', 3000)
+        QB.notify.send({ title = 'Phone', message = 'You cannot use your phone right now', type = 'error', duration = 3000 })
     end
-end, false)
-RegisterKeyMapping(Config.Client.Command, 'Open phone', 'keyboard', Config.Client.Keybind)
+end
+
+RegisterCommand(Config.Client.Command, togglePhone, false)
+QB.keybind.add({ name = 'qbphone:open', description = 'Open phone', defaultKey = Config.Client.Keybind, onPressed = togglePhone })
 
 exports('OpenPhone', QBPhone.Open)
 exports('ClosePhone', function() QBPhone.Close(false) end)

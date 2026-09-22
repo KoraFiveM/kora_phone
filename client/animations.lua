@@ -5,55 +5,26 @@ local dictionary = 'cellphone@'
 local animation = 'cellphone_text_read_base'
 local model = `prop_npc_phone_02`
 
-local function requestAnimDict(name, timeout)
-    RequestAnimDict(name)
-    local deadline = GetGameTimer() + (timeout or 3000)
-    while not HasAnimDictLoaded(name) and GetGameTimer() < deadline do Wait(0) end
-    return HasAnimDictLoaded(name)
-end
-
-local function requestModel(hash, timeout)
-    if not IsModelInCdimage(hash) or not IsModelValid(hash) then return false end
-    RequestModel(hash)
-    local deadline = GetGameTimer() + (timeout or 3000)
-    while not HasModelLoaded(hash) and GetGameTimer() < deadline do Wait(0) end
-    return HasModelLoaded(hash)
-end
+local animationHandle
 
 function Animations.Start()
     Animations.Stop()
-    local ped = PlayerPedId()
+    local ped = QB.cache.ped()
     if not DoesEntityExist(ped) or IsEntityDead(ped) then return false end
 
-    if requestAnimDict(dictionary) then
-        TaskPlayAnim(ped, dictionary, animation, 3.0, -1.0, -1, 50, 0.0, false, false, false)
-    end
-
-    if requestModel(model) then
-        local object = CreateObject(model, 1.0, 1.0, 1.0, false, false, false)
-        if DoesEntityExist(object) then
-            AttachEntityToEntity(object, ped, GetPedBoneIndex(ped, 28422), 0.0, 0.0, 0.0,
-                0.0, 0.0, 0.0, true, true, false, true, 1, true)
-            QBPhone.State.phoneObject = object
-        end
-        SetModelAsNoLongerNeeded(model)
-    end
+    animationHandle = QB.anim.play(ped, dictionary, animation, { flag = 50, blendInSpeed = 3.0, blendOutSpeed = 2.0 })
+    if not animationHandle then return false end
+    local object = QB.anim.attachProp(ped, model, 'SKEL_R_Hand', nil, nil, { softPin = true, collision = true })
+    if object then QBPhone.State.phoneObject = object end
     return true
 end
 
 function Animations.Stop()
-    local ped = PlayerPedId()
-    if DoesEntityExist(ped) then
-        StopAnimTask(ped, dictionary, animation, 2.0)
-    end
+    if animationHandle then QB.anim.stopHandle(animationHandle, 2.0) end
+    animationHandle = nil
     local object = QBPhone.State and QBPhone.State.phoneObject
-    if object and DoesEntityExist(object) then
-        DetachEntity(object, true, true)
-        DeleteEntity(object)
-    end
+    if object then QB.anim.detachProp(object) end
     if QBPhone.State then QBPhone.State.phoneObject = nil end
-    RemoveAnimDict(dictionary)
 end
 
 QBPhone.Animations = Animations
-
