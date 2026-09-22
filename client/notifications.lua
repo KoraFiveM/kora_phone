@@ -12,10 +12,7 @@ end
 -- it unless it's urgent. (The UI hides with the phone, so this is the only way a closed phone gets noticed.)
 function Notifications.Native(title, body, urgent)
     if SteviePhone.State.quiet and not urgent then return false end
-    local qb = SteviePhone.QBCore
-    if qb and qb.Functions and qb.Functions.Notify then
-        qb.Functions.Notify(body ~= '' and (title .. ': ' .. body) or title, 'primary', 4500)
-    end
+    QB.notify.send({ title = title, message = body, type = urgent and 'error' or 'info', duration = 4500 })
     if Config.Client.NotificationSound ~= false then
         PlaySoundFrontend(-1, 'Text_Arrive_Tone', 'Phone_SoundSet_Default', true)
     end
@@ -24,7 +21,7 @@ end
 
 function Notifications.Push(notification)
     if not valid(notification) then return false end
-    SendNUIMessage({ action = 'notification:push', data = notification })
+    QB.nui.send('notification:push', notification)
     -- Do Not Disturb silences the on-screen native alert; urgent ones (a shown ID) still get through.
     if not SteviePhone.State.open and notification.native ~= false then
         Notifications.Native(notification.title, tostring(notification.message or ''), notification.urgent == true)
@@ -75,4 +72,3 @@ if Config.Debug then
 end
 
 SteviePhone.Notifications = Notifications
-

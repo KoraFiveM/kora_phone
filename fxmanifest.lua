@@ -9,6 +9,7 @@ version '0.1.1'
 lua54 'yes'
 
 shared_scripts {
+    '@qblib/init.lua',
     '@qb-core/shared/locale.lua',
     'config/shared.lua',
     'shared/constants.lua',
@@ -61,6 +62,7 @@ files {
 }
 
 dependencies {
+    'qblib',
     'qb-core',
     'oxmysql'
 }

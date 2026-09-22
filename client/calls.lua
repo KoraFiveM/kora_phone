@@ -11,7 +11,7 @@ end
 local function participantEvent(action, call)
     if not validCall(call) then return false end
     SteviePhone.State.activeCall = call
-    SendNUIMessage({ action = action, data = call })
+    QB.nui.send(action, call)
     return true
 end
 
@@ -20,7 +20,7 @@ RegisterNetEvent('stevie-phone:client:calls:incoming', function(call)
     if participantEvent('calls:incoming', call) and not SteviePhone.State.open then
         if SteviePhone.State.quiet then
             -- Do Not Disturb: leave the phone closed and drop a silent note in the notification shade.
-            SendNUIMessage({ action = 'notification:push', data = { title = tostring(call.remoteNumber or 'Unknown'), body = 'Incoming call · Do Not Disturb', app = 'phone' } })
+            QB.nui.send('notification:push', { title = tostring(call.remoteNumber or 'Unknown'), body = 'Incoming call · Do Not Disturb', app = 'phone' })
         else
             -- The UI is hidden while the phone is closed, so open it or the call would ring unseen.
             SteviePhone.Open()
@@ -44,7 +44,7 @@ end)
 -- A WebRTC offer/answer/ICE candidate from the other side of the call, passed straight to the NUI's own peer connection.
 RegisterNetEvent('stevie-phone:client:calls:signal', function(signal)
     if type(signal) ~= 'table' then return end
-    SendNUIMessage({ type = 'videoSignal', data = signal })
+    QB.nui.send('videoSignal', signal)
 end)
 
 RegisterNetEvent('stevie-phone:client:calls:ended', function(payload)
@@ -53,7 +53,7 @@ RegisterNetEvent('stevie-phone:client:calls:ended', function(payload)
     if current and current.id ~= payload.id then return end
     SteviePhone.Voice.Leave()
     SteviePhone.State.activeCall = nil
-    SendNUIMessage({ action = 'calls:ended', data = payload })
+    QB.nui.send('calls:ended', payload)
 end)
 
 function Calls.Cleanup(notifyServer)

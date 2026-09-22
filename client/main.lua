@@ -19,7 +19,7 @@ end
 -- Config.Client.DisableWhileDead: no phone while dead or in last stand (QBCore's isdead / inlaststand).
 function SteviePhone.Unavailable()
     if not Config.Client.DisableWhileDead then return false end
-    if IsEntityDead(PlayerPedId()) then return true end
+    if QB.cache.isDead() then return true end
     local data = SteviePhone.QBCore.Functions.GetPlayerData()
     local metadata = data and data.metadata or {}
     return metadata.isdead == true or metadata.inlaststand == true
@@ -30,12 +30,9 @@ function SteviePhone.Open(app, payload)
     SteviePhone.State.open = true
     SteviePhone.State.currentApp = type(app) == 'string' and app or nil
     SteviePhone.Animations.Start()
-    SetNuiFocus(true, true)
+    QB.nui.setFocus(true, true)
     SetNuiFocusKeepInput(false)
-    SendNUIMessage({
-        action = 'phone:open',
-        data = { app = SteviePhone.State.currentApp, payload = payload, state = SteviePhone.State.Public() }
-    })
+    QB.nui.send('phone:open', { app = SteviePhone.State.currentApp, payload = payload, state = SteviePhone.State.Public() })
     return true
 end
 
@@ -45,10 +42,10 @@ function SteviePhone.Close(force)
     TriggerServerEvent('stevie-phone:server:phone:closed')
     SteviePhone.State.open = false
     SteviePhone.State.currentApp = nil
-    SetNuiFocus(false, false)
+    QB.nui.setFocus(false, false)
     SetNuiFocusKeepInput(false)
     SteviePhone.Animations.Stop()
-    SendNUIMessage({ action = force and 'phone:reset' or 'phone:close' })
+    QB.nui.send(force and 'phone:reset' or 'phone:close')
 end
 
 function SteviePhone.Bootstrap()
@@ -56,9 +53,9 @@ function SteviePhone.Bootstrap()
     SteviePhone.ServerCallback('stevie-phone:server:getBootstrap', {}, function(result)
         if result.ok then
             SteviePhone.State.initialData = result.data
-            SendNUIMessage({ action = 'bootstrap', data = result.data })
+            QB.nui.send('bootstrap', result.data)
         else
-            SendNUIMessage({ action = 'bootstrap:error', data = result })
+            QB.nui.send('bootstrap:error', result)
         end
     end)
 end
@@ -80,37 +77,45 @@ end)
 
 RegisterNetEvent('QBCore:Player:SetPlayerData', function(playerData)
     if not SteviePhone.State.playerLoaded then return end
-    SendNUIMessage({ action = 'player:update', data = {
+    QB.nui.send('player:update', {
         job = playerData and playerData.job or nil,
         money = playerData and playerData.money or nil,
-    } })
+    })
 end)
 
 RegisterNetEvent('QBCore:Client:OnJobUpdate', function(job)
-    SendNUIMessage({ action = 'job:update', data = job })
+    QB.nui.send('job:update', job)
 end)
 
 RegisterNetEvent('stevie-phone:client:messages:new', function(message)
-    SendNUIMessage({ action = 'messages:new', data = message })
+    QB.nui.send('messages:new', message)
 end)
 
 RegisterNetEvent('stevie-phone:client:mail:new', function(mail)
     if type(mail) ~= 'table' or type(mail.sender) ~= 'string' then return end
-    SendNUIMessage({ action = 'mail:new', data = { sender = mail.sender:sub(1, 16), subject = tostring(mail.subject or ''):sub(1, 120) } })
+    QB.nui.send('mail:new', { sender = mail.sender:sub(1, 16), subject = tostring(mail.subject or ''):sub(1, 120) })
 end)
 
 RegisterNetEvent('stevie-phone:client:messages:read', function(receipt)
-    SendNUIMessage({ action = 'messages:read', data = receipt })
+    QB.nui.send('messages:read', receipt)
 end)
 
-RegisterCommand(Config.Client.Command, function()
+local function togglePhone()
     if SteviePhone.State.open then
         SteviePhone.Close(false)
     elseif not SteviePhone.Open() and SteviePhone.Unavailable() then
-        SteviePhone.QBCore.Functions.Notify('You cannot use your phone right now', 'error', 3000)
+        QB.notify.send({ title = 'Phone', message = 'You cannot use your phone right now', type = 'error', duration = 3000 })
     end
-end, false)
-RegisterKeyMapping(Config.Client.Command, 'Open phone', 'keyboard', Config.Client.Keybind)
+end
+
+RegisterCommand(Config.Client.Command, togglePhone, false)
+
+QB.keybind.add({
+    name = 'stevie-phone:open',
+    description = 'Open phone',
+    defaultKey = Config.Client.Keybind,
+    onPressed = togglePhone,
+})
 
 exports('OpenPhone', SteviePhone.Open)
 exports('ClosePhone', function() SteviePhone.Close(false) end)

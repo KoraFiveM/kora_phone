@@ -100,7 +100,7 @@ RegisterNUICallback('phone:close', function(data, cb)
     -- The UI reports why it could not open (for example no phone item) so the
     -- player gets feedback instead of an invisible phone that holds focus.
     if type(data) == 'table' and type(data.error) == 'string' and data.error ~= '' then
-        SteviePhone.QBCore.Functions.Notify(data.error:sub(1, 120), 'error', 4000)
+        QB.notify.send({ title = 'Phone', message = data.error:sub(1, 120), type = 'error', duration = 4000 })
     end
     cb({ ok = true })
 end)
@@ -151,7 +151,7 @@ end)
 
 -- Location sharing: the UI asks where the player is and, on the receiving side, sets a waypoint.
 RegisterNUICallback('location:mine', function(_, cb)
-    local at = GetEntityCoords(PlayerPedId())
+    local at = QB.cache.coords()
     local street = GetStreetNameFromHashKey((GetStreetNameAtCoord(at.x, at.y, at.z)))
     local zone = GetLabelText(GetNameOfZone(at.x, at.y, at.z))
     local label = (street ~= '' and zone ~= 'NULL' and (street .. ', ' .. zone)) or (street ~= '' and street) or (zone ~= 'NULL' and zone) or 'Shared location'
@@ -191,7 +191,7 @@ end)
 RegisterNUICallback('alarm', function(data, cb)
     if not SteviePhone.State.open then
         local label = type(data) == 'table' and type(data.label) == 'string' and data.label:sub(1, 60) or ''
-        SteviePhone.QBCore.Functions.Notify('Alarm: ' .. (label ~= '' and label or 'Untitled'), 'primary', 8000)
+        QB.notify.send({ title = 'Alarm', message = label ~= '' and label or 'Untitled', type = 'info', duration = 8000 })
         PlaySoundFrontend(-1, 'Beep_Green', 'DLC_HEIST_HACKING_SNAKE_SOUNDS', true)
     end
     cb({ ok = true })
