@@ -18,6 +18,7 @@ shared_scripts {
 }
 
 client_scripts {
+    '@qbtheme/client/bridge.lua',
     'config/client.lua',
     'client/**/*.lua'
 }
@@ -62,6 +63,7 @@ files {
 }
 
 dependencies {
+    'qbtheme',
     'qblib',
     'qb-core',
     'oxmysql'

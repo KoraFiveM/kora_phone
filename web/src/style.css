@@ -5,7 +5,7 @@
 @import '@fontsource/space-mono/latin-400.css';
 @import '@fontsource/space-mono/latin-700.css';
 
-:root { font-family: 'DM Sans', Arial, sans-serif; color: var(--tone-202020,#202020); font-synthesis: none; -webkit-font-smoothing: antialiased; --red: #d53c2f; --paper: var(--tone-f4f4f4,#f4f4f4); --muted: var(--tone-787878,#787878); --line: var(--tone-dddddd,#dddddd); }
+:root { font-family: 'DM Sans', Arial, sans-serif; color: hsl(var(--foreground)); font-synthesis: none; -webkit-font-smoothing: antialiased; }
 html, body, #root { width: 100%; height: 100%; overflow: hidden; }
 * { box-sizing: border-box; }
 body { margin: 0; background: transparent; }
@@ -1315,3 +1315,6 @@ svg { flex-shrink: 0; }
 .wallpaper-qbcore .lock-screen > p, .wallpaper-qbcore .lock-screen > .dot-clock, .wallpaper-qbcore .home-top .eyebrow, .wallpaper-qbcore .home-section { color: #b9b1a4; }
 .wallpaper-qbcore .lock-orbit span { color: #d86b59; }
 .wallpaper-qbcore .custom-wallpaper { opacity: .35; }
+
+/* qbtheme supplies these defaults in FiveM and through Vite's /@qbtheme route in local development. */
+:root .phone-screen { --red: hsl(var(--primary)); --paper: hsl(var(--surface)); --muted: hsl(var(--muted-foreground)); --line: hsl(var(--border)); }
