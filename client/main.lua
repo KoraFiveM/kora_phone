@@ -29,8 +29,9 @@ function QBPhone.Open(app, payload)
     if QBPhone.State.open or not QBPhone.State.playerLoaded or QBPhone.Unavailable() then return false end
     QBPhone.State.open = true
     QBPhone.State.currentApp = type(app) == 'string' and app or nil
-    QBPhone.Animations.Start()
-    QBPhone.SetNuiFocus(true, true)
+    local started, animationError = pcall(QBPhone.Animations.Start)
+    if not started then print(('[qbphone] phone animation failed: %s'):format(animationError)) end
+    SetNuiFocus(true, true)
     SetNuiFocusKeepInput(false)
     QBPhone.SendNui('phone:open', { app = QBPhone.State.currentApp, payload = payload, state = QBPhone.State.Public() })
     return true
@@ -42,7 +43,7 @@ function QBPhone.Close(force)
     TriggerServerEvent('qbphone:server:phone:closed')
     QBPhone.State.open = false
     QBPhone.State.currentApp = nil
-    QBPhone.SetNuiFocus(false, false)
+    SetNuiFocus(false, false)
     SetNuiFocusKeepInput(false)
     QBPhone.Animations.Stop()
     QBPhone.SendNui(force and 'phone:reset' or 'phone:close')
@@ -115,7 +116,7 @@ local function togglePhone()
 end
 
 RegisterCommand(Config.Client.Command, togglePhone, false)
-QB.keybind.add({ name = 'qbphone:open', description = 'Open phone', defaultKey = Config.Client.Keybind, onPressed = togglePhone })
+RegisterKeyMapping(Config.Client.Command, 'Open phone', 'keyboard', Config.Client.Keybind)
 
 exports('OpenPhone', QBPhone.Open)
 exports('ClosePhone', function() QBPhone.Close(false) end)
