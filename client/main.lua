@@ -34,6 +34,11 @@ function QBPhone.Open(app, payload)
     QBPhone.SendNui('phone:open', { app = QBPhone.State.currentApp, payload = payload, state = QBPhone.State.Public() })
     local started, animationError = pcall(QBPhone.Animations.Start)
     if not started then print(('[qbphone] phone animation failed: %s'):format(animationError)) end
+    -- Streaming the animation can yield long enough for another UI teardown to
+    -- release global NUI focus. Reclaim it once the phone is fully presented.
+    SetNuiFocus(true, true)
+    SetNuiFocusKeepInput(false)
+    SetCursorLocation(0.5, 0.5)
     return true
 end
 
