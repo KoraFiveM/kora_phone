@@ -19,32 +19,72 @@ export function GalleryScreen({ camera = false }: { camera?: boolean }) {
   const photo = data.photos.find(item => item.id === selected);
   return <>{camera ? <><div className="camera-viewfinder"><div className="viewfinder-grid" /><Camera size={42} strokeWidth={1} /><p>{isPreview ? 'Preview camera' : 'Capture your view'}</p><small>{isPreview ? 'Creates a sample illustration' : 'The phone hides while the photo is taken'}</small></div><p className="muted camera-caption">A moment. Made yours.</p><button className="shutter" aria-label="Take photo" disabled={busy} onClick={() => run(async () => { try { updateData(await api('capture', {})); navigate('gallery'); } finally { await nui('captureDone'); } })}><span /></button><button className="text-button centered" onClick={() => navigate('gallery')}>Open gallery · {data.photos.length}</button></> : photo ? <div className="photo-view"><button className="text-button" onClick={() => { setSelected(undefined); setConfirmDelete(false); }}>← All photos</button><PhotoImage src={photo.url} alt="Saved phone photograph" /><button className="text-button danger" onClick={() => setConfirmDelete(true)}><Trash2 size={16} />Delete photo</button>{confirmDelete && <div className="panel"><p>Remove this photo from the phone gallery?</p><button className="primary" disabled={busy} onClick={() => run(async () => { updateData(await api('deletePhoto', { id: photo.id })); setSelected(undefined); setConfirmDelete(false); })}>Delete from gallery</button><button className="text-button" onClick={() => setConfirmDelete(false)}>Cancel</button></div>}</div> : <><div className="section-heading"><span className="section-label">YOUR MOMENTS / {data.photos.length}</span>{device.capabilities.camera && <button className="icon-button" aria-label="Open camera" onClick={() => navigate('camera')}><Camera size={20} /></button>}</div><div className="gallery-grid">{data.photos.map(item => <button key={item.id} onClick={() => setSelected(item.id)} aria-label="View photo"><PhotoImage src={item.url} alt="Gallery thumbnail" /></button>)}</div>{!data.photos.length && <Empty title="Collect a moment" detail={device.capabilities.camera ? 'Photos you take will appear here.' : 'Camera uploads have not been configured on this server.'} />}</>}</>;
 }
+// ponytail: calibration knob. World coords at the edges of web/public/map.jpg (road style, stitched from
+// Flamm64/GTA-V-World-Map zoom-5 tiles, cropped square to the island). Checked against the Del Perro pier
+// and LSIA terminal. Swap the image for another render and these four numbers need re-fitting.
+const MAP_BOUNDS = { left: -5879, right: 7243, top: 8567, bottom: -4555 };
+export const worldToMap = (x: number, y: number) => ({ u: (x - MAP_BOUNDS.left) / (MAP_BOUNDS.right - MAP_BOUNDS.left), v: (MAP_BOUNDS.top - y) / (MAP_BOUNDS.top - MAP_BOUNDS.bottom) });
+export const mapToWorld = (u: number, v: number) => ({ x: MAP_BOUNDS.left + u * (MAP_BOUNDS.right - MAP_BOUNDS.left), y: MAP_BOUNDS.top - v * (MAP_BOUNDS.top - MAP_BOUNDS.bottom) });
+const clamp = (n: number, lo: number, hi: number) => Math.min(hi, Math.max(lo, n));
+
+// Drag to pan, scroll or +/- to zoom, tap to drop a waypoint. The image is sized to the box width at zoom 1.
+function LiveMap({ onPick }: { onPick: (x: number, y: number) => void }) {
+  const box = useRef<HTMLDivElement>(null);
+  const drag = useRef<{ sx: number; sy: number; vx: number; vy: number; moved: boolean }>(undefined);
+  const [view, setView] = useState({ x: 0, y: 0, z: 1 });
+  const [me, setMe] = useState<{ x: number; y: number; heading?: number }>();
+  // Mirrors the game's own waypoint, so it survives leaving the app and shows ones set from the pause map.
+  const [pin, setPin] = useState<{ x: number; y: number }>();
+  const [missing, setMissing] = useState(false);
+  const fit = (x: number, y: number, z: number) => {
+    const el = box.current; if (!el) return { x, y, z };
+    const size = el.clientWidth * z;
+    return { x: clamp(x, Math.min(0, el.clientWidth - size), 0), y: clamp(y, Math.min(0, el.clientHeight - size), 0), z };
+  };
+  const zoomAt = (factor: number, cx: number, cy: number) => setView(v => { const z = clamp(v.z * factor, 1, 24); return fit(cx - (cx - v.x) * z / v.z, cy - (cy - v.y) * z / v.z, z); });
+  const center = (at: { x: number; y: number }, z: number) => { const el = box.current; if (!el) return; const { u, v } = worldToMap(at.x, at.y); const size = el.clientWidth * z; setView(fit(el.clientWidth / 2 - u * size, el.clientHeight / 2 - v * size, z)); };
+  useEffect(() => {
+    let first = true;
+    const poll = () => api('myLocation', {}).then(at => { setMe(at); if (!isPreview) setPin(at.waypoint); if (first) { first = false; center(at, 6); } }).catch(() => {});
+    void poll();
+    const timer = window.setInterval(poll, 1000);
+    return () => window.clearInterval(timer);
+  }, []);
+  // The phone is CSS-scaled, so screen px are converted back to the map box's own px.
+  const ratio = () => box.current!.getBoundingClientRect().width / box.current!.clientWidth || 1;
+  const local = (e: { clientX: number; clientY: number }) => { const r = box.current!.getBoundingClientRect(), k = ratio(); return { cx: (e.clientX - r.left) / k, cy: (e.clientY - r.top) / k }; };
+  // Native listener: React's onWheel is passive, so it can't stop the app screen scrolling while you zoom.
+  useEffect(() => {
+    const el = box.current; if (!el) return;
+    const wheel = (e: WheelEvent) => { e.preventDefault(); const { cx, cy } = local(e); zoomAt(e.deltaY < 0 ? 1.25 : 0.8, cx, cy); };
+    el.addEventListener('wheel', wheel, { passive: false });
+    return () => el.removeEventListener('wheel', wheel);
+  }, []);
+  const marker = (at: { x: number; y: number; heading?: number }, className: string, label: string) => { const { u, v } = worldToMap(at.x, at.y); return <span className={className} aria-label={label} style={{ left: `${u * 100}%`, top: `${v * 100}%`, ['--h' as string]: `${-(at.heading ?? 0)}deg` }} />; };
+  return <div ref={box} className="map-graphic" role="application" aria-label="Map. Drag to move, scroll to zoom, tap to set a waypoint."
+    onPointerDown={e => { e.currentTarget.setPointerCapture(e.pointerId); drag.current = { sx: e.clientX, sy: e.clientY, vx: view.x, vy: view.y, moved: false }; }}
+    onPointerMove={e => { const d = drag.current; if (!d) return; const k = ratio(), dx = (e.clientX - d.sx) / k, dy = (e.clientY - d.sy) / k; if (Math.abs(dx) + Math.abs(dy) > 5) d.moved = true; if (d.moved) setView(v => fit(d.vx + dx, d.vy + dy, v.z)); }}
+    onPointerUp={e => { const d = drag.current; drag.current = undefined; if (!d || d.moved || !box.current) return; const { cx, cy } = local(e); const size = box.current.clientWidth * view.z; const at = mapToWorld((cx - view.x) / size, (cy - view.y) / size); const x = Math.round(at.x), y = Math.round(at.y); setPin({ x, y }); onPick(x, y); }}>
+    <div className="map-layer" style={{ transform: `translate(${view.x}px, ${view.y}px) scale(${view.z})`, ['--z' as string]: view.z }}>
+      <img src="./map.jpg" alt="" draggable={false} onError={() => setMissing(true)} />
+      {pin && marker(pin, 'map-pin', 'Waypoint')}
+      {me && marker(me, 'map-me', 'You are here')}
+    </div>
+    {missing && <span className="map-live-note">Add a map image at web/public/map.jpg and rebuild.</span>}
+    <div className="map-controls" onPointerDown={e => e.stopPropagation()} onPointerUp={e => e.stopPropagation()}>
+      <button className="icon-button" aria-label="Zoom in" onClick={() => zoomAt(1.5, box.current!.clientWidth / 2, box.current!.clientHeight / 2)}><Plus size={16} /></button>
+      <button className="icon-button" aria-label="Zoom out" onClick={() => zoomAt(1 / 1.5, box.current!.clientWidth / 2, box.current!.clientHeight / 2)}>−</button>
+      <button className="icon-button" aria-label="Center on me" disabled={!me} onClick={() => me && center(me, Math.max(view.z, 6))}><Navigation size={16} /></button>
+    </div>
+  </div>;
+}
+
 export function GPSScreen() {
   const { device, run, notify, busy } = usePhone();
   const [x, setX] = useState(''); const [y, setY] = useState('');
-  const mapRef = useRef<HTMLDivElement>(null);
-  const lastRect = useRef('');
   const waypoint = (x: number, y: number) => run(async () => { await api('waypoint', { x, y }); notify(isPreview ? 'Waypoint selected in preview' : 'Waypoint set on your map'); });
-  // Reports the map slot's on-screen box so the client can reposition the game's live minimap to sit exactly behind it.
-  useEffect(() => {
-    if (isPreview) return;
-    const report = () => {
-      const box = mapRef.current?.getBoundingClientRect();
-      if (!box || !box.width || !box.height) return;
-      const rect = { x: box.left / window.innerWidth, y: box.top / window.innerHeight, w: box.width / window.innerWidth, h: box.height / window.innerHeight };
-      const key = `${rect.x.toFixed(4)}:${rect.y.toFixed(4)}:${rect.w.toFixed(4)}:${rect.h.toFixed(4)}`;
-      if (key === lastRect.current) return;
-      lastRect.current = key;
-      void api('openMap', rect);
-    };
-    report();
-    // ponytail: polls instead of hooking the phone's drag/resize handlers directly, so the live map follows if you drag or resize the phone while on this screen. Ceiling: up to 300ms of lag behind the phone frame. Upgrade path: call report() straight from the drag/scale handlers in App.tsx.
-    const interval = window.setInterval(report, 300);
-    window.addEventListener('resize', report);
-    return () => { window.clearInterval(interval); window.removeEventListener('resize', report); lastRect.current = ''; void api('closeMap', {}); };
-  }, []);
   return <>
-    <div ref={mapRef} className="map-graphic">{isPreview && <span className="map-live-note">The live map renders here in-game.</span>}</div>
+    <LiveMap onPick={waypoint} />
     <p className="section-label">PLACES TO BE</p>
     <div className="panel">{device.locations.map(place => <Row key={place.label} title={place.label} detail={`${place.x.toFixed(0)}, ${place.y.toFixed(0)}`} icon={<MapPin size={20} />} onClick={() => waypoint(place.x, place.y)} />)}{!device.locations.length && <p className="muted">No saved places yet.</p>}</div>
     <form className="panel form" onSubmit={e => { e.preventDefault(); waypoint(Number(x), Number(y)); }}><h3>Go somewhere new</h3><div className="two-fields"><label>X coordinate<input required type="number" step="any" min="-20000" max="20000" value={x} onChange={e => setX(e.target.value)} /></label><label>Y coordinate<input required type="number" step="any" min="-20000" max="20000" value={y} onChange={e => setY(e.target.value)} /></label></div><button className="primary" disabled={busy}><Navigation size={17} />Set waypoint</button></form>

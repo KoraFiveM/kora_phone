@@ -60,9 +60,8 @@ export type Api = {
   capture: [Record<string, never>, DeviceData]; deletePhoto: [{ id: string }, DeviceData];
   blocked: [Record<string, never>, string[]]; setBlocked: [{ number: string; blocked: boolean }, boolean];
   mailList: [{ box: 'inbox' | 'sent'; before?: number }, MailItem[]]; mailSend: [{ to: string; subject: string; body: string }, boolean]; mailRead: [{ id: number }, boolean]; mailDelete: [{ id: number }, boolean];
-  wallet: [Record<string, never>, WalletCard]; showWallet: [Record<string, never>, { shown: boolean }]; myLocation: [Record<string, never>, { x: number; y: number; label: string }];
+  wallet: [Record<string, never>, WalletCard]; showWallet: [Record<string, never>, { shown: boolean }]; myLocation: [Record<string, never>, { x: number; y: number; label: string; heading?: number; waypoint?: { x: number; y: number } }];
   waypoint: [{ x: number; y: number }, boolean]; weather: [Record<string, never>, Weather];
-  openMap: [{ x: number; y: number; w: number; h: number }, boolean]; closeMap: [Record<string, never>, boolean];
   videoSignal: [{ id: string; kind: 'offer' | 'answer' | 'ice'; sdp?: RTCSessionDescriptionInit; candidate?: RTCIceCandidateInit }, boolean];
 };
 export type Response<T> = { ok: true; data: T } | { ok: false; error: string };
