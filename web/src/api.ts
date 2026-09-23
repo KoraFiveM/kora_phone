@@ -10,7 +10,10 @@ export const requestId = () => crypto.randomUUID();
 const aliases: Record<string,string> = { uiReady:'phone:ready', close:'phone:close', captureDone:'camera:close' };
 export async function nui<T>(route:string, body:unknown={}):Promise<T>{
   if(isPreview) return {ok:true} as T;
-  const response=await fetch(`https://${window.GetParentResourceName!()}/${aliases[route]||route}`,{method:'POST',headers:{'Content-Type':'application/json; charset=UTF-8'},body:JSON.stringify(body),signal:AbortSignal.timeout(33000)});
+  // FiveM's embedded CEF predates AbortSignal.timeout (Chromium 103+); it is undefined there,
+  // which used to throw on every request before any fetch was attempted. Fall back to no signal.
+  const signal = typeof AbortSignal !== 'undefined' && typeof AbortSignal.timeout === 'function' ? AbortSignal.timeout(33000) : undefined;
+  const response=await fetch(`https://${window.GetParentResourceName!()}/${aliases[route]||route}`,{method:'POST',headers:{'Content-Type':'application/json; charset=UTF-8'},body:JSON.stringify(body),signal});
   if(!response.ok) throw new Error('Phone connection unavailable'); return response.json();
 }
 // Fire-and-forget: the server relays this to whoever is on the other end of the active call.
