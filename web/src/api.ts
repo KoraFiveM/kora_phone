@@ -121,8 +121,7 @@ async function execute(action:keyof Api,p:any,id:string):Promise<any>{switch(act
     if(remove)await server('items:remove',{kind,id:p.id});else await server('items:save',{kind,item});
     const rest=(cached[key] as {id:string}[]).filter(x=>x.id!==p.id);cached={...cached,[key]:remove?rest:[item,...rest]};return cached}
 case'waypoint':await server('waypoint',{x:p.x,y:p.y});return true;
-  case'openMap':await server('map:open',{x:p.x,y:p.y,w:p.w,h:p.h});return true;case'closeMap':await server('map:close',{});return true;
-  case'videoSignal':await server('calls:signal',{id:p.id,kind:p.kind,sdp:p.sdp,candidate:p.candidate});return true;
+    case'videoSignal':await server('calls:signal',{id:p.id,kind:p.kind,sdp:p.sdp,candidate:p.candidate});return true;
   case'wallet':return server('wallet:get');case'showWallet':return server('wallet:show');case'myLocation':return server('location:mine');default:throw new Error(`${String(action)} is not supported by QBPhone v1`)
 }}
 export type{Response};

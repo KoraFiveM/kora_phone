@@ -156,10 +156,9 @@ export async function mockRequest<K extends keyof Api>(action: K, payload: Api[K
     case 'weather': result = { condition: 'EXTRASUNNY', hour: 10, minute: 8, rain: 0 }; break;
     case 'waypoint': break;
     case 'videoSignal': break;
-    case 'openMap': case 'closeMap': result = true; break;
     case 'wallet': result = { name: 'Charlie Parker', citizenId: 'ABC12345', birthdate: '1994-03-12', gender: 'Male', nationality: 'American', job: 'Police', licences: [{ id: 'driver', label: 'Driver licence', valid: true }, { id: 'weapon', label: 'Firearms licence', valid: false }, { id: 'business', label: 'Business licence', valid: false }] }; break;
     case 'showWallet': result = { shown: true }; break;
-    case 'myLocation': result = { x: 195.2, y: -933.8, label: 'Legion Square, Downtown Vinewood' }; break;
+    case 'myLocation': result = { x: 195.2, y: -933.8, label: 'Legion Square, Downtown Vinewood', heading: 45 }; break;
     case 'conversations': result = store.conversations.slice().sort((a, b) => new Date(b.last_at || 0).getTime() - new Date(a.last_at || 0).getTime()); break;
     case 'startChat': {
       const target = String(p.number);

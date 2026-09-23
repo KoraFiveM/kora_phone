@@ -39,7 +39,6 @@ end
 
 function QBPhone.Close(force)
     QBPhone.Camera.Cleanup()
-    QBPhone.Map.Cleanup()
     TriggerServerEvent('qbphone:server:phone:closed')
     QBPhone.State.open = false
     QBPhone.State.currentApp = nil

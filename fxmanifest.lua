@@ -59,6 +59,7 @@ files {
     'web/dist/index.html',
     'web/dist/assets/*',
     'web/dist/compat.js',
+    'web/dist/map.jpg',
     'local-media/*'
 }
 
