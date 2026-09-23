@@ -95,7 +95,7 @@ The pepper makes stored PINs harder to crack if your database ever leaks. Change
 
 ## Working on the code
 
-The phone's screens are React and TypeScript in `web/src`, built into `web/dist`, which is committed so the resource runs straight from a clone.
+The phone's screens are React and TypeScript in `web/src`, built into `web/dist` (not committed; run the build below, or use the release zip).
 
 ```bash
 cd web

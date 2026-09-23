@@ -9,7 +9,7 @@ import { DotClock, PageHeader } from './components';
 import { LockLogo, QbMark } from './LockLogo';
 import { CoverBackdrop } from './CoverArt';
 import { imageUrl } from './Images';
-import { PhoneContext, usePhone } from './PhoneContext';
+import { PhoneContext } from './PhoneContext';
 import { appCopy } from './locales';
 import { StoreScreen } from './Store';
 import { PhotoImage } from './Images';
@@ -84,9 +84,8 @@ function AppIcon({ id, onClick, dock = false, badge = 0, editing = false, draggi
   id: AppId; onClick: () => void; dock?: boolean; badge?: number; editing?: boolean; dragging?: boolean; over?: boolean;
   onDragStart?: (e: DragEvent<HTMLButtonElement>) => void; onDragOver?: (e: DragEvent<HTMLButtonElement>) => void; onDrop?: (e: DragEvent<HTMLButtonElement>) => void; onDragEnd?: (e: DragEvent<HTMLButtonElement>) => void;
 }) {
-  const { device } = usePhone();
   const { icon: Icon } = iconOf(id);
-  const { label } = appCopy(id, device.locale);
+  const { label } = appCopy(id);
   return <button draggable={editing} onDragStart={onDragStart} onDragOver={onDragOver} onDrop={onDrop} onDragEnd={onDragEnd} onClick={onClick} className={`app-icon ${dock ? 'dock-icon' : ''} app-${id} ${editing ? 'jiggle' : ''} ${dragging ? 'dragging' : ''} ${over ? 'drop-target' : ''}`} aria-label={`Open ${label}`}><span><Icon size={25} strokeWidth={1.6} /></span>{badge > 0 && <b className="app-badge" aria-label={`${badge} new`}>{badge > 9 ? '9+' : badge}</b>}{!dock && <small>{label}</small>}{editing && <i className="edit-handle" aria-hidden="true" />}</button>;
 }
 function useTime() { const [date, setDate] = useState(new Date()); useEffect(() => { const timer = setInterval(() => setDate(new Date()), 1000); return () => clearInterval(timer); }, []); return date; }
@@ -410,7 +409,7 @@ export default function App() {
     });
   };
   const stopPhoneDrag = () => { phoneDrag.current = null; };
-  const meta = appCopy(app, device?.locale);
+  const meta = appCopy(app);
   const active = call && ['ringing', 'active'].includes(call.status);
   const unread = (id: AppId) => notifications.filter(n => n.app === id).reduce((total, n) => total + (n.count ?? 1), 0);
   const notificationCard = (n: Notification) => <><NotificationIcon id={n.app} /><span><strong>{data.contacts.find(c => c.number === n.title)?.name ?? n.title}</strong><small>{n.body}</small></span>{n.count && n.count > 1 && <b className="notification-count">{n.count}</b>}{n.at && <time>{new Date(n.at).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })}</time>}</>;

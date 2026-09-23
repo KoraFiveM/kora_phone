@@ -4,7 +4,6 @@ Config.Server = {
     AutoMigrate = true,
     AutoProvisionDevice = true,
     DatabaseReadyTimeoutMs = 15000,
-    MessageBatchLimit = 100,
     RateLimits = {
         bootstrap = { capacity = 4, refillPerSecond = 0.5 },
         read = { capacity = 25, refillPerSecond = 8 },

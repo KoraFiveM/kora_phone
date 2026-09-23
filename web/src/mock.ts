@@ -48,7 +48,7 @@ let reports: (ModerationReport & { targetId: number })[] = [{ id: 1, targetType:
 const completed = new Map<string, unknown>();
 function save() { localStorage.setItem(key, JSON.stringify(store)); }
 export function previewBootstrap(): Bootstrap {
-  return { id: 'preview-device', number, locked: !!store.pin, hasPin: !!store.pin, data: store.pin ? undefined : structuredClone(store.data), preferences: structuredClone(store.data.settings), locale: 'en',
+  return { id: 'preview-device', number, locked: !!store.pin, hasPin: !!store.pin, data: store.pin ? undefined : structuredClone(store.data), preferences: structuredClone(store.data.settings),
     transfers: true, capabilities: { banking: true, camera: true, property: true, vehicles: true, weather: true, moderation: true }, unavailable: {}, admin: true, moderator: true, video: { iceServers: [] },
     locations: [{ label: 'Legion Square', x: 195.2, y: -933.8 }, { label: 'Pillbox Medical', x: 298.5, y: -584.4 }, { label: 'Mission Row Police', x: 425.1, y: -979.5 }], services: [], call: activeCall,
     flash: { maxSeconds: 12 } };

@@ -72,7 +72,6 @@ function Phone.bootstrap(source)
     return PhoneResult({
         device = deviceInfo,
         security = { hasPin = hasPin(device), locked = false },
-        locale = Config.Locale,
         moderator = QBPhone.Services.Moderation.isModerator(source),
         -- Same permission as moderator: lets the feed's own delete buttons remove someone
         -- else's post/comment directly, instead of only through a filed report.
