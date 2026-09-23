@@ -145,23 +145,16 @@ RegisterNUICallback('customLifecycle', function(data, cb)
     cb({ ok = true })
 end)
 
-RegisterNUICallback('map:open', function(data, cb)
-    data = type(data) == 'table' and data or {}
-    cb({ ok = QBPhone.Map.Show(tonumber(data.x), tonumber(data.y), tonumber(data.w), tonumber(data.h)) == true })
-end)
-
-RegisterNUICallback('map:close', function(_, cb)
-    QBPhone.Map.Hide()
-    cb({ ok = true })
-end)
-
 -- Location sharing: the UI asks where the player is and, on the receiving side, sets a waypoint.
 RegisterNUICallback('location:mine', function(_, cb)
     local at = QB.cache.coords()
     local street = GetStreetNameFromHashKey((GetStreetNameAtCoord(at.x, at.y, at.z)))
     local zone = GetLabelText(GetNameOfZone(at.x, at.y, at.z))
     local label = (street ~= '' and zone ~= 'NULL' and (street .. ', ' .. zone)) or (street ~= '' and street) or (zone ~= 'NULL' and zone) or 'Shared location'
-    cb({ ok = true, data = { x = math.floor(at.x * 10 + 0.5) / 10, y = math.floor(at.y * 10 + 0.5) / 10, label = label:gsub('[%[%]|]', ''):sub(1, 60) } })
+    -- heading and the game's current waypoint (blip sprite 8) feed the Maps app's arrow and pin
+    local blip, waypoint = GetFirstBlipInfoId(8), nil
+    if DoesBlipExist(blip) then local w = GetBlipInfoIdCoord(blip); waypoint = { x = math.floor(w.x + 0.5), y = math.floor(w.y + 0.5) } end
+    cb({ ok = true, data = { x = math.floor(at.x * 10 + 0.5) / 10, y = math.floor(at.y * 10 + 0.5) / 10, label = label:gsub('[%[%]|]', ''):sub(1, 60), heading = math.floor(GetEntityHeading(QB.cache.ped()) + 0.5), waypoint = waypoint } })
 end)
 
 RegisterNUICallback('waypoint', function(data, cb)
