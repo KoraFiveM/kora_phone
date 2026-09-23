@@ -4,6 +4,16 @@ A phone for QBCore servers: calls, texts, mail, a real map, banking, a marketpla
 
 The rule the whole thing is built on: **the server decides, the phone only asks.** Phone numbers, money, jobs, PINs and who can see what are all checked on the server, so a modified client can't send money it doesn't have or read someone else's messages.
 
+<p align="center">
+  <img src="docs/images/home.png" width="160" alt="Home screen with a dot-matrix clock, app icons and the dock">
+  <img src="docs/images/maps.png" width="160" alt="Maps app showing a road map of downtown Los Santos with your position">
+  <img src="docs/images/messages.png" width="160" alt="A text conversation in Messages">
+  <img src="docs/images/wallet.png" width="160" alt="Wallet showing a bank balance and the send money form">
+  <img src="docs/images/setup.png" width="160" alt="First-time setup showing the new phone number">
+</p>
+
+<p align="center"><sub>Screenshots from the browser demo (<code>npm run dev</code>) with its sample data, in the QBCore theme.</sub></p>
+
 ## Quick start
 
 1. Download `qbphone-vX.Y.Z.zip` from the [latest release](../../releases/latest) and unzip it into your `resources` folder. It unpacks as `qbphone/`.
