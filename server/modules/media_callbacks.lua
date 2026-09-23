@@ -17,11 +17,7 @@ local function registerAsync(name, rateKey, handler)
     end)
 end
 
-local function registerSync(name, rateKey, handler)
-    registerAsync(name, rateKey, function(source, payload, reply) reply(handler(source, payload)) end)
-end
-
 registerAsync('requestMediaUpload', 'mediaUpload', QBPhone.Services.Media.requestUpload)
 registerAsync('completeMediaUpload', 'mediaUpload', QBPhone.Services.Media.completeUpload)
-registerSync('getGallery', 'read', QBPhone.Services.Media.list)
+QBPhone.registerCallback('getGallery', 'read', QBPhone.Services.Media.list)
 registerAsync('deleteMedia', 'mutation', QBPhone.Services.Media.delete)

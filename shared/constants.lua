@@ -1,6 +1,4 @@
 PhoneConstants = {
-    ConversationType = { DIRECT = 'direct', GROUP = 'group' },
-    MessageType = { TEXT = 'text', IMAGE = 'image', LOCATION = 'location', SYSTEM = 'system' },
     Errors = {
         INTERNAL = 'INTERNAL_ERROR', INVALID_INPUT = 'INVALID_INPUT', UNAUTHORIZED = 'UNAUTHORIZED',
         NOT_FOUND = 'NOT_FOUND', RATE_LIMITED = 'RATE_LIMITED', PHONE_REQUIRED = 'PHONE_REQUIRED',

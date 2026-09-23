@@ -30,7 +30,7 @@ function Messages.createDirectConversation(deviceA, deviceB)
         conversationId = MySQL.scalar.await('SELECT id FROM phone_conversations WHERE direct_key = ? LIMIT 1', { key })
     end
     if not conversationId then return nil end
-    local ok = QBPhone.Database.transaction({
+    local ok = MySQL.transaction.await({
         { query = 'INSERT IGNORE INTO phone_conversation_members (conversation_id, device_id) VALUES (?, ?)', values = { conversationId, deviceA } },
         { query = 'INSERT IGNORE INTO phone_conversation_members (conversation_id, device_id) VALUES (?, ?)', values = { conversationId, deviceB } },
     })
@@ -122,7 +122,7 @@ function Messages.createGroup(creatorId, title, deviceIds)
     for _, deviceId in ipairs(deviceIds) do
         queries[#queries + 1] = { query = 'INSERT IGNORE INTO phone_conversation_members (conversation_id, device_id) VALUES (?, ?)', values = { id, deviceId } }
     end
-    if QBPhone.Database.transaction(queries) then return id end
+    if MySQL.transaction.await(queries) then return id end
     MySQL.update.await('DELETE FROM phone_conversations WHERE id = ? AND created_by_device_id = ?', { id, creatorId })
     return nil
 end

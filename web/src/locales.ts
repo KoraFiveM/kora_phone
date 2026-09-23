@@ -25,6 +25,4 @@ const en: AppCopy = {
   settings: { label: 'Settings', subtitle: 'Unmistakably yours.' },
   moderation: { label: 'Moderation', subtitle: 'Keep the city civil.' },
 };
-// Add complete dictionaries here. Unknown locale names fall back to English.
-export const locales: Record<string, AppCopy> = { en };
-export const appCopy = (id: AppId, locale = 'en') => id === 'home' ? { label: 'Home', subtitle: '' } : (locales[locale] || en)[id];
+export const appCopy = (id: AppId) => id === 'home' ? { label: 'Home', subtitle: '' } : en[id];
