@@ -342,10 +342,11 @@ export default function App() {
     // The NUI page loads immediately at resource start, but the client script can still be
     // mid-registration at that exact moment — retry the handshake instead of failing once.
     void (async () => {
+      let lastError: unknown;
       for (let attempt = 0; attempt < 20 && !cancelled; attempt++) {
-        try { await nui('phone:ready'); return; } catch { await new Promise(resolve => setTimeout(resolve, 500)); }
+        try { await nui('phone:ready'); return; } catch (error) { lastError = error; await new Promise(resolve => setTimeout(resolve, 500)); }
       }
-      if (!cancelled) console.error('[nothing-phone] UI handshake failed after multiple attempts');
+      if (!cancelled) console.error('[qbphone] UI handshake failed after multiple attempts', lastError);
     })();
     return () => { cancelled = true; };
   }, []);
