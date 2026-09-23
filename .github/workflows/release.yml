@@ -1,7 +1,8 @@
 name: Release
 
-# Bumps the version, tags it, and cuts a GitHub Release on every push to main.
-# Skips its own bump commit (tagged [skip ci]) so it doesn't trigger itself again.
+# Tags the next version and cuts a GitHub Release on every push to main.
+# The version is stamped into the packaged fxmanifest.lua only; nothing is committed
+# back to main, so main's history stays free of release bumps.
 
 on:
   push:
@@ -10,46 +11,27 @@ on:
 permissions:
   contents: write
 
-# One release at a time: overlapping runs would each bump from a stale checkout.
+# One release at a time: overlapping runs would compute the same next version.
 concurrency:
   group: release
   cancel-in-progress: false
 
 jobs:
   release:
-    if: "!contains(github.event.head_commit.message, '[skip ci]')"
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
         with:
-          ref: main # not the triggering SHA: an earlier run may have pushed a bump since
           fetch-depth: 0
 
       # Reads commit messages since the last tag to pick the next version
-      # (#major / #minor bump it up; anything else is a patch bump), without
-      # creating the tag yet -- fxmanifest.lua needs to carry that version first.
-      - name: Compute next version
+      # (#major / #minor bump it up; anything else is a patch bump) and tags this commit.
+      - name: Tag next version
         id: tag
         uses: mathieudutour/github-tag-action@v6.2
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           default_bump: patch
-          dry_run: true
-
-      - name: Bump fxmanifest.lua version
-        run: |
-          sed -i "s/^version '.*'/version '${{ steps.tag.outputs.new_version }}'/" fxmanifest.lua
-          git config user.name 'github-actions[bot]'
-          git config user.email 'github-actions[bot]@users.noreply.github.com'
-          git add fxmanifest.lua
-          git commit -m "chore: release ${{ steps.tag.outputs.new_tag }} [skip ci]"
-          git pull --rebase origin main
-          git push origin HEAD:main
-
-      - name: Tag the release commit
-        run: |
-          git tag ${{ steps.tag.outputs.new_tag }}
-          git push origin ${{ steps.tag.outputs.new_tag }}
 
       - uses: actions/setup-node@v4
         with:
@@ -66,6 +48,7 @@ jobs:
           mkdir -p pkg/qbphone/web
           cp -r fxmanifest.lua README.md client config server shared migrations local-media pkg/qbphone/
           cp -r web/dist pkg/qbphone/web/
+          sed -i "s/^version '.*'/version '${{ steps.tag.outputs.new_version }}'/" pkg/qbphone/fxmanifest.lua
           cd pkg && zip -r ../qbphone-${{ steps.tag.outputs.new_tag }}.zip qbphone
 
       - name: Create GitHub Release
