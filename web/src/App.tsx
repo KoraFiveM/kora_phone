@@ -9,7 +9,7 @@ import { DotClock, PageHeader } from './components';
 import { LockLogo, QbMark } from './LockLogo';
 import { CoverBackdrop } from './CoverArt';
 import { imageUrl } from './Images';
-import { PhoneContext, usePhone } from './PhoneContext';
+import { PhoneContext } from './PhoneContext';
 import { appCopy } from './locales';
 import { StoreScreen } from './Store';
 import { PhotoImage } from './Images';
@@ -84,9 +84,8 @@ function AppIcon({ id, onClick, dock = false, badge = 0, editing = false, draggi
   id: AppId; onClick: () => void; dock?: boolean; badge?: number; editing?: boolean; dragging?: boolean; over?: boolean;
   onDragStart?: (e: DragEvent<HTMLButtonElement>) => void; onDragOver?: (e: DragEvent<HTMLButtonElement>) => void; onDrop?: (e: DragEvent<HTMLButtonElement>) => void; onDragEnd?: (e: DragEvent<HTMLButtonElement>) => void;
 }) {
-  const { device } = usePhone();
   const { icon: Icon } = iconOf(id);
-  const { label } = appCopy(id, device.locale);
+  const { label } = appCopy(id);
   return <button draggable={editing} onDragStart={onDragStart} onDragOver={onDragOver} onDrop={onDrop} onDragEnd={onDragEnd} onClick={onClick} className={`app-icon ${dock ? 'dock-icon' : ''} app-${id} ${editing ? 'jiggle' : ''} ${dragging ? 'dragging' : ''} ${over ? 'drop-target' : ''}`} aria-label={`Open ${label}`}><span><Icon size={25} strokeWidth={1.6} /></span>{badge > 0 && <b className="app-badge" aria-label={`${badge} new`}>{badge > 9 ? '9+' : badge}</b>}{!dock && <small>{label}</small>}{editing && <i className="edit-handle" aria-hidden="true" />}</button>;
 }
 function useTime() { const [date, setDate] = useState(new Date()); useEffect(() => { const timer = setInterval(() => setDate(new Date()), 1000); return () => clearInterval(timer); }, []); return date; }
@@ -342,10 +341,11 @@ export default function App() {
     // The NUI page loads immediately at resource start, but the client script can still be
     // mid-registration at that exact moment — retry the handshake instead of failing once.
     void (async () => {
+      let lastError: unknown;
       for (let attempt = 0; attempt < 20 && !cancelled; attempt++) {
-        try { await nui('phone:ready'); return; } catch { await new Promise(resolve => setTimeout(resolve, 500)); }
+        try { await nui('phone:ready'); return; } catch (error) { lastError = error; await new Promise(resolve => setTimeout(resolve, 500)); }
       }
-      if (!cancelled) console.error('[nothing-phone] UI handshake failed after multiple attempts');
+      if (!cancelled) console.error('[qbphone] UI handshake failed after multiple attempts', lastError);
     })();
     return () => { cancelled = true; };
   }, []);
@@ -409,7 +409,7 @@ export default function App() {
     });
   };
   const stopPhoneDrag = () => { phoneDrag.current = null; };
-  const meta = appCopy(app, device?.locale);
+  const meta = appCopy(app);
   const active = call && ['ringing', 'active'].includes(call.status);
   const unread = (id: AppId) => notifications.filter(n => n.app === id).reduce((total, n) => total + (n.count ?? 1), 0);
   const notificationCard = (n: Notification) => <><NotificationIcon id={n.app} /><span><strong>{data.contacts.find(c => c.number === n.title)?.name ?? n.title}</strong><small>{n.body}</small></span>{n.count && n.count > 1 && <b className="notification-count">{n.count}</b>}{n.at && <time>{new Date(n.at).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })}</time>}</>;
@@ -447,7 +447,7 @@ export default function App() {
     {isPreview && <><header className="preview-header"><a className="brand" href="#" onClick={e => { e.preventDefault(); navigate('home'); }}>NOTHING <span>( PHONE )</span></a><span className="preview-build"><i />QBCORE EDITION <span>/</span> 001</span></header><aside className="preview-intro"><p className="eyebrow"><span className="red-dot" />LESS NOISE. MORE LIFE.</p><h1>Your city.<br />Your people.<br /><span>Your phone.</span></h1><p className="intro-description">Everything you need to feel connected.<br />Nothing to get in the way.</p><div className="intro-rule" /><div className="preview-features"><div><span>01</span><p>Made for the moments<br />between the missions.</p></div><div><span>02</span><p>One device. Your number.<br />A whole city within reach.</p></div></div><div className="preview-controls"><button onClick={() => { if (!shown) apply(previewBootstrap()); else void lock(); }}><LockKeyhole size={15} />{shown ? 'Lock phone' : 'Open phone'}</button><button onClick={() => { if (!shown) apply(previewBootstrap()); previewIncoming(); }}><PhoneIncoming size={15} />Try a call</button><button onClick={resetPreview} aria-label="Reset preview data"><SlidersHorizontal size={15} />Reset</button></div><p className="demo-caption">INTERACTIVE PREVIEW / SAMPLE DATA</p></aside><footer className="preview-footer"><span>DESIGNED TO GET OUT OF YOUR WAY.</span><span>LOS SANTOS <ArrowUpRight size={13} /></span></footer></>}
     <div ref={phoneStage} className="phone-stage" style={!isPreview && phonePosition ? { left: phonePosition.x, top: phonePosition.y, right: 'auto', bottom: 'auto' } : undefined}>
       {!shown && isPreview && <button className="reopen" onClick={() => apply(previewBootstrap())}><Power size={24} />Open phone</button>}
-      {shown && device && <div className="phone-scale" style={{ width: 370 * scale, height: phoneHeight * scale }}><div ref={phoneRef} className={`phone ${flip ? 'style-flip' : ''} ${flip && folded ? 'is-folded' : ''} ${unfolding ? 'is-unfolding' : ''} ${app === 'home' ? 'on-home' : ''} ${app === 'gps' ? 'map-open' : ''} ${hiddenCapture ? 'capture-hidden' : ''} theme-${data.settings.theme || 'qbcore'}`} style={{ '--phone-scale': scale } as CSSProperties}>
+      {shown && device && <div className="phone-scale" style={{ width: 370 * scale, height: phoneHeight * scale }}><div ref={phoneRef} className={`phone ${flip ? 'style-flip' : ''} ${flip && folded ? 'is-folded' : ''} ${unfolding ? 'is-unfolding' : ''} ${app === 'home' ? 'on-home' : ''} ${hiddenCapture ? 'capture-hidden' : ''} theme-${data.settings.theme || 'qbcore'}`} style={{ '--phone-scale': scale } as CSSProperties}>
         <div className="side-key volume-up" /><div className="side-key volume-down" /><div className="side-key power-key" />
         <div ref={screenRef} inert={flip && folded} aria-hidden={flip && folded} className={`phone-screen ${!locked && !data.settings.setupComplete ? 'in-setup' : locked || app === 'home' ? 'show-wallpaper' : ''} ${isDarkTheme(data.settings.theme || 'qbcore') ? 'theme-dark' : ''} theme-${data.settings.theme || 'qbcore'} wallpaper-${data.settings.wallpaper} icons-${data.settings.iconStyle ?? 'circle'}`}>
           {(locked || app === 'home') && data.settings.wallpaper === 'custom' && data.settings.wallpaperUrl && <PhotoImage src={data.settings.wallpaperUrl} className="custom-wallpaper" />}

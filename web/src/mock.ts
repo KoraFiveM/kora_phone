@@ -48,7 +48,7 @@ let reports: (ModerationReport & { targetId: number })[] = [{ id: 1, targetType:
 const completed = new Map<string, unknown>();
 function save() { localStorage.setItem(key, JSON.stringify(store)); }
 export function previewBootstrap(): Bootstrap {
-  return { id: 'preview-device', number, locked: !!store.pin, hasPin: !!store.pin, data: store.pin ? undefined : structuredClone(store.data), preferences: structuredClone(store.data.settings), locale: 'en',
+  return { id: 'preview-device', number, locked: !!store.pin, hasPin: !!store.pin, data: store.pin ? undefined : structuredClone(store.data), preferences: structuredClone(store.data.settings),
     transfers: true, capabilities: { banking: true, camera: true, property: true, vehicles: true, weather: true, moderation: true }, unavailable: {}, admin: true, moderator: true, video: { iceServers: [] },
     locations: [{ label: 'Legion Square', x: 195.2, y: -933.8 }, { label: 'Pillbox Medical', x: 298.5, y: -584.4 }, { label: 'Mission Row Police', x: 425.1, y: -979.5 }], services: [], call: activeCall,
     flash: { maxSeconds: 12 } };
@@ -156,10 +156,9 @@ export async function mockRequest<K extends keyof Api>(action: K, payload: Api[K
     case 'weather': result = { condition: 'EXTRASUNNY', hour: 10, minute: 8, rain: 0 }; break;
     case 'waypoint': break;
     case 'videoSignal': break;
-    case 'openMap': case 'closeMap': result = true; break;
     case 'wallet': result = { name: 'Charlie Parker', citizenId: 'ABC12345', birthdate: '1994-03-12', gender: 'Male', nationality: 'American', job: 'Police', licences: [{ id: 'driver', label: 'Driver licence', valid: true }, { id: 'weapon', label: 'Firearms licence', valid: false }, { id: 'business', label: 'Business licence', valid: false }] }; break;
     case 'showWallet': result = { shown: true }; break;
-    case 'myLocation': result = { x: 195.2, y: -933.8, label: 'Legion Square, Downtown Vinewood' }; break;
+    case 'myLocation': result = { x: 195.2, y: -933.8, label: 'Legion Square, Downtown Vinewood', heading: 45 }; break;
     case 'conversations': result = store.conversations.slice().sort((a, b) => new Date(b.last_at || 0).getTime() - new Date(a.last_at || 0).getTime()); break;
     case 'startChat': {
       const target = String(p.number);

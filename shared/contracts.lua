@@ -16,19 +16,6 @@ function PhoneContracts.contact(payload)
     return { id = id, displayName = name, phoneNumber = number, isFavorite = payload.isFavorite == true, avatarMediaId = avatarMediaId }
 end
 
-PhoneContracts.Routes = {
-    calls = { 'calls:start', 'calls:accept', 'calls:reject', 'calls:hangup', 'calls:history' },
-    gallery = { 'gallery:list', 'gallery:delete', 'camera:capture' },
-    bank = { 'bank:getData', 'bank:getTransactions', 'bank:transfer' },
-    jobs = { 'jobs:getData', 'jobs:setDuty', 'jobs:runAction' },
-    social = { 'social:createAccount', 'social:getFeed', 'social:getProfile', 'social:createPost',
-        'social:deletePost', 'social:toggleLike', 'social:follow', 'social:unfollow',
-        'social:createComment', 'social:getComments', 'social:block', 'social:report' },
-    market = { 'market:getListings', 'market:getListing', 'market:createListing',
-        'market:updateListing', 'market:removeListing', 'market:markSold', 'market:contactSeller' },
-    moderation = { 'moderation:getQueue', 'moderation:resolve' }
-}
-
 function PhoneContracts.message(payload)
     if type(payload) ~= 'table' then return nil, 'payload must be an object' end
     local recipient, conversationId, err

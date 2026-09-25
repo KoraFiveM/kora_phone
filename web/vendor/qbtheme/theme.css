@@ -1,0 +1,191 @@
+:root {
+  /* Do not request a dark browser colour scheme here. In FiveM CEF it can colour the
+     browser canvas itself, turning otherwise transparent NUI pages opaque. */
+  --background: 0 0% 6.3%;
+  --foreground: 0 0% 96.1%;
+  --card: 0 0% 9%;
+  --card-foreground: 0 0% 96.1%;
+  --popover: 0 0% 10.6%;
+  --popover-foreground: 0 0% 96.1%;
+  --primary: 84.9 100% 50%;
+  --primary-foreground: 0 0% 6.3%;
+  --secondary: 0 0% 14.1%;
+  --secondary-foreground: 0 0% 96.1%;
+  --muted: 0 0% 14.1%;
+  --muted-foreground: 0 0% 58%;
+  --accent: 0 0% 16.5%;
+  --accent-foreground: 0 0% 96.1%;
+  --destructive: 0 84.2% 60.2%;
+  --danger: 0 84.2% 60.2%;
+  --destructive-foreground: 0 0% 6.3%;
+  --border: 0 0% 20.4%;
+  --border-strong: 0 0% 26.7%;
+  --input: 0 0% 40%;
+  --control-border: 0 0% 40%;
+  --control-border-hover: 0 0% 47.8%;
+  --ring: 84.9 100% 50%;
+  --focus-ring: 84.9 100% 50% / 0.55;
+  --selection: 84.9 100% 50% / 0.35;
+  --brand-hover: 84.9 100% 44.9%;
+  --brand-pressed: 84.9 100% 39.4%;
+  --brand-soft: 84.9 100% 50% / 0.14;
+  --brand-border: 84.9 100% 50% / 0.45;
+  --surface: 0 0% 9% / 0.97;
+  --surface-raised: 0 0% 14.1%;
+  --surface-panel: 0 0% 14.1% / 0.98;
+  --surface-hover: 0 0% 16.5%;
+  --modal-overlay: 0 0% 6.3% / 0.68;
+  --hud: 0 0% 9% / 0.72;
+  --success: 142.1 70.6% 45.3%;
+  --success-soft: 142.1 70.6% 45.3% / 0.14;
+  --success-border: 142.1 70.6% 45.3% / 0.45;
+  --success-foreground: 0 0% 6.3%;
+  --warning: 37.7 92.1% 50.2%;
+  --warning-soft: 37.7 92.1% 50.2% / 0.14;
+  --warning-border: 37.7 92.1% 50.2% / 0.45;
+  --warning-foreground: 0 0% 6.3%;
+  --destructive-soft: 0 84.2% 60.2% / 0.14;
+  --destructive-border: 0 84.2% 60.2% / 0.45;
+  --info: 0 0% 83.1%;
+  --info-soft: 0 0% 83.1% / 0.14;
+  --info-border: 0 0% 83.1% / 0.45;
+  --info-foreground: 0 0% 6.3%;
+  --armour: 209.7 100% 61.6%;
+  --secondary-text: 0 0% 83.1%;
+
+  --font-sans: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  --font-mono: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+  --space: 0.25rem;
+  --space-1: 0.25rem;
+  --space-2: 0.5rem;
+  --space-3: 0.75rem;
+  --space-4: 1rem;
+  --space-6: 1.5rem;
+  --radius-sm: 0.375rem;
+  --radius: 0.625rem;
+  --radius-lg: 0.8125rem;
+  --radius-full: 9999px;
+  --shadow-low: 0 4px 12px rgb(0 0 0 / 28%);
+  --shadow-floating: 0 12px 32px rgb(0 0 0 / 42%);
+  --shadow-modal: 0 24px 64px rgb(0 0 0 / 55%);
+  --duration-fast: 120ms;
+  --duration-popover: 160ms;
+  --duration-dialog: 180ms;
+  --ease-entry: cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+::selection {
+  background: hsl(var(--selection));
+  color: hsl(var(--foreground));
+}
+
+:where(*, *::before, *::after) { box-sizing: border-box; }
+
+:where(html, body) {
+  margin: 0;
+  /* NUI pages are composited over the game. Individual components own their
+     surfaces; the document itself must never paint a fullscreen backdrop. */
+  background: transparent !important;
+  color: hsl(var(--foreground));
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+:where(button, input, select, textarea) {
+  border: 1px solid hsl(var(--control-border));
+  border-radius: var(--radius-sm);
+  background: hsl(var(--surface-raised));
+  color: inherit;
+  font: inherit;
+  outline: none;
+  transition: border-color var(--duration-fast), background-color var(--duration-fast), color var(--duration-fast), box-shadow var(--duration-fast), transform var(--duration-fast);
+}
+
+:where(input, select, textarea) { padding: calc(var(--space) * 2) calc(var(--space) * 2.5); }
+:where(input[type="checkbox"], input[type="radio"], input[type="range"]) { accent-color: hsl(var(--primary)); }
+:where(textarea) { resize: vertical; }
+:where(button) { min-height: 2rem; padding: calc(var(--space) * 1.5) calc(var(--space) * 3); cursor: pointer; }
+:where(button:hover:not(:disabled)) { border-color: hsl(var(--control-border-hover)); background: hsl(var(--surface-hover)); }
+:where(button:active:not(:disabled)) { transform: scale(0.98); }
+:where(button:disabled, input:disabled, select:disabled, textarea:disabled) { cursor: not-allowed; opacity: 0.48; }
+:where(button, input, select, textarea, [tabindex]):focus-visible {
+  border-color: hsl(var(--ring));
+  box-shadow: 0 0 0 2px hsl(var(--focus-ring));
+}
+:where(input, select, textarea)[aria-invalid="true"],
+:where(input, select, textarea)[data-invalid="true"] {
+  border-color: hsl(var(--destructive));
+}
+
+:where(button, [role="button"])[data-variant="primary"] {
+  border-color: hsl(var(--primary));
+  background: hsl(var(--primary));
+  color: hsl(var(--primary-foreground));
+}
+:where(button, [role="button"])[data-variant="primary"]:hover { background: hsl(var(--brand-hover)); }
+:where(button, [role="button"])[data-variant="destructive"] {
+  border-color: hsl(var(--destructive-border));
+  background: hsl(var(--destructive-soft));
+  color: hsl(var(--destructive));
+}
+:where(button, [role="button"])[data-variant="ghost"] { border-color: transparent; background: transparent; }
+:where(button, input, select)[data-size="sm"] { min-height: 1.75rem; padding: var(--space) calc(var(--space) * 2); font-size: 0.75rem; }
+:where(button, input, select)[data-size="lg"] { min-height: 2.5rem; padding: calc(var(--space) * 2) calc(var(--space) * 4); }
+
+:where([data-ui="badge"]) {
+  display: inline-flex;
+  min-height: 1.5rem;
+  align-items: center;
+  gap: var(--space-1);
+  border: 1px solid hsl(var(--border));
+  border-radius: var(--radius-full);
+  background: hsl(var(--muted));
+  padding: 0.15rem var(--space-2);
+  color: hsl(var(--muted-foreground));
+  font-size: 0.75rem;
+  font-weight: 650;
+}
+:where([data-ui="badge"])[data-variant="primary"] { border-color: hsl(var(--brand-border)); background: hsl(var(--brand-soft)); color: hsl(var(--primary)); }
+:where([data-ui="badge"])[data-variant="success"] { border-color: hsl(var(--success-border)); background: hsl(var(--success-soft)); color: hsl(var(--success)); }
+:where([data-ui="badge"])[data-variant="warning"] { border-color: hsl(var(--warning-border)); background: hsl(var(--warning-soft)); color: hsl(var(--warning)); }
+:where([data-ui="badge"])[data-variant="destructive"] { border-color: hsl(var(--destructive-border)); background: hsl(var(--destructive-soft)); color: hsl(var(--destructive)); }
+:where([data-ui="badge"])[data-variant="info"] { border-color: hsl(var(--info-border)); background: hsl(var(--info-soft)); color: hsl(var(--info)); }
+
+:where(dialog, [role="dialog"]) {
+  border: 1px solid hsl(var(--border));
+  border-radius: var(--radius-lg);
+  background: hsl(var(--card));
+  color: hsl(var(--card-foreground));
+  box-shadow: var(--shadow-modal);
+}
+:where(dialog)::backdrop { background: hsl(var(--modal-overlay)); }
+:where(table) { width: 100%; border-collapse: collapse; }
+:where(th, td) { border-bottom: 1px solid hsl(var(--border)); padding: calc(var(--space) * 2); text-align: left; }
+:where(kbd) { border: 1px solid hsl(var(--border)); border-radius: var(--radius-sm); background: hsl(var(--muted)); padding: 0.1rem 0.35rem; color: hsl(var(--muted-foreground)); font-family: var(--font-mono); font-size: 0.75em; }
+:where(progress) { overflow: hidden; border: 0; border-radius: var(--radius-full); background: hsl(var(--muted)); accent-color: hsl(var(--primary)); }
+:where(progress)::-webkit-progress-bar { background: hsl(var(--muted)); }
+:where(progress)::-webkit-progress-value { border-radius: inherit; background: hsl(var(--primary)); }
+
+/* Chromium/FiveM: no track, buttons, corner, or resizer. The thumb appears
+   only while the scroll container is being used. Firefox receives the same
+   transparent-track behavior through scrollbar-color. */
+:where(*) { scrollbar-width: thin; scrollbar-color: transparent transparent; }
+:where(*:hover) { scrollbar-color: hsl(var(--control-border)) transparent; }
+:where(*)::-webkit-scrollbar { width: 5px; height: 5px; background: transparent; }
+:where(*)::-webkit-scrollbar-track,
+:where(*)::-webkit-scrollbar-corner,
+:where(*)::-webkit-scrollbar-button,
+:where(*)::-webkit-resizer { width: 0; height: 0; border: 0; background: transparent; }
+:where(*)::-webkit-scrollbar-thumb { border: 0; border-radius: var(--radius-full); background: transparent; }
+:where(*:hover)::-webkit-scrollbar-thumb { background: hsl(var(--control-border)); }
+:where(*)::-webkit-scrollbar-thumb:hover { background: hsl(var(--control-border-hover)); }
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    scroll-behavior: auto !important;
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}

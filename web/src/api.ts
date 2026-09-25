@@ -10,7 +10,10 @@ export const requestId = () => crypto.randomUUID();
 const aliases: Record<string,string> = { uiReady:'phone:ready', close:'phone:close', captureDone:'camera:close' };
 export async function nui<T>(route:string, body:unknown={}):Promise<T>{
   if(isPreview) return {ok:true} as T;
-  const response=await fetch(`https://${window.GetParentResourceName!()}/${aliases[route]||route}`,{method:'POST',headers:{'Content-Type':'application/json; charset=UTF-8'},body:JSON.stringify(body),signal:AbortSignal.timeout(33000)});
+  // FiveM's embedded CEF predates AbortSignal.timeout (Chromium 103+); it is undefined there,
+  // which used to throw on every request before any fetch was attempted. Fall back to no signal.
+  const signal = typeof AbortSignal !== 'undefined' && typeof AbortSignal.timeout === 'function' ? AbortSignal.timeout(33000) : undefined;
+  const response=await fetch(`https://${window.GetParentResourceName!()}/${aliases[route]||route}`,{method:'POST',headers:{'Content-Type':'application/json; charset=UTF-8'},body:JSON.stringify(body),signal});
   if(!response.ok) throw new Error('Phone connection unavailable'); return response.json();
 }
 // Fire-and-forget: the server relays this to whoever is on the other end of the active call.
@@ -44,7 +47,7 @@ const stamp=(v?:number|string)=>typeof v==='number'?new Date(v*1000).toISOString
 export function adaptBootstrap(raw:Record<string,any>):Bootstrap{
   const contacts=Array.isArray(raw.contacts)?raw.contacts.map((c:any)=>({id:Number(c.id),name:String(c.displayName||''),number:String(c.phoneNumber||''),photo:c.photo,favorite:c.isFavorite===1||c.isFavorite===true})):cached.contacts;
   cached=normalizeData({...cached,contacts,notes:raw.items?.notes??cached.notes,alarms:raw.items?.alarms??cached.alarms,stations:raw.items?.stations??cached.stations,settings:{...cached.settings,...(raw.device?.settings||{})},installedApps:(installed??starterApps) as any,customApps:customAppsInstalled});
-  const locked=raw.security?.locked===true;return{id:String(raw.device?.id||'qbphone'),number:String(raw.device?.phoneNumber||''),locked,hasPin:raw.security?.hasPin===true,moderator:raw.moderator===true,transfers:raw.features?.transfers===true,preferences:cached.settings,data:locked?undefined:cached,locale:typeof raw.locale==='string'&&raw.locale?raw.locale:'en',admin:raw.admin===true,video:raw.features?.video?{iceServers:Array.isArray(raw.features.video.iceServers)?raw.features.video.iceServers:[]}:false,characterName:[raw.character?.firstName,raw.character?.lastName].filter(Boolean).join(' '),flash:raw.features?.flash?{maxSeconds:Number(raw.features.flash.maxSeconds)||15,maxBytes:Number(raw.features.flash.maxBytes)||undefined}:false,
+  const locked=raw.security?.locked===true;return{id:String(raw.device?.id||'qbphone'),number:String(raw.device?.phoneNumber||''),locked,hasPin:raw.security?.hasPin===true,moderator:raw.moderator===true,transfers:raw.features?.transfers===true,preferences:cached.settings,data:locked?undefined:cached,admin:raw.admin===true,video:raw.features?.video?{iceServers:Array.isArray(raw.features.video.iceServers)?raw.features.video.iceServers:[]}:false,characterName:[raw.character?.firstName,raw.character?.lastName].filter(Boolean).join(' '),flash:raw.features?.flash?{maxSeconds:Number(raw.features.flash.maxSeconds)||15,maxBytes:Number(raw.features.flash.maxBytes)||undefined}:false,
     capabilities:{banking:true,camera:raw.features?.media===true,gallery:true,social:true,classifieds:true,services:true,calculator:true,clock:true,moderation:raw.moderator===true,gps:raw.features?.maps===true,mail:true,notes:true,weather:true,property:raw.features?.property===true,vehicles:raw.features?.garage===true,flash:!!raw.features?.flash,music:true},
     unavailable:{flash:'Video uploads need a media host, which this server has not configured'},locations:Array.isArray(raw.locations)?raw.locations:[],services:[]};
 }
@@ -118,8 +121,7 @@ async function execute(action:keyof Api,p:any,id:string):Promise<any>{switch(act
     if(remove)await server('items:remove',{kind,id:p.id});else await server('items:save',{kind,item});
     const rest=(cached[key] as {id:string}[]).filter(x=>x.id!==p.id);cached={...cached,[key]:remove?rest:[item,...rest]};return cached}
 case'waypoint':await server('waypoint',{x:p.x,y:p.y});return true;
-  case'openMap':await server('map:open',{x:p.x,y:p.y,w:p.w,h:p.h});return true;case'closeMap':await server('map:close',{});return true;
-  case'videoSignal':await server('calls:signal',{id:p.id,kind:p.kind,sdp:p.sdp,candidate:p.candidate});return true;
+    case'videoSignal':await server('calls:signal',{id:p.id,kind:p.kind,sdp:p.sdp,candidate:p.candidate});return true;
   case'wallet':return server('wallet:get');case'showWallet':return server('wallet:show');case'myLocation':return server('location:mine');default:throw new Error(`${String(action)} is not supported by QBPhone v1`)
 }}
 export type{Response};

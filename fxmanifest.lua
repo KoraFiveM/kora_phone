@@ -4,7 +4,7 @@ game 'gta5'
 name 'qbphone'
 author 'QBPhone Team'
 description 'Server-authoritative QBCore phone'
-version '0.3.2'
+version '0.2.0'
 
 lua54 'yes'
 
@@ -59,6 +59,7 @@ files {
     'web/dist/index.html',
     'web/dist/assets/*',
     'web/dist/compat.js',
+    'web/dist/map.jpg',
     'local-media/*'
 }
 

@@ -55,7 +55,7 @@ assert.match(serverMain, /consume\(requestSource, 'mutation'\)/, "the close even
 // Routes are wired end to end: UI -> NUI callback -> server callback.
 for (const [route, server] of [["security:unlock", "unlockPhone"], ["security:lock", "lockPhone"], ["security:setPin", "setPhonePin"], ["security:removePin", "removePhonePin"]]) {
   assert.match(nui, new RegExp(`\\['${route}'\\] = 'qbphone:server:${server}'`), `${route} must be mapped in client/nui.lua`);
-  assert.match(callbacks, new RegExp(`register\\('${server}'`), `${server} must be registered as a server callback`);
+  assert.match(callbacks, new RegExp(`register(?:Callback)?\\('${server}'`), `${server} must be registered as a server callback`);
   assert.match(api, new RegExp(`'${route}'`), `${route} must be called by the web api layer`);
 }
 assert.match(api, /raw\.security\?\.locked===true/, "the UI must take its lock state from the server");

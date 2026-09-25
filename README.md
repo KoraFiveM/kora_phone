@@ -1,125 +1,101 @@
 # qbphone
 
-`qbphone` is a modern, server-authoritative FiveM phone for QBCore. The v1 product covers calls, contacts, messages, camera/gallery, banking, jobs, one social feed, and a player marketplace.
+A phone for QBCore servers: calls, texts, mail, a real map, banking, a marketplace and more (over twenty apps), in a clean Nothing-style design with a QBCore theme.
 
-## Requirements
+The rule the whole thing is built on: **the server decides, the phone only asks.** Phone numbers, money, jobs, PINs and who can see what are all checked on the server, so a modified client can't send money it doesn't have or read someone else's messages.
 
-- A current FiveM server artifact with OneSync enabled
-- QBCore (`qb-core`)
-- MySQL through `oxmysql`
-- A compatible voice resource configured for phone call channels (the initial target is `pma-voice`)
-- An inventory containing the configured phone item (the initial target is `qb-inventory`)
-- A configured image-upload provider for camera/gallery features
+<p align="center">
+  <img src="docs/images/home.png" width="160" alt="Home screen with a dot-matrix clock, app icons and the dock">
+  <img src="docs/images/maps.png" width="160" alt="Maps app showing a road map of downtown Los Santos with your position">
+  <img src="docs/images/messages.png" width="160" alt="A text conversation in Messages">
+  <img src="docs/images/wallet.png" width="160" alt="Wallet showing a bank balance and the send money form">
+  <img src="docs/images/setup.png" width="160" alt="First-time setup showing the new phone number">
+</p>
 
-Optional job and banking integrations must be enabled explicitly. Missing optional resources should hide their related actions instead of preventing the phone from starting.
+<p align="center"><sub>Screenshots from the browser demo (<code>npm run dev</code>) with its sample data, in the QBCore theme.</sub></p>
 
-## Installation
+## Quick start
 
-1. Copy `qbphone` into the server's resources directory.
-2. Import the SQL migration files from `migrations/` in filename order.
-3. Add the configured phone item to the inventory shared-items definition.
-4. Review every value in `config/`, particularly the framework, inventory, voice, media provider, limits, and enabled apps.
-5. Keep upload credentials and other secrets in server-only configuration or environment/convar values. Never place them in NUI or shared Lua files.
-6. Add dependencies before the phone in `server.cfg`, then add:
+1. Download `qbphone-vX.Y.Z.zip` from the [latest release](../../releases/latest) and unzip it into your `resources` folder. It unpacks as `qbphone/`.
+2. Add these to `server.cfg`, in this order:
 
    ```cfg
    ensure oxmysql
    ensure qb-core
+   ensure qblib
+   ensure qbtheme
    ensure pma-voice
    ensure qbphone
    ```
 
-7. Restart the server and confirm that migrations, dependency checks, and the phone startup complete without errors.
+3. Start the server. The database tables are created on first start, so there's no SQL to import.
+4. Give a character the `phone` item and press **M** (or type `/phone`).
 
-## Configuration principles
+## What you need
 
-- The server owns identity, phone numbers, balances, jobs, permissions, content ownership, and call state.
-- Client and NUI payloads are requests, never proof of identity or permission.
-- All text, media URLs, amounts, identifiers, and pagination inputs require bounds and type validation.
-- Disabled apps must disappear cleanly from navigation and deep links.
-- Lists must use bounded cursor/page queries rather than loading complete histories.
+| Resource | Needed for |
+|---|---|
+| `qb-core` | Everything: identity, jobs, money |
+| `oxmysql` | Everything: all phone data is stored in MySQL |
+| `qblib`, `qbtheme` | Everything: shared helpers and the phone's theme |
+| `pma-voice` | Calls. Everything else works without it. |
+| A media host (Fivemanage) | Camera, photos, Flash clips and videos in chat. Off until you set it up. |
 
-See [Installation and configuration](docs/installation.md), [Roadmap](docs/roadmap.md), and [Acceptance tests](docs/acceptance-tests.md).
+OneSync should be on.
 
-## Local test scaffolding
+## The apps
 
-The test files do not require a running FiveM server for their basic checks.
+| App | What it does |
+|---|---|
+| Phone, Contacts | Calls with ring timeout and history, video during a call, favourites and contact photos |
+| Messages, Pulse | Direct and group chats with photos, clips and shared locations |
+| Mail | Inbox and Sent between phone numbers |
+| Maps | A road map you can drag and zoom, with your position, heading and waypoint. Tap anywhere to set a waypoint. |
+| Wallet | Bank balance and history, your ID card and licences, and showing your ID to the player next to you |
+| Market | Buy and sell listings between players, with reports |
+| Work | Your QBCore job, duty toggle and job actions |
+| Garage, Home | Your vehicles and properties, with waypoints home |
+| Camera, Gallery, Flash | Photos and short video clips (needs a media host) |
+| Notes, Clock, Sound, Weather, Calculator | The everyday things. Notes and alarms are saved on the server. |
+| Moderation | A report queue for staff. Everyone else never sees it. |
+| App Store | Players install and remove the optional apps |
 
-```bash
-node tests/static-security.test.js
-lua tests/validation.test.lua
+Addon apps written for lb-phone, sd-phone, 17mov_Phone, YSeries or High Phone can register without changes, because qbphone answers the same exports those phones use. Apps that lean on another phone's built-in UI pieces (pickers, popups, its own map) won't look right.
+
+Not everything is finished. The social feed works on the server, but its screens are limited and Flash is off until a media host is configured. Bank transfers between players are off by default.
+
+## Settings worth changing
+
+Everything lives in `config/`. The ones most servers touch:
+
+| Setting | File | Default |
+|---|---|---|
+| Phone item, number format | `config/shared.lua` | `phone`, `555` + 7 digits |
+| Keybind and command | `config/client.lua` | `M`, `/phone` |
+| Photos and clips: `Media.Provider` | `config/server.lua` | `'disabled'`. Set `'fivemanage'` and see [media storage](docs/media-storage.md). |
+| Player-to-player transfers: `Banking.AllowCompensatingTransfers` | `config/server.lua` | `false`. See [banking and jobs](docs/banking-jobs.md). |
+| Saved places on the map: `Maps.Locations` | `config/server.lua` | Seven landmarks, from Legion Square to Paleto Bay |
+| Garage and housing tables | `config/server.lua` | QBCore `player_vehicles`, qb-houses tables |
+
+Two secrets go in `server.cfg`, never in a Lua file:
+
+```cfg
+set qbphone_fivemanage_token "your-fivemanage-media-token"
+set qbphone_pin_pepper "a-long-random-string"
 ```
 
-The JavaScript test scans web assets when they exist and reports skipped checks while the web application is absent. The Lua suite can test exported pure validation helpers when available and otherwise verifies the reference contract used by the implementation.
+The pepper makes stored PINs harder to crack if your database ever leaks. Change it later and every existing PIN stops working.
 
-## Release definition
+## Where to read more
 
-v1 is ready only when the critical acceptance suite passes with two real clients, money and permission actions are server-authoritative, disconnect/restart cleanup is proven, and the target-player load test remains within the documented budgets.
+- [Features in detail](docs/features.md): how notifications, PIN lock, Do Not Disturb, sharing in chat and every other app behave
+- [Installation and configuration](docs/installation.md): the full config checklist and clean-install checks
+- [Media storage](docs/media-storage.md), [Banking and jobs](docs/banking-jobs.md), [Security](docs/security.md)
+- [Acceptance tests](docs/acceptance-tests.md): the two-player checks to run before a big release
 
-## Implemented UI/server capabilities
+## Working on the code
 
-The production NUI is built from `web/src` with React, TypeScript and Vite. Its visual source is the supplied Nothing-style phone: bright paper surfaces, red accents, DM Sans/Space Mono typography, monochrome circular icons, widgets, app dock, lock/setup experiences, Pulse, Flash, Store and the original responsive preview frame. `fxmanifest.lua` serves the verified production build from `web/dist`.
-
-The NUI currently maps the following server-authoritative features:
-
-- Calls: start, accept, reject, hang up and cursor-paginated history.
-- Media: secure upload negotiation through the client camera adapter, gallery listing and owned-media deletion.
-- Banking: balance, transfer audit history and opt-in compensating transfers. Transfers remain disabled by default.
-- Jobs: current QBCore job snapshot, duty changes and grade/duty-gated configured actions.
-- Social feed (server): account creation, feed/profile retrieval, posting, comments, likes, follows, blocks and reports are implemented and tested on the server. The UI reaches only feed, post, like, comment and delete, and only through Flash, which is disabled in this build; there is no account-creation, follow, block or report screen yet, and the feed requires a social profile.
-- Marketplace: browse, create, remove, mark sold, contact seller (sent to the seller's Messages through the same server path as any text) and report a listing. Listing detail and edit exist as server routes with no UI.
-- Moderation: an ACE/QBCore-authorized report queue and resolution. Moderators get a Moderation app that shows each report with a snapshot of what was reported and requires a note to dismiss or remove it; everyone else never sees the app. Today reports can only be filed against marketplace listings, because the social feed is off.
-
-`web/` doubles as a dependency-free browser demo. Outside FiveM it uses seeded responses; in FiveM it calls the exact NUI routes registered in `client/nui.lua`. Loading, empty and server-error states are rendered without inserting untrusted HTML.
-
-The messaging repository returns conversation summaries with the other member's phone number and a display label (the contact name when saved), plus paginated message pages, read receipts and per-user deletes. Incoming messages raise a notification and refresh the open conversation. Media capture also requires a configured provider and `screenshot-basic`; the default provider is intentionally disabled.
-
-Flash and video clips need a media host; set `Config.Server.Media.Provider = 'fivemanage'` (see `docs/media-storage.md`) and they switch on. The Work app is backed by QBCore Jobs, Wallet by the banking service, Market by marketplace callbacks, and the photo Gallery by the media service. The Calculator and Clock remain local utilities. Video calls and custom embedded apps are not implemented, and in game Pulse chats are text, shared locations, photos and (with a media provider) video clips, in direct and group chats.
-
-Phone behaviour worth knowing:
-
-- **Last screen:** the phone reopens on the last app you were using (and the last setup step during first-time setup). It is stored in the NUI's `localStorage` only, never on the server. Locking or folding the phone resets it to home, and a crashing screen is never restored.
-- **Notifications:** incoming notifications slide down from the top as a card with the app's icon; tap to open the app, or swipe up (or wait about 4 seconds) to dismiss. While the phone is locked the card shows the sender or app name and "Unlock to view." instead of the message text. The bell opens a shade listing recent notifications (newest first, up to 20) with a "Clear all" button. Status messages such as errors and confirmations remain small toasts at the bottom.
-- **Incoming calls** open the phone automatically so a call cannot ring unseen, and a call that starts ringing while the phone is closed is still there when it opens.
-- **Preferences** (name, theme, wallpaper, style, volume, scale, app order) are saved on the server per phone through `settings:save` and validated against an allowlist. The list of installed apps is remembered in the NUI's `localStorage` because the server keeps no per-phone app list yet.
-- **If the phone cannot open** (for example no phone item), the UI releases the mouse and keyboard and shows a game notification with the reason instead of leaving an invisible phone holding focus.
-- **PIN lock** is enforced by the server. The PIN is stored only as a salted SHA-256 computed inside the database (never in Lua or logs), five wrong tries lock it for five minutes (`Config.Server.Pin`), and a locked phone reveals nothing beyond the lock screen and refuses every data request until unlocked; a locked phone can still answer a call. The phone re-locks whenever it is closed. Set, change or remove the PIN in Settings (removing needs the current PIN and has the same attempt limit). Optionally add `set qbphone_pin_pepper "<long random string>"` to `server.cfg` (kept out of the database, so a database leak alone is not enough to guess PINs; changing it invalidates existing PINs). A 4 to 8 digit PIN can still be guessed offline if both the database and the pepper leak, so it protects a phone from other players, not from the server operator.
-- **QBCore theme and wallpaper:** a warm near-black look with a coral accent, using the palette from qbcore.org's own stylesheet (background `#17140f`, text `#f2ece1`, accent `#d86b59`). Pick it under Appearance. The colours are defined once, in the `.theme-qbcore` and `.wallpaper-qbcore` rules in `web/src/style.css` and `web/src/polish.css`. Text stays readable on every theme and wallpaper pairing. With this theme the lock screen shows the QBCore mark (the glyph from `https://qbcore.org/icon.svg`, embedded in `web/src/LockLogo.tsx`) instead of the Nothing "N", and a small mark also appears in the status bar, before the date on the home screen and on the flip cover screen. The logo belongs to QBCore.
-- **Settings** are grouped into Device security, Appearance (theme, wallpaper, phone style) and Device (name, volume, size). Changes show on the phone immediately and save automatically a moment after you stop, with a status line showing Saving / Saved; an incomplete change such as an empty name is kept on screen and not saved until it is valid.
-- **Flip phone case:** with the flip style, Settings shows a Flip phone case section that decorates the back of the phone when it is folded closed: Night drive, City pop, Sakura, Touge, Garage, QBCore, Arcade, Deep space, Palms, Skyline, or your own photo from the gallery. The art covers the whole folded back panel and the cover display becomes dark glass over it, so the clock and notification text always sit on a dark backdrop (measured readable on every scene). The unfolded phone and the classic style are unchanged. The ten scenes are original vector art in `web/src/CoverArt.tsx`, so there are no third-party images to license or download. The photo option uses the gallery's https image URLs, validated on the server like the main wallpaper.
-- **Do Not Disturb:** Settings > Do not disturb, or the moon button on the home screen. While it is on (always, or inside a daily quiet window that can cross midnight, for example 22:00 to 07:00) heads-up alerts, the ringtone and the game's native notification are silent, and an incoming call no longer opens the phone by itself; it is still there when you open it, and a silent "Incoming call" note lands in the shade. Notifications still collect. Urgent alerts (a shown ID) break through. The UI owns the setting and tells the client through the `quiet` NUI callback; the schedule uses the real clock of the machine running the game.
-- **Notification history:** unread notifications stay in the shade when you close the phone or reload the UI; tapping or clearing one moves it to **Earlier** (the last 30), which has its own Clear history. Stored in the NUI's `localStorage` only.
-- **Wallet ID & licences:** Wallet has a second section with the character's ID card (name, date of birth, citizen ID, nationality, job) and licences, read on the server from QBCore `PlayerData` and `metadata.licences` (`Config.Server.Wallet.Licences` lists which ones show). **Show my ID to the person next to me** sends the card to the closest other player within `Config.Server.Wallet.ShowDistance` (3.0 m), measured from server-side ped positions; they get an urgent notification with the details.
-- **Share location and photos in chat:** the + button in a Pulse chat can share where you are (street and area from the game) as a card with a **Set waypoint** button for the receiver, or send a photo from your gallery. Both travel as a small token in the ordinary text message (`[[loc:x,y|label]]`, `[[photo:https://...]]`), so they work with the server's text-only message contract and anything that does not parse stays plain text. Photos must be https, and a photo from a number that is not in your contacts stays hidden until tapped, so a stranger cannot make your phone load their link. Location sharing needs no map integration: the client reads your position and sets the waypoint natively. The Gallery only lists photos once a media provider is configured (`Config.Server.Media`).
-- **Icon style:** Settings > Appearance > Icon style: Circle (default), Rounded, Outline or Solid.
-- **Chat list fix:** the in-game Pulse list now maps the server's conversation rows (`displayLabel`, `peerPhoneNumber`, `lastMessagePreview`, `type`) to what the chat screens read, so names and previews show.
-- **Group chats:** Pulse > New group takes a name and up to 49 phone numbers. The server creates the group (`Messaging.createGroup`), every member gets each message as it arrives, and anyone can leave. People who blocked you (or whom you blocked) simply don't get it. Anyone in a group can add someone else with the + person button (up to 50 members).
-- **Notes, alarms and Sound stations are saved on the server** per phone (`phone_items`, migration `009_items.sql`, limits in `Config.Server.Items`) and validated field by field, so they follow the character and survive a reinstall. They arrive with the bootstrap.
-- **Alarms ring with the phone closed:** the app shell watches the alarms, not the Clock screen. It pops a notification (urgent, so it beats Do Not Disturb), plays a tone and asks the client (`alarm` NUI callback) to show a game notification and sound when the phone is closed. An alarm with no repeat days turns itself off after it rings.
-- **Maps** lists the places in `Config.Server.Maps.Locations`; tap one for a waypoint (set by the client with `SetNewWaypoint`).
-- **Weather** is read from the game (`GetPrevWeatherTypeHashName`, the clock and the rain level), so it matches whatever weather script you run.
-- **Garage** lists the character's vehicles from `Config.Server.Garage.Table` (default QBCore `player_vehicles`: vehicle, plate, garage, state, fuel). The app only appears if that table exists.
-- **Unread counts:** Pulse rows show an unread badge and opening a chat marks it read on the server.
-- **Wallet sends by phone number** (that is what the server takes; it used to ask for a citizen ID, which the server rejected) and shows incoming transfers as incoming.
-- **Mail** is a real inbox: subject and body between two phone numbers (`phone_mail`, migration `010_mail.sql`), Inbox and Sent tabs, unread dots, reply and delete (each side deletes only its own copy). Sending is validated and idempotent, respects blocks, and the recipient gets a notification.
-- **Property** lists the character's homes from a housing script's tables (`Config.Server.Property`, qb-houses names by default) with a waypoint to each. It only appears if every configured table and column exists; for another housing script, change the names there.
-- **App-icon badges:** apps with unread notifications (Messages, Mail, ...) show a count on the icon, and opening an app marks its notifications as seen. The home-screen note shows the contact's name, not their number.
-- **Blocking numbers:** the block button at the top of a direct Pulse chat blocks that number (the server already refused calls, messages, mail and group adds between blocked phones; there was just no way to set one). Blocked numbers are listed under Settings > Blocked numbers with an Unblock button.
-- **Contact photos** are saved on the server (`avatar_media_id`) and must be one of your own gallery photos. In game the picker offers only the gallery; the demo still accepts a link.
-- **The gallery loads with the phone** (it used to appear empty after a restart until you took a new photo). The Camera only shows when photo storage is set up (`Config.Server.Media.Provider` is not `disabled`); otherwise the Gallery says so. Game error codes such as `SCREENSHOT_PROVIDER_UNAVAILABLE` now show as plain sentences.
-- **Missed calls** leave a notification when an incoming call rings out or is cancelled, including with the phone closed or Do Not Disturb on.
-- **Wallet honesty:** the Send money form only shows when the server has transfers on (`Config.Server.Banking.AllowCompensatingTransfers`, off by default; see `docs/banking-jobs.md`); otherwise the Wallet says so instead of offering a form that can only fail. The card shows the character's name and citizen ID, and history names the other person (from your contacts, or their number).
-- **Favourites:** a star on each contact pins it to the top of Contacts and the Pulse quick-hello strip (saved on the server; editing a contact no longer clears it).
-- **No phone while down:** `Config.Client.DisableWhileDead` is now enforced. The phone won't open when the character is dead or in last stand, and closes itself if they go down while it's open.
-- **Flash and video clips:** with `Provider = 'fivemanage'` the phone records a clip, the server issues a one-use upload ticket and a short-lived presigned URL (the API token never leaves the server), the phone uploads straight to the media host with a progress bar, and the server verifies the real file (size, type, host, ticket tag) before it is recorded. Flash posts and chat messages then carry that media; Flash asks for a handle and name the first time (there was no way to create the profile before). The feed says which posts are yours, so you can remove them. Limits: per-clip size and length, and a daily clip allowance and a photo cap per phone. See `docs/media-storage.md`.
-- **Photos in the database:** a media row without dimensions (every clip, and local-development photos) used to be written with dropped SQL parameters; it now stores NULLs properly.
-- **Notifications with the phone closed:** the phone's own pop-up lives inside the UI, which is hidden when the phone is away, so a new text used to arrive silently. Texts, mail and missed calls now raise a game notification (with the contact's name when known) and the game's text-message tone (`Config.Client.NotificationSound`), unless Do Not Disturb is on. Open the phone and it isn't asked for again, and you get no pop-up for a text while you're already in your chats.
-- **Save an unknown number:** a chat with a number that isn't in your contacts has a Save to contacts button at the top.
-- **Share a Flash post to a chat** works in game: the clip or photo goes as a link the other phone plays (hidden until tapped if the sender isn't in your contacts), followed by the caption.
-- **Automatic database setup:** on start the resource applies the SQL files listed in `fxmanifest.lua` (`migration '...'` lines) once each and records them in `phone_migrations`, so you don't import anything by hand and a restart runs nothing. A failure stops the resource with the reason printed and resumes at that statement next time; an existing hand-imported database is adopted. `Config.Server.AutoMigrate = false` turns it off. A new migration file must be added to the manifest (a test enforces it).
-- **Home and lock text** follow the wallpaper, so any theme and wallpaper pairing stays readable.
-
-Build and verify the NUI with:
+The phone's screens are React and TypeScript in `web/src`, built into `web/dist` (not committed; run the build below, or use the release zip).
 
 ```bash
 cd web
@@ -127,3 +103,7 @@ npm ci
 npm run build
 npm test
 ```
+
+`npm run dev` opens the phone in a browser with sample data, no server needed. The rest of the tests run from the repo root with plain Node and Lua; the list is in [tests/README.md](tests/README.md).
+
+Releases are automatic. Every merge to `main` gets the next version tag, built from the commit messages (`feat:` bumps the minor version, anything else the patch), and a GitHub release with the zip attached. The release stamps its version into the zip's `fxmanifest.lua`, whatever the repo copy says.
