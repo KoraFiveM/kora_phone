@@ -104,7 +104,14 @@ local function activeOwnedCall(source, payload)
     return call, device
 end
 
+local function isCurrentCharacter(source, citizenId, session)
+    return QBPhone.GetCitizenId(source) == citizenId
+        and (not session or QBPhone.Sessions.bySource[source] == session)
+end
+
 function Calling.start(source, payload)
+    local callerSession = QBPhone.Sessions.bySource[source]
+    local callerCitizenId = QBPhone.GetCitizenId(source)
     local caller, err = QBPhone.Permissions.requireDevice(source)
     if not caller then return err end
     local number, validationError = PhoneValidation.phoneNumber(type(payload) == 'table' and payload.to)
@@ -112,15 +119,26 @@ function Calling.start(source, payload)
     if number == caller.phoneNumber then return PhoneError(PhoneConstants.Errors.INVALID_INPUT, 'Cannot call your own number') end
     if Calling.callByDevice[caller.id] then return PhoneError(PhoneConstants.Errors.CONFLICT, 'Already in a call') end
 
+    if not isCurrentCharacter(source, callerCitizenId, callerSession) then
+        return PhoneError(PhoneConstants.Errors.CONFLICT, 'Call participant is unavailable')
+    end
+
     local callee = QBPhone.Repositories.Phones.findByNumber(number)
     if not callee then return PhoneError(PhoneConstants.Errors.NOT_FOUND, 'Number was not found') end
+    if not isCurrentCharacter(source, callerCitizenId, callerSession) then
+        return PhoneError(PhoneConstants.Errors.CONFLICT, 'Call participant is unavailable')
+    end
     if QBPhone.Repositories.Blocks.isEitherBlocked(caller.id, callee.id) then
         return PhoneError(PhoneConstants.Errors.NOT_FOUND, 'Number was not found')
+    end
+    if not isCurrentCharacter(source, callerCitizenId, callerSession) then
+        return PhoneError(PhoneConstants.Errors.CONFLICT, 'Call participant is unavailable')
     end
     if Calling.callByDevice[caller.id] then return PhoneError(PhoneConstants.Errors.CONFLICT, 'Already in a call') end
     if Calling.callByDevice[callee.id] then return PhoneError(PhoneConstants.Errors.CONFLICT, 'Number is busy') end
     local calleeSource = QBPhone.Sessions.sourceByNumber(number)
     if not calleeSource then return PhoneError(PhoneConstants.Errors.NOT_FOUND, 'Number is unavailable') end
+    local calleeSession = QBPhone.Sessions.bySource[calleeSource]
     local voiceChannel = allocateChannel()
     if not voiceChannel then return PhoneError(PhoneConstants.Errors.INTERNAL, 'No call channel is available') end
 
@@ -137,6 +155,12 @@ function Calling.start(source, payload)
         clear(call)
         if not ok then error(created, 0) end
         return PhoneError(PhoneConstants.Errors.INTERNAL, 'Unable to create call')
+    end
+    if not isCurrentCharacter(source, callerCitizenId, callerSession)
+        or not isCurrentCharacter(calleeSource, calleeSession.citizenId, calleeSession) then
+        clear(call)
+        QBPhone.Repositories.Calls.transition(call.id, { 'ringing' }, 'cancelled', 'participant_unavailable')
+        return PhoneError(PhoneConstants.Errors.CONFLICT, 'Call participant is unavailable')
     end
     Calling.activeById[call.id] = call
     TriggerClientEvent('qbphone:client:calls:outgoing', source, publicCall(call, caller.id))

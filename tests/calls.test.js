@@ -126,8 +126,8 @@ local function host()
                 local row = state.rows[params[2]]
                 -- Terminal transitions include an ended_reason parameter before the ID.
                 if not row then row = state.rows[params[3]] end
-                value = row and 1 or 0
-                if row then row.status = params[1] end
+                value = value == nil and (row and 1 or 0) or value
+                if row and value > 0 then row.status = params[1] end
             end
             cb(value)
         end
@@ -153,6 +153,26 @@ local function host()
     assert(load(callbackSource:sub(1, boundary - 1), '@server/callbacks.lua'))()
     dofile(root .. '/server/modules/call_callbacks.lua')
     for i = 1, 4 do QBPhone.Sessions.open(i, devices['character-' .. i]) end
+    local mainFile = assert(io.open(root .. '/server/main.lua')); local mainSource = mainFile:read('*a'); mainFile:close()
+    local unloadStart = assert(mainSource:find("AddEventHandler('QBCore:Server:OnPlayerUnload'", 1, true))
+    local unloadEnd = assert(mainSource:find('\nend)', unloadStart, true))
+    assert(load(mainSource:sub(unloadStart, unloadEnd + 4), '@server/main.lua:unload'))()
+    function state.retire(src, dropped)
+        if dropped then
+            local previous = source; source = src
+            for _, fn in ipairs(state.handlers.playerDropped) do fn() end
+            source = previous
+        else
+            for _, fn in ipairs(state.handlers['QBCore:Server:OnPlayerUnload']) do fn(src) end
+        end
+        -- Core logout removes its character after local unload handlers finish.
+        players[src] = nil
+    end
+    function state.reopen(src, id)
+        local device = devices['character-' .. id]
+        players[src] = { PlayerData = { source = src, citizenid = device.ownerCitizenId }, Functions = { GetItemByName = function() return { name = 'phone' } end } }
+        QBPhone.Sessions.open(src, device)
+    end
     state.calling = QBPhone.Services.Calling
     function state.request(name, source, payload)
         local response
@@ -162,11 +182,11 @@ local function host()
         local ok, err = coroutine.resume(thread); assert(ok, err)
         return { thread = thread, result = function() return response and response[1] end, arity = function() return response and response.n end }
     end
-    function state.complete(request, value, err)
+    function state.complete(request, value, err, allowPending)
         local pending = table.remove(state.pending, 1); assert(pending, 'SQL must be pending')
         pending.complete(value, err)
         local ok, result = coroutine.resume(request.thread); assert(ok, result)
-        equal(coroutine.status(request.thread), 'dead', 'settled request')
+        if not allowPending then equal(coroutine.status(request.thread), 'dead', 'settled request') end
     end
     return state
 end
@@ -253,5 +273,80 @@ equal(h.voice[4][1], 'leave')
 equal(h.request('start', 1, { to = '5550000001' }).result().error.code, 'INVALID_INPUT')
 equal(h.request('start', 1, { to = '5550000099' }).result().error.code, 'NOT_FOUND')
 print(('PASS call-start coroutine regression: %d checks'):format(checks))
+local retirementChecks = checks
+for _, phase in ipairs({ 'caller', 'lookup', 'block', 'create' }) do
+    for _, replaced in ipairs({ false, true }) do
+        local h = host(); h.pause = phase
+        local request = h.request('start', 1, { to = '5550000002' })
+        equal(coroutine.status(request.thread), 'suspended')
+        h.retire(1)
+        if replaced then h.reopen(1, 4) end
+        h.complete(request)
+        conflict(request.result(), 'retired caller cannot continue after ' .. phase)
+        equal(request.arity(), 1)
+        equal(count(h.calling.activeById), 0)
+        equal(h.calling.callByDevice[1], nil)
+        equal(h.calling.callByDevice[2], nil)
+        equal(#h.events, 0, 'retired start emits no ringing event')
+        equal(#h.timers, 0)
+        equal(count(h.rows), phase == 'create' and 1 or 0)
+        for _, row in pairs(h.rows) do equal(row.status, 'cancelled', 'issued insert is retired conditionally') end
+    end
+end
+for _, participant in ipairs({ 1, 2 }) do
+    local h = host(); h.pause = 'create'
+    local request = h.request('start', 1, { to = '5550000002' })
+    local old = QBPhone.Sessions.bySource[participant]
+    h.reopen(participant, participant) -- Same character, different local session record.
+    equal(QBPhone.Sessions.bySource[participant] == old, false)
+    h.complete(request)
+    conflict(request.result(), 'a replacement participant session retires the old start')
+    equal(count(h.calling.activeById), 0)
+    equal(count(h.calling.callByDevice), 0)
+    equal(#h.events, 0)
+    for _, row in pairs(h.rows) do equal(row.status, 'cancelled') end
+end
+for _, participant in ipairs({ 1, 2 }) do
+    local h = host(); h.pause = 'create'
+    local request = h.request('start', 1, { to = '5550000002' })
+    h.retire(participant, true)
+    h.complete(request)
+    conflict(request.result(), 'raw drop retires a pending participant')
+    equal(count(h.calling.activeById), 0)
+    equal(count(h.calling.callByDevice), 0)
+    equal(#h.events, 0)
+end
+local sessionless = host()
+QBPhone.Sessions.close(1)
+equal(sessionless.request('start', 1, { to = '5550000002' }).result().ok, true, 'existing start API accepts a loaded caller without a phone session')
+local sessionlessRetired = host()
+QBPhone.Sessions.close(1); sessionlessRetired.pause = 'create'
+local oldStart = sessionlessRetired.request('start', 1, { to = '5550000002' })
+sessionlessRetired.retire(1); sessionlessRetired.complete(oldStart)
+conflict(oldStart.result(), 'current-character check still protects an initially sessionless caller')
+equal(#sessionlessRetired.events, 0)
+for _, failure in ipairs({ 'false', 'error' }) do
+    local h = host(); h.pause = 'create'
+    local request = h.request('start', 1, { to = '5550000002' })
+    h.reopen(1, 1); h.pause = 'transition'
+    h.complete(request, nil, nil, true)
+    equal(coroutine.status(request.thread), 'suspended', 'retirement update can also await SQL')
+    equal(count(h.calling.callByDevice), 0, 'release local reservations before attempted SQL cleanup')
+    equal(count(h.calling.activeById), 0)
+    equal(#h.events, 0)
+    local replacement = h.request('start', 1, { to = '5550000003' })
+    equal(replacement.result().ok, true, 'a current request can start during old SQL cleanup')
+    if failure == 'error' then h.complete(request, nil, 'controlled retirement failure') else h.complete(request, 0) end
+    equal(request.result().ok, false)
+    equal(request.result().error.code, failure == 'error' and 'INTERNAL_ERROR' or 'CONFLICT')
+    equal(request.arity(), 1)
+    equal(h.calling.callByDevice[1], replacement.result().data.id, 'old cleanup cannot clear a newer call')
+    equal(count(h.calling.activeById), 1)
+    equal(#h.events, 2, 'only the replacement call publishes')
+    local statuses = {}
+    for _, row in pairs(h.rows) do statuses[row.status] = (statuses[row.status] or 0) + 1 end
+    equal(statuses.ringing, 2, 'failed cleanup cannot undo the already-issued SQL insert')
+end
+print(('PASS call-start retirement regression: %d checks'):format(checks - retirementChecks))
 `;
 process.stdout.write(execFileSync(process.env.LUA || "lua", ["-", root], { input: callingRegression, encoding: "utf8" }));
