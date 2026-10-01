@@ -248,5 +248,93 @@ test("a call signal must be a valid offer, answer, or ICE candidate for a real c
     equal(PhoneContracts.callSignal({ id = callId, kind = "offer" }), nil)
     equal(PhoneContracts.callSignal({ id = callId, kind = "ice", candidate = { candidate = string.rep("a", 2001) } }), nil)
 end)
+test("conversation pages preserve tied sort keys without changing numeric cursors", function()
+    local oldPhone, oldMySQL, oldConstants, oldResult, oldError = QBPhone, MySQL, PhoneConstants, PhoneResult, PhoneError
+    dofile(root .. "/shared/constants.lua")
+    -- An inert row host applies the emitted keyset predicates, not a database engine.
+    local rows = {
+        { id = 80, deviceId = 11 }, { id = 50, deviceId = 11 },
+        { id = 7, deviceId = 11, lastMessageId = 50 }, { id = 40, deviceId = 11 },
+        { id = 3, deviceId = 11, lastMessageId = 40 }, { id = 2, deviceId = 11, lastMessageId = 10 },
+        { id = 1, deviceId = 11 }, { id = 90, deviceId = 22 }, { id = 99, deviceId = 11, left = true },
+    }
+    local queries = {}
+    MySQL = { query = { await = function(sql, params)
+        queries[#queries + 1] = { sql = sql, params = params }
+        equal(params[1], params[2]); equal(params[2], params[3])
+        assert(sql:find('cm.device_id = ? AND cm.left_at IS NULL', 1, true))
+        assert(sql:find('latest.deleted_at IS NULL AND ld.message_id IS NULL', 1, true))
+        local pair = sql:find('OR (COALESCE(last_message.id, c.id) = ? AND c.id < ?)', 1, true)
+        local legacy = not pair and sql:find('COALESCE(last_message.id, c.id) < ?', 1, true)
+        local only = sql:find(' AND c.id = ?', 1, true)
+        local cursor, cursorId, onlyId, index = nil, nil, nil, 4
+        if pair then
+            cursor, cursorId, index = params[4], params[6], 7
+            equal(params[4], params[5])
+        elseif legacy then cursor, index = params[4], 5 end
+        if only then onlyId, index = params[index], index + 1 end
+        equal(index, #params)
+        local selected = {}
+        for _, row in ipairs(rows) do
+            local sortId = row.lastMessageId or row.id
+            if row.deviceId == params[3] and not row.left and (not onlyId or row.id == onlyId)
+                and (not cursor or sortId < cursor or (cursorId and sortId == cursor and row.id < cursorId)) then
+                selected[#selected + 1] = { id = row.id, sortId = sortId }
+            end
+        end
+        -- Descending IDs are one permitted old tie order as well as the new explicit order.
+        table.sort(selected, function(a, b) return a.sortId > b.sortId or (a.sortId == b.sortId and a.id > b.id) end)
+        local out = {}
+        for i = 1, math.min(params[#params], #selected) do out[i] = selected[i] end
+        return out
+    end } }
+    QBPhone = { Repositories = {}, Permissions = { requireDevice = function(source)
+        if source == 7 then return { id = 11 } end
+        if source == 8 then return { id = 22 } end
+        return nil, PhoneError(PhoneConstants.Errors.UNAUTHORIZED, 'No device')
+    end } }
+    dofile(root .. "/server/repositories/messages.lua")
+    dofile(root .. "/server/services/messaging.lua")
+    local list, repository = QBPhone.Services.Messaging.listConversations, QBPhone.Repositories.Messages
+    local first = list(7, { limit = 2 }).data
+    local second = list(7, { limit = 2, cursor = first.nextCursor, cursorId = first.items[#first.items].id }).data
+    equal(second.items[1].id, 7) -- Original strict cutoff skips this tied conversation.
+    equal(first.nextCursor, 50); equal(first.nextCursorId, 50)
+    equal(type(first.nextCursor), 'number'); equal(type(first.nextCursorId), 'number')
+    assert(queries[1].sql:find('ORDER BY sortId DESC, c.id DESC LIMIT ?', 1, true))
+    local ids, cursor, cursorId = {}, nil, nil
+    for _ = 1, 8 do
+        local result = list(7, { limit = 2, cursor = cursor, cursorId = cursorId })
+        equal(result.ok, true)
+        for _, item in ipairs(result.data.items) do ids[#ids + 1] = item.id end
+        cursor, cursorId = result.data.nextCursor, result.data.nextCursorId
+        if not cursor then break end
+    end
+    equal(table.concat(ids, ','), '80,50,7,40,3,2,1')
+    equal(cursor, nil); equal(cursorId, nil)
+    local legacy = list(7, { limit = 2, cursor = 50 }).data
+    equal(legacy.items[1].id, 40); equal(legacy.items[2].id, 3)
+    equal(legacy.nextCursor, 40); equal(type(legacy.nextCursor), 'number')
+    equal(repository.getConversation(11, 7).id, 7)
+    equal(#repository.listConversations(11, 2, 50, 7, 50), 1)
+    equal(repository.listConversations(11, 2, 50, 7, 50)[1].id, 7)
+    equal(repository.getConversation(22, 7), nil)
+    equal(list(8, { limit = 2 }).data.items[1].id, 90)
+    equal(list(7, { limit = 2, cursor = 1, cursorId = 1 }).data.nextCursor, nil)
+    equal(list(7, { limit = 2, cursor = 1, cursorId = 1 }).data.nextCursorId, nil)
+    for _, value in ipairs({ 0, -1, 1.5, 'bad', {}, false }) do
+        local calls = #queries
+        local result = list(7, { limit = 2, cursor = 50, cursorId = value })
+        equal(result.ok, false); equal(result.error.code, PhoneConstants.Errors.INVALID_INPUT)
+        equal(#queries, calls)
+    end
+    equal(list(7, { cursorId = 7 }).error.code, PhoneConstants.Errors.INVALID_INPUT)
+    equal(list(7, { cursor = 50, cursorId = '50', limit = 2 }).data.items[1].id, 7)
+    equal(list(7, { cursor = '50', cursorId = '50', limit = 2 }).data.items[1].id, 7)
+    equal(list(99, { cursorId = -1 }).error.code, PhoneConstants.Errors.UNAUTHORIZED)
+    equal(PhoneValidation.page({ cursor = 50, cursorId = -1 }).cursor, 50)
+    QBPhone, MySQL, PhoneConstants, PhoneResult, PhoneError = oldPhone, oldMySQL, oldConstants, oldResult, oldError
+end)
+
 io.write(("\n%d passed, %d failed\n"):format(passed, failed))
 if failed > 0 then os.exit(1) end

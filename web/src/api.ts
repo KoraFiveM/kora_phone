@@ -88,7 +88,7 @@ async function execute(action:keyof Api,p:any,id:string):Promise<any>{switch(act
   case'comments':{const q=await server<any>('social:getComments',{postId:p.id,limit:50});return(q.items||[]).map((x:any)=>({id:x.id,number:x.handle||x.displayName,body:x.body,created_at:stamp(x.createdAt)})) as Comment[]}
   case'comment':await server('social:createComment',{postId:p.id,body:p.body,clientRequestId:id});return true;
   case'removeComment':await server('social:deleteComment',{id:p.id});return true;
-  case'conversations':{const q=await server<any>('messages:getConversations',{limit:50,cursor:p.before});return(q.items||q||[]).map(adaptConversation) as Conversation[]}
+  case'conversations':{const q=await server<any>('messages:getConversations',{limit:50,cursor:p.before,cursorId:p.cursorId});return(q.items||q||[]).map(adaptConversation) as Conversation[]}
   case'startChat':return adaptConversation(await server<any>('messages:startDirect',{to:p.number}));
   case'conversation':{const q=await server<any>('messages:getPage',{conversationId:p.id,limit:50,cursor:p.before});return(q.items||q||[]).map(mapMessage) as ChatMessage[]}
   case'sendChatMessage':return mapMessage(await server<any>('messages:send',{conversationId:p.conversationId,body:p.body,mediaId:p.mediaId,clientRequestId:id}));

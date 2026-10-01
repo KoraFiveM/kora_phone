@@ -71,9 +71,16 @@ function Messages.getForDevice(messageId, deviceId)
     ]], { deviceId, deviceId, deviceId, messageId })
 end
 
-function Messages.listConversations(deviceId, limit, cursor, onlyId)
+function Messages.listConversations(deviceId, limit, cursor, onlyId, cursorId)
     local filters, params = { 'cm.device_id = ?', 'cm.left_at IS NULL' }, { deviceId, deviceId, deviceId }
-    if cursor then filters[#filters + 1] = 'COALESCE(last_message.id, c.id) < ?'; params[#params + 1] = cursor end
+    if cursor and cursorId then
+        filters[#filters + 1] = '(COALESCE(last_message.id, c.id) < ? OR (COALESCE(last_message.id, c.id) = ? AND c.id < ?))'
+        params[#params + 1] = cursor
+        params[#params + 1] = cursor
+        params[#params + 1] = cursorId
+    elseif cursor then
+        filters[#filters + 1] = 'COALESCE(last_message.id, c.id) < ?'; params[#params + 1] = cursor
+    end
     if onlyId then filters[#filters + 1] = 'c.id = ?'; params[#params + 1] = onlyId end
     params[#params + 1] = limit
     return MySQL.query.await(([[
@@ -97,7 +104,7 @@ function Messages.listConversations(deviceId, limit, cursor, onlyId)
             SELECT MAX(latest.id) FROM phone_messages latest
             LEFT JOIN phone_message_deletions ld ON ld.message_id = latest.id AND ld.device_id = ?
             WHERE latest.conversation_id = c.id AND latest.deleted_at IS NULL AND ld.message_id IS NULL)
-        WHERE %s ORDER BY sortId DESC LIMIT ?
+        WHERE %s ORDER BY sortId DESC, c.id DESC LIMIT ?
     ]]):format(table.concat(filters, ' AND ')), params) or {}
 end
 

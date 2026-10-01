@@ -18,6 +18,8 @@ The NUI currently maps the following server-authoritative features:
 
 The messaging repository returns conversation summaries with the other member's phone number and a display label (the contact name when saved), plus paginated message pages, read receipts and per-user deletes. Incoming messages raise a notification and refresh the open conversation. Media capture also requires a configured provider and `screenshot-basic`; the default provider is intentionally disabled.
 
+Conversation-list pages use numeric `cursor` and optional `cursorId` inputs. Send both values from the previous response's `nextCursor` and `nextCursorId` to include rows tied on the sort key. Numeric-only cursors remain supported with their original strict sort-key cutoff, so they can still skip tied rows. The browser `conversations` API keeps its array result and numeric `before` input; pass the last row's `sortId` as `before` and its `id` as the optional `cursorId`. These values apply to conversation lists; message-history and other paging APIs are unchanged.
+
 Flash and video clips need a media host; set `Config.Server.Media.Provider = 'fivemanage'` (see `docs/media-storage.md`) and they switch on. The Work app is backed by QBCore Jobs, Wallet by the banking service, Market by marketplace callbacks, and the photo Gallery by the media service. The Calculator and Clock remain local utilities. Video calls and custom embedded apps are not implemented, and in game Pulse chats are text, shared locations, photos and (with a media provider) video clips, in direct and group chats.
 
 Phone behaviour worth knowing:

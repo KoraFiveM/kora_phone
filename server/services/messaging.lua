@@ -173,8 +173,15 @@ function Messaging.listConversations(source, payload)
     if not device then return err end
     local page, validationError = PhoneValidation.page(payload)
     if not page then return PhoneError(PhoneConstants.Errors.INVALID_INPUT, validationError) end
-    local rows = QBPhone.Repositories.Messages.listConversations(device.id, page.limit, page.cursor)
-    return PhoneResult({ items = rows, nextCursor = #rows == page.limit and rows[#rows].sortId or nil })
+    local cursorId
+    if type(payload) == 'table' and payload.cursorId ~= nil then
+        if not page.cursor then return PhoneError(PhoneConstants.Errors.INVALID_INPUT, 'cursor is required with cursorId') end
+        cursorId, validationError = PhoneValidation.integer(payload.cursorId, 'cursorId', 1)
+        if not cursorId then return PhoneError(PhoneConstants.Errors.INVALID_INPUT, validationError) end
+    end
+    local rows = QBPhone.Repositories.Messages.listConversations(device.id, page.limit, page.cursor, nil, cursorId)
+    local last = #rows == page.limit and rows[#rows] or nil
+    return PhoneResult({ items = rows, nextCursor = last and last.sortId or nil, nextCursorId = last and last.id or nil })
 end
 
 function Messaging.markRead(source, payload)

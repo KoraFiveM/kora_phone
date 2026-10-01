@@ -46,7 +46,7 @@ export type Api = {
   uploadMedia: [{ blob: Blob; onProgress?: (fraction: number) => void }, { id: number; url: string; kind: MediaKind }]; createProfile: [{ handle: string; displayName: string }, boolean];
   removePost: [{ id: number; kind?: 'classifieds' | 'flash' }, boolean]; reportListing: [{ id: number; reason: string; details: string }, boolean]; moderationQueue: [{ status?: 'open' | 'reviewing' }, ModerationReport[]]; moderationResolve: [{ reportId: number; action: 'dismiss' | 'remove_content' | 'suspend_profile'; note: string }, boolean]; markSold: [{ id: number }, boolean]; contactSeller: [{ id: number; message: string }, boolean]; like: [{ id: number; liked: boolean }, boolean];
   comments: [{ id: number }, Comment[]]; comment: [{ id: number; body: string }, boolean]; removeComment: [{ id: number }, boolean];
-  conversations: [{ before?: number }, Conversation[]]; startChat: [{ number: string }, Conversation];
+  conversations: [{ before?: number; cursorId?: number }, Conversation[]]; startChat: [{ number: string }, Conversation];
   createGroup: [{ name: string; numbers: string[] }, { id: number }];
   conversation: [{ id: number; before?: number }, ChatMessage[]];
   sendChatMessage: [{ conversationId: number; body: string; mediaKind?: MediaKind; media?: string; mediaId?: number }, ChatMessage];
