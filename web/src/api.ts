@@ -42,12 +42,16 @@ async function uploadMedia(p:{blob:Blob;onProgress?:(fraction:number)=>void}){
   const saved=await server<any>('media:complete',{token:up.token,receipt});
   return{id:Number(saved.id),url:String(saved.publicUrl),kind:kindOf(saved.mimeType,saved.publicUrl)||'photo'}}
 const toPhotos=(g:any):Photo[]=>(g?.items||[]).map((x:any)=>({id:String(x.id),url:String(x.publicUrl),created_at:Number(x.createdAt||0)}));
-let cached:DeviceData=normalizeData({settings:{name:'Nothing Phone',volume:.5,scale:1,wallpaper:'qbcore',theme:'qbcore',setupComplete:false},contacts:[],notes:[],photos:[],stations:[],alarms:[]});
+const defaultData=():DeviceData=>normalizeData({settings:{name:'Nothing Phone',volume:.5,scale:1,wallpaper:'qbcore',theme:'qbcore',setupComplete:false},contacts:[],notes:[],photos:[],stations:[],alarms:[]});
+let cached:DeviceData=defaultData();
+let cachedDeviceId:string|undefined;
 const stamp=(v?:number|string)=>typeof v==='number'?new Date(v*1000).toISOString():String(v||new Date().toISOString());
 export function adaptBootstrap(raw:Record<string,any>):Bootstrap{
+  const id=String(raw.device?.id||'qbphone');
+  if(id!==cachedDeviceId){cached=defaultData();cachedDeviceId=id}
   const contacts=Array.isArray(raw.contacts)?raw.contacts.map((c:any)=>({id:Number(c.id),name:String(c.displayName||''),number:String(c.phoneNumber||''),photo:c.photo,favorite:c.isFavorite===1||c.isFavorite===true})):cached.contacts;
   cached=normalizeData({...cached,contacts,notes:raw.items?.notes??cached.notes,alarms:raw.items?.alarms??cached.alarms,stations:raw.items?.stations??cached.stations,settings:{...cached.settings,...(raw.device?.settings||{})},installedApps:(installed??starterApps) as any,customApps:customAppsInstalled});
-  const locked=raw.security?.locked===true;return{id:String(raw.device?.id||'qbphone'),number:String(raw.device?.phoneNumber||''),locked,hasPin:raw.security?.hasPin===true,moderator:raw.moderator===true,transfers:raw.features?.transfers===true,preferences:cached.settings,data:locked?undefined:cached,admin:raw.admin===true,video:raw.features?.video?{iceServers:Array.isArray(raw.features.video.iceServers)?raw.features.video.iceServers:[]}:false,characterName:[raw.character?.firstName,raw.character?.lastName].filter(Boolean).join(' '),flash:raw.features?.flash?{maxSeconds:Number(raw.features.flash.maxSeconds)||15,maxBytes:Number(raw.features.flash.maxBytes)||undefined}:false,
+  const locked=raw.security?.locked===true;return{id,number:String(raw.device?.phoneNumber||''),locked,hasPin:raw.security?.hasPin===true,moderator:raw.moderator===true,transfers:raw.features?.transfers===true,preferences:cached.settings,data:locked?undefined:cached,admin:raw.admin===true,video:raw.features?.video?{iceServers:Array.isArray(raw.features.video.iceServers)?raw.features.video.iceServers:[]}:false,characterName:[raw.character?.firstName,raw.character?.lastName].filter(Boolean).join(' '),flash:raw.features?.flash?{maxSeconds:Number(raw.features.flash.maxSeconds)||15,maxBytes:Number(raw.features.flash.maxBytes)||undefined}:false,
     capabilities:{banking:true,camera:raw.features?.media===true,gallery:true,social:true,classifieds:true,services:true,calculator:true,clock:true,moderation:raw.moderator===true,gps:raw.features?.maps===true,mail:true,notes:true,weather:true,property:raw.features?.property===true,vehicles:raw.features?.garage===true,flash:!!raw.features?.flash,music:true},
     unavailable:{flash:'Video uploads need a media host, which this server has not configured'},locations:Array.isArray(raw.locations)?raw.locations:[],services:[]};
 }
