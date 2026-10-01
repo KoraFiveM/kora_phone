@@ -109,6 +109,79 @@ async function checkDeviceCache() {
   equal(fallback.locked, false, "missing security retains the existing unlocked contract");
   equal(replies.length, 0, "every expected NUI request was consumed");
   console.log(`PASS device-cache: ${checks} production API controls`);
+  const contactChecks = checks;
+  const contacts = [
+    { id: 11, displayName: 'Contact A', phoneNumber: '5551111111', isFavorite: true, photo: 'https://example.invalid/77.jpg' },
+    { id: 12, displayName: 'Contact B', phoneNumber: '5552222222', isFavorite: false },
+  ];
+  const context = { data: (await refresh(raw(404, {}, { contacts }), gallery(77))).data, updateData: value => { context.data = value; }, busy: false, navigate: () => {} };
+  let pending, hookIndex = 0;
+  const hooks = [];
+  context.run = fn => { pending = fn(); };
+  const useState = initial => {
+    const slot = hookIndex++;
+    if (!(slot in hooks)) hooks[slot] = initial;
+    return [hooks[slot], value => { hooks[slot] = typeof value === 'function' ? value(hooks[slot]) : value; }];
+  };
+  const jsx = (type, props) => ({ type, props: props || {} });
+  const componentModule = { exports: {} };
+  const componentSource = ts.transpileModule(fs.readFileSync(path.join(root, 'web/src/Communication.tsx'), 'utf8'), {
+    compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2020, jsx: ts.JsxEmit.ReactJSX },
+  }).outputText;
+  const componentRequire = name => {
+    if (name === 'react') return { useState, useEffect: () => {} };
+    if (name === 'react/jsx-runtime') return { jsx, jsxs: jsx, Fragment: 'Fragment' };
+    if (name === './api') return { api, isPreview: false };
+    if (name === './PhoneContext') return { usePhone: () => context };
+    if (name === './types') return load(path.join(root, 'web/src/types.ts'));
+    if (name === './chatTokens') return load(path.join(root, 'web/src/chatTokens.ts'));
+    if (name === './Images') return { ImagePicker: 'ImagePicker', PhotoImage: 'PhotoImage' };
+    if (name === './components') return { Row: 'Row', Empty: 'Empty' };
+    if (name === 'lucide-react') return {};
+    throw new Error(`Unexpected component import: ${name}`);
+  };
+  new Function('require', 'module', 'exports', componentSource)(componentRequire, componentModule, componentModule.exports);
+  const view = () => { hookIndex = 0; return componentModule.exports.ContactsScreen(); };
+  const nodes = value => {
+    if (Array.isArray(value)) return value.flatMap(nodes);
+    if (!value || typeof value !== 'object') return [];
+    return [value, ...nodes(value.props?.children)];
+  };
+  const button = label => { const value = nodes(view()).find(node => node.type === 'button' && node.props['aria-label'] === label); assert.ok(value, label); return value.props; };
+  const field = label => { const node = nodes(view()).find(node => node.type === 'label' && node.props.children[0] === label); assert.ok(node, label); return nodes(node).find(child => child.type === 'input').props; };
+  const submit = async () => { const form = nodes(view()).find(node => node.type === 'form'); assert.ok(form, 'contact editor is open'); form.props.onSubmit({ preventDefault: () => {} }); await pending; };
+  const reread = () => { ok('bootstrap', raw(404, {}, { contacts })); replies.push({ route: 'gallery:list', body: { limit: 100 }, result: gallery(77) }); };
+  button('Edit Contact A').onClick();
+  equal(field('Number').value, '5551111111', 'actual editor starts with selected contact');
+  field('Name').onChange({ target: { value: 'Edited A' } });
+  field('Number').onChange({ target: { value: '5554444444' } });
+  ok('contacts:update', { id: 11 }, { id: 11, displayName: 'Edited A', phoneNumber: '5554444444', isFavorite: true, avatarMediaId: 77 });
+  contacts[0] = { ...contacts[0], displayName: 'Edited A', phoneNumber: '5554444444' };
+  reread(); await submit();
+  equal(context.data.contacts[0].id, 11, 'number edit retains the original contact ID');
+  equal(context.data.contacts[0].favorite, true, 'number edit retains the selected contact favourite');
+  equal(context.data.contacts[1].number, '5552222222', 'another contact is unchanged by the reloaded response');
+  equal(nodes(view()).some(node => node.type === 'form'), false, 'successful save closes the existing editor');
+  button('Edit Contact B').onClick();
+  button('Add contact').onClick(); button('Add contact').onClick();
+  equal(field('Name').value, '', 'Add clears the old editor');
+  field('Name').onChange({ target: { value: 'New C' } }); field('Number').onChange({ target: { value: '5557777777' } });
+  ok('contacts:create', { id: 13 }, { displayName: 'New C', phoneNumber: '5557777777', isFavorite: false });
+  contacts.push({ id: 13, displayName: 'New C', phoneNumber: '5557777777', isFavorite: false });
+  reread(); await submit();
+  equal(context.data.contacts[2].id, 13, 'new contact uses existing create route without a retired editing ID');
+  ok('contacts:update', { id: 11 }, { id: 11, displayName: 'Edited A', phoneNumber: '5554444444', isFavorite: false, avatarMediaId: 77 });
+  contacts[0].isFavorite = false; reread(); button('Remove Edited A from favourites').onClick(); await pending;
+  equal(context.data.contacts[0].favorite, false, 'favourite spread keeps the existing saved ID path');
+  ok('contacts:delete', { id: 12 }, { id: 12 }); contacts.splice(1, 1); reread(); button('Delete Contact B').onClick(); await pending;
+  equal(context.data.contacts.map(contact => contact.id), [11, 13], 'delete spread keeps the existing saved ID path');
+  ok('contacts:update', { id: 11 }, { id: 11, displayName: 'Legacy A', phoneNumber: '5554444444', isFavorite: false });
+  contacts[0].displayName = 'Legacy A'; reread();
+  equal((await api('contactSave', { name: 'Legacy A', number: '5554444444' })).contacts[0].name, 'Legacy A', 'ID-less public callers retain the number lookup');
+  replies.push({ route: 'contacts:update', body: { id: 99, displayName: 'Unknown', phoneNumber: '5554444444', isFavorite: false }, result: { ok: false, error: 'Contact was not found' } });
+  await assert.rejects(api('contactSave', { id: 99, name: 'Unknown', number: '5554444444' }), /Contact was not found/);
+  equal(replies.length, 0, 'supplied ID stays authoritative and existing server errors propagate without create/reload');
+  console.log(`PASS contact-edit: ${checks - contactChecks} actual component/API state controls`);
 }
 
 async function main() {
