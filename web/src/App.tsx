@@ -238,7 +238,8 @@ export default function App() {
     if (signal.kind === 'offer' && signal.sdp) {
       const connection = ensurePeer(device.video.iceServers);
       await connection.setRemoteDescription(signal.sdp);
-      const stream = localStream.current ?? await navigator.mediaDevices.getUserMedia({ video: true }).catch(() => undefined);
+      // Receiving video must not enable the local camera without its button being pressed.
+      const stream = localStream.current;
       if (stream) {
         localStream.current = stream;
         stream.getTracks().forEach(track => { if (!connection.getSenders().some(sender => sender.track === track)) connection.addTrack(track, stream); });
@@ -247,7 +248,6 @@ export default function App() {
       const answer = await connection.createAnswer();
       await connection.setLocalDescription(answer);
       if (callRef.current?.id) sendSignal({ id: callRef.current.id, kind: 'answer', sdp: answer });
-      setVideoOn(true);
     } else if (signal.kind === 'answer' && signal.sdp) {
       await peerConnection.current?.setRemoteDescription(signal.sdp);
     } else if (signal.kind === 'ice' && signal.candidate) {

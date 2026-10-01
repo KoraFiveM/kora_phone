@@ -350,3 +350,86 @@ end
 print(('PASS call-start retirement regression: %d checks'):format(checks - retirementChecks))
 `;
 process.stdout.write(execFileSync(process.env.LUA || "lua", ["-", root], { input: callingRegression, encoding: "utf8" }));
+
+// Run the actual App callbacks with inert camera/RTC boundaries, never a camera device.
+async function videoConsentRegression() {
+  const ts = require(path.join(root, "web/node_modules/typescript"));
+  const vm = require("node:vm");
+  const source = ts.createSourceFile("App.tsx", read("web/src/App.tsx"), ts.ScriptTarget.Latest, true, ts.ScriptKind.TSX);
+  const wanted = new Set(["stopVideo", "ensurePeer", "startVideo", "handleVideoSignal"]);
+  const declarations = [];
+  function visit(node) {
+    if (ts.isVariableDeclaration(node) && wanted.has(node.name.getText(source))) {
+      declarations.push(`const ${node.name.getText(source)} = ${node.initializer.getText(source)};`);
+      wanted.delete(node.name.getText(source));
+    }
+    ts.forEachChild(node, visit);
+  }
+  visit(source);
+  assert.equal(wanted.size, 0, "extract every actual video callback");
+  let checks = 0;
+  const equal = (actual, expected, label) => { assert.deepEqual(actual, expected, label); checks++; };
+  const state = { cameraRequests: 0, videoOn: false, remoteVideo: false, stopped: 0, signals: [], connections: [] };
+  const track = { stop: () => { state.stopped++; } };
+  const stream = { getTracks: () => [track] };
+  const refs = { peerConnection: { current: undefined }, localStream: { current: undefined }, localVideoRef: { current: { srcObject: null } }, remoteVideoRef: { current: { srcObject: null } } };
+  class Peer {
+    constructor(config) { this.config = config; this.senders = []; this.ice = []; state.connections.push(this); }
+    getSenders() { return this.senders; }
+    addTrack(value, owner) { this.senders.push({ track: value, owner }); }
+    async setRemoteDescription(value) { this.remote = value; }
+    async setLocalDescription(value) { this.local = value; }
+    async createAnswer() { return { type: "answer", sdp: "inert-answer" }; }
+    async createOffer() { return { type: "offer", sdp: "inert-offer" }; }
+    async addIceCandidate(value) { this.ice.push(value); }
+    close() { this.closed = true; }
+  }
+  const host = {
+    ...refs, device: { video: { iceServers: [] } }, callRef: { current: { id: "call-1" } },
+    useCallback: fn => fn, run: work => work(), RTCPeerConnection: Peer,
+    navigator: { mediaDevices: { getUserMedia: async options => { equal(options.video, true); state.cameraRequests++; return stream; } } },
+    setVideoOn: value => { state.videoOn = value; }, setRemoteVideo: value => { state.remoteVideo = value; },
+    sendSignal: value => { state.signals.push(value); },
+  };
+  const emitted = ts.transpileModule(declarations.join("\n") + "\n({ stopVideo, ensurePeer, startVideo, handleVideoSignal });", { compilerOptions: { target: ts.ScriptTarget.ES2022, module: ts.ModuleKind.None } }).outputText;
+  const callbacks = vm.runInNewContext(emitted, host, { filename: "App.tsx:video-callbacks" });
+  await callbacks.handleVideoSignal({ kind: "offer", sdp: { type: "offer", sdp: "remote-offer" } });
+  const connection = refs.peerConnection.current;
+  equal(state.cameraRequests, 0, "remote offer cannot request a previously permitted local camera");
+  equal(connection.senders.length, 0, "receive-only answer publishes no local track");
+  equal(refs.localStream.current, undefined);
+  equal(state.videoOn, false, "camera button remains Start video");
+  equal(state.signals[0].kind, "answer"); equal(state.signals[0].id, "call-1");
+  equal(connection.local.type, "answer"); equal(connection.remote.sdp, "remote-offer");
+  const remoteStream = { id: "remote-stream" };
+  connection.ontrack({ streams: [remoteStream] });
+  equal(state.remoteVideo, true); equal(refs.remoteVideoRef.current.srcObject, remoteStream);
+  await callbacks.startVideo();
+  equal(state.cameraRequests, 1, "only explicit Start video obtains local tracks");
+  equal(state.videoOn, true); equal(refs.localStream.current, stream);
+  equal(refs.localVideoRef.current.srcObject, stream); equal(connection.senders.length, 1);
+  equal(connection.senders[0].track, track); equal(connection.senders[0].owner, stream);
+  equal(state.signals[1].kind, "offer");
+  await callbacks.handleVideoSignal({ kind: "offer", sdp: { type: "offer", sdp: "renegotiation" } });
+  equal(state.cameraRequests, 1, "later offers reuse explicitly enabled local camera");
+  equal(connection.senders.length, 1, "renegotiation does not duplicate local tracks");
+  equal(state.videoOn, true); equal(state.signals[2].kind, "answer");
+  await callbacks.handleVideoSignal({ kind: "answer", sdp: { type: "answer", sdp: "remote-answer" } });
+  equal(connection.remote.sdp, "remote-answer");
+  await callbacks.handleVideoSignal({ kind: "ice", candidate: { candidate: "inert-ice" } });
+  equal(connection.ice[0].candidate, "inert-ice");
+  connection.onicecandidate({ candidate: { toJSON: () => ({ candidate: "local-ice" }) } });
+  equal(state.signals[3].kind, "ice"); equal(state.signals[3].id, "call-1");
+  callbacks.stopVideo();
+  equal(connection.closed, true); equal(state.stopped, 1);
+  equal(refs.peerConnection.current, undefined); equal(refs.localStream.current, undefined);
+  equal(refs.localVideoRef.current.srcObject, null); equal(refs.remoteVideoRef.current.srcObject, null);
+  equal(state.videoOn, false); equal(state.remoteVideo, false);
+  callbacks.stopVideo(); equal(state.stopped, 1, "cleanup releases local tracks once");
+  await callbacks.handleVideoSignal(null); equal(state.connections.length, 1);
+  host.device = undefined;
+  await callbacks.handleVideoSignal({ kind: "offer", sdp: { type: "offer", sdp: "ignored" } });
+  await callbacks.startVideo(); equal(state.connections.length, 1); equal(state.cameraRequests, 1);
+  console.log(`PASS video consent: ${checks} actual callback checks with inert camera/RTC boundaries`);
+}
+videoConsentRegression().catch(error => { console.error(error); process.exitCode = 1; });
