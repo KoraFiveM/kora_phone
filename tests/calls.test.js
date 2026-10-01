@@ -44,3 +44,214 @@ assert.match(serverVoice, /removePlayerFromCall/, "voice cleanup must use the tr
 assert.doesNotMatch(voice, /MumbleSetPlayerMuted/, "call mute must not misuse receive-side player muting");
 
 console.log("PASS calls: server authority, persistence, routing and cleanup contracts verified");
+
+// Execute the actual Lua service/repositories with controlled yielding SQL.
+const { execFileSync } = require("node:child_process");
+const callingRegression = String.raw`local root = assert(arg[1], 'supply the phone resource root')
+local checks = 0
+local function equal(actual, expected, message)
+    assert(actual == expected, (message or 'value') .. ': expected ' .. tostring(expected) .. ', got ' .. tostring(actual))
+    checks = checks + 1
+end
+local function count(values)
+    local n = 0
+    for _ in pairs(values) do n = n + 1 end
+    return n
+end
+
+local function host()
+    local state = { pending = {}, rows = {}, events = {}, timers = {}, callbacks = {}, handlers = {}, voice = {}, pause = nil }
+    QBPhone, MySQL = {}, nil
+    dofile(root .. '/config/shared.lua')
+    dofile(root .. '/config/server.lua')
+    dofile(root .. '/shared/constants.lua')
+    dofile(root .. '/shared/validation.lua')
+    local devices, byNumber, players = {}, {}, {}
+    for i = 1, 4 do
+        local citizenId, number = 'character-' .. i, '555000000' .. i
+        devices[citizenId] = { id = i, ownerCitizenId = citizenId, phoneNumber = number, isActive = 1 }
+        byNumber[number] = devices[citizenId]
+        players[i] = { PlayerData = { source = i, citizenid = citizenId }, Functions = { GetItemByName = function() return { name = 'phone' } end } }
+    end
+    local core = { Functions = {
+        GetPlayer = function(source) return players[source] end,
+        CreateCallback = function(name, fn) state.callbacks[name] = fn end,
+    } }
+    GetCurrentResourceName = function() return 'qbphone-stevie' end
+    GetNumResourceMetadata = function() return 0 end
+    GetGameTimer = function() return 60000 end
+    CreateThread = function() end
+    Wait = function() error('unexpected startup thread') end
+    SetTimeout = function(ms, fn) state.timers[#state.timers + 1] = { ms = ms, fn = fn } end
+    TriggerClientEvent = function(name, source, ...) state.events[#state.events + 1] = { name = name, source = source, args = table.pack(...) } end
+    AddEventHandler = function(name, fn)
+        state.handlers[name] = state.handlers[name] or {}
+        table.insert(state.handlers[name], fn)
+    end
+    RegisterNetEvent = function() end
+    local voice = {
+        setPlayerCall = function(source, channel) state.voice[#state.voice + 1] = { 'join', source, channel }; return true end,
+        removePlayerFromCall = function(source, channel) state.voice[#state.voice + 1] = { 'leave', source, channel }; return true end,
+    }
+    exports = { ['qb-core'] = { GetCoreObject = function() return core end }, ['pma-voice'] = voice }
+    promise = { new = function()
+        local p = {}
+        p.resolve = function(_, value) p.done, p.value = true, value end
+        p.reject = function(_, err) p.done, p.err = true, err end
+        return p
+    end }
+    Citizen = { Await = function(p)
+        if not p.done then coroutine.yield(p) end
+        assert(p.done, 'resume only after controlled SQL completion')
+        if p.err then error(p.err, 0) end
+        return p.value
+    end }
+    local function sql(method, query, params, cb)
+        local phase
+        if query:find('WHERE owner_citizenid', 1, true) then phase = 'caller'
+        elseif query:find('WHERE phone_number', 1, true) then phase = 'lookup'
+        elseif query:find('phone_blocks', 1, true) then phase = 'block'
+        elseif query:find('INSERT INTO phone_calls', 1, true) then phase = 'create'
+        elseif query:find('UPDATE phone_calls SET status', 1, true) then phase = 'transition'
+        else error('unexpected SQL: ' .. query) end
+        local function complete(value, err)
+            if err then cb(nil, err); return end
+            if phase == 'caller' then value = devices[params[1]]
+            elseif phase == 'lookup' then value = byNumber[params[1]]
+            elseif phase == 'block' then value = 0
+            elseif phase == 'create' then
+                value = value == nil and 1 or value
+                if value == 1 then state.rows[params[1]] = { status = 'ringing' } end
+            elseif phase == 'transition' then
+                local row = state.rows[params[2]]
+                -- Terminal transitions include an ended_reason parameter before the ID.
+                if not row then row = state.rows[params[3]] end
+                value = row and 1 or 0
+                if row then row.status = params[1] end
+            end
+            cb(value)
+        end
+        if state.pause == phase then
+            state.pause = nil
+            state.pending[#state.pending + 1] = { phase = phase, complete = complete, params = params }
+        else complete() end
+    end
+    MySQL = {}
+    for _, method in ipairs({ 'single', 'scalar', 'update' }) do
+        MySQL[method] = { await = function(query, params)
+            local p = promise.new()
+            sql(method, query, params, function(value, err) if err then p:reject(err) else p:resolve(value) end end)
+            return Citizen.Await(p)
+        end }
+    end
+    for _, file in ipairs({ 'server/integrations/qbcore.lua', 'server/repositories/phones.lua', 'server/repositories/blocks.lua',
+        'server/repositories/calls.lua', 'server/services/phone.lua', 'server/rate_limits.lua', 'server/permissions.lua',
+        'server/sessions.lua', 'server/integrations/voice.lua', 'server/services/calling.lua' }) do dofile(root .. '/' .. file) end
+    local file = assert(io.open(root .. '/server/callbacks.lua')); local callbackSource = file:read('*a'); file:close()
+    -- Use the real protected dispatcher, without registering unrelated phone services.
+    local boundary = assert(callbackSource:find("QBPhone.registerCallback('getBootstrap'", 1, true))
+    assert(load(callbackSource:sub(1, boundary - 1), '@server/callbacks.lua'))()
+    dofile(root .. '/server/modules/call_callbacks.lua')
+    for i = 1, 4 do QBPhone.Sessions.open(i, devices['character-' .. i]) end
+    state.calling = QBPhone.Services.Calling
+    function state.request(name, source, payload)
+        local response
+        local thread = coroutine.create(function()
+            state.callbacks['qbphone:server:calls:' .. name](source, function(...) response = table.pack(...) end, payload)
+        end)
+        local ok, err = coroutine.resume(thread); assert(ok, err)
+        return { thread = thread, result = function() return response and response[1] end, arity = function() return response and response.n end }
+    end
+    function state.complete(request, value, err)
+        local pending = table.remove(state.pending, 1); assert(pending, 'SQL must be pending')
+        pending.complete(value, err)
+        local ok, result = coroutine.resume(request.thread); assert(ok, result)
+        equal(coroutine.status(request.thread), 'dead', 'settled request')
+    end
+    return state
+end
+
+local function conflict(response, message)
+    equal(response.ok, false, message)
+    equal(response.error.code, 'CONFLICT', message)
+end
+
+for _, second in ipairs({ { 1, '5550000003' }, { 3, '5550000002' }, { 2, '5550000001' } }) do
+    local h = host(); h.pause = 'create'
+    local first = h.request('start', 1, { to = '5550000002' })
+    equal(coroutine.status(first.thread), 'suspended')
+    equal(count(h.calling.activeById), 0, 'publish only after insert')
+    equal(#h.events, 0, 'no early call event')
+    equal(#h.timers, 0, 'no early ring timeout')
+    local next = h.request('start', second[1], { to = second[2] })
+    conflict(next.result(), 'pending insert reserves both participants')
+    h.complete(first)
+    equal(first.result().ok, true)
+    equal(first.arity(), 1)
+    equal(count(h.calling.activeById), 1)
+    equal(h.calling.callByDevice[1], first.result().data.id)
+    equal(h.calling.callByDevice[2], first.result().data.id)
+    equal(count(h.rows), 1)
+    equal(#h.events, 2)
+    equal(h.timers[1].ms, 30000)
+end
+
+for _, phase in ipairs({ 'lookup', 'block' }) do
+    local h = host(); h.pause = phase
+    local first = h.request('start', 1, { to = '5550000002' })
+    local second = h.request('start', 1, { to = '5550000003' })
+    equal(second.result().ok, true)
+    h.complete(first)
+    conflict(first.result(), 'recheck caller after yielding reads')
+    equal(count(h.calling.activeById), 1)
+    equal(count(h.rows), 1)
+    equal(#h.events, 2)
+end
+
+for _, failure in ipairs({ 'false', 'error' }) do
+    local h = host(); h.pause = 'create'
+    local request = h.request('start', 1, { to = '5550000002' })
+    if failure == 'error' then h.complete(request, nil, 'controlled create failure') else h.complete(request, 0) end
+    equal(request.result().ok, false)
+    equal(request.result().error.code, 'INTERNAL_ERROR')
+    equal(request.arity(), 1, 'outer protected callback error transport')
+    equal(request.result().error.message, failure == 'error' and 'Request failed' or 'Unable to create call')
+    equal(h.calling.callByDevice[1], nil, 'failed creation releases caller')
+    equal(h.calling.callByDevice[2], nil, 'failed creation releases callee')
+    equal(count(h.calling.activeById), 0)
+    equal(#h.events, 0)
+    equal(#h.timers, 0)
+    equal(h.request('start', 1, { to = '5550000002' }).result().ok, true, 'retry after failure')
+end
+
+local h = host()
+local started = h.request('start', 1, { to = '555-000-0002', deviceId = 4, source = 4 }).result()
+equal(started.ok, true)
+equal(started.data.direction, 'outgoing')
+equal(started.data.remoteNumber, '5550000002')
+equal(started.data.status, 'ringing')
+equal(started.data.voiceChannel, nil)
+equal(h.events[1].source, 1)
+equal(h.events[2].source, 2)
+equal(h.events[2].args[1].direction, 'incoming')
+local rejected = h.request('accept', 1, { id = started.data.id }).result()
+conflict(rejected, 'only callee can accept')
+local accepted = h.request('accept', 2, { id = started.data.id }).result()
+equal(accepted.ok, true)
+equal(accepted.data.status, 'active')
+equal(h.voice[1][2], 1)
+equal(h.voice[2][2], 2)
+equal(h.voice[1][3], h.voice[2][3])
+local ended = h.request('hangup', 1, { id = started.data.id }).result()
+equal(ended.ok, true)
+equal(ended.data.status, 'ended')
+equal(h.calling.callByDevice[1], nil)
+equal(h.calling.callByDevice[2], nil)
+equal(count(h.calling.activeById), 0)
+equal(h.voice[3][1], 'leave')
+equal(h.voice[4][1], 'leave')
+equal(h.request('start', 1, { to = '5550000001' }).result().error.code, 'INVALID_INPUT')
+equal(h.request('start', 1, { to = '5550000099' }).result().error.code, 'NOT_FOUND')
+print(('PASS call-start coroutine regression: %d checks'):format(checks))
+`;
+process.stdout.write(execFileSync(process.env.LUA || "lua", ["-", root], { input: callingRegression, encoding: "utf8" }));

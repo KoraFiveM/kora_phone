@@ -117,6 +117,7 @@ function Calling.start(source, payload)
     if QBPhone.Repositories.Blocks.isEitherBlocked(caller.id, callee.id) then
         return PhoneError(PhoneConstants.Errors.NOT_FOUND, 'Number was not found')
     end
+    if Calling.callByDevice[caller.id] then return PhoneError(PhoneConstants.Errors.CONFLICT, 'Already in a call') end
     if Calling.callByDevice[callee.id] then return PhoneError(PhoneConstants.Errors.CONFLICT, 'Number is busy') end
     local calleeSource = QBPhone.Sessions.sourceByNumber(number)
     if not calleeSource then return PhoneError(PhoneConstants.Errors.NOT_FOUND, 'Number is unavailable') end
@@ -128,12 +129,16 @@ function Calling.start(source, payload)
         callerNumber = caller.phoneNumber, calleeNumber = callee.phoneNumber,
         status = 'ringing', voiceChannel = voiceChannel, startedAt = os.time(),
     }
-    if not QBPhone.Repositories.Calls.create(call) then
+    -- Keep both devices busy while the database insert yields.
+    Calling.callByDevice[caller.id] = call.id
+    Calling.callByDevice[callee.id] = call.id
+    local ok, created = pcall(QBPhone.Repositories.Calls.create, call)
+    if not ok or not created then
+        clear(call)
+        if not ok then error(created, 0) end
         return PhoneError(PhoneConstants.Errors.INTERNAL, 'Unable to create call')
     end
     Calling.activeById[call.id] = call
-    Calling.callByDevice[caller.id] = call.id
-    Calling.callByDevice[callee.id] = call.id
     TriggerClientEvent('qbphone:client:calls:outgoing', source, publicCall(call, caller.id))
     TriggerClientEvent('qbphone:client:calls:incoming', calleeSource, publicCall(call, callee.id))
 
