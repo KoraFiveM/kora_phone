@@ -1,5 +1,4 @@
 QBPhone = QBPhone or {}
-QBPhone.QBCore = exports['qb-core']:GetCoreObject()
 
 local pendingCallbacks = 0
 
@@ -7,20 +6,21 @@ function QBPhone.ServerCallback(name, payload, done)
     if type(name) ~= 'string' or type(done) ~= 'function' then return end
     pendingCallbacks = pendingCallbacks + 1
     local generation = QBPhone.State.generation
-    QBPhone.QBCore.Functions.TriggerCallback(name, function(result)
+    CreateThread(function()
+        local result = QB.callback.trigger(name, payload or {})
         pendingCallbacks = math.max(0, pendingCallbacks - 1)
         if generation ~= QBPhone.State.generation then
             return done({ ok = false, error = 'SESSION_CHANGED' })
         end
         done(result or { ok = false, error = 'EMPTY_SERVER_RESPONSE' })
-    end, payload or {})
+    end)
 end
 
 -- Config.Client.DisableWhileDead: no phone while dead or in last stand (QBCore's isdead / inlaststand).
 function QBPhone.Unavailable()
     if not Config.Client.DisableWhileDead then return false end
     if QB.cache.isDead() then return true end
-    local data = QBPhone.QBCore.Functions.GetPlayerData()
+    local data = exports.qbcore:getPlayerData()
     local metadata = data and data.metadata or {}
     return metadata.isdead == true or metadata.inlaststand == true
 end
@@ -138,7 +138,7 @@ end)
 
 CreateThread(function()
     while not NetworkIsSessionStarted() do Wait(250) end
-    local data = QBPhone.QBCore.Functions.GetPlayerData()
+    local data = exports.qbcore:getPlayerData()
     if data and data.citizenid then
         QBPhone.State.playerLoaded = true
         QBPhone.Bootstrap()

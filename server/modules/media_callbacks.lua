@@ -1,5 +1,5 @@
 local function registerAsync(name, rateKey, handler)
-    QBPhone.QB.Functions.CreateCallback('qbphone:server:' .. name, function(source, cb, payload)
+    exports.qbcore:createCallback('qbphone:server:' .. name, function(source, cb, payload)
         if not QBPhone.RateLimits.consume(source, rateKey) then
             return cb(PhoneError(PhoneConstants.Errors.RATE_LIMITED, 'Too many requests'))
         end

@@ -24,7 +24,7 @@ function BankingService.balance(source)
     local balance = QBPhone.Integrations.Banking.getBalance(player)
     if balance == nil then return unavailable() end
     -- 'account' is the QBCore money type ("bank"); the holder and account number are what a person recognises.
-    local pd = player.PlayerData
+    local pd = player
     local holder = pd.charinfo and ('%s %s'):format(pd.charinfo.firstname or '', pd.charinfo.lastname or '') or ''
     return PhoneResult({ balance = balance, account = Config.Server.Banking.Account, holder = holder, number = pd.citizenid })
 end

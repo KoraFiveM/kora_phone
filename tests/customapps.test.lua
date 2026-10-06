@@ -32,10 +32,15 @@ local function loadCustomApps()
     sent, exportsTable, handlers, natives = {}, {}, {}, {}
     _G.SendNUIMessage = function(msg) sent[#sent + 1] = msg end
     _G.GetInvokingResource = function() return 'addon-resource' end
-    _G.exports = function(name, fn) exportsTable[name] = fn end
+    _G.exports = setmetatable({ qbcore = { getPlayerData = function()
+        local job = playerJob and { name = playerJob.name, grade = playerJob.grade }
+        if job and type(job.grade) == 'table' then
+            job.grade = { level = job.grade.level + 1 }
+        end
+        return { job = job }
+    end } }, { __call = function(_, name, fn) exportsTable[name] = fn end })
     _G.AddEventHandler = function(event, fn) handlers[event] = fn end
     _G.QBPhone = {
-        QBCore = { Functions = { GetPlayerData = function() return { job = playerJob } end } },
         Notifications = { Native = function(title, body, urgent) natives[#natives + 1] = { title = title, body = body, urgent = urgent }; return true end },
     }
     dofile(root .. "/client/customapps.lua")

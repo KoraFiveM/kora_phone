@@ -21,7 +21,7 @@ local apps = {}
 -- enforces server-side.
 local function jobMatches(job)
     if job == nil then return true end
-    local player = QBPhone.QBCore.Functions.GetPlayerData()
+    local player = exports.qbcore:getPlayerData()
     local current = player and player.job
     if not current then return false end
     local function matchesOne(spec)
@@ -29,7 +29,7 @@ local function jobMatches(job)
         if type(spec) ~= 'table' then return false end
         if current.name ~= spec.name then return false end
         if spec.grade == nil then return true end
-        local grade = type(current.grade) == 'table' and (current.grade.level or current.grade.name) or current.grade
+        local grade = type(current.grade) == 'table' and (current.grade.level and current.grade.level - 1 or current.grade.name) or current.grade
         return type(grade) == 'number' and grade >= spec.grade
     end
     if type(job) == 'table' and job[1] ~= nil then

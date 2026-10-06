@@ -7,7 +7,7 @@ local GENDERS = { [0] = 'Male', [1] = 'Female' }
 -- Everything on the card is read from the server's copy of the character, never from the client.
 local function card(source)
     local player = QBPhone.GetPlayer(source)
-    local pd = player and player.PlayerData
+    local pd = player and player
     if not pd or not pd.charinfo then return nil end
     local held = pd.metadata and pd.metadata.licences or {}
     local licences = {}

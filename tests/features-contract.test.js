@@ -34,7 +34,7 @@ assert.match(app, /nui\('quiet',/, "the UI must tell the client when Do Not Dist
 assert.match(nui, /math\.abs\(x\) > 20000/, "waypoint coordinates must be bounded");
 
 // The ID card is built from the server's copy of the character and shown only to a nearby player.
-assert.match(wallet, /PlayerData/, "the card must come from server-side player data");
+assert.match(wallet, /QBPhone.GetPlayer/, "the card must come from server-side player data");
 assert.match(wallet, /GetEntityCoords\(GetPlayerPed\(source\)\)/, "distance must use server-side positions");
 assert.match(wallet, /ShowDistance/, "the show distance must be configurable");
 assert.match(wallet, /requireDevice\(source\)/, "a locked phone must not show an ID");

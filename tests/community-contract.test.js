@@ -37,7 +37,7 @@ assert.match(market, /Services\.Messaging\.send/);
 assert.doesNotMatch(market, /RemoveMoney|AddMoney|bank|getMoney/i,
   "marketplace v1 must not move money");
 assert.match(moderation, /IsPlayerAceAllowed/);
-assert.match(moderation, /HasPermission/);
+assert.match(moderation, /hasPermission/);
 assert.match(moderation, /Repositories\.Reports\.audit/);
 assert.match(moderation, /Repositories\.Reports\.claim/);
 assert.match(reports, /assigned_citizenid = \?/);

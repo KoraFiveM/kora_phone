@@ -68,7 +68,7 @@ function Phone.bootstrap(source)
     if locked then
         return PhoneResult({ device = deviceInfo, security = { hasPin = true, locked = true } })
     end
-    local pd = QBPhone.GetPlayer(source).PlayerData
+    local pd = QBPhone.GetPlayer(source)
     return PhoneResult({
         device = deviceInfo,
         security = { hasPin = hasPin(device), locked = false },

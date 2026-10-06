@@ -44,7 +44,7 @@ function JobsService.setDuty(source, payload)
     if not QBPhone.Integrations.Jobs.setDuty(player, payload.onDuty) then
         return PhoneError(PhoneConstants.Errors.CONFLICT, 'Duty state could not be changed')
     end
-    local after = QBPhone.Integrations.Jobs.snapshot(player)
+    local after = QBPhone.Integrations.Jobs.snapshot(QBPhone.GetPlayer(source))
     if not after or after.name ~= before.name then
         return PhoneError(PhoneConstants.Errors.CONFLICT, 'Job changed while duty state was being updated')
     end
@@ -68,7 +68,7 @@ function JobsService.runAction(source, payload)
 
     local context = {
         source = source,
-        citizenId = player.PlayerData.citizenid,
+        citizenId = player.citizenid,
         job = snapshot.name,
         grade = snapshot.grade,
         action = actionName

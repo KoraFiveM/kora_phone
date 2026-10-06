@@ -17,12 +17,12 @@ local function gradeLevel(job)
 end
 
 function Jobs.snapshot(player)
-    local job = player and player.PlayerData and player.PlayerData.job
+    local job = player and player.job
     if type(job) ~= 'table' or type(job.name) ~= 'string' then return nil end
     return {
         name = job.name,
         label = tostring(job.label or job.name),
-        grade = gradeLevel(job),
+        grade = math.max(0, gradeLevel(job) - 1),
         gradeName = type(job.grade) == 'table' and tostring(job.grade.name or '') or '',
         gradeLabel = type(job.grade) == 'table' and tostring(job.grade.label or '') or '',
         onDuty = job.onduty == true,
@@ -32,9 +32,9 @@ end
 
 function Jobs.setDuty(player, onDuty)
     if not Config.Server.Jobs.Enabled or not Config.Server.Jobs.AllowDutyToggle then return false end
-    if not player or not player.Functions or type(player.Functions.SetJobDuty) ~= 'function' then return false end
-    local ok = pcall(function() player.Functions.SetJobDuty(onDuty == true) end)
-    return ok
+    if not player or not player.source then return false end
+    local ok, changed = pcall(function() return exports.qbcore:setJobDuty(player.source, onDuty == true) end)
+    return ok and changed == true
 end
 
 function Jobs.getAction(jobName, actionName)

@@ -93,7 +93,11 @@ local function host()
         setPlayerCall = function(source, channel) state.voice[#state.voice + 1] = { 'join', source, channel }; return true end,
         removePlayerFromCall = function(source, channel) state.voice[#state.voice + 1] = { 'leave', source, channel }; return true end,
     }
-    exports = { ['qb-core'] = { GetCoreObject = function() return core end }, ['pma-voice'] = voice }
+    exports = { qbcore = {
+        getPlayerData = function(_, src) return players[src] and players[src].PlayerData end,
+        getItemByName = function(_, src) return players[src] and { name = 'phone' } end,
+        createCallback = function(_, name, fn) state.callbacks[name] = fn end,
+    }, ['pma-voice'] = voice }
     promise = { new = function()
         local p = {}
         p.resolve = function(_, value) p.done, p.value = true, value end
