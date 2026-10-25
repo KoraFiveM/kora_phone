@@ -12,7 +12,7 @@ function Mail.list(source, payload)
     if not box then return invalid(boxError) end
     local page, pageError = PhoneValidation.page(payload)
     if not page then return invalid(pageError) end
-    local rows = QBPhone.Repositories.Mail.list(device.id, box, page.limit, page.cursor)
+    local rows = QBPhone.Repositories.Mail.list(device.id, box, page.limit, page.cursor, device.ownerCitizenId)
     return PhoneResult({ items = rows, nextCursor = #rows == page.limit and rows[#rows].id or nil })
 end
 
@@ -41,7 +41,7 @@ function Mail.markRead(source, payload)
     if not device then return err end
     local id, validationError = PhoneValidation.integer(type(payload) == 'table' and payload.id, 'id', 1)
     if not id then return invalid(validationError) end
-    QBPhone.Repositories.Mail.markRead(device.id, id)
+    QBPhone.Repositories.Mail.markRead(device.id, id, device.ownerCitizenId)
     return PhoneResult({ id = id })
 end
 
@@ -50,7 +50,7 @@ function Mail.delete(source, payload)
     if not device then return err end
     local id, validationError = PhoneValidation.integer(type(payload) == 'table' and payload.id, 'id', 1)
     if not id then return invalid(validationError) end
-    if not QBPhone.Repositories.Mail.delete(device.id, id) then
+    if not QBPhone.Repositories.Mail.delete(device.id, id, device.ownerCitizenId) then
         return PhoneError(PhoneConstants.Errors.NOT_FOUND, 'Mail was not found')
     end
     return PhoneResult({ id = id })

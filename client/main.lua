@@ -93,7 +93,7 @@ end)
 
 RegisterNetEvent('qbphone:client:mail:new', function(mail)
     if type(mail) ~= 'table' or type(mail.sender) ~= 'string' then return end
-    QBPhone.SendNui('mail:new', { sender = mail.sender:sub(1, 16), subject = tostring(mail.subject or ''):sub(1, 120) })
+    QBPhone.SendNui('mail:new', { sender = mail.sender:sub(1, 100), subject = tostring(mail.subject or ''):sub(1, 120) })
 end)
 
 -- Sent by /phonereset: put the phone away and reload it so the setup screen comes back.

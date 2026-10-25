@@ -37,7 +37,8 @@ server_scripts {
     'server/modules/economy_callbacks.lua',
     'server/modules/media_callbacks.lua',
     'server/modules/community_callbacks.lua',
-    'server/main.lua'
+    'server/main.lua',
+    'server/compat/qb-phone.lua'
 }
 
 -- Applied in this order when the resource starts, once each (server/integrations/migrations.lua).
@@ -52,6 +53,7 @@ migration 'migrations/008_pin.sql'
 migration 'migrations/009_items.sql'
 migration 'migrations/010_mail.sql'
 migration 'migrations/011_media_posts.sql'
+migration 'migrations/012_legacy_qb_phone.sql'
 
 ui_page 'web/dist/index.html'
 
@@ -77,6 +79,7 @@ dependencies {
 -- resource as if it were that one too. Don't also run the real lb-phone/sd-phone/etc
 -- alongside this -- same warning sky_phone documents for the same trick: two active
 -- providers of the same name race for the same registrations.
+provide 'qb-phone'
 provide 'lb-phone'
 provide 'sd-phone'
 provide '17mov_Phone'

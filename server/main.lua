@@ -14,6 +14,12 @@ CreateThread(function()
         StopResource(GetCurrentResourceName())
         return
     end
+    local recovered, recoveryError = pcall(QBPhone.Services.Calling.initialize)
+    if not recovered then
+        print('[qbphone] Call recovery failed, stopping resource: ' .. tostring(recoveryError))
+        StopResource(GetCurrentResourceName())
+        return
+    end
     print(('[qbphone] server foundation ready (v%s)'):format(GetResourceMetadata(GetCurrentResourceName(), 'version', 0) or 'unknown'))
 end)
 

@@ -10,7 +10,7 @@ export interface Alarm { id: string; label: string; time: string; days: number[]
 export interface DeviceData { contacts: Contact[]; notes: Note[]; photos: Photo[]; stations: Station[]; alarms: Alarm[]; settings: Settings; installedApps?: AppId[]; customApps?: Record<string, boolean> }
 export interface Call { id: string; status: 'ringing' | 'active' | 'busy' | 'missed' | 'ended' | 'declined' | 'cancelled' | 'failed'; number: string; direction: 'incoming' | 'outgoing'; deviceId: string; volume?: number }
 export interface WalletCard { name: string; citizenId: string; birthdate: string; gender: string; nationality: string; job: string; licences: { id: string; label: string; valid: boolean }[] }
-export interface MailItem { id: number; peer: string; subject: string; body: string; created_at: string; unread: boolean }
+export interface MailItem { id: number; peer: string; subject: string; body: string; created_at: string; unread: boolean; hasAction?: boolean; canReply?: boolean }
 export interface Location { label: string; x: number; y: number }
 export interface Service { label: string; description: string; numbers: string[] }
 export interface JobData { job: { name: string; label: string; grade: number; gradeLabel: string; onDuty: boolean }; actions: { id: string; label: string }[] }
@@ -23,7 +23,7 @@ export interface Post { id: number; number: string; body: string; price: number;
 export interface Comment { id: number; number: string; body: string; created_at: string }
 export interface Conversation { id: number; type?: 'direct' | 'group'; title?: string | null; peerPhoneNumber?: string | null; displayLabel?: string; lastMessageId?: number | null; lastMessagePreview?: string | null; lastMessageAt?: string | null; unreadCount?: number; sortId?: number; kind?: 'direct' | 'group'; name?: string | null; members?: string | null; last_body?: string; last_kind?: MediaKind | null; last_number?: string | null; last_at?: string | null }
 export interface ChatMessage { id: number; conversationId?: number; messageType?: 'text'; body: string; mediaId?: number | null; isMine?: boolean; senderNumber?: string; createdAt?: string; sender_number: string; media_url?: string; media_kind?: MediaKind; shared_from_post?: number; created_at: string }
-export interface Bank { balance: number; account: string; name: string; history: { id: string; citizenid: string; recipient: string; amount: number; status: string; created_at: string }[] }
+export interface Bank { activity?: { id: number; title: string; message: string; created_at: string }[]; balance: number; account: string; name: string; history: { id: string; citizenid: string; recipient: string; amount: number; status: string; created_at: string }[] }
 export interface Property { name: string; label: string; coords?: { x: number; y: number } }
 export interface Vehicle { vehicle: string; plate: string; garage: string; state: number; fuel: number }
 export interface Weather { condition: string; hour: number; minute: number; rain: number }
@@ -59,7 +59,7 @@ export type Api = {
   job: [Record<string, never>, JobData]; setDuty: [{ onDuty: boolean }, JobData]; jobAction: [{ action: string }, { completed: boolean }];
   capture: [Record<string, never>, DeviceData]; deletePhoto: [{ id: string }, DeviceData];
   blocked: [Record<string, never>, string[]]; setBlocked: [{ number: string; blocked: boolean }, boolean];
-  mailList: [{ box: 'inbox' | 'sent'; before?: number }, MailItem[]]; mailSend: [{ to: string; subject: string; body: string }, boolean]; mailRead: [{ id: number }, boolean]; mailDelete: [{ id: number }, boolean];
+  mailList: [{ box: 'inbox' | 'sent'; before?: number }, MailItem[]]; mailSend: [{ to: string; subject: string; body: string }, boolean]; mailAccept: [{ id: number }, boolean]; mailRead: [{ id: number }, boolean]; mailDelete: [{ id: number }, boolean];
   wallet: [Record<string, never>, WalletCard]; showWallet: [Record<string, never>, { shown: boolean }]; myLocation: [Record<string, never>, { x: number; y: number; label: string; heading?: number; waypoint?: { x: number; y: number } }];
   waypoint: [{ x: number; y: number }, boolean]; weather: [Record<string, never>, Weather];
   videoSignal: [{ id: string; kind: 'offer' | 'answer' | 'ice'; sdp?: RTCSessionDescriptionInit; candidate?: RTCIceCandidateInit }, boolean];

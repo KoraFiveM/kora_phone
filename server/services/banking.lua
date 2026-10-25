@@ -36,7 +36,8 @@ function BankingService.history(source, payload)
     local page, validationError = PhoneValidation.page(payload)
     if not page then return PhoneError(PhoneConstants.Errors.INVALID_INPUT, validationError) end
     local items, nextCursor = QBPhone.Repositories.Transactions.listForDevice(device.id, page)
-    return PhoneResult({ items = items, nextCursor = nextCursor })
+    local activity = MySQL.query.await('SELECT id, title, message, UNIX_TIMESTAMP(created_at) AS createdAt FROM phone_legacy_transactions WHERE citizenid = ? ORDER BY id DESC LIMIT 50', { device.ownerCitizenId }) or {}
+    return PhoneResult({ items = items, nextCursor = nextCursor, activity = activity })
 end
 
 function BankingService.transfer(source, payload)

@@ -270,7 +270,7 @@ function Calling.shutdown(reason)
         local call = Calling.activeById[id]
         if call then finish(call, call.status == 'ringing' and 'cancelled' or 'ended', reason or 'resource_restart') end
     end
-    QBPhone.Repositories.Calls.endUnfinished(reason or 'resource_restart')
+    if Calling.ready then QBPhone.Repositories.Calls.endUnfinished(reason or 'resource_restart') end
 end
 
 AddEventHandler('playerDropped', function()
@@ -281,13 +281,12 @@ AddEventHandler('QBCore:Server:OnPlayerUnload', function(source)
     Calling.disconnect(source, 'character_unload')
 end)
 
-AddEventHandler('onResourceStart', function(resource)
-    if resource ~= GetCurrentResourceName() then return end
-    CreateThread(function()
-        Wait(1000)
-        pcall(QBPhone.Repositories.Calls.endUnfinished, 'resource_restart')
-    end)
-end)
+-- Recovery must follow schema migration, not a fixed startup delay. A cold
+-- database or a busy server can take longer than one second to create calls.
+function Calling.initialize()
+    QBPhone.Repositories.Calls.endUnfinished('resource_restart')
+    Calling.ready = true
+end
 
 AddEventHandler('onResourceStop', function(resource)
     if resource == GetCurrentResourceName() then Calling.shutdown('resource_restart') end

@@ -74,7 +74,8 @@ export function MailScreen({ target }: { target: string }) {
     <button className="text-button" onClick={() => setOpen(undefined)}>← {box === 'inbox' ? 'Inbox' : 'Sent'}</button>
     <h3>{open.subject}</h3><p className="muted">{box === 'inbox' ? 'From' : 'To'} {name(open.peer)} · {dateLabel(open.created_at)}</p>
     <p className="mail-body">{open.body}</p>
-    <button className="primary" onClick={() => { setTo(open.peer); setSubject(/^re:/i.test(open.subject) ? open.subject : `Re: ${open.subject}`.slice(0, 120)); setBody(''); setOpen(undefined); setComposing(true); }}>Reply</button>
+    {open.hasAction && <button className="primary" disabled={busy} onClick={() => run(async () => { await api('mailAccept', { id: open.id }); setOpen({ ...open, hasAction: false }); list.refresh(); })}>Accept</button>}
+    {open.canReply !== false && <button className="primary" onClick={() => { setTo(open.peer); setSubject(/^re:/i.test(open.subject) ? open.subject : `Re: ${open.subject}`.slice(0, 120)); setBody(''); setOpen(undefined); setComposing(true); }}>Reply</button>}
     <button className="text-button danger" disabled={busy} onClick={() => run(async () => { await api('mailDelete', { id: open.id }); setOpen(undefined); list.refresh(); })}><Trash2 size={15} />Delete</button>
   </article>;
   const items = asList<MailItem>(list.value);

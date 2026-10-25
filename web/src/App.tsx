@@ -285,7 +285,7 @@ export default function App() {
         setCall(current => current && current.id === message.data?.id ? { ...current, status: 'ended' } : current);
       }
       else if (message.type === 'videoSignal') void handleVideoSignal(message.data);
-      else if (type === 'messages:read') setRevision(v => v + 1);
+      else if (type === 'messages:read' || type === 'bank:updated') setRevision(v => v + 1);
       else if (type === 'messages:new' && message.data && !message.data.isMine) { const sender = String(message.data.senderNumber || 'New message'); push({ title: sender, body: previewText(message.data.body), app: 'messages' }); closedAlert(sender, previewText(message.data.body)); }
       else if (type === 'mail:new' && message.data) { const sender = String(message.data.sender || 'New mail'); push({ title: sender, body: String(message.data.subject || 'New mail'), app: 'mail' }); closedAlert(sender, String(message.data.subject || 'New mail')); }
       else if (type === 'notification' || type === 'notification:push') push(message.data || {});
