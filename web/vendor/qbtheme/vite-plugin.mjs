@@ -30,12 +30,14 @@ export default function qbtheme() {
         const url = request.url?.split("?", 1)[0];
         const name = url === `${developmentBase}/theme.css`
           ? "theme.css"
-          : url === `${developmentBase}/theme.js` ? "theme.js" : null;
+          : url === `${developmentBase}/theme.js` ? "theme.js"
+          : url === `${developmentBase}/theme.json` ? "theme.json" : null;
         if (!name) return next();
         response.statusCode = 200;
         response.setHeader("Cache-Control", "no-store");
-        response.setHeader("Content-Type", name.endsWith(".css") ? "text/css; charset=utf-8" : "text/javascript; charset=utf-8");
-        response.end(await readFile(join(resourceRoot, name)));
+        response.setHeader("Content-Type", name.endsWith(".css") ? "text/css; charset=utf-8" : name.endsWith('.json') ? 'application/json' : "text/javascript; charset=utf-8");
+        const contents=await readFile(join(resourceRoot,name),'utf8');
+        response.end(name==='theme.js' ? contents.replace(`${productionBase}/theme.json`,`${developmentBase}/theme.json`) : contents);
       });
     },
   };

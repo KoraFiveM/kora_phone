@@ -87,7 +87,7 @@ function Phone.bootstrap(source)
         locations = Config.Server.Maps.Locations,
         items = QBPhone.Services.Items.forDevice(device.id),
         contacts = QBPhone.Repositories.Contacts.list(device.id),
-        conversations = QBPhone.Repositories.Messages.listConversations(device.id, Config.Limits.PageSizeDefault)
+        -- Conversations are loaded through the handset mailbox service, never legacy memberships.
     })
 end
 
@@ -150,6 +150,9 @@ end
 function Phone.saveSettings(source, payload)
     local device, err = QBPhone.Permissions.requireDevice(source)
     if not device then return err end
+    if type(payload)=='table' and payload.expectedDeviceId~=nil and tostring(payload.expectedDeviceId)~=tostring(device.id) then
+        return PhoneError(PhoneConstants.Errors.CONFLICT,'Handset changed before these settings were saved')
+    end
     local settings, validationError = PhoneValidation.settings(payload)
     if not settings then return PhoneError(PhoneConstants.Errors.INVALID_INPUT, validationError) end
     if not QBPhone.Repositories.Phones.updateSettings(device.id, json.encode(settings)) then

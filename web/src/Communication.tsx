@@ -1,11 +1,12 @@
 import { useEffect, useState } from 'react';
-import { ArrowDownLeft, ArrowUpRight, Delete, Mail as MailIcon, MessageCircle, Phone, Plus, Send, Star, Trash2 } from 'lucide-react';
+import { ArrowDownLeft, ArrowUpRight, Delete, ImagePlus, X, Mail as MailIcon, MessageCircle, Phone, Plus, Send, Star, Trash2 } from 'lucide-react';
 import { api, isPreview } from './api';
 import { ImagePicker, PhotoImage } from './Images';
 import { asList } from './types';
 import type { CallHistory, ChatMessage, Conversation, MailItem } from './types';
 import { dateLabel, Empty, Row } from './components';
 import { previewText } from './chatTokens';
+import { mergeChatMessages, mergeConversations } from './chatMessages';
 import { LoadState, useLoad, usePhone } from './PhoneContext';
 
 export function PhoneScreen({ target }: { target: string }) {
@@ -35,54 +36,110 @@ export function ContactsScreen() {
 export function MessagesScreen({ target }: { target: string }) {
   const { data, device, run, busy, revision } = usePhone();
   const inbox = useLoad(() => api('conversations', {}), [revision]);
+  const [moreConversations,setMoreConversations]=useState(true);
+  useEffect(()=>{setMoreConversations(true);},[revision]);
   const [active, setActive] = useState<Conversation>();
-  const [recipient, setRecipient] = useState(target); const [composing, setComposing] = useState(!!target);
-  const [body, setBody] = useState(''); const [messages, setMessages] = useState<ChatMessage[]>([]);
+  const [recipient, setRecipient] = useState(target);
+  const [composing, setComposing] = useState(!!target);
+  const [body, setBody] = useState('');
+  const [messages, setMessages] = useState<ChatMessage[]>([]);
+  const [attachment, setAttachment] = useState<string>();
+  const [picking, setPicking] = useState(false);
+  const [chatError, setChatError] = useState('');
+  const photo = data.photos.find(item => item.id === attachment);
   const name = (number?: string | null) => data.contacts.find(c => c.number === number)?.name || number || 'Conversation';
   const peerOf = (c: Conversation) => c.peerPhoneNumber || c.members || '';
-  const titleOf = (c: Conversation) => c.kind === 'group' ? c.name || 'Group' : c.displayLabel || name(peerOf(c));
-  const open = async (conversation: Conversation) => {
-    setActive(conversation); setComposing(true); setRecipient(peerOf(conversation));
-    const rows = await api('conversation', { id: conversation.id }); setMessages(rows.slice().reverse());
-    const newest = rows[0]?.id; await api('markConversationRead', { id: conversation.id, messageId: newest });
+  const titleOf = (c: Conversation) => c.title || (c.kind === 'group' ? c.name || 'Group' : c.displayLabel || name(peerOf(c)));
+  const archived = !!active && peerOf(active).startsWith('@group:');
+  const open = (conversation: Conversation) => {
+    setMessages([]); setActive(conversation); setComposing(true); setRecipient(peerOf(conversation));
+    setAttachment(undefined); setPicking(false); setChatError('');
   };
-  useEffect(() => { if (!target) return; let live = true; run(async () => { const conversation = await api('startChat', { number: target }); if (live) await open(conversation); }); return () => { live = false; }; }, [target]);
+  useEffect(() => {
+    if (!active) return;
+    let live = true;
+    void api('conversation', { id: active.id }).then(rows => {
+      if (!live) return;
+      setMessages(current => mergeChatMessages(current, rows)); setChatError('');
+      void api('markConversationRead', { id: active.id, messageId: rows[0]?.id }).catch(() => undefined);
+    }).catch(error => { if (live) setChatError(error instanceof Error ? error.message : 'Could not load messages'); });
+    return () => { live = false; };
+  }, [active?.id, revision]);
+  useEffect(() => {
+    if (!target) return;
+    let live = true;
+    void run(async () => { const conversation = await api('startChat', { number: target }); if (live) open({ ...conversation, peerPhoneNumber: target }); });
+    return () => { live = false; };
+  }, [target]);
+  const reset = (compose: boolean) => { setMoreConversations(true); setComposing(compose); setActive(undefined); setRecipient(''); setMessages([]); setBody(''); setAttachment(undefined); setPicking(false); setChatError(''); };
+  const send = () => run(async () => {
+    const conversation = active || await api('startChat', { number: recipient });
+    const sent = await api('sendChatMessage', { conversationId: conversation.id, body: body.trim(), ...(photo ? { mediaId: Number(photo.id) } : {}) });
+    setActive({ ...conversation, peerPhoneNumber: recipient }); setMessages(current => mergeChatMessages(current, [sent]));
+    setBody(''); setAttachment(undefined); setPicking(false); inbox.refresh();
+  });
   return <><LoadState {...inbox} retry={inbox.refresh} />
-    {!composing ? <><button className="primary compose-button" onClick={() => { setComposing(true); setActive(undefined); setRecipient(''); setMessages([]); }}><Plus size={18} />New message</button>{asList<Conversation>(inbox.value).map(conversation => <Row key={conversation.id} title={titleOf(conversation)} detail={`${previewText(conversation.lastMessagePreview ?? conversation.last_body) || 'No messages yet'}${conversation.unreadCount ? ` · ${conversation.unreadCount} unread` : ''}`} icon={<PhotoImage src={data.contacts.find(c => c.number === peerOf(conversation))?.photo} className="contact-photo" alt={titleOf(conversation)} />} onClick={() => run(() => open(conversation))} />)}{!asList(inbox.value).length && !inbox.loading && <Empty title="Start a conversation" detail="A simple hello goes a long way." />}</>
-      : <><button className="text-button" onClick={() => { setComposing(false); setActive(undefined); setRecipient(''); setMessages([]); inbox.refresh(); }}>← All messages</button><form className="message-form" onSubmit={e => { e.preventDefault(); run(async () => { const conversation = active || await api('startChat', { number: recipient }); const sent = await api('sendChatMessage', { conversationId: conversation.id, body: body.trim() }); setActive(conversation); setMessages(current => [...current, sent]); setBody(''); inbox.refresh(); }); }}><label className="recipient-field">To<input aria-label="Recipient number" required disabled={!!active} inputMode="tel" pattern="[0-9]{7,16}" maxLength={16} placeholder="Phone number" list="contacts" value={recipient} onChange={e => setRecipient(e.target.value.replace(/\D/g, ''))} /><datalist id="contacts">{data.contacts.map(c => <option key={c.number} value={c.number}>{c.name}</option>)}</datalist></label><div className="conversation">{messages.map(message => <div key={message.id} className={`bubble ${(message.isMine ?? message.sender_number === device.number) ? 'sent' : ''}`}><p>{previewText(message.body)}</p><small>{dateLabel(message.createdAt || message.created_at)} · {(message.isMine ?? message.sender_number === device.number) ? 'You' : name(message.senderNumber || message.sender_number)}</small><button type="button" className="text-button danger" aria-label="Delete message for me" disabled={busy} onClick={() => run(async () => { await api('deleteChatMessage', { messageId: message.id }); setMessages(current => current.filter(item => item.id !== message.id)); })}><Trash2 size={13} /></button></div>)}</div><div className="composer"><textarea aria-label="Message" required maxLength={1000} placeholder="Say something…" value={body} onChange={e => setBody(e.target.value)} /><button className="round-button red" aria-label="Send message" disabled={busy || !body.trim()}><Send size={18} /></button></div></form></>}
-    {active && messages.length >= 50 && <button className="text-button" disabled={busy} onClick={() => run(async () => { const rows = await api('conversation', { id: active.id, before: Math.min(...messages.map(m => m.id)) }); setMessages(current => [...rows.slice().reverse(), ...current]); })}>Load older messages</button>}
+    {!composing ? <><button className="primary compose-button" onClick={() => reset(true)}><Plus size={18} />New message</button>
+      {asList<Conversation>(inbox.value).map(conversation => <Row key={conversation.id} title={titleOf(conversation)} detail={`${previewText(conversation.lastMessagePreview ?? conversation.last_body) || (conversation.last_kind ? 'Photo' : 'No messages yet')}${conversation.unreadCount ? ` · ${conversation.unreadCount} unread` : ''}`} icon={<PhotoImage src={data.contacts.find(c => c.number === peerOf(conversation))?.photo} className="contact-photo" alt={titleOf(conversation)} />} onClick={() => open(conversation)} />)}
+      {moreConversations && (inbox.value?.length||0)>=50 && <button className="text-button" disabled={busy} onClick={()=>run(async()=>{
+        const last=inbox.value![inbox.value!.length-1];
+        const rows=await api('conversations',{before:last.sortId??last.lastMessageId??last.id,cursorId:last.id});
+        inbox.setValue(current=>mergeConversations(current||[],rows));setMoreConversations(rows.length===50);
+      })}>Older conversations</button>}
+      {!asList(inbox.value).length && !inbox.loading && <Empty title="Start a conversation" detail="A simple hello goes a long way." />}</>
+      : <><button className="text-button" onClick={() => { reset(false); inbox.refresh(); }}>← All messages</button>
+        {chatError && <p role="alert">{chatError}</p>}
+        <form className="message-form" onSubmit={e => { e.preventDefault(); void send(); }}>
+          <label className="recipient-field">To<input aria-label="Recipient number" required disabled={!!active} inputMode="tel" pattern="[0-9]{7,16}" maxLength={16} placeholder="Phone number" list="contacts" value={recipient} onChange={e => setRecipient(e.target.value.replace(/\D/g, ''))} /><datalist id="contacts">{data.contacts.map(c => <option key={c.number} value={c.number}>{c.name}</option>)}</datalist></label>
+          <div className="conversation" aria-live="polite">{messages.map(message => <div key={message.id} className={`bubble ${(message.isMine ?? message.sender_number === device.number) ? 'sent' : ''}`}>
+            {message.media_url && message.media_kind === 'photo' && <PhotoImage className="chat-photo" src={message.media_url} alt="Message photo" />}
+            {message.body && <p>{previewText(message.body)}</p>}
+            <small>{dateLabel(message.createdAt || message.created_at)} · {(message.isMine ?? message.sender_number === device.number) ? 'You' : name(message.senderNumber || message.sender_number)}</small>
+            <button type="button" className="text-button danger" aria-label="Delete message for me" disabled={busy} onClick={() => run(async () => { await api('deleteChatMessage', { messageId: message.id }); setMessages(current => current.filter(item => item.id !== message.id)); })}><Trash2 size={13} /></button>
+          </div>)}</div>
+          {archived ? <p className="muted">Archived group · read only</p> : <>
+            {picking && <ImagePicker label="Message attachment" value={photo?.url || ''} photos={data.photos} galleryOnly onChange={url => setAttachment(data.photos.find(item => item.url === url)?.id)} />}
+            {picking && !data.photos.length && <p className="muted">Take a photo in Camera before attaching it here.</p>}
+            {photo && <div className="chat-attachment"><PhotoImage src={photo.url} alt="Selected attachment" /><button type="button" className="icon-button" aria-label="Remove attachment" onClick={() => setAttachment(undefined)}><X size={17} /></button></div>}
+            <div className="composer"><button type="button" className="icon-button" aria-label="Attach gallery photo" aria-pressed={picking} onClick={() => setPicking(value => !value)}><ImagePlus size={19} /></button>
+              <textarea aria-label="Message" required={!photo} maxLength={1000} placeholder="Say something…" value={body} onChange={e => setBody(e.target.value)} />
+              <button className="round-button red" aria-label="Send message" disabled={busy || (!body.trim() && !photo)}><Send size={18} /></button>
+            </div></>}
+        </form></>}
+    {active && messages.length >= 50 && <button className="text-button" disabled={busy} onClick={() => run(async () => { const rows = await api('conversation', { id: active.id, before: Math.min(...messages.map(m => m.id)) }); setMessages(current => mergeChatMessages(current, rows)); })}>Load older messages</button>}
   </>;
 }
-export function MailScreen({ target }: { target: string }) {
-  const { data, run, busy, revision, notify } = usePhone();
-  const [box, setBox] = useState<'inbox' | 'sent'>('inbox');
-  const list = useLoad(() => api('mailList', { box }), [box, revision]);
+export function MailScreen(_props: { target: string }) {
+  const { run, busy, revision } = usePhone();
+  const [tab, setTab] = useState<'inbox' | 'activity'>('inbox');
+  const list = useLoad(() => api('legacyMailList', {}), [revision]);
+  const activity = useLoad(() => api('legacyActivity', {}), [revision]);
   const [open, setOpen] = useState<MailItem>();
-  const [composing, setComposing] = useState(!!target);
-  const [to, setTo] = useState(target); const [subject, setSubject] = useState(''); const [body, setBody] = useState('');
-  const name = (number: string) => data.contacts.find(c => c.number === number)?.name || number;
-  const send = () => run(async () => { await api('mailSend', { to, subject, body }); setComposing(false); setTo(''); setSubject(''); setBody(''); notify('Mail sent'); list.refresh(); });
-  const read = (item: MailItem) => { setOpen(item); if (item.unread) void api('mailRead', { id: item.id }).then(list.refresh).catch(() => undefined); };
-  if (composing) return <form className="form" onSubmit={e => { e.preventDefault(); send(); }}>
-    <button type="button" className="text-button" onClick={() => setComposing(false)}>← Back</button>
-    <label>To<input required inputMode="tel" pattern="[0-9]{7,16}" maxLength={16} placeholder="Phone number" list="mail-contacts" value={to} onChange={e => setTo(e.target.value.replace(/\D/g, ''))} /><datalist id="mail-contacts">{data.contacts.map(c => <option key={c.number} value={c.number}>{c.name}</option>)}</datalist></label>
-    <label>Subject<input required maxLength={120} value={subject} onChange={e => setSubject(e.target.value)} /></label>
-    <textarea className="note-editor" aria-label="Mail body" required maxLength={4000} placeholder="Write something worth reading…" value={body} onChange={e => setBody(e.target.value)} />
-    <button className="primary" disabled={busy}><Send size={17} />Send mail</button>
-  </form>;
+  const [more, setMore] = useState(true);
+  useEffect(() => { setMore(true); }, [revision, tab]);
+  const read = (item: MailItem) => {
+    setOpen(item);
+    if (item.unread) void run(async () => { await api('legacyMailRead', { id: item.id }); list.refresh(); });
+  };
   if (open) return <article className="mail-read">
-    <button className="text-button" onClick={() => setOpen(undefined)}>← {box === 'inbox' ? 'Inbox' : 'Sent'}</button>
-    <h3>{open.subject}</h3><p className="muted">{box === 'inbox' ? 'From' : 'To'} {name(open.peer)} · {dateLabel(open.created_at)}</p>
+    <button className="text-button" onClick={() => setOpen(undefined)}>← Inbox</button>
+    <h3>{open.subject}</h3><p className="muted">From {open.peer} · {dateLabel(open.created_at)}</p>
     <p className="mail-body">{open.body}</p>
     {open.hasAction && <button className="primary" disabled={busy} onClick={() => run(async () => { await api('mailAccept', { id: open.id }); setOpen({ ...open, hasAction: false }); list.refresh(); })}>Accept</button>}
-    {open.canReply !== false && <button className="primary" onClick={() => { setTo(open.peer); setSubject(/^re:/i.test(open.subject) ? open.subject : `Re: ${open.subject}`.slice(0, 120)); setBody(''); setOpen(undefined); setComposing(true); }}>Reply</button>}
-    <button className="text-button danger" disabled={busy} onClick={() => run(async () => { await api('mailDelete', { id: open.id }); setOpen(undefined); list.refresh(); })}><Trash2 size={15} />Delete</button>
+    <button className="text-button danger" disabled={busy} onClick={() => run(async () => { await api('legacyMailDelete', { id: open.id }); setOpen(undefined); list.refresh(); })}><Trash2 size={15} />Delete</button>
   </article>;
   const items = asList<MailItem>(list.value);
-  return <><div className="segments" role="group" aria-label="Mailbox">{(['inbox', 'sent'] as const).map(value => <button type="button" key={value} className={box === value ? 'selected' : ''} aria-pressed={box === value} onClick={() => setBox(value)}>{value === 'inbox' ? 'Inbox' : 'Sent'}</button>)}</div>
-    <button className="primary compose-button" onClick={() => { setTo(''); setSubject(''); setBody(''); setComposing(true); }}><Plus size={18} />New mail</button>
-    <LoadState {...list} retry={list.refresh} />
-    {items.map(item => <Row key={item.id} title={item.subject} detail={`${box === 'inbox' ? 'From' : 'To'} ${name(item.peer)} · ${dateLabel(item.created_at)}`} icon={<MailIcon size={18} />} end={item.unread ? <i className="mail-dot" aria-label="Unread" /> : undefined} onClick={() => read(item)} />)}
-    {!items.length && !list.loading && <Empty title={box === 'inbox' ? 'Nothing new' : 'Nothing sent'} detail={box === 'inbox' ? 'Longer messages land here.' : 'Mail you send will be kept here.'} />}
+  return <><div className="segments" role="group" aria-label="Mail sections">{(['inbox', 'activity'] as const).map(value => <button type="button" key={value} className={tab === value ? 'selected' : ''} aria-pressed={tab === value} onClick={() => setTab(value)}>{value === 'inbox' ? 'Inbox' : 'Activity'}</button>)}</div>
+    {tab === 'inbox' ? <><p className="muted">System mail follows your character across handsets.</p>
+      <LoadState {...list} retry={list.refresh} />
+      {items.map(item => <Row key={item.id} title={item.subject} detail={`From ${item.peer} · ${dateLabel(item.created_at)}`} icon={<MailIcon size={18} />} end={item.unread ? <i className="mail-dot" aria-label="Unread" /> : undefined} onClick={() => read(item)} />)}
+      {!items.length && !list.loading && <Empty title="Nothing new" detail="Job offers, invoices and updates arrive here." />}
+      {more && items.length >= 50 && <button className="text-button" disabled={busy} onClick={() => run(async () => { const rows=await api('legacyMailList', {before:items[items.length-1].id}); list.setValue([...items,...rows]); setMore(rows.length===50); })}>Older mail</button>}
+    </> : <><p className="muted">Informational activity. These notes do not change your balance.</p>
+      <LoadState {...activity} retry={activity.refresh} />
+      {activity.value?.map(item=><article className="note-card" key={item.id}><h3>{item.title}</h3><p className="mail-body">{item.message}</p><small>{dateLabel(item.created_at)}</small></article>)}
+      {!activity.value?.length && !activity.loading && <Empty title="No activity yet" detail="Transaction notes from city services appear here." />}
+      {more && (activity.value?.length || 0)>=50 && <button className="text-button" disabled={busy} onClick={() => run(async () => { const items=activity.value!; const rows=await api('legacyActivity',{before:items[items.length-1].id}); activity.setValue([...items,...rows]);setMore(rows.length===50); })}>Older activity</button>}
+    </>}
   </>;
 }

@@ -5,11 +5,32 @@ function QBPhone.registerCallback(name, rateKey, handler)
             return
         end
         payload = type(payload) == 'table' and payload or {}
-        local ok, result = xpcall(function() return handler(source, payload) end, debug.traceback)
+        local launchDenied = name:match('^social:') or name:match('^market:') or name:match('^moderation:')
+            or name=='createGroup' or name=='addGroupMember' or name=='leaveGroup'
+            or name=='transferBankMoney' or name=='sendMail' or name=='runJobAction'
+        if launchDenied then cb(PhoneError(PhoneConstants.Errors.FORBIDDEN,'This app is not part of this release')); return end
+        local selected=QBPhone.Handsets and QBPhone.Handsets.selected[source]
+        local character=QBPhone.GetCitizenId(source)
+        local function run() return handler(source,payload) end
+        local ok, result = xpcall(function()
+            if QBPhone.Handsets and name~='handsetAction' then
+                return QBPhone.Handsets.locked(source,run,{})
+            end
+            return run()
+        end, debug.traceback)
         if not ok then
             print(('[qbphone] callback %s failed for source %s: %s'):format(name, source, result))
             cb(PhoneError(PhoneConstants.Errors.INTERNAL, 'Request failed'))
             return
+        end
+        local intentionallyChanged=name=='handsetAction' and (payload.op=='select' or payload.op=='reset')
+        if QBPhone.GetCitizenId(source)~=character or (not intentionallyChanged and selected and QBPhone.Handsets.selected[source]~=selected) then
+            cb(PhoneError(PhoneConstants.Errors.FORBIDDEN,'Handset session changed')); return
+        end
+        if result and result.ok and (rateKey=='mutation' or rateKey=='sendMessage') and name~='handsetAction' then
+            local d=QBPhone.Handsets.current(source,false)
+            if d then MySQL.update.await('UPDATE phone_handsets SET is_reset=0 WHERE id=?',{d.handsetId}) end
+            SetTimeout(1500,function() if QBPhone.Handsets.selected[source] then QBPhone.Handsets.locked(source,QBPhone.Handsets.backup,{}) end end)
         end
         cb(result or PhoneError(PhoneConstants.Errors.INTERNAL, 'Empty service response'))
     end)

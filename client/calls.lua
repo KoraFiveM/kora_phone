@@ -44,7 +44,28 @@ end)
 -- A WebRTC offer/answer/ICE candidate from the other side of the call, passed straight to the NUI's own peer connection.
 RegisterNetEvent('qbphone:client:calls:signal', function(signal)
     if type(signal) ~= 'table' then return end
+    if not QBPhone.State.activeCall or QBPhone.State.activeCall.id~=signal.id then return end
     QBPhone.SendNui('videoSignal', signal)
+end)
+
+RegisterNetEvent('qbphone:client:calls:videoControl',function(control)
+    if type(control)=='table' and QBPhone.State.activeCall and QBPhone.State.activeCall.id==control.id then
+        QBPhone.SendNui('videoControl',control)
+    end
+end)
+
+local mutedPeer
+local function clearRemoteMute()
+    if mutedPeer then
+        if GetResourceState('pma-voice')=='started' and exports['pma-voice']:isPlayerMuted(mutedPeer) then exports['pma-voice']:toggleMutePlayer(mutedPeer) end
+        mutedPeer=nil
+    end
+end
+RegisterNetEvent('qbphone:client:calls:remoteMute',function(data)
+    if not QBPhone.State.activeCall or type(data)~='table' or QBPhone.State.activeCall.id~=data.id then return end
+    if data.muted then
+        if not exports['pma-voice']:isPlayerMuted(data.source) then exports['pma-voice']:toggleMutePlayer(data.source); mutedPeer=data.source end
+    else clearRemoteMute() end
 end)
 
 RegisterNetEvent('qbphone:client:calls:ended', function(payload)
@@ -52,11 +73,13 @@ RegisterNetEvent('qbphone:client:calls:ended', function(payload)
     local current = QBPhone.State.activeCall
     if current and current.id ~= payload.id then return end
     QBPhone.Voice.Leave()
+    clearRemoteMute()
     QBPhone.State.activeCall = nil
     QBPhone.SendNui('calls:ended', payload)
 end)
 
 function Calls.Cleanup(notifyServer)
+    clearRemoteMute()
     local call = QBPhone.State.activeCall
     QBPhone.Voice.Leave()
     QBPhone.State.activeCall = nil

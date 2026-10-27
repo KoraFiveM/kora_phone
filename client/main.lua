@@ -38,6 +38,7 @@ function QBPhone.Open(app, payload)
 end
 
 function QBPhone.Close(force)
+    if QBPhone.Video then QBPhone.Video.Cleanup(); QBPhone.Video.cover=false end
     QBPhone.Camera.Cleanup()
     TriggerServerEvent('qbphone:server:phone:closed')
     QBPhone.State.open = false
@@ -47,6 +48,18 @@ function QBPhone.Close(force)
     QBPhone.Animations.Stop()
     QBPhone.SendNui(force and 'phone:reset' or 'phone:close')
 end
+
+RegisterNetEvent('qbphone:client:sessionRevoked', function()
+    QBPhone.State.generation=QBPhone.State.generation+1
+    QBPhone.Close(true)
+    QBPhone.Calls.Cleanup(false)
+end)
+RegisterNetEvent('qbphone:client:useHandset',function()
+    QBPhone.Close(true)
+    QBPhone.Open()
+end)
+RegisterNetEvent('qbphone:client:contentCleared',function() QBPhone.SendNui('content:cleared',{}) end)
+RegisterNetEvent('qbphone:client:ready',function() QBPhone.Bootstrap() end)
 
 function QBPhone.Bootstrap()
     if not QBPhone.State.playerLoaded then return end
@@ -93,7 +106,9 @@ end)
 
 RegisterNetEvent('qbphone:client:mail:new', function(mail)
     if type(mail) ~= 'table' or type(mail.sender) ~= 'string' then return end
-    QBPhone.SendNui('mail:new', { sender = mail.sender:sub(1, 100), subject = tostring(mail.subject or ''):sub(1, 120) })
+    local player=exports.qbcore:getPlayerData()
+    if mail.citizenId and (not player or mail.citizenId~=player.citizenid) then return end
+    QBPhone.SendNui('mail:new', { deviceId=mail.deviceId, sender = mail.sender:sub(1, 100), subject = tostring(mail.subject or ''):sub(1, 120) })
 end)
 
 -- Sent by /phonereset: put the phone away and reload it so the setup screen comes back.

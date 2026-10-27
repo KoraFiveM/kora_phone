@@ -19,7 +19,7 @@ export function DotClock({ value }: { value: string }) {
   </svg>;
 }
 export function PageHeader({ title, subtitle, back, action }: { title: string; subtitle?: string; back?: () => void; action?: ReactNode }) {
-  return <header className="page-header"><div className="page-top"><button className="icon-button" aria-label="Back" onClick={back}><ArrowLeft size={20} /></button><span className="eyebrow">NOTHING / OS</span>{action || <span className="header-spacer" />}</div><h1>{title}</h1>{subtitle && <p>{subtitle}</p>}</header>;
+  return <header className="page-header"><div className="page-top"><button className="icon-button" aria-label="Back" onClick={back}><ArrowLeft size={20} /></button><span className="eyebrow">THREE / OS</span>{action || <span className="header-spacer" />}</div><h1>{title}</h1>{subtitle && <p>{subtitle}</p>}</header>;
 }
 export function Empty({ title, detail }: { title: string; detail: string }) { return <div className="empty"><span className="empty-mark">( — )</span><h3>{title}</h3><p>{detail}</p></div>; }
 export function AddButton({ onClick, label = 'Add' }: { onClick: () => void; label?: string }) { return <button className="icon-button" aria-label={label} onClick={onClick}><Plus size={21} /></button>; }

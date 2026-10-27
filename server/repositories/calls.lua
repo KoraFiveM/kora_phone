@@ -64,9 +64,10 @@ function Calls.listForDevice(deviceId, limit, cursor)
                UNIX_TIMESTAMP(answered_at) AS answeredAt,
                UNIX_TIMESTAMP(ended_at) AS endedAt, ended_reason AS endedReason
         FROM phone_calls
-        WHERE (caller_device_id = ? OR callee_device_id = ?) %s
+        WHERE (caller_device_id = ? OR callee_device_id = ?)
+          AND NOT EXISTS(SELECT 1 FROM phone_call_hidden h WHERE h.call_id=phone_calls.id AND h.device_id=%d) %s
         ORDER BY started_at DESC, id DESC LIMIT ?
-    ]]):format(cursorClause), params) or {}
+    ]]):format(tonumber(deviceId),cursorClause), params) or {}
 end
 
 function Calls.endUnfinished(reason)

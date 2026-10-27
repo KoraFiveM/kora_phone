@@ -1,0 +1,70 @@
+/* Shared semantic surfaces connect each model's launcher, apps and preferences. */
+.phone .phone-screen.show-wallpaper.wallpaper-qbcore { background:var(--handset-wallpaper,var(--ui-bg)); }
+.phone .phone-screen.show-wallpaper.wallpaper-plain { background:var(--ui-bg); }
+.phone .phone-screen.show-wallpaper.wallpaper-custom { background:#000; }
+.phone .phone-screen.wallpaper-custom .custom-wallpaper { opacity:.3; }
+.phone .phone-screen.show-wallpaper .status-bar { color:var(--wp-ink); }
+.phone .phone-screen.show-wallpaper .app-icon small { color:var(--wp-ink); }
+.phone .phone-screen.show-wallpaper :is(.home-top .eyebrow,.home-section) { color:var(--wp-ink-muted); }
+.phone.handset-standard .phone-screen.show-wallpaper .home-screen { color:var(--wp-ink); }
+.phone .phone-screen .handset-panel {
+  --hs-line:var(--ui-line); --hs-muted:var(--ui-muted);
+  --hs-surface:var(--ui-surface); --hs-accent:var(--ui-accent,var(--ui-ink));
+}
+.phone .phone-screen .handset-panel[data-view]:not([data-view=all]) .hs-kicker,
+.phone .phone-screen .handset-panel[data-view]:not([data-view=all]) .hs-header h2,
+.phone .phone-screen .handset-panel[data-view]:not([data-view=all]) .hs-header p { display:none; }
+.phone .phone-screen .handset-panel[data-view]:not([data-view=all]) .hs-header { padding:0 0 8px; }
+.phone .phone-screen .handset-panel[data-view]:not([data-view=all]) .hs-header > div { justify-content:flex-end; margin:0; }
+.phone .phone-screen .handset-panel[data-view]:not([data-view=all]) .hs-grid { grid-template-columns:minmax(0,1fr); }
+.phone .phone-screen .handset-panel[data-view=connections] .hs-card:not([data-section=connections]),
+.phone .phone-screen .handset-panel[data-view=cloud] .hs-card:not([data-section=cloud]),
+.phone .phone-screen .handset-panel[data-view=security] .hs-card:not([data-section=security]),
+.phone .phone-screen .handset-panel[data-view=device] .hs-card:not([data-section=device]) { display:none; }
+.phone .phone-screen .hs-card { color:var(--ui-ink); border-color:var(--ui-line); background:var(--ui-surface); }
+.phone .phone-screen :is(.hs-number,.hs-header h2) { color:var(--ui-ink); }
+.phone .phone-screen .hs-primary { background:var(--ui-action); color:var(--ui-action-ink); border-color:transparent; }
+.phone.handset-flip .phone-screen.show-wallpaper.wallpaper-qbcore,
+.phone.handset-fold .phone-screen.show-wallpaper.wallpaper-qbcore { background:var(--handset-wallpaper); }
+.phone.handset-flip :is(.home-screen,.lock-screen),
+.phone.handset-fold :is(.home-screen,.lock-screen) { color:var(--wp-ink,var(--ui-ink)); }
+.phone.handset-flip :is(.handset-clock,.home-top .eyebrow,.home-section),
+.phone.handset-fold :is(.handset-clock,.home-top .eyebrow,.home-section) { color:var(--wp-ink,var(--ui-ink)); }
+.phone.handset-flip :is(.city-widget,.settings-widget,.home-note),
+.phone.handset-fold :is(.city-widget,.settings-widget,.home-note) { color:var(--ui-ink); background:var(--ui-surface); border:1px solid var(--ui-line); }
+.phone.handset-flip :is(.city-widget span,.home-note small),
+.phone.handset-fold :is(.city-widget span,.home-note small) { color:var(--ui-muted); }
+.phone.handset-flip .app-icon > span,
+.phone.handset-fold .app-icon > span { color:var(--ui-ink); background:var(--ui-field); border:1px solid var(--ui-line); box-shadow:none; }
+.phone.handset-flip .dock .app-icon svg,
+.phone.handset-fold .dock .app-icon svg { color:inherit; }
+.phone.handset-flip .phone-screen .dock .app-icon > span,
+.phone.handset-fold .phone-screen .dock .app-icon > span { color:var(--ui-ink); background:var(--ui-field); border-color:var(--ui-line); }
+.phone:is(.handset-flip,.handset-fold) .phone-screen.icons-circle .app-icon > span { border-radius:50%; }
+.phone:is(.handset-flip,.handset-fold) .phone-screen.icons-squircle .app-icon > span { border-radius:16px; }
+.phone:is(.handset-flip,.handset-fold) .phone-screen.icons-outline .app-icon > span { background:transparent; border:1px solid var(--ui-ink); color:var(--ui-ink); }
+.phone:is(.handset-flip,.handset-fold) .phone-screen.icons-solid .app-icon > span { background:var(--ui-ink); border-color:var(--ui-ink); color:var(--ui-bg); }
+.phone.handset-flip .app-icon small,
+.phone.handset-fold .app-icon small { color:var(--wp-ink,var(--ui-ink)); }
+.phone.handset-flip .dock,
+.phone.handset-fold .dock { background:var(--ui-surface); border-color:var(--ui-line); }
+.phone.handset-flip .system-nav button,
+.phone.handset-fold .system-nav button { color:var(--ui-ink); }
+.phone.handset-flip .home-indicator span,
+.phone.handset-fold .home-indicator span { background:var(--ui-ink); }
+.phone.handset-flip .cover-display .handset-clock { color:#f5edff; }
+.phone.handset-flip .cover-display p { color:#c9bddb; }
+.phone .phone-screen .call-screen { background:var(--ui-bg); color:var(--ui-ink); }
+.phone .phone-screen .notification-shade { background:var(--ui-bg); color:var(--ui-ink); }
+.phone .phone-screen .onboard,.phone .phone-screen .onboard-footer { background:var(--ui-bg); color:var(--ui-ink); }
+.phone .phone-screen .onboard :is(.onboard-top > span:last-child,.onboard-kicker,.onboard-heading p,.onboard-number > span,.onboard-number small,.onboard-field,.onboard-field-note,.onboard-skip,.onboard-footer-note,.onboard-ready > span,.onboard-summary dt) { color:var(--ui-muted); }
+.phone .phone-screen .onboard :is(.onboard-footer,.onboard-number,.onboard-summary > div,.onboard-back,.onboard-orbit,.onboard-orbit > div,.onboard-identity) { border-color:var(--ui-line); }
+.phone .phone-screen .onboard-progress i { background:var(--ui-line); }
+.phone .phone-screen .onboard-progress i.filled { background:var(--ui-action); }
+.phone .phone-screen .onboard :is(.onboard-next,.onboard-ready > svg,.onboard-identity > span) { background:var(--ui-action); color:var(--ui-action-ink); }
+.phone .phone-screen .onboard-identity { background:var(--ui-surface); }
+.phone .phone-screen .onboard-identity small { color:var(--ui-muted); border-color:var(--ui-line); }
+
+.chat-photo { display:block; width:100%; max-height:280px; object-fit:contain; border-radius:12px; margin-bottom:8px; }
+.chat-attachment { display:flex; align-items:center; gap:8px; padding:8px 0; }
+.chat-attachment img { width:70px; height:70px; object-fit:cover; border-radius:10px; }

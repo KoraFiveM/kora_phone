@@ -10,8 +10,11 @@ lua54 'yes'
 
 shared_scripts {
     '@qblib/init.lua',
+    '@qbsql/init.lua',
+    '@qbcore/init.lua',
     '@qbcore/shared/locale.lua',
     'config/shared.lua',
+    'config/handsets.lua',
     'shared/constants.lua',
     'shared/validation.lua',
     'shared/contracts.lua'
@@ -24,7 +27,8 @@ client_scripts {
 }
 
 server_scripts {
-    '@oxmysql/lib/MySQL.lua',
+    'server/crypto.js',
+    '@qbsql/lib/MySQL.lua',
     'config/server.lua',
     'server/integrations/*.lua',
     'server/repositories/*.lua',
@@ -32,13 +36,18 @@ server_scripts {
     'server/rate_limits.lua',
     'server/permissions.lua',
     'server/sessions.lua',
+    'server/migration_report.lua',
+    'server/handsets.lua',
+    'server/mailboxes.lua',
+    'server/phone_commerce.lua',
     'server/callbacks.lua',
     'server/modules/call_callbacks.lua',
     'server/modules/economy_callbacks.lua',
     'server/modules/media_callbacks.lua',
     'server/modules/community_callbacks.lua',
-    'server/main.lua',
-    'server/compat/qb-phone.lua'
+    'server/handset_callbacks.lua',
+    'server/compat/qb-phone.lua',
+    'server/main.lua'
 }
 
 -- Applied in this order when the resource starts, once each (server/integrations/migrations.lua).
@@ -53,7 +62,8 @@ migration 'migrations/008_pin.sql'
 migration 'migrations/009_items.sql'
 migration 'migrations/010_mail.sql'
 migration 'migrations/011_media_posts.sql'
-migration 'migrations/012_legacy_qb_phone.sql'
+migration 'migrations/012_handsets.sql'
+migration 'migrations/013_legacy_qb_phone.sql'
 
 ui_page 'web/dist/index.html'
 
@@ -69,7 +79,9 @@ dependencies {
     'qbtheme',
     'qblib',
     'qbcore',
-    'oxmysql'
+    'qbsql',
+    'qbinventory',
+    'pma-voice'
 }
 
 -- Lets this resource answer as each aliased phone (client/customapps.lua) for real: many

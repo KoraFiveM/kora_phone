@@ -37,7 +37,7 @@ function Media.requestUpload(source, payload, callback)
     end
     local token = newToken()
     local ticket = {
-        token = token, source = source, deviceId = device.id, mimeType = mimeType,
+        token = token, source = source, deviceId = device.id, session = QBPhone.Sessions.bySource[source], mimeType = mimeType,
         byteSize = byteSize, expiresAt = os.time() + QBPhone.Storage.Config().TokenTtlSeconds
     }
     Media.tickets[token] = ticket
@@ -55,8 +55,16 @@ function Media.completeUpload(source, payload, callback)
     local device, permissionError = QBPhone.Permissions.requireDevice(source)
     if not device or device.id ~= ticket.deviceId then return callback(permissionError or PhoneError(PhoneConstants.Errors.UNAUTHORIZED, 'Device changed')) end
 
+    local accessSession = ticket.session
+    if not accessSession or QBPhone.Sessions.bySource[source] ~= accessSession then
+        return callback(PhoneError(PhoneConstants.Errors.UNAUTHORIZED, 'Handset session changed'))
+    end
     local function persist(ok, record, providerError)
         if not ok then return callback(PhoneError(PhoneConstants.Errors.INVALID_INPUT, providerError)) end
+        local live, accessError = QBPhone.Permissions.requireDevice(source)
+        if not live or live.id ~= device.id or QBPhone.Sessions.bySource[source] ~= accessSession then
+            return callback(accessError or PhoneError(PhoneConstants.Errors.UNAUTHORIZED, 'Handset session changed'))
+        end
         record.ownerDeviceId = device.id
         local saved = QBPhone.Repositories.Media.create(record)
         if not saved then
@@ -94,12 +102,10 @@ function Media.delete(source, payload, callback)
     if not mediaId then return callback(PhoneError(PhoneConstants.Errors.INVALID_INPUT, validationError)) end
     local record = QBPhone.Repositories.Media.findOwned(device.id, mediaId)
     if not record then return callback(PhoneError(PhoneConstants.Errors.NOT_FOUND, 'Media was not found')) end
-    if QBPhone.Repositories.Media.referenceCount(mediaId) > 0 then
-        return callback(PhoneError(PhoneConstants.Errors.CONFLICT, 'Media is still in use'))
-    end
     if not QBPhone.Repositories.Media.softDelete(device.id, mediaId) then
         return callback(PhoneError(PhoneConstants.Errors.CONFLICT, 'Media could not be deleted'))
     end
+    if QBPhone.Repositories.Media.referenceCount(mediaId)>0 then return callback(PhoneResult({id=mediaId,storageDeleted=false})) end
     QBPhone.Storage.delete(record, function(deleted)
         if deleted then QBPhone.Repositories.Media.hardDelete(mediaId) end
         callback(PhoneResult({ id = mediaId, storageDeleted = deleted == true }))
@@ -123,9 +129,11 @@ CreateThread(function()
                 storageConfig.CleanupBatchSize
             )
             for _, record in ipairs(tombstones) do
+                if QBPhone.Repositories.Media.referenceCount(record.id)==0 then
                 QBPhone.Storage.delete(record, function(deleted)
                     if deleted then QBPhone.Repositories.Media.hardDelete(record.id) end
                 end)
+                end
             end
         end
     end

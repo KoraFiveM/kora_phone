@@ -25,9 +25,9 @@ function IdPanel() {
   </>}</>;
 }
 function MoneyPanel() {
-  const { run, busy, notify, device, data, revision } = usePhone();
+  const { run, busy, notify, device, data } = usePhone();
   const who = (value: string) => data.contacts.find(c => c.number === value)?.name || value;
-  const bank = useLoad(() => api('bank', {}), [revision]);
+  const bank = useLoad(() => api('bank', {}), []);
   const [recipient, setRecipient] = useState(''); const [amount, setAmount] = useState('');
   const [review, setReview] = useState(false); const [attempted, setAttempted] = useState(false);
   const transferId = useRef(requestId());
@@ -45,7 +45,6 @@ function MoneyPanel() {
       })}>{attempted ? 'Check / retry same transfer' : 'Confirm transfer'}</button>{!attempted && <button type="button" className="text-button" onClick={() => setReview(false)}>Edit details</button>}{attempted && <p className="muted">This request keeps the same reference. Check its status before making another transfer.</p>}</div> : <button className="primary" disabled={busy}>Review transfer <ArrowUpRight size={16} /></button>}
     </form></section>}<p className="section-label">RECENT ACTIVITY</p>
     {asList(bank.value.history).map(transaction => { const outgoing = transaction.citizenid === bank.value!.account; return <Row key={transaction.id} title={`${outgoing ? 'To' : 'From'} ${who(outgoing ? transaction.recipient : transaction.citizenid)}`} detail={`${transaction.status} · ${dateLabel(transaction.created_at)}`} icon={outgoing ? <ArrowUpRight size={18} /> : <ArrowDownLeft size={18} />} end={<strong className="transaction-amount">{outgoing ? '−' : '+'}{money(transaction.amount)}</strong>} />; })}
-    {!!bank.value.activity?.length && <><p className="section-label">CRYPTO ACTIVITY</p>{bank.value.activity.map(note => <Row key={note.id} title={note.title} detail={`${note.message} · ${dateLabel(note.created_at)}`} />)}</>}
     {!asList(bank.value.history).length && <Empty title="A clean slate" detail="Your phone transfers will appear here." />}
   </>}</>;
 }

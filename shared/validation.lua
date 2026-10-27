@@ -53,7 +53,7 @@ end
 
 local SETTINGS_THEMES = { 'light', 'dark', 'ocean', 'forest', 'amethyst', 'ember', 'qbcore' }
 local SETTINGS_WALLPAPERS = { 'orbit', 'plain', 'midnight', 'slate', 'ember', 'qbcore', 'custom' }
-local SETTINGS_STYLES = { 'classic', 'flip' }
+local SETTINGS_STYLES = { 'classic', 'standard', 'flip', 'fold' }
 local SETTINGS_CASES = { 'default', 'nightdrive', 'citypop', 'sakura', 'touge', 'garage', 'qbcore', 'arcade', 'space', 'palms', 'skyline', 'custom' }
 local SETTINGS_ICONS = { 'circle', 'squircle', 'outline', 'solid' }
 
@@ -119,6 +119,14 @@ function PhoneValidation.settings(payload)
         for i, id in ipairs(payload.appOrder) do
             if type(id) ~= 'string' or #id > 24 or not id:match('^[a-z]+$') then return nil, 'appOrder is invalid' end
             out.appOrder[i] = id
+        end
+    end
+    if payload.installedApps ~= nil then
+        if type(payload.installedApps) ~= 'table' or #payload.installedApps>20 then return nil,'Invalid installed apps' end
+        out.installedApps={}
+        for _,id in ipairs(payload.installedApps) do
+            if not Config.LaunchApps or not Config.LaunchApps[id] then return nil,'App is unavailable' end
+            out.installedApps[#out.installedApps+1]=id
         end
     end
     return out
