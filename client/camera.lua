@@ -1,5 +1,19 @@
 QBPhone = QBPhone or {}
-local Camera = { handle = nil, previousRadar = true }
+local Camera = { handle = nil, previousRadar = true, front=false }
+local function updateCamera()
+    if not Camera.handle then return end
+    local ped=PlayerPedId()
+    if Camera.front then
+        local p=GetOffsetFromEntityInWorldCoords(ped,0.0,0.9,0.65)
+        SetCamCoord(Camera.handle,p.x,p.y,p.z)
+        PointCamAtPedBone(Camera.handle,ped,31086,0.0,0.0,0.0,true)
+    else
+        StopCamPointing(Camera.handle)
+        local p=GetPedBoneCoords(ped,31086,0.0,0.12,0.03)
+        local rot=GetGameplayCamRot(2)
+        SetCamCoord(Camera.handle,p.x,p.y,p.z); SetCamRot(Camera.handle,rot.x,rot.y,rot.z,2)
+    end
+end
 
 local function finishMode()
     RenderScriptCams(false, true, 250, true, true)
@@ -15,8 +29,13 @@ function Camera.Open()
     if QBPhone.State.cameraMode then return true end
     local ped = QB.cache.ped()
     if IsEntityDead(ped) then return false, 'PLAYER_DEAD' end
+    if QBPhone.Video and QBPhone.Video.active then return false,'Close video before opening the camera' end
     Camera.previousRadar = not IsRadarHidden()
     QBPhone.State.cameraMode = true
+    Camera.front=false
+    Camera.handle=CreateCam('DEFAULT_SCRIPTED_CAMERA',true)
+    if not Camera.handle or Camera.handle==0 then Camera.handle=nil; QBPhone.State.cameraMode=false; return false,'CAMERA_UNAVAILABLE' end
+    SetCamFov(Camera.handle,60.0); updateCamera(); RenderScriptCams(true,false,0,true,true)
     SetNuiFocus(false, false)
     SetNuiFocusKeepInput(false)
     DisplayRadar(false)
@@ -93,12 +112,14 @@ CreateThread(function()
     while true do
         if QBPhone.State and QBPhone.State.cameraMode then
             Wait(0)
+            updateCamera()
             DisableControlAction(0, 24, true)
             DisableControlAction(0, 25, true)
             DisableControlAction(0, 37, true)
             DisableControlAction(0, 44, true)
             HideHudAndRadarThisFrame()
             if IsControlJustReleased(0, 177) then Camera.Close() end
+            if IsControlJustReleased(0, 38) then Camera.front=not Camera.front end
         else
             Wait(500)
         end

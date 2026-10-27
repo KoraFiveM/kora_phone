@@ -5,3 +5,10 @@ node_modules/
 .DS_Store
 Thumbs.db
 web/dist/
+.playwright-cli/
+test-results/
+
+.playwright/
+release/
+
+migration-report.json

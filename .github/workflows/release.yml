@@ -46,7 +46,7 @@ jobs:
       - name: Package resource
         run: |
           mkdir -p pkg/qbphone/web
-          cp -r fxmanifest.lua README.md client config server shared migrations local-media pkg/qbphone/
+          cp -r fxmanifest.lua README.md qbphone.sql client config server shared migrations local-media integration pkg/qbphone/
           cp -r web/dist pkg/qbphone/web/
           sed -i "s/^version '.*'/version '${{ steps.tag.outputs.new_version }}'/" pkg/qbphone/fxmanifest.lua
           cd pkg && zip -r ../qbphone-${{ steps.tag.outputs.new_tag }}.zip qbphone

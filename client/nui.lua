@@ -7,6 +7,12 @@ function QBPhone.SendNui(action, data)
 end
 
 local callbacks = {
+    ['legacy:mailList'] = 'qbphone:server:legacy:getMail',
+    ['legacy:mailRead'] = 'qbphone:server:legacy:readMail',
+    ['legacy:mailDelete'] = 'qbphone:server:legacy:deleteMail',
+    ['legacy:activity'] = 'qbphone:server:legacy:getActivity',
+    ['handset:action'] = 'qbphone:server:handsetAction',
+    ['calls:videoControl'] = 'qbphone:server:calls:videoControl',
     ['bootstrap'] = 'qbphone:server:getBootstrap',
     ['settings:save'] = 'qbphone:server:saveSettings',
     ['security:unlock'] = 'qbphone:server:unlockPhone',

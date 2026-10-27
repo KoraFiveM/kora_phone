@@ -1,0 +1,21 @@
+{
+  "colors": {
+    "background": "#101010",
+    "surface": "#171717",
+    "surfacePopover": "#1B1B1B",
+    "surfaceRaised": "#242424",
+    "surfaceHover": "#2A2A2A",
+    "foreground": "#F5F5F5",
+    "mutedForeground": "#949494",
+    "border": "#343434",
+    "borderStrong": "#444444",
+    "control": "#666666",
+    "controlHover": "#7A7A7A",
+    "primary": "#DC143C",
+    "success": "#22C55E",
+    "warning": "#F59E0B",
+    "danger": "#EF4444",
+    "info": "#D4D4D4",
+    "armour": "#3B9EFF"
+  }
+}

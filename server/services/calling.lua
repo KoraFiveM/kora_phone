@@ -110,6 +110,9 @@ local function isCurrentCharacter(source, citizenId, session)
 end
 
 function Calling.start(source, payload)
+    local device,deviceError=QBPhone.Permissions.requireDevice(source)
+    if not device then return deviceError end
+    if not device.cellular then return PhoneError(PhoneConstants.Errors.FORBIDDEN,'An active SIM is required for calls') end
     local callerSession = QBPhone.Sessions.bySource[source]
     local callerCitizenId = QBPhone.GetCitizenId(source)
     local caller, err = QBPhone.Permissions.requireDevice(source)
@@ -204,7 +207,7 @@ function Calling.reject(source, payload)
     if device.id ~= call.calleeDeviceId or call.status ~= 'ringing' then
         return PhoneError(PhoneConstants.Errors.CONFLICT, 'Call cannot be rejected')
     end
-    finish(call, 'rejected', 'declined')
+    if not finish(call, 'rejected', 'declined') then return PhoneError(PhoneConstants.Errors.CONFLICT,'Call changed; try again') end
     return PhoneResult({ id = call.id, status = 'rejected' })
 end
 
@@ -212,7 +215,7 @@ function Calling.hangup(source, payload)
     local call, _, err = activeOwnedCall(source, payload)
     if not call then return err end
     local finalStatus = call.status == 'ringing' and 'cancelled' or 'ended'
-    finish(call, finalStatus, 'hangup')
+    if not finish(call, finalStatus, 'hangup') then return PhoneError(PhoneConstants.Errors.CONFLICT,'Call changed; try again') end
     return PhoneResult({ id = call.id, status = finalStatus })
 end
 
@@ -239,12 +242,51 @@ function Calling.videoSignal(source, payload)
     local call, device, err = activeOwnedCall(source, payload)
     if not call then return err end
     if call.status ~= 'active' then return PhoneError(PhoneConstants.Errors.CONFLICT, 'Call is not active') end
+    if not call.video or not call.video.accepted or payload.epoch~=call.video.epoch then
+        return PhoneError(PhoneConstants.Errors.FORBIDDEN,'Video has not been accepted')
+    end
     local signal, validationError = PhoneContracts.callSignal(payload)
     if not signal then return PhoneError(PhoneConstants.Errors.INVALID_INPUT, validationError) end
     local targetDeviceId = device.id == call.callerDeviceId and call.calleeDeviceId or call.callerDeviceId
     local targetSource = sourceForDevice(targetDeviceId)
     if not targetSource then return PhoneError(PhoneConstants.Errors.NOT_FOUND, 'The other participant is unavailable') end
-    TriggerClientEvent('qbphone:client:calls:signal', targetSource, { kind = signal.kind, sdp = signal.sdp, candidate = signal.candidate })
+    TriggerClientEvent('qbphone:client:calls:signal', targetSource, { id=call.id,epoch=call.video.epoch,kind = signal.kind, sdp = signal.sdp, candidate = signal.candidate })
+    return PhoneResult(true)
+end
+
+function Calling.videoControl(source,payload)
+    local call,device,err=activeOwnedCall(source,payload)
+    if not call then return err end
+    if call.status~='active' or not device.cellular then return PhoneError(PhoneConstants.Errors.CONFLICT,'Call is not active') end
+    local otherId=device.id==call.callerDeviceId and call.calleeDeviceId or call.callerDeviceId
+    local target=sourceForDevice(otherId)
+    if not target then return PhoneError(PhoneConstants.Errors.NOT_FOUND,'Other participant is unavailable') end
+    local action=payload.action
+    if action=='request' then
+        if not Config.Calls.Video.Enabled then return PhoneError(PhoneConstants.Errors.FORBIDDEN,'Video is disabled') end
+        if call.video and not call.video.accepted and call.video.expires<os.time() then call.video=nil end
+        if call.video then return PhoneError(PhoneConstants.Errors.CONFLICT,'A video request is already active') end
+        call.video={requester=device.id,expires=os.time()+30,epoch=exports[GetCurrentResourceName()]:randomHex(16)}
+        TriggerClientEvent('qbphone:client:calls:videoControl',target,{id=call.id,action='request',epoch=call.video.epoch})
+        TriggerClientEvent('qbphone:client:calls:videoControl',source,{id=call.id,action='pending',epoch=call.video.epoch})
+        local epoch=call.video.epoch
+        SetTimeout(30000,function()
+            if call.video and call.video.epoch==epoch and not call.video.accepted then
+                call.video=nil; notify(call,'qbphone:client:calls:videoControl',{id=call.id,action='stop'})
+            end
+        end)
+    elseif action=='accept' then
+        local v=call.video
+        if not v or payload.epoch~=v.epoch or v.accepted or v.requester==device.id or v.expires<os.time() then return PhoneError(PhoneConstants.Errors.FORBIDDEN,'Video request expired') end
+        v.accepted=true
+        notify(call,'qbphone:client:calls:videoControl',{id=call.id,action='accept',epoch=v.epoch})
+    elseif action=='decline' or action=='stop' then
+        if call.video and payload.epoch~=call.video.epoch then return PhoneError(PhoneConstants.Errors.FORBIDDEN,'Video session changed') end
+        call.video=nil
+        notify(call,'qbphone:client:calls:videoControl',{id=call.id,action='stop'})
+    elseif action=='mute' and type(payload.muted)=='boolean' then
+        TriggerClientEvent('qbphone:client:calls:remoteMute',target,{id=call.id,source=source,muted=payload.muted})
+    else return PhoneError(PhoneConstants.Errors.INVALID_INPUT,'Invalid call control') end
     return PhoneResult(true)
 end
 
@@ -261,6 +303,13 @@ function Calling.disconnect(source, reason)
     local callId = Calling.callByDevice[session.deviceId]
     local call = callId and Calling.activeById[callId]
     if call then finish(call, call.status == 'ringing' and 'cancelled' or 'ended', reason or 'disconnected') end
+end
+
+function Calling.disconnectDevice(deviceId,reason,expectedCallId)
+    local id=Calling.callByDevice[deviceId]
+    if expectedCallId and id~=expectedCallId then return end
+    local call=id and Calling.activeById[id]
+    if call then finish(call,call.status=='ringing' and 'cancelled' or 'ended',reason or 'handset_changed') end
 end
 
 function Calling.shutdown(reason)
@@ -281,11 +330,11 @@ AddEventHandler('QBCore:Server:OnPlayerUnload', function(source)
     Calling.disconnect(source, 'character_unload')
 end)
 
--- Recovery must follow schema migration, not a fixed startup delay. A cold
--- database or a busy server can take longer than one second to create calls.
+-- Schema setup owns recovery; a fixed delay can run before the calls table exists.
 function Calling.initialize()
-    QBPhone.Repositories.Calls.endUnfinished('resource_restart')
-    Calling.ready = true
+    local recovered=QBPhone.Repositories.Calls.endUnfinished('resource_restart')
+    if recovered==nil or recovered==false then error('Call recovery did not finish') end
+    Calling.ready=true
 end
 
 AddEventHandler('onResourceStop', function(resource)

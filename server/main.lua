@@ -14,27 +14,38 @@ CreateThread(function()
         StopResource(GetCurrentResourceName())
         return
     end
-    local recovered, recoveryError = pcall(QBPhone.Services.Calling.initialize)
-    if not recovered then
-        print('[qbphone] Call recovery failed, stopping resource: ' .. tostring(recoveryError))
-        StopResource(GetCurrentResourceName())
-        return
+    local checked,report=pcall(function()
+        local value=QBPhone.MigrationReport.run()
+        if not QBPhone.MigrationReport.save(value) then error('Cannot save migration-report.json') end
+        return value
+    end)
+    if not checked or report.blocking>0 then
+        print('[qbphone] data preflight requires review; see migration-report.json: '..tostring(checked and report.blocking or report))
+        StopResource(GetCurrentResourceName()); return
+    end
+    local started,startError=pcall(function()
+        QBPhone.Repositories.LegacyMail.import()
+        QBPhone.Services.Calling.initialize()
+        QBPhone.Handsets.start()
+    end)
+    if not started then
+        print('[qbphone] handset setup failed: '..tostring(startError))
+        QBPhone.Handsets.ready=false
+        StopResource(GetCurrentResourceName()); return
     end
     print(('[qbphone] server foundation ready (v%s)'):format(GetResourceMetadata(GetCurrentResourceName(), 'version', 0) or 'unknown'))
 end)
 
 RegisterNetEvent('qbphone:server:phone:closed', function()
     local requestSource = source
+    QBPhone.Services.Calling.disconnect(requestSource, 'phone_put_away')
     if not QBPhone.RateLimits.consume(requestSource, 'mutation') then return end
     local session = QBPhone.Sessions.bySource[requestSource]
     if session then session.unlocked = false end
 end)
 
 AddEventHandler('QBCore:Server:PlayerLoaded', function(player)
-    if not player or not player.PlayerData then return end
-    local source = player.PlayerData.source
-    local device = QBPhone.Services.Phone.getOrCreate(player.PlayerData.citizenid)
-    if source and device and QBPhone.HasPhone(source) then QBPhone.Sessions.open(source, device) end
+    -- Provision only when a physical handset is selected, after migrations finish.
 end)
 
 -- /phonereset [id]: wipes a player's phone settings and PIN so the setup screen shows again.
@@ -46,11 +57,12 @@ RegisterCommand('phonereset', function(caller, args)
     if caller ~= 0 and not QBPhone.Services.Moderation.isModerator(caller) then return reply('No permission') end
     local target = tonumber(args[1]) or caller
     local citizenId = target ~= 0 and QBPhone.GetCitizenId(target)
-    local device = citizenId and QBPhone.Repositories.Phones.findByCitizenId(citizenId)
+    local device = citizenId and QBPhone.Handsets.current(target, false)
     if not device then return reply('No phone found for player ' .. tostring(args[1] or target)) end
     -- setupComplete=false, not '{}': the UI merges bootstrap settings over its cached ones, so a missing key would keep the old true.
     QBPhone.Repositories.Phones.updateSettings(device.id, json.encode({ setupComplete = false }))
     QBPhone.Repositories.Phones.clearPin(device.id)
+    MySQL.update.await('UPDATE phone_handsets SET face_citizenid=NULL WHERE device_id=?',{device.id})
     TriggerClientEvent('qbphone:client:reset', target)
     reply(('Phone reset for player %d'):format(target))
 end, false)
@@ -60,11 +72,8 @@ AddEventHandler('QBCore:Server:OnPlayerUnload', function(source)
 end)
 
 exports('GetPhoneNumber', function(source)
-    local session = QBPhone.Sessions.bySource[source]
-    if session then return session.phoneNumber end
-    local citizenId = QBPhone.GetCitizenId(source)
-    local device = citizenId and QBPhone.Repositories.Phones.findByCitizenId(citizenId) or nil
-    return device and device.phoneNumber or nil
+    local device = QBPhone.Handsets.current(source, false)
+    return device and device.cellular and device.phoneNumber or nil
 end)
 
 exports('GetSourceByPhoneNumber', function(phoneNumber)

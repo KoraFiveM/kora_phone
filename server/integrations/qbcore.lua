@@ -13,6 +13,8 @@ end
 function QBPhone.HasPhone(source)
     if not Config.RequirePhoneItem then return true end
     local player = QBPhone.GetPlayer(source)
-    return player and exports.qbcore:getItemByName(source, Config.PhoneItem) ~= nil or false
+    if not player then return false end
+    for name in pairs(Config.Handsets) do if exports.qbcore:getItemByName(source,name) then return true end end
+    return false
 end
 
