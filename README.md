@@ -1,22 +1,110 @@
-# QBPhone — Three Handsets
+# QBPhone
 
-One FiveM phone system built from Stevie for your custom `[v2]` stack.
+**Three handsets. One connected city.**
 
-| Model | Unique item | Interface |
+A FiveM phone system with distinct Standard, Flip and Fold interfaces, physical handset identities, removable SIMs and cloud recovery. Built from Stevie for the custom **`[v2]` QBCore stack**.
+
+## Meet the handsets
+
+| Handset | Inventory item | Experience |
 |---|---|---|
-| Orchard One | `phone_standard` | Nothing-inspired Android interface |
-| Circuit Flip | `phone_flip` | Tall display and quick-action cover screen |
-| Atlas Fold | `phone_fold` | Full outer smartphone and expanded inner layouts |
+| **Orchard One** | `phone_standard` | Nothing-inspired Android styling, monochrome icons, dot-matrix clock, dark and light appearances. |
+| **Circuit Flip** | `phone_flip` | A tall inner display and a closed cover screen for the clock, notifications, voice calls, local music controls and camera preview. |
+| **Atlas Fold** | `phone_fold` | A complete outer phone that unfolds into larger app layouts, including conversations beside the selected chat and expanded Settings. |
 
-Each model has a coordinated palette across its launcher, apps and Settings: monochrome for Orchard, soft colors for Circuit, and deeper tones for Atlas. Settings groups Appearance, Connections, Cloud, Privacy, Sound and Device controls, with expanded layouts on the unfolded Atlas.
+Each handset has its own visual identity, with coordinated colors across the launcher, apps and Settings. Legacy `phone` items convert to the Standard model.
 
-Legacy `phone` items convert to standard handsets. Each physical handset keeps its own local content, optional PIN, Face ID and cloud login. Each removable SIM owns a separate number.
+<p align="center"><em>Browser previews using demonstration data.</em></p>
 
-## Install
+| Orchard One | Circuit Flip | Atlas Fold |
+|:---:|:---:|:---:|
+| <img src="docs/images/readme-orchard-one.png" alt="Orchard One dark home screen with dot-matrix clock" width="180"> | <img src="docs/images/readme-circuit-flip.png" alt="Circuit Flip open home screen in Lilac" width="180"> | <img src="docs/images/readme-atlas-fold.png" alt="Atlas Fold expanded home screen in Midnight" width="350"> |
 
-Keep the resource directory named **qbphone** and use the updated `qbinventory/server.lua` from your `[v2]` folder. Its new `PhoneItemTransaction` export provides atomic SIM exchanges and resale. A companion copy is included under `integration/qbinventory` for deployment review; compare versions before replacing inventory files.
+<details>
+<summary>Flip cover and expanded conversations</summary>
+
+| Circuit Flip · closed | Atlas Fold · Messages |
+|:---:|:---:|
+| <img src="docs/images/readme-circuit-cover.png" alt="Closed Circuit Flip with clock, notifications and quick controls" width="240"> | <img src="docs/images/readme-atlas-messages.png" alt="Atlas Fold showing conversations beside an open message thread" width="400"> |
+
+</details>
+
+## What's included
+
+- **Calls and video:** pma-voice audio, accepted WebRTC video upgrades, in-game selfie/rear cameras, mute and hang-up.
+- **Everyday apps:** Contacts, Messages with photo attachments, Camera, Gallery, Maps, Mail, Notes, Weather, Calculator, Clock and Sound.
+- **Personal security:** optional PINs, simulated character-based Face ID with a backup PIN, cloud backup/restore and recovery codes.
+- **Physical ownership:** multiple handsets, one selected phone, removable SIMs and persistent serials that stay with the inventory items.
+- **City services:** configured NPC and authorised business counters, handset/SIM sales, SIM replacement, account recovery, resale and public/private Wi-Fi.
+- **Legacy integrations:** supported `qb-phone` mail events and exports, offline system mail, one-use Accept actions and informational transaction notes.
+
+### Your handset, SIM and account
+
+The **handset** carries its local content, screen lock and cloud login. The **SIM** carries the phone number and routes new calls and texts. The **cloud account** backs up contacts, messages, photos and preferences for restoration on another handset.
+
+Moving a SIM does not grant access to the previous handset's conversations or cloud account. Replacing a stolen SIM keeps the number and permanently revokes the old SIM. Without an active SIM, local apps remain available and cloud services can use configured Wi-Fi.
+
+System Mail is character-owned, so job offers, billing messages and activity notes stay private when a handset is traded.
+
+## Requirements
+
+Use the resource names below. The phone integrates with the custom `[v2]` APIs and the included inventory companion.
+
+| Resource/service | Used for |
+|---|---|
+| `qblib` | Shared helpers, interactions and callbacks |
+| `qbsql` | Database access and tracked migrations |
+| `qbcore` | Character identity, shared items, jobs and money |
+| `qbinventory` | Physical handset/SIM ownership and locked inventory changes |
+| `qbtheme` | Shared theme runtime and client bridge |
+| `pma-voice` | Call audio |
+| `screenshot-basic` | Saved in-game photos |
+| **Fivemanage** | Saved photo and message-media hosting |
+
+Live video travels through WebRTC, directly or through your configured TURN relay. It does not use Fivemanage as a streaming service.
+
+## Installation
+
+### 1. Install the resource and inventory companion
+
+Place this resource in your server's resources folder and name its directory **`qbphone`**. The resource name is required by the inventory gateway.
+
+Integrate [the companion qbinventory server file](integration/qbinventory/server.lua) with your `[v2]` inventory resource. It supplies `PhoneItemTransaction`, which handles handset binding, SIM exchange and resale through inventory authority. Compare it with your installed version before replacing files.
+
+Keep one phone provider enabled. Stop the previous phone before starting this replacement.
+
+### 2. Choose the database setup
+
+| Your database | What to do |
+|---|---|
+| **Fresh installation** | Leave `Config.Server.AutoMigrate = true` and let startup create the schema. If you prefer a manual import, import **[qbphone.sql](qbphone.sql)** once before startup. |
+| **Existing Stevie/QBPhone installation** | Back up the database and inventories together, then use automatic migrations. Do not import the fresh-install master over existing phone tables. |
+
+Keep automatic migrations enabled after a fresh manual import so startup adopts the schema history. The numbered files in `migrations/` are internal upgrade history and must ship with the resource.
+
+Startup writes `migration-report.json` before legacy identity conversion. Unknown registering characters, invalid legacy numbers or malformed settings stop conversion for review. Existing numbers and supported content use resumable claims; characters without handsets do not receive duplicate phones or subscriptions.
+
+See [deployment, migration and rollback](docs/three-handsets.md) before upgrading an existing server.
+
+### 3. Configure your city
+
+| File | Settings |
+|---|---|
+| [config/handsets.lua](config/handsets.lua) | Models, shop stock/prices, business jobs, counter locations, SIM-swap rules and Wi-Fi hotspots |
+| [config/server.lua](config/server.lua) | Media provider, limits, automatic migrations, STUN and video configuration |
+| [config/client.lua](config/client.lua) | Phone command/keybind, death restrictions and notification sound |
+
+Replace the example shop coordinates, business job names and hotspot settings for your server. SIM swapping supports `player`, `shop` or `both`; the default is `both`.
+
+### 4. Add your server configuration
+
+Set secrets **before** starting the resources. Keep the PIN pepper stable between restarts and include it in your secure server backups.
 
 ```cfg
+set qbphone_pin_pepper "REPLACE_WITH_A_LONG_RANDOM_SECRET"
+set qbphone_fivemanage_token "YOUR_FIVEMANAGE_TOKEN"
+set qbphone_workshop_wifi_password "YOUR_PRIVATE_HOTSPOT_PASSWORD"
+
 ensure qblib
 ensure qbsql
 ensure qbcore
@@ -25,46 +113,71 @@ ensure qbtheme
 ensure pma-voice
 ensure screenshot-basic
 ensure qbphone
-
-set qbphone_pin_pepper "REPLACE_WITH_A_LONG_RANDOM_SECRET"
-set qbphone_fivemanage_token "YOUR_FIVEMANAGE_TOKEN"
 ```
 
-Edit `config/handsets.lua` for shops, prices, business jobs, public/private Wi-Fi and SIM swapping (`player`, `shop`, `both`; default `both`). Example Legion/workshop coordinates must be checked for your map. Phone shops use bank funds, finite stock and configurable resale payouts.
+<details>
+<summary><strong>Optional TURN relay for video calls</strong></summary>
 
-Fivemanage is selected in `config/server.lua`; photos also need screenshot-basic. Live video uses WebRTC independently. For TURN relaying:
+Add these alongside the convars above when using a TURN service that supports time-limited REST credentials:
 
 ```cfg
-set qbphone_turn_urls "turn:YOUR_HOST:3478"
+set qbphone_turn_urls "turn:YOUR_TURN_HOST:3478"
 set qbphone_turn_secret "YOUR_TURN_REST_SHARED_SECRET"
-set qbphone_workshop_wifi_password "YOUR_PRIVATE_HOTSPOT_PASSWORD"
 ```
 
-Use a TURN service that supports time-limited REST credentials. STUN configuration stays in `Config.Calls.Video.IceServers`. Keep API tokens and shared TURN secrets server-side.
+STUN servers are configured in `Config.Calls.Video.IceServers` in `config/server.lua`. Keep API tokens and shared TURN secrets server-side.
 
-## Play
+</details>
 
-Use a handset from inventory, or press **M** to open the selected phone. Counter interactions allow new players to buy their first phone without already owning one.
+## Using the phone
 
-Settings provides SIM swapping, optional PIN, character-based Face ID with a backup PIN, Wi-Fi, cloud registration/backup/restore and factory reset. Save the account ID and recovery code shown at registration. Identity-checked NPC or authorised business services can recover lost codes.
+Use a handset from inventory, press **M**, or run **`/phone`** to open the selected handset. Players can visit a configured counter to buy their first phone without already owning one.
 
-Calls begin as voice; the other participant must accept a video upgrade before either camera streams. Selfie and rear views use the game camera. Closing the flip pauses video while voice continues. Folding the fold moves video to its outer screen. Putting any handset away ends the call.
+Settings is organised into **Appearance**, **Connections**, **Cloud account**, **Privacy & security**, **Sound & alerts**, and **About & resale**. Insert or remove SIMs, connect to Wi-Fi, set a PIN, enrol Face ID, and manage cloud recovery there. Save the cloud account ID and recovery code shown during registration.
 
-Normal resale requires a reset handset with its SIM removed. Shops preserve the physical serial for the next buyer. Replacing a stolen SIM keeps the number and permanently revokes the old SIM.
+| Action | Result |
+|---|---|
+| Close the Flip during a video call | Video pauses; voice continues. Reopening restores video. |
+| Fold or unfold the Fold during a video call | The call moves between outer and inner displays without reconnecting. |
+| Put any handset away | The call ends. |
+| Select another handset | Any active call ends and the selected handset changes. |
+| Prepare a handset for normal resale | Remove its SIM and perform an unlocked factory reset first. Cloud backups are preserved. |
 
-Launch apps: Phone, Contacts, Messages, Camera, Gallery, Maps, Settings, Mail, Notes, Weather, Calculator, Clock and Sound. Legacy `qb-phone` integrations can deliver offline system mail, billing notifications, one-use Accept actions and informational transaction notes through Mail. See [legacy compatibility](docs/legacy-compat.md). Legacy group history remains readable. Existing nonessential social/banking/job/marketplace screens are outside the launch interface.
+## Legacy qb-phone support
 
-## Database and migration
+Server integrations can keep using the supported `qb-phone` identity. For example, from a trusted server script:
 
-For a fresh database, **[qbphone.sql](qbphone.sql) is the single file to import**, once. You can also skip manual import and let startup install everything with `Config.Server.AutoMigrate = true` (the default). Leave automatic migrations enabled after importing the master file so startup records the schema history.
+```lua
+exports['qb-phone']:sendNewMailToOffline(citizenId, {
+    sender = 'Job Office',
+    subject = 'Delivery offer',
+    message = 'A delivery is waiting for you at the depot.'
+})
+```
 
-For an existing Stevie/QBPhone database, use automatic migrations instead of importing the master. The numbered files in `migrations/` are internal upgrade history; keep them with the resource. The master contains schema only; the startup preflight and legacy identity conversion still run normally.
+Mail can arrive before the character owns a phone. Trusted server deliveries can include one-use Accept actions; the browser cannot nominate an event. Transaction notes appear under **Mail → Activity** and never change player balances.
 
+See [legacy events, exports and data adoption](docs/legacy-compat.md) for the complete supported surface.
 
-**Back up database and player inventories together before replacing Stevie.** Stop the old resource; never run both against the same tables. SQL `001`–`012` is unchanged; new legacy support uses migration `013`. Both `012` and `013` use qbsql checksum protection. Existing numbers and supported content receive resumable legacy claims. Players without phones keep unclaimed records.
+## UI development
 
-Follow [deployment and multiplayer acceptance](docs/three-handsets.md), including copied-database rehearsal and rollback. Startup now writes `migration-report.json` before identity conversion. Unknown registering characters, invalid legacy numbers or invalid settings block conversion and stop the resource. Review the report, fix or explicitly reconcile the source records, then restart. Invalid contacts and missing media references are reported for review; provider-object existence still needs a real Fivemanage check. The console-only `phonepreflight` command refreshes the read-only report while the resource is running.
+The repository includes built NUI assets. To work on the interface from a source checkout:
 
-Review `migration-report.json`, `phone_migration_issues` and `phone_legacy_claims` before release.
+```sh
+npm ci --prefix web
+npm run dev --prefix web
+```
 
-Battery/damage, Wi-Fi account calls, technician progression, crafted tools and SIM hacking remain deferred as agreed. Live FXServer, production-data migration rehearsal, Fivemanage and cross-network TURN acceptance remain deployment gates.
+The standalone preview uses demonstration data. Voice, game cameras, inventory and hosted media require the FiveM server. Rebuild before deploying frontend changes:
+
+```sh
+npm run build --prefix web
+```
+
+## Scope and deployment status
+
+The launch interface includes the apps listed above. Legacy group history remains readable; the inherited social, banking, job and marketplace interfaces remain outside the launch UI.
+
+Battery, physical damage, account-based Wi-Fi calling and technician crafting/wiping/SIM-hacking gameplay are deferred.
+
+Before production deployment, verify native calls/video, provider uploads and database migration/rollback on an isolated copy of your server. Shop locations, permissions and hotspot routing buckets must match your setup.
