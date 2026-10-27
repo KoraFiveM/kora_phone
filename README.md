@@ -14,6 +14,21 @@ A FiveM phone system with distinct Standard, Flip and Fold interfaces, physical 
 
 Each handset has its own visual identity, with coordinated colors across the launcher, apps and Settings. Legacy `phone` items convert to the Standard model.
 
+<p align="center"><em>Browser previews using demonstration data.</em></p>
+
+| Orchard One | Circuit Flip | Atlas Fold |
+|:---:|:---:|:---:|
+| <img src="docs/images/readme-orchard-one.png" alt="Orchard One dark home screen with dot-matrix clock" width="180"> | <img src="docs/images/readme-circuit-flip.png" alt="Circuit Flip open home screen in Lilac" width="180"> | <img src="docs/images/readme-atlas-fold.png" alt="Atlas Fold expanded home screen in Midnight" width="350"> |
+
+<details>
+<summary>Flip cover and expanded conversations</summary>
+
+| Circuit Flip · closed | Atlas Fold · Messages |
+|:---:|:---:|
+| <img src="docs/images/readme-circuit-cover.png" alt="Closed Circuit Flip with clock, notifications and quick controls" width="240"> | <img src="docs/images/readme-atlas-messages.png" alt="Atlas Fold showing conversations beside an open message thread" width="400"> |
+
+</details>
+
 ## What's included
 
 - **Calls and video:** pma-voice audio, accepted WebRTC video upgrades, in-game selfie/rear cameras, mute and hang-up.
