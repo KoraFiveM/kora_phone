@@ -1,19 +1,21 @@
 local function registerAsync(name, rateKey, handler)
-    exports.qbcore:createCallback('qbphone:server:' .. name, function(source, cb, payload)
+    QB.callback.register('qbphone:server:' .. name, function(source, payload)
         if not QBPhone.RateLimits.consume(source, rateKey) then
-            return cb(PhoneError(PhoneConstants.Errors.RATE_LIMITED, 'Too many requests'))
+            return PhoneError(PhoneConstants.Errors.RATE_LIMITED, 'Too many requests')
         end
+        local response = promise.new()
         local replied = false
         local function reply(result)
             if replied then return end
             replied = true
-            cb(result or PhoneError(PhoneConstants.Errors.INTERNAL, 'Empty service response'))
+            response:resolve(result or PhoneError(PhoneConstants.Errors.INTERNAL, 'Empty service response'))
         end
         local ok, err = xpcall(function() handler(source, payload, reply) end, debug.traceback)
         if not ok then
             print(('[qbphone] media callback %s failed: %s'):format(name, err))
             reply(PhoneError(PhoneConstants.Errors.INTERNAL, 'Request failed'))
         end
+        return Citizen.Await(response)
     end)
 end
 
