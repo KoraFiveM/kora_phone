@@ -67,9 +67,9 @@ Live video travels through WebRTC, directly or through your configured TURN rela
 
 ### 1. Install the resource and inventory companion
 
-Place this resource in your server's resources folder and name its directory **`kora_phone`**. The resource name is required by the inventory gateway.
+Place this resource in your server's resources folder and name its directory **`kora_phone-stevie`** (or **`kora_phone`**). The inventory gateway only accepts those two resource names.
 
-Integrate [the companion kora_inventory server file](integration/kora_inventory/server.lua) with your `[v2]` inventory resource. It supplies `PhoneItemTransaction`, which handles handset binding, SIM exchange and resale through inventory authority. Compare it with your installed version before replacing files.
+Integrate [the companion kora_inventory server file](integration/qbinventory/server.lua) with your `[v2]` inventory resource. It supplies `PhoneItemTransaction`, which handles handset binding, SIM exchange and resale through inventory authority. Compare it with your installed version before replacing files.
 
 Keep one phone provider enabled. Stop the previous phone before starting this replacement.
 
