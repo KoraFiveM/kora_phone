@@ -208,7 +208,7 @@ const html = fs.readFileSync(uiEntry, "utf8");
 assert.match(html, /<meta[^>]+charset=/i, "UI entry should declare charset");
 assert.match(html, /<meta[^>]+viewport/i, "UI entry should declare viewport");
 const remoteScripts = [...html.matchAll(/<script[^>]+src=["'](https?:\/\/[^"']+)/gi)].map((match) => match[1]);
-assert.ok(remoteScripts.every((src) => /^https:\/\/cfx-nui-qbtheme\/theme\.js(?:\?|$)/.test(src)),
+assert.ok(remoteScripts.every((src) => /^https:\/\/cfx-nui-kora_theme\/theme\.js(?:\?|$)/.test(src)),
   "Only qbtheme's shared runtime may be loaded remotely");
 console.log("PASS web-contract: manifest and UI entry contract valid");
 }

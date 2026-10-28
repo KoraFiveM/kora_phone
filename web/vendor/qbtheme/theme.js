@@ -1,7 +1,7 @@
 (() => {
   "use strict";
 
-  const providerUrl = "https://cfx-nui-qbtheme/theme.json";
+  const providerUrl = "https://cfx-nui-kora_theme/theme.json";
   const tokenName = /^[a-z][a-z0-9-]{0,63}$/;
   const hex = /^#[0-9a-f]{6}$/i;
   const retryDelay = 250;
