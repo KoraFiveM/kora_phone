@@ -52,11 +52,11 @@ Use the resource names below. The phone integrates with the custom `[v2]` APIs a
 
 | Resource/service | Used for |
 |---|---|
-| `qblib` | Shared helpers, interactions and callbacks |
-| `qbsql` | Database access and tracked migrations |
-| `qbcore` | Character identity, shared items, jobs and money |
-| `qbinventory` | Physical handset/SIM ownership and locked inventory changes |
-| `qbtheme` | Shared theme runtime and client bridge |
+| `kora_lib` | Shared helpers, interactions and callbacks |
+| `kora_sql` | Database access and tracked migrations |
+| `kora_core` | Character identity, shared items, jobs and money |
+| `kora_inventory` | Physical handset/SIM ownership and locked inventory changes |
+| `kora_theme` | Shared theme runtime and client bridge |
 | `pma-voice` | Call audio |
 | `screenshot-basic` | Saved in-game photos |
 | **Fivemanage** | Saved photo and message-media hosting |
@@ -67,9 +67,9 @@ Live video travels through WebRTC, directly or through your configured TURN rela
 
 ### 1. Install the resource and inventory companion
 
-Place this resource in your server's resources folder and name its directory **`qbphone`**. The resource name is required by the inventory gateway.
+Place this resource in your server's resources folder and name its directory **`kora_phone`**. The resource name is required by the inventory gateway.
 
-Integrate [the companion qbinventory server file](integration/qbinventory/server.lua) with your `[v2]` inventory resource. It supplies `PhoneItemTransaction`, which handles handset binding, SIM exchange and resale through inventory authority. Compare it with your installed version before replacing files.
+Integrate [the companion kora_inventory server file](integration/kora_inventory/server.lua) with your `[v2]` inventory resource. It supplies `PhoneItemTransaction`, which handles handset binding, SIM exchange and resale through inventory authority. Compare it with your installed version before replacing files.
 
 Keep one phone provider enabled. Stop the previous phone before starting this replacement.
 
@@ -105,14 +105,14 @@ set qbphone_pin_pepper "REPLACE_WITH_A_LONG_RANDOM_SECRET"
 set qbphone_fivemanage_token "YOUR_FIVEMANAGE_TOKEN"
 set qbphone_workshop_wifi_password "YOUR_PRIVATE_HOTSPOT_PASSWORD"
 
-ensure qblib
-ensure qbsql
-ensure qbcore
-ensure qbinventory
-ensure qbtheme
+ensure kora_lib
+ensure kora_sql
+ensure kora_core
+ensure kora_inventory
+ensure kora_theme
 ensure pma-voice
 ensure screenshot-basic
-ensure qbphone
+ensure kora_phone
 ```
 
 <details>

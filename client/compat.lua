@@ -31,7 +31,7 @@ RegisterNUICallback('mail:accept', function(data, cb)
 end)
 
 RegisterNetEvent('qbphone:client:legacyTransactionSaved', function(data)
-    local player=exports.qbcore:getPlayerData()
+    local player=exports.kora_core:getPlayerData()
     if type(data)~='table' or not player or data.citizenId~=player.citizenid then return end
     QBPhone.SendNui('legacy:activity')
 end)

@@ -77,7 +77,7 @@ local function host()
         GetPlayer = function(source) return players[source] end,
         CreateCallback = function(name, fn) state.callbacks[name] = fn end,
     } }
-    GetCurrentResourceName = function() return 'qbphone-stevie' end
+    GetCurrentResourceName = function() return 'kora_phone-stevie' end
     GetNumResourceMetadata = function() return 0 end
     GetGameTimer = function() return 60000 end
     CreateThread = function() end

@@ -32,7 +32,7 @@ Pin and document the minimum supported versions before release. Do not silently 
 3. Give both characters the configured phone item.
 4. Complete one call, message, image share, transfer, social post and marketplace contact flow.
 5. Reconnect both characters and verify persistence and unread state.
-6. Restart `qbphone` during an active call and confirm voice routing is cleaned up.
+6. Restart `kora_phone` during an active call and confirm voice routing is cleaned up.
 
 ## Upgrade verification
 

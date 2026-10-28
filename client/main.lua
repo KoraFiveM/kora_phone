@@ -20,7 +20,7 @@ end
 function QBPhone.Unavailable()
     if not Config.Client.DisableWhileDead then return false end
     if QB.cache.isDead() then return true end
-    local data = exports.qbcore:getPlayerData()
+    local data = exports.kora_core:getPlayerData()
     local metadata = data and data.metadata or {}
     return metadata.isdead == true or metadata.inlaststand == true
 end
@@ -106,7 +106,7 @@ end)
 
 RegisterNetEvent('qbphone:client:mail:new', function(mail)
     if type(mail) ~= 'table' or type(mail.sender) ~= 'string' then return end
-    local player=exports.qbcore:getPlayerData()
+    local player=exports.kora_core:getPlayerData()
     if mail.citizenId and (not player or mail.citizenId~=player.citizenid) then return end
     QBPhone.SendNui('mail:new', { deviceId=mail.deviceId, sender = mail.sender:sub(1, 100), subject = tostring(mail.subject or ''):sub(1, 120) })
 end)
@@ -153,7 +153,7 @@ end)
 
 CreateThread(function()
     while not NetworkIsSessionStarted() do Wait(250) end
-    local data = exports.qbcore:getPlayerData()
+    local data = exports.kora_core:getPlayerData()
     if data and data.citizenid then
         QBPhone.State.playerLoaded = true
         QBPhone.Bootstrap()

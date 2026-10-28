@@ -24,7 +24,7 @@ local function itemFor(src,id)
     end
 end
 local function inv(src,request)
-    return exports.qbinventory:PhoneItemTransaction(src,request)
+    return exports.kora_inventory:PhoneItemTransaction(src,request)
 end
 function H.revoke(src,reason)
     local session=QBPhone.Sessions.bySource[src]
@@ -68,7 +68,7 @@ function H.current(src,provision)
     if id and not item then H.revoke(src,'possession_lost'); return nil end
     if not item then
         if H.preferredSlot and H.preferredSlot[src] then
-            item=exports.qbcore:getItemBySlot(src,H.preferredSlot[src])
+            item=exports.kora_core:getItemBySlot(src,H.preferredSlot[src])
             if item and not Config.Handsets[item.name] then item=nil end
         else
             for _,v in pairs(inventory(src)) do if Config.Handsets[v.name] then item=v; break end end
@@ -101,11 +101,11 @@ function H.current(src,provision)
                 end
                 error('Could not bind handset: '..tostring(err))
             end
-            item=exports.qbcore:getItemBySlot(src,item.slot)
+            item=exports.kora_core:getItemBySlot(src,item.slot)
             if claim then
                 -- A legacy phone includes its already-existing subscription; no new number is issued.
                 update('UPDATE phone_legacy_claims SET claimed_at=CURRENT_TIMESTAMP WHERE device_id=?',{claim.device_id})
-                item=exports.qbcore:getItemBySlot(src,item.slot)
+                item=exports.kora_core:getItemBySlot(src,item.slot)
             end
         end
         id=item.info.handsetId; H.selected[src]=id
@@ -270,7 +270,7 @@ end
 function H.action(src,p)
     local op=p.op
     if op=='select' then
-        local item=exports.qbcore:getItemBySlot(src,tonumber(p.slot) or -1)
+        local item=exports.kora_core:getItemBySlot(src,tonumber(p.slot) or -1)
         if not item or not Config.Handsets[item.name] then return fail('Handset not found') end
         H.revoke(src,'handset_changed')
         H.selected[src]=item.info and item.info.handsetId
@@ -315,13 +315,13 @@ function H.action(src,p)
         local handset=itemFor(src,d.handsetId)
         local request={op=op,handsetSlot=handset.slot,handsetId=d.handsetId,simId=handset.info.phoneSimId}
         if op=='insertSim' then
-            local item=exports.qbcore:getItemBySlot(src,tonumber(p.slot) or -1)
+            local item=exports.kora_core:getItemBySlot(src,tonumber(p.slot) or -1)
             if not item or item.name~=Config.SimItem then return fail('SIM not found') end
             if not (item.info and item.info.simId) then
                 local id=random(); update('INSERT INTO phone_sims(id,phone_number,owner_citizenid) VALUES(?,?,?)',{id,simNumber(),cid(src)})
                 local bound=inv(src,{op='bindSim',simSlot=item.slot,itemName=item.name,simId=id})
                 if not bound then return fail('Could not initialise SIM') end
-                item=exports.qbcore:getItemBySlot(src,item.slot)
+                item=exports.kora_core:getItemBySlot(src,item.slot)
             end
             local sim=row('SELECT * FROM phone_sims WHERE id=?',{item.info.simId})
             if not sim or sim.status~='active' then return fail('SIM is unavailable') end
@@ -473,27 +473,27 @@ function H.migrate()
         FROM phone_media WHERE public_url='' OR storage_key='' OR public_url IS NULL]])
 end
 function H.start()
-    local gateway=pcall(function() exports.qbinventory:PhoneItemTransaction(0,{op='probe'}) end)
+    local gateway=pcall(function() exports.kora_inventory:PhoneItemTransaction(0,{op='probe'}) end)
     if not gateway then error('Install the qbinventory PhoneItemTransaction companion before starting qbphone') end
     H.migrate()
     for name,model in pairs(Config.Handsets) do
-        exports.qbcore:registerShared('items',name,{name=name,label=({standard='Orchard One',flip='Circuit Flip',fold='Atlas Fold'})[model],weight=250,type='item',image='phone.png',unique=true,useable=true,shouldClose=true,description='Personal handset'})
-        exports.qbcore:createUseable(name,function(src,item)
+        exports.kora_core:registerShared('items',name,{name=name,label=({standard='Orchard One',flip='Circuit Flip',fold='Atlas Fold'})[model],weight=250,type='item',image='phone.png',unique=true,useable=true,shouldClose=true,description='Personal handset'})
+        exports.kora_core:createUseable(name,function(src,item)
             H.locked(src,H.action,{op='select',slot=item.slot})
             TriggerClientEvent('qbphone:client:useHandset',src)
         end)
     end
-    exports.qbcore:registerShared('items',Config.SimItem,{name=Config.SimItem,label='Mobile SIM',weight=1,type='item',image='phone.png',unique=true,useable=false,description='Removable mobile subscription'})
+    exports.kora_core:registerShared('items',Config.SimItem,{name=Config.SimItem,label='Mobile SIM',weight=1,type='item',image='phone.png',unique=true,useable=false,description='Removable mobile subscription'})
     for id,s in pairs(Config.PhoneServices.shops) do
         local items={}; for name,price in pairs(s.prices) do items[#items+1]={name=name,price=price,amount=100,info={},type='item',slot=#items+1} end
-        exports.qbinventory:RegisterShop('qbphone:'..id,{label=s.label,items=items,slots=64,coords=s.coords,distance=s.distance,currency='bank',
+        exports.kora_inventory:RegisterShop('qbphone:'..id,{label=s.label,items=items,slots=64,coords=s.coords,distance=s.distance,currency='bank',
             access=function(src) return H.shopStockAccess(src,id) end})
     end
-    H.subscription=exports.qbcore:onChange({'items'},function(src)
+    H.subscription=exports.kora_core:onChange({'items'},function(src)
         local id=H.selected[src]
         if id and not itemFor(src,id) then H.revoke(src,'possession_lost') end
     end)
-    H.deathSubscription=exports.qbcore:onChange({'metadata'},function(src)
+    H.deathSubscription=exports.kora_core:onChange({'metadata'},function(src)
         local p=QBPhone.GetPlayer(src); local m=p and p.metadata or {}
         if H.selected[src] and (m.isdead or m.inlaststand) then H.revoke(src,'player_dead') end
     end)
@@ -502,11 +502,11 @@ function H.start()
 end
 AddEventHandler('playerDropped',function() H.selected[source]=nil; H.wifi[source]=nil end)
 AddEventHandler('onResourceStop',function(resource)
-    if resource==GetCurrentResourceName() and H.subscription then exports.qbcore:offChange(H.subscription) end
-    if resource==GetCurrentResourceName() and H.deathSubscription then exports.qbcore:offChange(H.deathSubscription) end
+    if resource==GetCurrentResourceName() and H.subscription then exports.kora_core:offChange(H.subscription) end
+    if resource==GetCurrentResourceName() and H.deathSubscription then exports.kora_core:offChange(H.deathSubscription) end
 end)
 exports('CanResellHandset',function(src,slot)
-    local item=exports.qbcore:getItemBySlot(src,slot)
+    local item=exports.kora_core:getItemBySlot(src,slot)
     local d=item and item.info and item.info.handsetId and phoneRow(item.info.handsetId)
     if not d or d.isReset~=1 or item.info.phoneSimId or d.accountId or d.pinKdf or d.faceCitizenId then return false end
     local content=tonumber(MySQL.scalar.await([[SELECT

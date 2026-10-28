@@ -1,6 +1,6 @@
 QBPhone = QBPhone or {}
 
--- qblib's NUI helpers run in qblib's resource VM. This phone owns a different
+-- kora_lib's NUI helpers run in kora_lib's resource VM. This phone owns a different
 -- browser frame, so its messages and callback routes must use this resource's natives.
 function QBPhone.SendNui(action, data)
     SendNUIMessage({ action = action, data = data })

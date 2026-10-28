@@ -21,7 +21,7 @@ local apps = {}
 -- enforces server-side.
 local function jobMatches(job)
     if job == nil then return true end
-    local player = exports.qbcore:getPlayerData()
+    local player = exports.kora_core:getPlayerData()
     local current = player and player.job
     if not current then return false end
     local function matchesOne(spec)

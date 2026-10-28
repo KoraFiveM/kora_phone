@@ -5,7 +5,7 @@ Adapted from `qbcore2/qbphone-Stevie-` commit `bf1ef3921845a413cd018b07c1dd90909
 ## Supported integration surface
 
 - `qb-phone:server:sendNewMail`: validated, rate-limited mail to the calling character only. Client-supplied buttons are discarded.
-- Server export `sendNewMailToOffline(citizenid, data)`, on both `qbphone` and `qb-phone` identities: trusted server mail, including optional Accept actions. It retains the upstream void return value. A recipient does not need a handset or SIM for delivery to persist.
+- Server export `sendNewMailToOffline(citizenid, data)`, on both `kora_phone` and `qb-phone` identities: trusted server mail, including optional Accept actions. It retains the upstream void return value. A recipient does not need a handset or SIM for delivery to persist.
 - Local server event `qb-phone:server:sendNewEventMail(citizenid, data)`: trusted arbitrary-recipient delivery; network clients are rejected.
 - `qb-phone:server:ClearButtonData` and `qb-phone:server:RemoveMail`: current-character ownership and unlocked-handset checks, plus rate limits.
 - `qb-phone:client:NewMailNotify`, `qb-phone:RefreshPhone`, `qb-phone:client:BillingEmail`: native notifications, refresh and billing mail.
@@ -41,7 +41,7 @@ Notifications carry character/handset identity when available. The native client
 
 ## Schema and existing data
 
-`013_legacy_qb_phone.sql` adds `phone_legacy_mail` and `phone_legacy_transactions`. Existing migrations 001–012 are unchanged, including handset migration 012. Both 012 and 013 use qbsql's checksum-owned runner. Fresh installs can still use the one-file `qbphone.sql`, now containing all 13 tracked migrations. Existing databases should use automatic migrations, not reimport the master.
+`013_legacy_qb_phone.sql` adds `phone_legacy_mail` and `phone_legacy_transactions`. Existing migrations 001–012 are unchanged, including handset migration 012. Both 012 and 013 use kora_sql's checksum-owned runner. Fresh installs can still use the one-file `qbphone.sql`, now containing all 13 tracked migrations. Existing databases should use automatic migrations, not reimport the master.
 
 This adapts the upstream extension without making the old device-mail foreign keys nullable. Native device-to-device mail tables and routes remain intact and outside this launch interface.
 

@@ -18,7 +18,7 @@ if root == script then root = "." end
 local manifest = io.open(root .. "/fxmanifest.lua"):read("*a")
 local listed = {}
 for path in manifest:gmatch("migration%s+'([^']+)'") do listed[#listed + 1] = path end
-function GetCurrentResourceName() return 'qbphone' end
+function GetCurrentResourceName() return 'kora_phone' end
 function GetNumResourceMetadata(_, key) return key == 'migration' and #listed or 0 end
 function GetResourceMetadata(_, key, index) return key == 'migration' and listed[index + 1] or nil end
 function LoadResourceFile(_, path) local f = io.open(root .. "/" .. path); if not f then return nil end local s = f:read("*a"); f:close(); return s end

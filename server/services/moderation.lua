@@ -11,7 +11,7 @@ local function moderator(source)
     local citizenId = QBPhone.GetCitizenId(source)
     if not citizenId then return nil end
     if IsPlayerAceAllowed(source, 'qbphone.moderate') then return citizenId end
-    if exports.qbcore:hasPermission(source, 'admin') or exports.qbcore:hasPermission(source, 'god') then return citizenId end
+    if exports.kora_core:hasPermission(source, 'admin') or exports.kora_core:hasPermission(source, 'god') then return citizenId end
 end
 
 local function snapshot(targetType, targetId)

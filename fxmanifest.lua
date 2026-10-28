@@ -1,7 +1,9 @@
 fx_version 'cerulean'
 game 'gta5'
 
-name 'qbphone'
+name 'kora_phone'
+-- Keep the legacy resource name resolvable for exports['qbphone-stevie'] callers.
+provide 'qbphone-stevie'
 author 'QBPhone Team'
 description 'Server-authoritative QBCore phone'
 version '0.2.0'
@@ -9,10 +11,10 @@ version '0.2.0'
 lua54 'yes'
 
 shared_scripts {
-    '@qblib/init.lua',
-    '@qbsql/init.lua',
-    '@qbcore/init.lua',
-    '@qbcore/shared/locale.lua',
+    '@kora_lib/init.lua',
+    '@kora_sql/init.lua',
+    '@kora_core/init.lua',
+    '@kora_core/shared/locale.lua',
     'config/shared.lua',
     'config/handsets.lua',
     'shared/constants.lua',
@@ -21,14 +23,14 @@ shared_scripts {
 }
 
 client_scripts {
-    '@qbtheme/client/bridge.lua',
+    '@kora_theme/client/bridge.lua',
     'config/client.lua',
     'client/**/*.lua'
 }
 
 server_scripts {
     'server/crypto.js',
-    '@qbsql/lib/MySQL.lua',
+    '@kora_sql/lib/MySQL.lua',
     'config/server.lua',
     'server/integrations/*.lua',
     'server/repositories/*.lua',
@@ -76,11 +78,11 @@ files {
 }
 
 dependencies {
-    'qbtheme',
-    'qblib',
-    'qbcore',
-    'qbsql',
-    'qbinventory',
+    'kora_theme',
+    'kora_lib',
+    'kora_core',
+    'kora_sql',
+    'kora_inventory',
     'pma-voice'
 }
 

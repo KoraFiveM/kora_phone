@@ -22,12 +22,12 @@ local function fixture(mode)
     end
     env.RegisterNetEvent, env.RegisterCommand, env.exports = function() end, function() end, function() end
     env.GetGameTimer = function() return 0 end
-    env.GetCurrentResourceName = function() return 'qbphone-stevie' end
+    env.GetCurrentResourceName = function() return 'kora_phone-stevie' end
     env.GetResourceMetadata = function() return 'test' end
     env.print = function(message) state.messages[#state.messages + 1] = message end
     env.StopResource = function()
         state.stopped = true
-        for _, handler in ipairs(state.handlers.onResourceStop or {}) do handler('qbphone-stevie') end
+        for _, handler in ipairs(state.handlers.onResourceStop or {}) do handler('kora_phone-stevie') end
     end
     assert(loadfile('server/services/calling.lua', 't', env))()
     assert(loadfile('server/main.lua', 't', env))()

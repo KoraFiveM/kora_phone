@@ -51,10 +51,10 @@ function PhoneValidation.enum(value, field, values)
 end
 
 
-local SETTINGS_THEMES = { 'light', 'dark', 'ocean', 'forest', 'amethyst', 'ember', 'qbcore' }
-local SETTINGS_WALLPAPERS = { 'orbit', 'plain', 'midnight', 'slate', 'ember', 'qbcore', 'custom' }
+local SETTINGS_THEMES = { 'light', 'dark', 'ocean', 'forest', 'amethyst', 'ember', 'kora_core' }
+local SETTINGS_WALLPAPERS = { 'orbit', 'plain', 'midnight', 'slate', 'ember', 'kora_core', 'custom' }
 local SETTINGS_STYLES = { 'classic', 'standard', 'flip', 'fold' }
-local SETTINGS_CASES = { 'default', 'nightdrive', 'citypop', 'sakura', 'touge', 'garage', 'qbcore', 'arcade', 'space', 'palms', 'skyline', 'custom' }
+local SETTINGS_CASES = { 'default', 'nightdrive', 'citypop', 'sakura', 'touge', 'garage', 'kora_core', 'arcade', 'space', 'palms', 'skyline', 'custom' }
 local SETTINGS_ICONS = { 'circle', 'squircle', 'outline', 'solid' }
 
 local function boundedNumber(value, field, minimum, maximum)

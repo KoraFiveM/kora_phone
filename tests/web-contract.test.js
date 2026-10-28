@@ -21,7 +21,7 @@ async function checkDeviceCache() {
   const transport = async (url, options) => {
     const reply = replies.shift();
     assert.ok(reply, `Unexpected NUI request: ${url}`);
-    equal(url, `https://qbphone/${reply.route}`, "NUI route is unchanged");
+    equal(url, `https://kora_phone/${reply.route}`, "NUI route is unchanged");
     equal(JSON.parse(options.body), reply.body, "NUI arguments are unchanged");
     if (reply.started) reply.started();
     return { ok: true, json: async () => reply.result };
@@ -38,7 +38,7 @@ async function checkDeviceCache() {
       return load(path.resolve(path.dirname(file), `${name}.ts`));
     };
     new Function("require", "module", "exports", "window", "fetch", "localStorage", "addEventListener", "crypto", "AbortSignal", outputText)(
-      requireLocal, module, module.exports, { GetParentResourceName: () => "qbphone" }, transport,
+      requireLocal, module, module.exports, { GetParentResourceName: () => "kora_phone" }, transport,
       { getItem: key => storage.get(key) ?? null, setItem: (key, value) => storage.set(key, value) },
       () => {}, { randomUUID: () => "test-request" }, undefined);
     return module.exports;
@@ -71,7 +71,7 @@ async function checkDeviceCache() {
   equal(locked.id, "202", "new-device ID is preserved");
   equal(locked.data, undefined, "locked devices still hide private collections");
   equal(locked.hasPin, true, "PIN metadata is preserved");
-  equal(locked.preferences, { name: "Nothing Phone", volume: 0, scale: 1, wallpaper: "qbcore", theme: "qbcore", setupComplete: false }, "a new locked phone uses its own partial settings and the existing defaults");
+  equal(locked.preferences, { name: "Nothing Phone", volume: 0, scale: 1, wallpaper: "kora_core", theme: "kora_core", setupComplete: false }, "a new locked phone uses its own partial settings and the existing defaults");
   const second = await refresh(raw(202, { name: "Phone B", scale: .8 }, { contacts: [], items: { notes: [], alarms: [], stations: [] } }), failedGallery);
   equal(second.data.settings.name, "Phone B", "new-phone settings remain usable when gallery fails");
   equal(second.data.settings.volume, 0, "same-device partial settings retain zero values");
@@ -95,15 +95,15 @@ async function checkDeviceCache() {
   equal(adaptBootstrap(raw("202")).data.photos[0].id, "3", "same-device pending requests retain their existing gallery");
   completeGallery(gallery(4));
   equal((await loading).data.photos[0].id, "4", "the pending gallery still publishes a successful result");
-  const settings = { name: "Saved B", volume: 0, scale: 1, wallpaper: "qbcore" };
+  const settings = { name: "Saved B", volume: 0, scale: 1, wallpaper: "kora_core" };
   ok("settings:save", settings, settings);
   equal((await api("settings", settings)).settings, settings, "saving settings keeps its existing request and return shape");
   const newCollections = adaptBootstrap(raw(303, { name: "Phone C" }));
   for (const key of ["contacts", "notes", "alarms", "stations", "photos"]) equal(newCollections.data[key], [], `omitted new-device ${key} starts empty`);
-  equal(newCollections.preferences.theme, "qbcore", "new-device theme has the existing default");
+  equal(newCollections.preferences.theme, "kora_core", "new-device theme has the existing default");
   equal(newCollections.preferences.setupComplete, false, "new-device setup has the existing default");
   const fallback = adaptBootstrap({});
-  equal(fallback.id, "qbphone", "a missing device ID keeps the existing fallback");
+  equal(fallback.id, "kora_phone", "a missing device ID keeps the existing fallback");
   equal(fallback.preferences.name, "Nothing Phone", "the fallback device does not inherit a previous name");
   equal(fallback.number, "", "missing phone numbers keep the existing empty-string contract");
   equal(fallback.locked, false, "missing security retains the existing unlocked contract");

@@ -14,7 +14,7 @@ New PINs use salted scrypt with the server pepper; old PINs remain verifiable un
 
 ## Inventory companion API
 
-The supplied `[v2]/qbinventory/server.lua` now exposes `PhoneItemTransaction(source, request)` and its lowercase alias, callable only by resource **qbphone**.
+The supplied `[v2]/kora_inventory/server.lua` now exposes `PhoneItemTransaction(source, request)` and its lowercase alias, callable only by resource **kora_phone**.
 
 | Operation | Trusted request fields |
 |---|---|
@@ -29,12 +29,12 @@ Returns `ok, error, handsetOrBoundItem, returnedSim`. Slots, serials, definition
 
 Supported unique item names are `phone`, `phone_standard`, `phone_flip`, `phone_fold`, and `phone_sim`. Disabling models through config is supported; arbitrary new item names require a deliberate gateway update. Phone shops reserve 64 slots for stock and used handsets.
 
-The gateway and its smoke test are also copied under `integration/qbinventory/` for deployment review. This is a companion source copy, not another resource to start. Back up the inventory resource and compare versions before replacing its server file.
+The gateway and its smoke test are also copied under `integration/kora_inventory/` for deployment review. This is a companion source copy, not another resource to start. Back up the inventory resource and compare versions before replacing its server file.
 
 ## Migration rehearsal and rollback
 
-1. Stop phone interactions and take one consistent backup of all phone tables, player inventories/money and qbinventory durable stock. Preserve provider files. Restore into an isolated test database and a separate FXServer.
-2. Stop Stevie; deploy the new phone and inventory gateway. Keep SQL files `001`–`011` unchanged. New schema `012` uses qbsql's checksum-protected runner; do not edit it after deployment.
+1. Stop phone interactions and take one consistent backup of all phone tables, player inventories/money and kora_inventory durable stock. Preserve provider files. Restore into an isolated test database and a separate FXServer.
+2. Stop Stevie; deploy the new phone and inventory gateway. Keep SQL files `001`–`011` unchanged. New schema `012` uses kora_sql's checksum-protected runner; do not edit it after deployment.
 3. Review `migration-report.json` generated before identity conversion. Blocking issues stop startup; reconcile unknown character owners, invalid subscription numbers and malformed settings, then restart. Keep this report with the rehearsal backups. Provider objects are explicitly unverified in this report. After startup, console command `phonepreflight` refreshes the read-only report and includes unclaimed mappings. Inspect `phone_legacy_claims`. Open a legacy phone and verify its number, contacts, texts, deleted-message exclusions, photos and PIN. An unclaimed character can acquire any handset model and claim their data once. Split stacked legacy phones before conversion.
 4. Reboot twice. Confirm no duplicate serials, numbers, deliveries or claims. A character without a handset must retain an unclaimed mapping without receiving an extra item or subscription.
 5. Review `phone_migration_issues` and unresolved `phone_legacy_claims`. Verify remote media separately; a database URL cannot prove the provider object exists.

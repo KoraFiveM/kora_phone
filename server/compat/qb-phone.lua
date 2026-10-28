@@ -22,7 +22,7 @@ local function sendMail(citizenId,data,allowButton)
     if not text(citizenId,64) or not mail then return false end
     local id=Repo.insert(citizenId,mail)
     if not id or id<=0 then return false end
-    local player=exports.qbcore:getPlayerByCitizenId(citizenId)
+    local player=exports.kora_core:getPlayerByCitizenId(citizenId)
     if player and player.source then
         local device=QBPhone.Handsets.current(player.source,false)
         TriggerClientEvent('qbphone:client:mail:new',player.source,{id=id,citizenId=citizenId,

@@ -45,10 +45,10 @@ jobs:
       # The folder name is the resource name, so it unzips straight into resources/.
       - name: Package resource
         run: |
-          mkdir -p pkg/qbphone/web
-          cp -r fxmanifest.lua README.md qbphone.sql client config server shared migrations local-media integration pkg/qbphone/
-          cp -r web/dist pkg/qbphone/web/
-          sed -i "s/^version '.*'/version '${{ steps.tag.outputs.new_version }}'/" pkg/qbphone/fxmanifest.lua
+          mkdir -p pkg/kora_phone/web
+          cp -r fxmanifest.lua README.md qbphone.sql client config server shared migrations local-media integration pkg/kora_phone/
+          cp -r web/dist pkg/kora_phone/web/
+          sed -i "s/^version '.*'/version '${{ steps.tag.outputs.new_version }}'/" pkg/kora_phone/fxmanifest.lua
           cd pkg && zip -r ../qbphone-${{ steps.tag.outputs.new_tag }}.zip qbphone
 
       - name: Create GitHub Release

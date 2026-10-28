@@ -10,7 +10,7 @@ local function player(src)
     return { source = src, citizenid = 'CID', money = { bank = balance },
         job = { name = 'police', grade = { level = 3 }, onduty = duty } }
 end
-exports = { qbcore = {
+exports = { kora_core = {
     getPlayerData = function(_, src) return player(src) end,
     getPlayerByCitizenId = function(_, citizenid) return citizenid == 'CID' and player(12) or nil end,
     getItemByName = function(_, src, name)

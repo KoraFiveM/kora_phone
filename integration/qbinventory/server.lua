@@ -1,4 +1,4 @@
--- qbinventory server authority. Player item writes intentionally go through
+-- kora_inventory server authority. Player item writes intentionally go through
 -- qbcore:setPath, preserving its dirty-column persistence and delta replication.
 
 local config = Config.qbinventory
@@ -45,13 +45,13 @@ local function playerKey(src)
 end
 local function itemDef(name)
     local item = type(name) == 'string' and name:lower() or name
-    return exports.qbcore:getShared('items', item) or exports.qbcore:getShared('weapons', item)
+    return exports.kora_core:getShared('items', item) or exports.kora_core:getShared('weapons', item)
 end
 local function playerData(src)
-    return exports.qbcore:getPlayerData(src)
+    return exports.kora_core:getPlayerData(src)
 end
 local function playerItems(src)
-    return exports.qbcore:getPlayerData(src, { 'items' }) or {}
+    return exports.kora_core:getPlayerData(src, { 'items' }) or {}
 end
 -- Physical cash policy ------------------------------------------------------
 
@@ -79,12 +79,12 @@ local function isCashItemName(name)
     return policy and type(name) == 'string' and name:lower() == policy.item
 end
 
--- qbcore emits its inventory-change event synchronously from setPath. Mark
+-- kora_core emits its inventory-change event synchronously from setPath. Mark
 -- qbinventory-originated writes so the listener below does not produce partial
 -- live patches or double-bump a transaction's revision.
 local function playerSetPath(src, path, value)
     ownPlayerWrites[src] = (ownPlayerWrites[src] or 0) + 1
-    local results = table.pack(exports.qbcore:setPath(src, path, value))
+    local results = table.pack(exports.kora_core:setPath(src, path, value))
     ownPlayerWrites[src] = ownPlayerWrites[src] - 1
     if ownPlayerWrites[src] == 0 then
         ownPlayerWrites[src] = nil
@@ -150,14 +150,14 @@ local function buildItem(name, amount, slot, metadata)
         weight = def.weight or 0,
         shouldClose = def.shouldClose,
         description = def.description,
-        -- `preventClose` is qbinventory's own native field (opposite polarity
+        -- `preventClose` is kora_inventory's own native field (opposite polarity
         -- of legacy `shouldClose`, default false = "closes the panel after
         -- use"). `shouldClose` itself is left untouched above for qb-core
         -- compat parity -- but a legacy item that set `shouldClose = false`
         -- meant exactly "leave the inventory open", so honour that as an
         -- implicit preventClose when the item hasn't set the native field.
         preventClose = def.preventClose == true or def.shouldClose == false,
-        -- Milliseconds run through qblib's progress bar (client.lua) before a
+        -- Milliseconds run through kora_lib's progress bar (client.lua) before a
         -- use effect applies. 0/absent keeps today's immediate-use behaviour.
         useTime = math.max(0, math.floor(tonumber(def.useTime) or 0)),
         created = os.time(),
@@ -201,7 +201,7 @@ local function showItemBox(src, name, amount, action, item)
     }
     TriggerClientEvent('qbinventory:client:itemBox', src, payload)
     -- The upstream name, for legacy client scripts. Argument order is
-    -- upstream's (itemData, type, amount). qbinventory's own client bridge
+    -- upstream's (itemData, type, amount). kora_inventory's own client bridge
     -- registers this as a no-op, so its UI still renders exactly one receipt
     -- from the native event above.
     TriggerClientEvent('qb-inventory:client:ItemBox', src, payload, action, amount)
@@ -539,7 +539,7 @@ local function viewItems(source)
         item.description = effective.description
 
         appendDisplayMetadata(item.displayMeta, metadata, true)
-        -- Player items can have been created by qbcore or loaded from an older
+        -- Player items can have been created by kora_core or loaded from an older
         -- persisted shape. Weapon type and the live handler table are
         -- authoritative so the UI does not hide their Use action.
         item.useable = (def and (def.type == 'weapon' or def.useable == true)) or hasUseable(item.name)
@@ -579,10 +579,10 @@ local function broadcast(inventoryKey)
             update = update or patchView(inventoryKey)
             TriggerClientEvent('qbinventory:client:sessionPatched', src, session.token, update)
             -- Legacy qb-inventory dependants listen for this to re-read their
-            -- own PlayerData after a change. qbinventory's own client bridge
+            -- own PlayerData after a change. kora_inventory's own client bridge
             -- treats it as a refresh request, and third-party scripts that only
             -- know the upstream name now hear about committed changes at all --
-            -- previously nothing outside qbinventory was ever notified.
+            -- previously nothing outside kora_inventory was ever notified.
             TriggerClientEvent('qb-inventory:client:updateInventory', src)
         end
     end
@@ -805,12 +805,12 @@ end
 
 -- Physical cash operations -------------------------------------------------
 
--- These functions are called only by qbcore's money module. They bypass the
+-- These functions are called only by kora_core's money module. They bypass the
 -- public AddItem/RemoveItem compatibility layer deliberately: that layer
--- redirects physical cash back into qbcore, while these are the one audited
+-- redirects physical cash back into kora_core, while these are the one audited
 -- route that changes the actual cash stack.
 local function requireCashAuthority(account)
-    if GetInvokingResource() ~= 'qbcore' then
+    if GetInvokingResource() ~= 'kora_core' then
         return nil, 'physical cash is restricted to qbcore'
     end
     local policy = cashPolicy()
@@ -1643,7 +1643,7 @@ local function intentBuy(src, request)
             return false, 'out of stock'
         end
         if price > 0 then
-            local paid, payErr = exports.qbcore:removeMoney(
+            local paid, payErr = exports.kora_core:removeMoney(
                 src,
                 currentShop.currency == 'money' and 'cash' or currentShop.currency,
                 price * count,
@@ -1669,7 +1669,7 @@ local function intentBuy(src, request)
         local added, addErr, addedItem = addPlayer(src, currentItem.name, count, nil, purchaseInfo, 'purchase')
         if not added then
             if price > 0 then
-                exports.qbcore:addMoney(
+                exports.kora_core:addMoney(
                     src,
                     currentShop.currency == 'money' and 'cash' or currentShop.currency,
                     price * count,
@@ -1784,8 +1784,8 @@ local function addItem(src, name, amount, slot, info, reason)
     amount = inventory.amount(amount, 1)
     if cashItemsActive and isCashItemName(name) then
         -- Compatibility still works, but monetary accounting and events stay
-        -- in qbcore. Never let an arbitrary resource mutate the cash stack.
-        return exports.qbcore:addMoney(src, cashPolicy().account, amount, reason or 'qbinventory-add-cash')
+        -- in kora_core. Never let an arbitrary resource mutate the cash stack.
+        return exports.kora_core:addMoney(src, cashPolicy().account, amount, reason or 'qbinventory-add-cash')
     end
     return lock({ playerKey(src) }, function()
         local ok, err = canCarry(src, name, amount)
@@ -1815,7 +1815,7 @@ local function removeItem(src, name, amount, slot, reason)
         return false, 'invalid amount'
     end
     if cashItemsActive and isCashItemName(name) then
-        return exports.qbcore:removeMoney(src, cashPolicy().account, amount, reason or 'qbinventory-remove-cash')
+        return exports.kora_core:removeMoney(src, cashPolicy().account, amount, reason or 'qbinventory-remove-cash')
     end
     return lock({ playerKey(src) }, function()
         local items = playerItems(src)
@@ -2033,7 +2033,7 @@ local function setPlayerItemInfo(src, slot, info)
         return false, 'invalid item metadata'
     end
     return lock({ playerKey(src) }, function()
-        local item = exports.qbcore:getPlayerData(src, { 'items', slot })
+        local item = exports.kora_core:getPlayerData(src, { 'items', slot })
         if type(item) ~= 'table' or not itemDef(item.name) or not inventory.amount(item.amount, 1) then
             return false, 'invalid item table'
         end
@@ -2628,7 +2628,7 @@ local function buyItem(src, shopId, slot, count)
         end
         price = tonumber(item.price or (shop.prices and shop.prices[item.name])) or 0
         if price > 0 then
-            local paid, payErr = exports.qbcore:removeMoney(
+            local paid, payErr = exports.kora_core:removeMoney(
                 src,
                 shop.currency == 'money' and 'cash' or shop.currency,
                 price * count,
@@ -2654,7 +2654,7 @@ local function buyItem(src, shopId, slot, count)
         local added, addErr = addPlayer(src, item.name, count, nil, purchaseInfo)
         if not added then
             if price > 0 then
-                exports.qbcore:addMoney(
+                exports.kora_core:addMoney(
                     src,
                     shop.currency == 'money' and 'cash' or shop.currency,
                     price * count,
@@ -2730,7 +2730,7 @@ end
 
 -- Trusted server-side extension seam. Compatibility/domain modules load after
 -- this authority and may use these helpers, but no client event ever receives
--- this table. Player writes still route through qbcore; callers must acquire
+-- this table. Player writes still route through kora_core; callers must acquire
 -- deterministic locks and call bump/broadcast only after a committed change.
 local function resolveInventoryRef(reference, preferredType)
     if type(reference) == 'number' then
@@ -2985,7 +2985,7 @@ inventory.internal = {
 -- loose SIM and changing the handset commit together in one inventory write.
 local phoneHandsets = { phone = true, phone_standard = true, phone_flip = true, phone_fold = true }
 local function phoneItemTransaction(src, request)
-    if GetInvokingResource() ~= 'qbphone' then
+    if GetInvokingResource() ~= 'kora_phone' then
         return false, 'phone integration only'
     end
     if type(src) ~= 'number' or src < 1 or src % 1 ~= 0 or type(request) ~= 'table' then
@@ -3136,12 +3136,12 @@ local function phoneItemTransaction(src, request)
         local beforeRevision = revision(playerKey(src))
         local beforeShopRevision = saleShopKey and revision(saleShopKey)
         if moneyAmount and moneyAmount > 0 then
-            local paid, err = exports.qbcore[moneyAction](exports.qbcore, src, 'bank', moneyAmount, 'qbphone-' .. op, true)
+            local paid, err = exports.kora_core[moneyAction](exports.kora_core, src, 'bank', moneyAmount, 'qbphone-' .. op, true)
             if not paid then return false, err or 'bank service unavailable' end
         end
         local function refund()
             if moneyAmount and moneyAmount > 0 then
-                local refunded = exports.qbcore[refundAction](exports.qbcore, src, 'bank', moneyAmount, 'qbphone-service-rollback', true)
+                local refunded = exports.kora_core[refundAction](exports.kora_core, src, 'bank', moneyAmount, 'qbphone-service-rollback', true)
                 if not refunded then print('^1[qbinventory]^7 phone bank compensation failed for player ' .. src) end
                 return refunded
             end
@@ -3154,7 +3154,7 @@ local function phoneItemTransaction(src, request)
             return false, 'inventory changed during payment'
         end
         -- replacePlayerItems validates all registry definitions, capacity and
-        -- unchanged physical cash before its single qbcore funnel write.
+        -- unchanged physical cash before its single kora_core funnel write.
         local ok, err = replacePlayerItems(src, items)
         if not ok then
             if not refund() then return false, 'bank compensation failed' end
@@ -3243,7 +3243,7 @@ local api = {
 -- Every public name is reachable in BOTH cases. Half of this surface already
 -- carried a lowercase alias (registerShop/registerHook/removeHooks/
 -- registerInspectionAccess) and half did not, so a caller had to know which
--- half a given name fell in -- qbambulance called `registerStash` and got
+-- half a given name fell in -- kora_ambulance called `registerStash` and got
 -- "No such export". Alias by reference rather than re-declaring the closure,
 -- so both cases stay the same function object. test/smoke/contract.lua asserts
 -- the pairing, so a future one-cased addition fails the suite.
@@ -3257,7 +3257,7 @@ api.getInventory = api.GetInventory
 api.getFreeWeight = api.GetFreeWeight
 api.removeInspectionAccess = api.RemoveInspectionAccess
 
--- These are qbinventory-private bridge exports for qbcore only. They are not
+-- These are qbinventory-private bridge exports for kora_core only. They are not
 -- advertised through qb-inventory/ox_inventory compatibility identities.
 local physicalCashApi = {
     physicalCashGet = physicalCashGet,
@@ -3338,7 +3338,7 @@ end)
 -- Lifecycle and persistence ------------------------------------------------
 
 -- Persistence is deliberately a secondary-store concern. Hydrating happens
--- only after its qbsql migration succeeds; malformed rows remain quarantined
+-- only after its kora_sql migration succeeds; malformed rows remain quarantined
 -- by that module instead of being silently loaded into live state.
 AddEventHandler('qbinventory:server:persistenceReady', function()
     local persistence = inventory.persistence
@@ -3389,7 +3389,7 @@ AddEventHandler('qbinventory:server:persistenceReady', function()
     print(('^2[qbinventory]^7 restored %d secondary inventories.'):format(#restored))
 end)
 
--- Writes made by another server resource through qbcore's public mutation
+-- Writes made by another server resource through kora_core's public mutation
 -- funnel remain qbcore-owned. We only advance the session revision and push a
 -- replacement view, so an open shared panel cannot overwrite that change.
 AddEventHandler('qbcore:server:inventoryChanged', function(src)
@@ -3410,7 +3410,7 @@ end)
 AddEventHandler('onResourceStop', function(name)
     if name == resourceName then
         -- Do not unregister physical cash here. A restart gap must fail closed
-        -- in qbcore rather than silently create a second ledger balance.
+        -- in kora_core rather than silently create a second ledger balance.
         for src in pairs(sessions) do
             close(src, 'resource stopped')
         end
@@ -3438,7 +3438,7 @@ CreateThread(function()
     if not policy then
         return
     end
-    local ok, err = exports.qbcore:registerPhysicalCash(policy.account)
+    local ok, err = exports.kora_core:registerPhysicalCash(policy.account)
     if not ok then
         print(('^1[qbinventory]^7 physical cash was not enabled: %s'):format(tostring(err)))
         return

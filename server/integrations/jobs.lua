@@ -33,7 +33,7 @@ end
 function Jobs.setDuty(player, onDuty)
     if not Config.Server.Jobs.Enabled or not Config.Server.Jobs.AllowDutyToggle then return false end
     if not player or not player.source then return false end
-    local ok, changed = pcall(function() return exports.qbcore:setJobDuty(player.source, onDuty == true) end)
+    local ok, changed = pcall(function() return exports.kora_core:setJobDuty(player.source, onDuty == true) end)
     return ok and changed == true
 end
 

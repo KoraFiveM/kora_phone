@@ -50,7 +50,7 @@ function H.commerce(actor,p,approved)
     local citizenId=QBPhone.GetCitizenId(target)
     if p.op=='buy' then
         if type(p.item)~='string' or not s.prices[p.item] then return fail('Item is unavailable') end
-        local stock=exports.qbinventory:shopGet('qbphone:'..p.shop)
+        local stock=exports.kora_inventory:shopGet('qbphone:'..p.shop)
         local slot
         for key,i in pairs(stock or {}) do
             if i.name==p.item or (Config.Handsets[p.item] and Config.Handsets[i.name]==Config.Handsets[p.item]) then
@@ -60,7 +60,7 @@ function H.commerce(actor,p,approved)
         end
         if not slot then return fail('Out of stock') end
         if target~=actor then H.purchaseCustomers[target]={shop=p.shop,actor=actor,actorCharacter=QBPhone.GetCitizenId(actor),character=citizenId} end
-        local invoked,ok,err=pcall(function() return exports.qbinventory:BuyItem(target,'qbphone:'..p.shop,slot,1) end)
+        local invoked,ok,err=pcall(function() return exports.kora_inventory:BuyItem(target,'qbphone:'..p.shop,slot,1) end)
         H.purchaseCustomers[target]=nil
         if not invoked then return fail('Purchase failed; try again') end
         if not ok then return fail(tostring(err)) end
@@ -78,7 +78,7 @@ function H.commerce(actor,p,approved)
         return H.accountLock(p.accountId,function()
         local account=MySQL.single.await('SELECT id FROM phone_cloud_accounts WHERE id=? AND owner_citizenid=?',{p.accountId,citizenId})
         if not account then return fail('Account does not belong to this character') end
-        if s.recoveryFee>0 and not exports.qbcore:removeMoney(target,'bank',s.recoveryFee,'phone account recovery',true) then return fail('Insufficient bank funds') end
+        if s.recoveryFee>0 and not exports.kora_core:removeMoney(target,'bank',s.recoveryFee,'phone account recovery',true) then return fail('Insufficient bank funds') end
         local code=exports[GetCurrentResourceName()]:randomHex(32)
         activeSessions(account.id,target)
         local ok=MySQL.transaction.await({
@@ -86,7 +86,7 @@ function H.commerce(actor,p,approved)
             {query='UPDATE phone_handsets SET account_id=NULL,cloud_revision=0 WHERE account_id=?',values={account.id}}
         })
         if not ok then
-            if s.recoveryFee>0 then exports.qbcore:addMoney(target,'bank',s.recoveryFee,'phone recovery refund',true) end
+            if s.recoveryFee>0 then exports.kora_core:addMoney(target,'bank',s.recoveryFee,'phone recovery refund',true) end
             return fail('Recovery failed; your fee was refunded')
         end
         return PhoneResult({accountId=account.id,recoveryCode=code})
@@ -108,7 +108,7 @@ function H.commerce(actor,p,approved)
         MySQL.insert.await("INSERT INTO phone_sims(id,phone_number,owner_citizenid,status) VALUES(?,?,?,'blocked')",{newId,number,citizenId})
         MySQL.insert.await('INSERT INTO phone_sim_replacements(id,old_sim_id,new_sim_id,handset_id,citizenid) VALUES(?,?,?,?,?)',
             {random(),old.id,newId,d.handsetId,citizenId})
-        local ok,reason=exports.qbinventory:PhoneItemTransaction(target,{op='replaceSim',handsetSlot=item.slot,handsetId=d.handsetId,
+        local ok,reason=exports.kora_inventory:PhoneItemTransaction(target,{op='replaceSim',handsetSlot=item.slot,handsetId=d.handsetId,
             simId=item.info.phoneSimId or '',newSimId=newId,fee=s.replacementFee})
         if not ok then
             MySQL.update.await("UPDATE phone_sim_replacements SET state='cancelled' WHERE new_sim_id=?",{newId})
@@ -124,10 +124,10 @@ function H.commerce(actor,p,approved)
     elseif p.op=='resell' then
         local slot=tonumber(p.slot)
         if not slot or slot%1~=0 or not exports[GetCurrentResourceName()]:CanResellHandset(target,slot) then return fail('Factory reset and remove the SIM before resale') end
-        local item=exports.qbcore:getItemBySlot(target,slot)
+        local item=exports.kora_core:getItemBySlot(target,slot)
         local price=s.prices[item.name] or s.prices.phone_standard
         if not price then return fail('This shop does not buy that handset') end
-        local ok,reason=exports.qbinventory:PhoneItemTransaction(target,{op='resell',handsetSlot=slot,handsetId=item.info.handsetId,
+        local ok,reason=exports.kora_inventory:PhoneItemTransaction(target,{op='resell',handsetSlot=slot,handsetId=item.info.handsetId,
             payout=math.floor(price*(s.resalePercent or 50)/100),shopId='qbphone:'..p.shop,salePrice=price})
         if not ok then return fail(tostring(reason)) end
         return PhoneResult({sold=true})

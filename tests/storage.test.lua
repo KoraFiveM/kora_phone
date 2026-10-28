@@ -25,7 +25,7 @@ function PerformHttpRequest(url, callback, method, body, headers)
     callback(http.status, http.body)
 end
 function SaveResourceFile() return true end
-function GetCurrentResourceName() return 'qbphone' end
+function GetCurrentResourceName() return 'kora_phone' end
 function GetResourceState() return 'missing' end
 
 QBPhone = {}

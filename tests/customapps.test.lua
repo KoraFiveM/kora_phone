@@ -32,7 +32,7 @@ local function loadCustomApps()
     sent, exportsTable, handlers, natives = {}, {}, {}, {}
     _G.SendNUIMessage = function(msg) sent[#sent + 1] = msg end
     _G.GetInvokingResource = function() return 'addon-resource' end
-    _G.exports = setmetatable({ qbcore = { getPlayerData = function()
+    _G.exports = setmetatable({ kora_core = { getPlayerData = function()
         local job = playerJob and { name = playerJob.name, grade = playerJob.grade }
         if job and type(job.grade) == 'table' then
             job.grade = { level = job.grade.level + 1 }

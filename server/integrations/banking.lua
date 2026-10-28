@@ -21,20 +21,20 @@ end
 
 function Banking.getBalance(player)
     if not Banking.isEnabled() or not player or not player.source then return nil end
-    local value = tonumber(exports.qbcore:getMoney(player.source, Config.Server.Banking.Account))
+    local value = tonumber(exports.kora_core:getMoney(player.source, Config.Server.Banking.Account))
     if not value then return nil end
     return math.max(0, math.floor(value))
 end
 
 function Banking.getOnlinePlayerByCitizenId(citizenId)
     if type(citizenId) ~= 'string' or citizenId == '' then return nil end
-    return exports.qbcore:getPlayerByCitizenId(citizenId)
+    return exports.kora_core:getPlayerByCitizenId(citizenId)
 end
 
 function Banking.debit(player, amount, reason)
     if not player or not player.source then return false end
     local ok, result = pcall(function()
-        return exports.qbcore:removeMoney(player.source, Config.Server.Banking.Account, amount, reason)
+        return exports.kora_core:removeMoney(player.source, Config.Server.Banking.Account, amount, reason)
     end)
     return ok and result == true
 end
@@ -42,7 +42,7 @@ end
 function Banking.credit(player, amount, reason)
     if not player or not player.source then return false end
     local ok, result = pcall(function()
-        return exports.qbcore:addMoney(player.source, Config.Server.Banking.Account, amount, reason)
+        return exports.kora_core:addMoney(player.source, Config.Server.Banking.Account, amount, reason)
     end)
     return ok and result == true
 end
