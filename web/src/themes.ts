@@ -41,7 +41,7 @@ const fold:Record<string,Palette>={
 export function resolveHandsetTheme(model:HandsetModel, stored?:Theme) {
   if (!themes.some(theme=>theme.id===stored)) stored=undefined;
   const id:Theme=model==='standard' ? stored==='light' ? 'light' : 'dark'
-    : !stored || stored==='kora_core' ? model==='flip' ? 'amethyst' : 'ocean' : stored;
+    : !stored || stored==='qbcore' ? model==='flip' ? 'amethyst' : 'ocean' : stored;
   const palette:Palette=model==='standard'
     ? id==='light' ? {...light,bg:'#f5f5f5',field:'#f0f0f0',ink:'#1a1a1a',muted:'#666666',line:'#cccccc',accent:'#1a1a1a',wallpaper:'#f5f5f5'}
       : {...dark,bg:'#000000',surface:'#111111',field:'#1a1a1a',ink:'#e8e8e8',muted:'#999999',line:'#333333',accent:'#e8e8e8',actionInk:'#000000',wallpaper:'#000000'}
