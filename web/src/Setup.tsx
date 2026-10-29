@@ -18,7 +18,7 @@ const COPY: Record<Step, [string, string, string]> = {
   done: ['06 / READY', 'Nothing else.\nYou’re ready.', 'Your phone, with your own point of view.'],
 };
 export const WALLPAPERS = [
-  { id: 'qbcore', label: 'Signature', swatch: '#30363c' },
+  { id: 'kora_core', label: 'Signature', swatch: '#30363c' },
   { id: 'orbit', label: 'Orbit', swatch: 'radial-gradient(circle at 28% 35%, #8b96a8 0 14%, transparent 14.5%), radial-gradient(circle at 76% 70%, #ac7150 0 22%, transparent 22.5%), #dfd9cc' },
   { id: 'plain', label: 'Plain', swatch: '#e3e0d6' },
   { id: 'midnight', label: 'Midnight', swatch: 'linear-gradient(155deg, #293e66, #090e1c)' },
@@ -33,7 +33,7 @@ export function SetupScreen() {
   const [name, setName] = useState(data.settings.name || '');
   const [theme, setTheme] = useState<Theme>(resolveHandsetTheme(device.model || 'standard',data.settings.theme).id);
   const phoneStyle = device.model || 'standard';
-  const [wallpaper, setWallpaper] = useState<Wallpaper>(data.settings.wallpaper === 'custom' ? 'qbcore' : data.settings.wallpaper || 'qbcore');
+  const [wallpaper, setWallpaper] = useState<Wallpaper>(data.settings.wallpaper === 'custom' ? 'kora_core' : data.settings.wallpaper || 'kora_core');
   const [pin, setPin] = useState('');
   const [confirm, setConfirm] = useState('');
   const [error, setError] = useState('');
@@ -65,7 +65,7 @@ export function SetupScreen() {
     if (step === 'done') { void save(false, true); return; }
     go(STEPS[index + 1]);
   };
-  const preview = (scene: boolean) => <div className={`onboard-preview ${scene ? 'scene' : ''}`} style={{ background: scene ? wallpaper === 'qbcore' ? palette.wallpaper : wallpaper === 'plain' ? palette.bg : backdrop.swatch : palette.bg, color: scene ? (wallpaper === 'midnight' || wallpaper === 'ember' || wallpaper === 'qbcore' ? '#fff' : '#242424') : palette.dark ? '#fff' : '#242424' }} aria-label={`${scene ? backdrop.label : palette.label} preview`}>
+  const preview = (scene: boolean) => <div className={`onboard-preview ${scene ? 'scene' : ''}`} style={{ background: scene ? wallpaper === 'kora_core' ? palette.wallpaper : wallpaper === 'plain' ? palette.bg : backdrop.swatch : palette.bg, color: scene ? (wallpaper === 'midnight' || wallpaper === 'ember' || wallpaper === 'kora_core' ? '#fff' : '#242424') : palette.dark ? '#fff' : '#242424' }} aria-label={`${scene ? backdrop.label : palette.label} preview`}>
     <span className="onboard-preview-label">{scene ? 'YOUR DAILY VIEW' : handsetIdentity(device.model || 'standard').os}</span>
     <span className="onboard-clock">09:41<span>Tuesday, 8 September</span></span>
     {scene ? <span className="onboard-preview-pill">A little room to breathe.</span> : <div className="onboard-preview-widgets"><span><Signal size={18} />Connected</span><span className="onboard-app-dots"><i /><i /><i /><i /></span></div>}
@@ -87,7 +87,7 @@ export function SetupScreen() {
           <div className="onboard-field-note"><span>You can change this later.</span><span>{name.length}/32</span></div>
         </>}
         {step === 'theme' && <>{preview(false)}<fieldset className="onboard-colours"><legend>Choose a colour</legend>{themeOptions(device.model || 'standard').map(item => <button type="button" key={item.id} disabled={busy} aria-pressed={theme === item.id} onClick={() => setTheme(item.id)}><span style={{ background: item.color, color: item.dark ? '#fff' : '#222' }}>{theme === item.id && <Check size={18} />}</span>{item.label}</button>)}</fieldset></>}
-        {step === 'wallpaper' && <>{preview(true)}<fieldset className="onboard-wallpapers"><legend>Choose a wallpaper</legend>{WALLPAPERS.map(item => <button type="button" key={item.id} disabled={busy} aria-pressed={wallpaper === item.id} onClick={() => setWallpaper(item.id)}><span style={{ background: item.id === 'qbcore' ? palette.wallpaper : item.id === 'plain' ? palette.bg : item.swatch }}>{wallpaper === item.id && <i><Check size={13} /></i>}</span>{item.label}</button>)}</fieldset></>}
+        {step === 'wallpaper' && <>{preview(true)}<fieldset className="onboard-wallpapers"><legend>Choose a wallpaper</legend>{WALLPAPERS.map(item => <button type="button" key={item.id} disabled={busy} aria-pressed={wallpaper === item.id} onClick={() => setWallpaper(item.id)}><span style={{ background: item.id === 'kora_core' ? palette.wallpaper : item.id === 'plain' ? palette.bg : item.swatch }}>{wallpaper === item.id && <i><Check size={13} /></i>}</span>{item.label}</button>)}</fieldset></>}
         {step === 'security' && <>
           <div className="onboard-security"><ShieldCheck size={32} strokeWidth={1.3} /><div><strong>{device.hasPin ? 'You’re protected.' : 'A PIN. Peace of mind.'}</strong><span>{device.hasPin ? 'Your existing PIN is ready to use.' : 'Only you should have the key.'}</span></div></div>
           {!device.hasPin && <><label className="onboard-field">Create a PIN<input type="password" inputMode="numeric" pattern="[0-9]{4,8}" minLength={4} maxLength={8} required autoComplete="new-password" placeholder="4–8 digits" value={pin} onChange={event => { setPin(event.target.value); setError(''); }} /></label><label className="onboard-field">Confirm your PIN<input type="password" inputMode="numeric" pattern="[0-9]{4,8}" minLength={4} maxLength={8} required autoComplete="new-password" placeholder="One more time" value={confirm} onChange={event => { setConfirm(event.target.value); setError(''); }} /></label><p className="onboard-note">Keep it memorable. Keep it to yourself.</p></>}

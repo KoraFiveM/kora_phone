@@ -1,7 +1,7 @@
 import type { Theme } from './themes';
 import { installedApps } from './catalog';
 export type AppId = 'custom' | 'store' | 'home' | 'phone' | 'contacts' | 'messages' | 'banking' | 'camera' | 'gallery' | 'social' | 'classifieds' | 'gps' | 'services' | 'mail' | 'notes' | 'weather' | 'calculator' | 'property' | 'vehicles' | 'flash' | 'music' | 'clock' | 'settings' | 'moderation';
-export interface Settings { name: string; volume: number; scale: number; wallpaper: 'orbit' | 'plain' | 'midnight' | 'slate' | 'ember' | 'qbcore' | 'custom'; wallpaperUrl?: string; theme?: Theme; setupComplete?: boolean; phoneStyle?: 'classic' | 'standard' | 'flip' | 'fold'; phoneCase?: 'default' | 'nightdrive' | 'citypop' | 'sakura' | 'touge' | 'garage' | 'qbcore' | 'arcade' | 'space' | 'palms' | 'skyline' | 'custom'; phoneCaseUrl?: string; iconStyle?: 'circle' | 'squircle' | 'outline' | 'solid'; dnd?: boolean; dndFrom?: string; dndTo?: string; installedApps?: AppId[]; appOrder?: AppId[] }
+export interface Settings { name: string; volume: number; scale: number; wallpaper: 'orbit' | 'plain' | 'midnight' | 'slate' | 'ember' | 'kora_core' | 'custom'; wallpaperUrl?: string; theme?: Theme; setupComplete?: boolean; phoneStyle?: 'classic' | 'standard' | 'flip' | 'fold'; phoneCase?: 'default' | 'nightdrive' | 'citypop' | 'sakura' | 'touge' | 'garage' | 'kora_core' | 'arcade' | 'space' | 'palms' | 'skyline' | 'custom'; phoneCaseUrl?: string; iconStyle?: 'circle' | 'squircle' | 'outline' | 'solid'; dnd?: boolean; dndFrom?: string; dndTo?: string; installedApps?: AppId[]; appOrder?: AppId[] }
 export interface Contact { id?: number; name: string; number: string; photo?: string; favorite?: boolean }
 export interface Note { id: string; title: string; body: string }
 export interface Photo { id: string; url: string; created_at: number }
@@ -73,7 +73,7 @@ export function asList<T>(value: unknown): T[] { return Array.isArray(value) ? v
 export function normalizeData(value?: DeviceData): DeviceData {
   // Stored settings may predate the Flip color theme's removal.
   type Stored = Omit<Settings, 'theme'> & { theme?: Theme | 'flip' };
-  const settings: Stored = { name: 'Nothing Phone', volume: 0.5, scale: 1, wallpaper: 'qbcore', ...value?.settings };
+  const settings: Stored = { name: 'Nothing Phone', volume: 0.5, scale: 1, wallpaper: 'kora_core', ...value?.settings };
   // The Flip color theme is retired: legacy devices map to a real theme, keeping the flip style.
   if (settings.theme === 'flip') { settings.theme = 'dark'; settings.phoneStyle ??= 'flip'; }
   return { customApps: value?.customApps || {}, contacts: asList(value?.contacts), notes: asList(value?.notes), photos: asList(value?.photos), stations: asList(value?.stations), alarms: asList(value?.alarms), installedApps: installedApps(value?.installedApps), settings: settings as Settings };

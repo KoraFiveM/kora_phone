@@ -1,5 +1,5 @@
 /* Shared semantic surfaces connect each model's launcher, apps and preferences. */
-.phone .phone-screen.show-wallpaper.wallpaper-qbcore { background:var(--handset-wallpaper,var(--ui-bg)); }
+.phone .phone-screen.show-wallpaper.wallpaper-kora_core { background:var(--handset-wallpaper,var(--ui-bg)); }
 .phone .phone-screen.show-wallpaper.wallpaper-plain { background:var(--ui-bg); }
 .phone .phone-screen.show-wallpaper.wallpaper-custom { background:#000; }
 .phone .phone-screen.wallpaper-custom .custom-wallpaper { opacity:.3; }
@@ -24,8 +24,8 @@
 .phone .phone-screen .hs-card { color:var(--ui-ink); border-color:var(--ui-line); background:var(--ui-surface); }
 .phone .phone-screen :is(.hs-number,.hs-header h2) { color:var(--ui-ink); }
 .phone .phone-screen .hs-primary { background:var(--ui-action); color:var(--ui-action-ink); border-color:transparent; }
-.phone.handset-flip .phone-screen.show-wallpaper.wallpaper-qbcore,
-.phone.handset-fold .phone-screen.show-wallpaper.wallpaper-qbcore { background:var(--handset-wallpaper); }
+.phone.handset-flip .phone-screen.show-wallpaper.wallpaper-kora_core,
+.phone.handset-fold .phone-screen.show-wallpaper.wallpaper-kora_core { background:var(--handset-wallpaper); }
 .phone.handset-flip :is(.home-screen,.lock-screen),
 .phone.handset-fold :is(.home-screen,.lock-screen) { color:var(--wp-ink,var(--ui-ink)); }
 .phone.handset-flip :is(.handset-clock,.home-top .eyebrow,.home-section),

@@ -11,7 +11,7 @@ const seed: DeviceData = {
   // Keep the first-run preview aligned with the default QBCore theme. The server-side
   // data normalizer also defaults to the QBCore wallpaper, so a new preview should not boot into
   // the Midnight wallpaper before the user has made a choice.
-  settings: { name: 'Nothing Phone', volume: 0.5, scale: 1, wallpaper: 'qbcore' },
+  settings: { name: 'Nothing Phone', volume: 0.5, scale: 1, wallpaper: 'kora_core' },
   contacts: [{ name: 'Alex Morgan', number: '5550192042' }, { name: 'Jules Chen', number: '5550178031' }, { name: 'Los Santos Customs', number: '5550103000' }],
   notes: [{ id: 'first-note', title: 'A fresh start', body: 'Pick up the car. Meet Jules at the pier.\nFind a little room for something new.' }], photos: [],
   stations: [{ id: 'first-station', label: 'Lo-fi beats', url: 'https://www.youtube.com/watch?v=jfKfPfyJRdk' }],

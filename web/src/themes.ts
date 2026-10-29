@@ -1,5 +1,5 @@
 export const themes = [
-  { id: 'qbcore', label: 'QBCore', dark: true, color: '#17140f', chip: 'linear-gradient(135deg, #17140f 58%, #d86b59 58%)' },
+  { id: 'kora_core', label: 'QBCore', dark: true, color: '#17140f', chip: 'linear-gradient(135deg, #17140f 58%, #d86b59 58%)' },
   { id: 'light', label: 'Light', dark: false, color: '#efefef' },
   { id: 'dark', label: 'Dark', dark: true, color: '#242424' },
   { id: 'ocean', label: 'Ocean', dark: true, color: '#123449' },
@@ -53,7 +53,7 @@ export function resolveHandsetTheme(model:HandsetModel, stored?:Theme) {
 }
 
 export const themeOptions = (model:HandsetModel) => themes
-  .filter(theme=>theme.id!=='qbcore' && (model!=='standard' || theme.id==='dark' || theme.id==='light'))
+  .filter(theme=>theme.id!=='kora_core' && (model!=='standard' || theme.id==='dark' || theme.id==='light'))
   .map(theme=>resolveHandsetTheme(model,theme.id));
 
 export function handsetThemeTokens(palette:ReturnType<typeof resolveHandsetTheme>, wallpaper?:string) {

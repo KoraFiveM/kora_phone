@@ -15,7 +15,7 @@ export const PHONE_CASES = [
   { id: 'sakura', label: 'Sakura' },
   { id: 'touge', label: 'Touge' },
   { id: 'garage', label: 'Garage' },
-  { id: 'qbcore', label: 'QBCore' },
+  { id: 'kora_core', label: 'QBCore' },
   { id: 'arcade', label: 'Arcade' },
   { id: 'space', label: 'Deep space' },
   { id: 'palms', label: 'Palms' },

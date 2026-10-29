@@ -15,7 +15,7 @@
 .phone-screen.theme-forest { --ui-bg: #14291f; --ui-surface: #20392b; --ui-field: #2b4736; --ui-muted: #b3cab8; --ui-line: #425e4b; }
 .phone-screen.theme-amethyst { --ui-bg: #261e30; --ui-surface: #372b44; --ui-field: #463657; --ui-muted: #c6b9d3; --ui-line: #5c4b6b; }
 .phone-screen.theme-ember { --ui-bg: #2d211c; --ui-surface: #403027; --ui-field: #503c31; --ui-muted: #d0bcae; --ui-line: #685042; }
-.phone-screen.theme-qbcore { --ui-bg: #17140f; --ui-surface: #221e18; --ui-field: #2c2721; --ui-ink: #f2ece1; --ui-muted: #a6a09b; --ui-line: #3b362d; --ui-action: #d86b59; --ui-action-ink: #17140f; }
+.phone-screen.theme-kora_core { --ui-bg: #17140f; --ui-surface: #221e18; --ui-field: #2c2721; --ui-ink: #f2ece1; --ui-muted: #a6a09b; --ui-line: #3b362d; --ui-action: #d86b59; --ui-action-ink: #17140f; }
 .phone-screen :is(.page-header,.status-bar,.system-nav) { color: var(--ui-ink); }
 .phone-screen .app-content { scroll-behavior: smooth; overscroll-behavior: contain; padding-bottom: 24px; scrollbar-color: var(--ui-line) transparent; }
 .phone-screen :is(.panel,.note-card,.vehicle-card,.property-card,.notification-card,.city-widget,.home-note,.row-icon,.segments,.bubble,.keypad button,.calc-keys button) { background: var(--ui-surface); color: var(--ui-ink); border-color: var(--ui-line); }
@@ -69,7 +69,7 @@
 .phone-screen.show-wallpaper.wallpaper-midnight { background: linear-gradient(180deg, #162a44, #0d1626); }
 .phone-screen.show-wallpaper.wallpaper-slate { background: linear-gradient(180deg, #d4cec6, #a9a39c); }
 .phone-screen.show-wallpaper.wallpaper-ember { background: linear-gradient(180deg, #522c24, #2c1814); }
-.phone-screen.show-wallpaper.wallpaper-qbcore { background: radial-gradient(ellipse at 85% 0%, #8f322044, transparent 58%), linear-gradient(180deg, #211a14 0%, #17140f 55%, #100e0a 100%); }
+.phone-screen.show-wallpaper.wallpaper-kora_core { background: radial-gradient(ellipse at 85% 0%, #8f322044, transparent 58%), linear-gradient(180deg, #211a14 0%, #17140f 55%, #100e0a 100%); }
 .phone-screen.show-wallpaper :is(.home-screen,.lock-screen,.status-bar) { background: transparent; }
 .phone-screen .status-bar { background: transparent; }
 .phone-screen .home-screen > .dot-clock { color: var(--ui-ink); }
@@ -141,12 +141,12 @@
 
 /* Home/lock text follows the wallpaper, not the theme: light theme on Midnight/Ember and dark theme on Slate were unreadable. */
 .phone-screen.show-wallpaper:is(.wallpaper-midnight, .wallpaper-ember) { --wp-ink: #eef1f8; --wp-ink-muted: #b4c0d8; }
-.phone-screen.show-wallpaper.wallpaper-qbcore { --wp-ink: #f2ece1; --wp-ink-muted: #b9b1a4; }
+.phone-screen.show-wallpaper.wallpaper-kora_core { --wp-ink: #f2ece1; --wp-ink-muted: #b9b1a4; }
 .phone-screen.show-wallpaper.wallpaper-slate { --wp-ink: #242522; --wp-ink-muted: #45433f; }
-.phone-screen.show-wallpaper:is(.wallpaper-midnight, .wallpaper-ember, .wallpaper-qbcore, .wallpaper-slate) :is(.status-bar, .status-bar span, .home-screen .dot-clock, .app-icon:not(.dock-icon) small, .home-top button, .system-nav button) { color: var(--wp-ink); }
-.phone-screen.show-wallpaper:is(.wallpaper-midnight, .wallpaper-ember, .wallpaper-qbcore, .wallpaper-slate) :is(.home-top .eyebrow, .home-section) { color: var(--wp-ink-muted); }
+.phone-screen.show-wallpaper:is(.wallpaper-midnight, .wallpaper-ember, .wallpaper-kora_core, .wallpaper-slate) :is(.status-bar, .status-bar span, .home-screen .dot-clock, .app-icon:not(.dock-icon) small, .home-top button, .system-nav button) { color: var(--wp-ink); }
+.phone-screen.show-wallpaper:is(.wallpaper-midnight, .wallpaper-ember, .wallpaper-kora_core, .wallpaper-slate) :is(.home-top .eyebrow, .home-section) { color: var(--wp-ink-muted); }
 .phone-screen.show-wallpaper:is(.wallpaper-midnight, .wallpaper-ember) .lock-screen :is(.dot-clock, p, svg, .lock-brand, .lock-bottom) { --ui-ink: #eef1f8; --ui-muted: #b4c0d8; }
-.phone-screen.show-wallpaper.wallpaper-qbcore .lock-screen :is(.dot-clock, p, svg, .lock-brand, .lock-bottom) { --ui-ink: #f2ece1; --ui-muted: #b9b1a4; }
+.phone-screen.show-wallpaper.wallpaper-kora_core .lock-screen :is(.dot-clock, p, svg, .lock-brand, .lock-bottom) { --ui-ink: #f2ece1; --ui-muted: #b9b1a4; }
 .phone-screen.show-wallpaper.wallpaper-slate .lock-screen :is(.dot-clock, p, svg, .lock-brand, .lock-bottom) { --ui-ink: #242522; --ui-muted: #45433f; }
 /* Toasts clear the dock on home and the unlock button on the lock screen; the unread dot is visible at phone scale. */
 .toast.toast-home { bottom: 110px; }
