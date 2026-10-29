@@ -4,7 +4,7 @@ game 'gta5'
 name 'kora_phone'
 -- Keep the legacy resource name resolvable for exports['qbphone-stevie'] callers.
 provide 'qbphone-stevie'
-author 'QBPhone Team'
+author 'Kora Team'
 description 'Server-authoritative QBCore phone'
 version '0.2.0'
 
