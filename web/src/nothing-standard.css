@@ -29,7 +29,7 @@
   --ui-action:#1a1a1a; --ui-action-ink:#fff; --nothing-display:#000;
   color-scheme:light;
 }
-.phone.handset-standard .phone-screen.show-wallpaper.wallpaper-qbcore,
+.phone.handset-standard .phone-screen.show-wallpaper.wallpaper-kora_core,
 .phone.handset-standard .phone-screen.show-wallpaper.wallpaper-plain {
   background:var(--ui-bg);
 }

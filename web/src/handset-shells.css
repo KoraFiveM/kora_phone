@@ -90,8 +90,8 @@
 .phone-service-consent h2 { font-size:23px; letter-spacing:-.8px; margin:15px 0 10px; }.phone-service-consent p { color:var(--muted,#6c7b89); font-size:12px; line-height:1.7; }
 .phone-service-consent label { display:block; font-size:10px; margin-bottom:15px; }.phone-service-consent code { display:block; user-select:text; overflow-wrap:anywhere; padding:12px; margin-top:6px; border:1px solid #a9bacb50; border-radius:10px; }
 
-.phone.handset-flip .phone-screen.show-wallpaper.wallpaper-qbcore { --wp-ink:#332847; --wp-ink-muted:#625373; background:radial-gradient(ellipse at 90% 0%,#f0d8ef,transparent 65%),linear-gradient(150deg,#e6e1f1,#d1c8e2 65%,#bab5da); }
-.phone.handset-fold .phone-screen.show-wallpaper.wallpaper-qbcore { --wp-ink:#e0edf2; --wp-ink-muted:#9cb8c8; background:radial-gradient(ellipse at 10% 10%,#54889566,transparent 60%),linear-gradient(145deg,#19374b,#102739 65%,#12212f); }
+.phone.handset-flip .phone-screen.show-wallpaper.wallpaper-kora_core { --wp-ink:#332847; --wp-ink-muted:#625373; background:radial-gradient(ellipse at 90% 0%,#f0d8ef,transparent 65%),linear-gradient(150deg,#e6e1f1,#d1c8e2 65%,#bab5da); }
+.phone.handset-fold .phone-screen.show-wallpaper.wallpaper-kora_core { --wp-ink:#e0edf2; --wp-ink-muted:#9cb8c8; background:radial-gradient(ellipse at 10% 10%,#54889566,transparent 60%),linear-gradient(145deg,#19374b,#102739 65%,#12212f); }
 .phone:is(.handset-standard,.handset-flip,.handset-fold) .phone-screen.show-wallpaper :is(.home-screen,.lock-screen) { background:transparent; }
 .phone:is(.handset-standard,.handset-flip,.handset-fold) .phone-screen.show-wallpaper .handset-clock { color:var(--wp-ink,var(--ui-ink)); }
 .phone:is(.handset-standard,.handset-flip,.handset-fold) .phone-screen.show-wallpaper .lock-screen > p { color:var(--wp-ink-muted,var(--ui-muted)); }

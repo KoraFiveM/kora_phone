@@ -43,7 +43,7 @@ async function uploadMedia(p:{blob:Blob;onProgress?:(fraction:number)=>void}){
   const saved=await server<any>('media:complete',{token:up.token,receipt});
   return{id:Number(saved.id),url:String(saved.publicUrl),kind:kindOf(saved.mimeType,saved.publicUrl)||'photo'}}
 const toPhotos=(g:any):Photo[]=>(g?.items||[]).map((x:any)=>({id:String(x.id),url:String(x.publicUrl),created_at:Number(x.createdAt||0)}));
-const defaultData=():DeviceData=>normalizeData({settings:{name:'Nothing Phone',volume:.5,scale:1,wallpaper:'qbcore',theme:'qbcore',setupComplete:false},contacts:[],notes:[],photos:[],stations:[],alarms:[]});
+const defaultData=():DeviceData=>normalizeData({settings:{name:'Nothing Phone',volume:.5,scale:1,wallpaper:'kora_core',theme:'kora_core',setupComplete:false},contacts:[],notes:[],photos:[],stations:[],alarms:[]});
 let cached:DeviceData=defaultData();
 let activeDeviceId:string|undefined;
 

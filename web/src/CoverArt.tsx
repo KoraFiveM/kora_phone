@@ -15,7 +15,7 @@ export const PHONE_CASES = [
   { id: 'sakura', label: 'Sakura' },
   { id: 'touge', label: 'Touge' },
   { id: 'garage', label: 'Garage' },
-  { id: 'qbcore', label: 'QBCore' },
+  { id: 'kora_core', label: 'QBCore' },
   { id: 'arcade', label: 'Arcade' },
   { id: 'space', label: 'Deep space' },
   { id: 'palms', label: 'Palms' },
@@ -169,7 +169,7 @@ function Scene({ id }: { id: Scene }) {
       <circle cx="98" cy="312" r="11" fill="#f2fdff" /><circle cx="202" cy="312" r="11" fill="#f2fdff" />
       <rect x="130" y="318" width="40" height="12" rx="3" fill="#05070d" /><rect x="140" y="322" width="20" height="6" rx="1.5" fill="#dfe6f2" />
     </>;
-    case 'qbcore': return <>
+    case 'kora_core': return <>
       <defs><radialGradient id={`${g}r`} cx=".85" cy="0" r="1.1"><stop offset="0" stopColor="#8f3220" stopOpacity=".75" /><stop offset="1" stopColor="#8f3220" stopOpacity="0" /></radialGradient></defs>
       <rect width="300" height="340" fill="#17140f" />
       <rect width="300" height="340" fill={`url(#${g}r)`} />
