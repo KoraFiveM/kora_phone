@@ -1,14 +1,16 @@
 QBPhone = QBPhone or {}
 local Map = { active = false, previousRadar = true }
 
--- ponytail: these are the widely-used vanilla HUD minimap coordinates, restored
--- when the Maps app stops showing the live map. Ceiling: if another resource
--- also repositions the minimap, restoring to these fixed numbers can fight it.
--- Upgrade path: read that resource's own restore call instead of hardcoding this.
+-- Vanilla 16:9 minimap rects (the widely used community reference values),
+-- left/bottom anchored, restored when the Maps app stops showing the live map
+-- and kora_hud is not managing the layout. Widths and x are scaled by
+-- (16/9)/aspect for other aspect ratios so the map is not stretched; 16:9 is
+-- exactly these numbers. Ceiling: if another resource also repositions the
+-- minimap, restoring to these numbers can fight it.
 local DEFAULT_POSITION = {
-    minimap = { 0.0, -0.047, 0.1638, 0.183 },
-    minimap_mask = { 0.140, 0.140, 0.145, 0.190 },
-    minimap_blur = { 0.0, 0.0, 0.150, 0.190 },
+    minimap = { -0.0045, 0.002, 0.150, 0.188 },
+    minimap_mask = { 0.020, 0.032, 0.111, 0.159 },
+    minimap_blur = { -0.03, 0.022, 0.266, 0.237 },
 }
 
 local function position(x, y, w, h)
@@ -20,7 +22,7 @@ end
 -- kora_hud owns the minimap layout when it is running (it fits the map to its
 -- border for the player's aspect ratio and safezone), so ask it to put the
 -- layout back. Standalone, or if the export is missing or reports the layout
--- as disabled, fall back to DEFAULT_POSITION.
+-- as disabled, fall back to the vanilla DEFAULT_POSITION.
 local function restoreFromHud()
     if GetResourceState('kora_hud') ~= 'started' then return false end
     local ok, applied = pcall(function() return exports.kora_hud:applyMinimapLayout() end)
@@ -29,9 +31,18 @@ end
 
 local function restore()
     if restoreFromHud() then return end
+    local aspect = GetAspectRatio(false)
+    local widthFactor = (type(aspect) == 'number' and aspect > 0) and (16 / 9) / aspect or 1.0
     for component, pos in pairs(DEFAULT_POSITION) do
-        SetMinimapComponentPosition(component, 'L', 'B', pos[1], pos[2], pos[3], pos[4])
+        SetMinimapComponentPosition(component, 'L', 'B', pos[1] * widthFactor, pos[2], pos[3] * widthFactor, pos[4])
     end
+    -- The engine only re-reads component positions on a bigmap toggle, with a
+    -- frame between the two calls; leaving it on would show the big radar.
+    CreateThread(function()
+        SetBigmapActive(true, false)
+        Wait(0)
+        SetBigmapActive(false, false)
+    end)
 end
 
 -- Resizes and moves the game's own minimap to sit exactly behind the phone's
