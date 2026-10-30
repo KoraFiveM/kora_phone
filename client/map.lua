@@ -17,7 +17,18 @@ local function position(x, y, w, h)
     SetMinimapComponentPosition('minimap_blur', 'L', 'T', x, y, w, h)
 end
 
+-- kora_hud owns the minimap layout when it is running (it fits the map to its
+-- border for the player's aspect ratio and safezone), so ask it to put the
+-- layout back. Standalone, or if the export is missing or reports the layout
+-- as disabled, fall back to DEFAULT_POSITION.
+local function restoreFromHud()
+    if GetResourceState('kora_hud') ~= 'started' then return false end
+    local ok, applied = pcall(function() return exports.kora_hud:applyMinimapLayout() end)
+    return ok and applied == true
+end
+
 local function restore()
+    if restoreFromHud() then return end
     for component, pos in pairs(DEFAULT_POSITION) do
         SetMinimapComponentPosition(component, 'L', 'B', pos[1], pos[2], pos[3], pos[4])
     end
