@@ -9,6 +9,10 @@
 html, body, #root { width: 100%; height: 100%; overflow: hidden; }
 * { box-sizing: border-box; }
 body { margin: 0; background: transparent; }
+/* UI text is not selectable (the setup screen turned into a wall of highlighted text); fields stay editable. */
+html, body, #root { user-select: none; -webkit-user-select: none; }
+img, svg, video { -webkit-user-drag: none; }
+input, textarea, [contenteditable], [contenteditable] * { user-select: text; -webkit-user-select: text; }
 button, input, textarea, select { font: inherit; }
 button { color: inherit; cursor: pointer; border: 0; background: none; -webkit-tap-highlight-color: transparent; }
 button:disabled { opacity: .4; cursor: wait; }
