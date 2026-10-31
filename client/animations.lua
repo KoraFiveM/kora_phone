@@ -44,7 +44,7 @@ local function removeProp()
 end
 
 local function stopAnimation()
-    if handle then QB.anim.stopHandle(handle, 2.0) end
+    if handle then Kora.anim.stopHandle(handle, 2.0) end
     handle, currentKey = nil, nil
 end
 
@@ -72,7 +72,7 @@ local function createProp(ped)
     local boneIndex = type(bone) == 'number' and GetPedBoneIndex(ped, bone) or GetEntityBoneIndexByName(ped, bone)
     local offset, rotation = option('offset'), option('rotation')
     local created
-    QB.stream.loadModel(option('model'), function(hash)
+    Kora.stream.loadModel(option('model'), function(hash)
         created = CreateObject(hash, 0.0, 0.0, 0.0, false, false, false)
         if created == 0 or not DoesEntityExist(created) then created = nil; return end
         SetEntityCollision(created, false, false)
@@ -85,9 +85,9 @@ end
 local function apply(ped)
     local inVehicle = IsPedInAnyVehicle(ped, false)
     local key = onCall() and (inVehicle and 'vehicleCall' or 'call') or (inVehicle and 'vehicleText' or 'text')
-    if key == currentKey and handle and QB.anim.isPlaying(ped) then return true end
+    if key == currentKey and handle and Kora.anim.isPlaying(ped) then return true end
     local clip = animation(key)
-    local started = QB.anim.play(ped, clip.dict, clip.clip, { flag = clip.flag or 50, blendInSpeed = 3.0, blendOutSpeed = 2.0 })
+    local started = Kora.anim.play(ped, clip.dict, clip.clip, { flag = clip.flag or 50, blendInSpeed = 3.0, blendOutSpeed = 2.0 })
     if not started then return false end
     handle, currentKey = started, key
     if not prop or not DoesEntityExist(prop) then
@@ -100,7 +100,7 @@ end
 function Animations.Start()
     Animations.Stop()
     if not option('enabled') then return false end
-    local ped = QB.cache.ped()
+    local ped = Kora.cache.ped()
     if not DoesEntityExist(ped) or IsEntityDead(ped) then return false end
     wanted = true
     generation = generation + 1
@@ -111,7 +111,7 @@ function Animations.Start()
         while wanted and mine == generation do
             Wait(250)
             if not wanted or mine ~= generation then break end
-            local current = QB.cache.ped()
+            local current = Kora.cache.ped()
             if blocked(current) then release() else pcall(apply, current) end
         end
     end)

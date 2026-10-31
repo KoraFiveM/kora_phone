@@ -12,7 +12,7 @@ end
 -- it unless it's urgent. (The UI hides with the phone, so this is the only way a closed phone gets noticed.)
 function Notifications.Native(title, body, urgent)
     if QBPhone.State.quiet and not urgent then return false end
-    QB.notify.send({ title = title, message = body, type = urgent and 'error' or 'info', duration = 4500 })
+    Kora.notify.send({ title = title, message = body, type = urgent and 'error' or 'info', duration = 4500 })
     if Config.Client.NotificationSound ~= false then
         PlaySoundFrontend(-1, 'Text_Arrive_Tone', 'Phone_SoundSet_Default', true)
     end

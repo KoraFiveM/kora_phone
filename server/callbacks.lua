@@ -1,5 +1,5 @@
 function QBPhone.registerCallback(name, rateKey, handler)
-    QB.callback.register('qbphone:server:' .. name, function(source, payload)
+    Kora.callback.register('qbphone:server:' .. name, function(source, payload)
         if not QBPhone.RateLimits.consume(source, rateKey) then
             return PhoneError(PhoneConstants.Errors.RATE_LIMITED, 'Too many requests')
         end

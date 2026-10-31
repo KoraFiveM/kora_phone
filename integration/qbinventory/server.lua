@@ -373,7 +373,7 @@ local function withinCoordinates(src, coords, distance)
         return true
     end
     for _, point in ipairs(points) do
-        local ok, nearby = pcall(QB.distance.player, src, point, tonumber(point.distance) or distance)
+        local ok, nearby = pcall(Kora.distance.player, src, point, tonumber(point.distance) or distance)
         if ok and nearby then
             return true
         end
@@ -450,7 +450,7 @@ local function canAccess(src, inv, opts)
         if not sameBucket(src, inv.source) then
             return false, 'different routing bucket'
         end
-        if not QB.distance.player(src, GetEntityCoords(GetPlayerPed(inv.source)), config.interactionDistance) then
+        if not Kora.distance.player(src, GetEntityCoords(GetPlayerPed(inv.source)), config.interactionDistance) then
             return false, 'too far away'
         end
         return mayInspectPlayer(src, inv.source)
@@ -1477,7 +1477,7 @@ local function intentGive(src, request)
     if
         not targetPed
         or targetPed == 0
-        or not QB.distance.player(src, GetEntityCoords(targetPed), config.interactionDistance)
+        or not Kora.distance.player(src, GetEntityCoords(targetPed), config.interactionDistance)
     then
         return false, 'recipient is too far away'
     end
@@ -1544,7 +1544,7 @@ local function intentGive(src, request)
         if
             not currentTargetPed
             or currentTargetPed == 0
-            or not QB.distance.player(src, GetEntityCoords(currentTargetPed), config.interactionDistance)
+            or not Kora.distance.player(src, GetEntityCoords(currentTargetPed), config.interactionDistance)
         then
             return false, 'recipient is too far away'
         end
@@ -2133,7 +2133,7 @@ local builtInUseableKinds = {}
 -- close over the *global* x, since the local is not in scope until after its
 -- own statement -- and the cleanup only runs on resource stop, so the nil
 -- index would not surface until then.
-local useableOwners = QB.resources.serverRegistry(function(name)
+local useableOwners = Kora.resources.serverRegistry(function(name)
     useables[name] = nil
 end)
 
@@ -2377,7 +2377,7 @@ local function dropList(src)
     return out
 end
 
-QB.callback.register('qbinventory:server:drops', function(src)
+Kora.callback.register('qbinventory:server:drops', function(src)
     local bucket = GetPlayerRoutingBucket(src)
     local list = dropList(src)
     if dropViewers[src] ~= nil and dropViewers[src] ~= bucket then
@@ -3313,13 +3313,13 @@ RegisterNetEvent('qbinventory:server:intent', function(request)
         TriggerClientEvent('qbinventory:client:rejected', source, result)
     end
 end)
-QB.callback.register('qbinventory:server:open', function(src, invType, data)
+Kora.callback.register('qbinventory:server:open', function(src, invType, data)
     return openInventory(src, invType, data)
 end)
-QB.callback.register('qbinventory:server:transfer', function(src, request)
+Kora.callback.register('qbinventory:server:transfer', function(src, request)
     return transfer(src, request)
 end)
-QB.callback.register('qbinventory:server:intent', function(src, request)
+Kora.callback.register('qbinventory:server:intent', function(src, request)
     return handleIntent(src, request)
 end)
 -- Legacy hotbar event: never trust the transmitted item record. The only

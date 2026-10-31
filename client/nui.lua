@@ -112,7 +112,7 @@ RegisterNUICallback('phone:close', function(data, cb)
     -- The UI reports why it could not open (for example no phone item) so the
     -- player gets feedback instead of an invisible phone that holds focus.
     if type(data) == 'table' and type(data.error) == 'string' and data.error ~= '' then
-        QB.notify.send({ title = 'Phone', message = data.error:sub(1, 120), type = 'error', duration = 4000 })
+        Kora.notify.send({ title = 'Phone', message = data.error:sub(1, 120), type = 'error', duration = 4000 })
     end
     cb({ ok = true })
 end)
@@ -153,14 +153,14 @@ end)
 
 -- Location sharing: the UI asks where the player is and, on the receiving side, sets a waypoint.
 RegisterNUICallback('location:mine', function(_, cb)
-    local at = QB.cache.coords()
+    local at = Kora.cache.coords()
     local street = GetStreetNameFromHashKey((GetStreetNameAtCoord(at.x, at.y, at.z)))
     local zone = GetLabelText(GetNameOfZone(at.x, at.y, at.z))
     local label = (street ~= '' and zone ~= 'NULL' and (street .. ', ' .. zone)) or (street ~= '' and street) or (zone ~= 'NULL' and zone) or 'Shared location'
     -- heading and the game's current waypoint (blip sprite 8) feed the Maps app's arrow and pin
     local blip, waypoint = GetFirstBlipInfoId(8), nil
     if DoesBlipExist(blip) then local w = GetBlipInfoIdCoord(blip); waypoint = { x = math.floor(w.x + 0.5), y = math.floor(w.y + 0.5) } end
-    cb({ ok = true, data = { x = math.floor(at.x * 10 + 0.5) / 10, y = math.floor(at.y * 10 + 0.5) / 10, label = label:gsub('[%[%]|]', ''):sub(1, 60), heading = math.floor(GetEntityHeading(QB.cache.ped()) + 0.5), waypoint = waypoint } })
+    cb({ ok = true, data = { x = math.floor(at.x * 10 + 0.5) / 10, y = math.floor(at.y * 10 + 0.5) / 10, label = label:gsub('[%[%]|]', ''):sub(1, 60), heading = math.floor(GetEntityHeading(Kora.cache.ped()) + 0.5), waypoint = waypoint } })
 end)
 
 RegisterNUICallback('waypoint', function(data, cb)
@@ -196,7 +196,7 @@ end)
 RegisterNUICallback('alarm', function(data, cb)
     if not QBPhone.State.open then
         local label = type(data) == 'table' and type(data.label) == 'string' and data.label:sub(1, 60) or ''
-        QB.notify.send({ title = 'Alarm', message = label ~= '' and label or 'Untitled', type = 'info', duration = 8000 })
+        Kora.notify.send({ title = 'Alarm', message = label ~= '' and label or 'Untitled', type = 'info', duration = 8000 })
         PlaySoundFrontend(-1, 'Beep_Green', 'DLC_HEIST_HACKING_SNAKE_SOUNDS', true)
     end
     cb({ ok = true })
