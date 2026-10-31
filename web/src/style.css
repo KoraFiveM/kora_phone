@@ -545,7 +545,7 @@ svg { flex-shrink: 0; }
 --tone-f6f6f3:#1b1b1b;
 --tone-f8f8f5:#191919;
 }
-.phone-screen.theme-dark .dock-icon.app-phone > span,.phone-screen.theme-dark .store-get:not(.installed),.phone-screen.theme-dark .app-store > span { color:#fff; }
+.phone-screen.theme-dark .store-get:not(.installed),.phone-screen.theme-dark .app-store > span { color:#fff; }
 .phone-screen.theme-dark .home-section { color:#a0a0a0; }
 
 .phone-screen.theme-ocean { --red:#39a8d5; --paper:rgb(21, 34, 46);
@@ -1164,7 +1164,7 @@ svg { flex-shrink: 0; }
 .theme-choice > span { margin-bottom:8px; }
 .phone-screen:is(.theme-ocean,.theme-forest,.theme-amethyst,.theme-ember,.theme-kora_core) .app-store > span,
 .phone-screen:is(.theme-ocean,.theme-forest,.theme-amethyst,.theme-ember,.theme-kora_core) .store-get:not(.installed) { background:var(--red); border-color:var(--red); color:#101820; }
-.phone-screen:is(.theme-ocean,.theme-forest,.theme-amethyst,.theme-ember,.theme-kora_core) .dock-icon.app-phone > span { color:#101820; }.setup-confirm-pin { margin-top:18px; }.setup-pin-submit { margin-top:24px; }.setup-screen .pin-error { color:var(--red); }
+.setup-confirm-pin { margin-top:18px; }.setup-pin-submit { margin-top:24px; }.setup-screen .pin-error { color:var(--red); }
 .image-picker { border:1px solid var(--line); border-radius:14px; padding:12px; min-width:0; margin:10px 0; }.image-picker legend { font-size:12px; }.image-picker-preview { height:100px; display:grid; place-items:center; background:var(--paper); border-radius:10px; overflow:hidden; margin-bottom:12px; }.image-picker-preview img { width:100%; height:100%; object-fit:cover; }.image-picker-gallery { display:grid; grid-template-columns:repeat(4,1fr); gap:6px; max-height:160px; overflow:auto; }.image-picker-gallery button { aspect-ratio:1; padding:0; overflow:hidden; border-radius:7px; }.image-picker-gallery button[aria-pressed=true] { outline:2px solid var(--red); outline-offset:-2px; }.image-picker-gallery img { width:100%; height:100%; object-fit:cover; }.image-validity { position:absolute; opacity:0; width:1px; height:1px; padding:0; pointer-events:none; }
 .contact-photo { width:35px; height:35px; object-fit:cover; border-radius:50%; }.call-avatar { overflow:hidden; }.call-photo { width:100%; height:100%; object-fit:cover; }.call-avatar svg { padding:22px; }
 .custom-wallpaper { position:absolute; inset:0; width:100%; height:100%; object-fit:cover; opacity:.28; pointer-events:none; }.custom-wallpaper:is(svg) { display:none; }.wallpaper-custom .home-screen,.wallpaper-custom .lock-screen,.wallpaper-custom .status-bar,.wallpaper-custom .system-nav { position:relative; }.wallpaper-custom .lock-orbit div { display:none; }
