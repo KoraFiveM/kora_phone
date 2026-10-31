@@ -336,5 +336,26 @@ test("conversation pages preserve tied sort keys without changing numeric cursor
     QBPhone, MySQL, PhoneConstants, PhoneResult, PhoneError = oldPhone, oldMySQL, oldConstants, oldResult, oldError
 end)
 
+
+test("settings maps legacy qbcore ids to kora_core", function()
+    local out = PhoneValidation.settings(okSettings({ theme = "qbcore", wallpaper = "qbcore", phoneCase = "qbcore" }))
+    equal(out.theme, "kora_core"); equal(out.wallpaper, "kora_core"); equal(out.phoneCase, "kora_core")
+end)
+test("settings rejects legacy ids when AcceptLegacyIds is off", function()
+    Config.Settings.AcceptLegacyIds = false
+    local out = PhoneValidation.settings(okSettings({ wallpaper = "qbcore" }))
+    Config.Settings.AcceptLegacyIds = true
+    equal(out, nil)
+end)
+test("settings still rejects unknown wallpaper and empty-string wallpaper", function()
+    equal(PhoneValidation.settings(okSettings({ wallpaper = "signature" })), nil)
+    equal(PhoneValidation.settings(okSettings({ wallpaper = "" })), nil)
+end)
+test("settings accepts every wallpaper the setup UI offers", function()
+    for _, id in ipairs({ "kora_core", "orbit", "plain", "midnight", "slate", "ember" }) do
+        equal(PhoneValidation.settings(okSettings({ wallpaper = id })).wallpaper, id)
+    end
+end)
+
 io.write(("\n%d passed, %d failed\n"):format(passed, failed))
 if failed > 0 then os.exit(1) end

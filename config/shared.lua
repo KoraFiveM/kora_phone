@@ -16,3 +16,10 @@ Config.Limits = {
     PageSizeMaximum = 100
 }
 
+-- Appearance ids that older web bundles / saved handsets used. When true, the server maps them to the
+-- current id (e.g. the old default "qbcore" -> "kora_core") instead of rejecting the settings save,
+-- which is what made setup fail with "wallpaper is invalid". Unknown ids are still rejected.
+-- Set false to require the current ids only.
+Config.Settings = Config.Settings or {}
+Config.Settings.AcceptLegacyIds = true
+Config.Settings.LegacyIds = { qbcore = "kora_core" }

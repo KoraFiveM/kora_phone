@@ -63,6 +63,15 @@ local function boundedNumber(value, field, minimum, maximum)
     return value
 end
 
+-- Maps retired appearance ids (Config.Settings.LegacyIds) to their current id; read at use time.
+local function currentId(value)
+    local settings = Config and Config.Settings
+    if type(value) == 'string' and settings and settings.AcceptLegacyIds and type(settings.LegacyIds) == 'table' then
+        return settings.LegacyIds[value] or value
+    end
+    return value
+end
+
 -- Whitelists the appearance settings a client may persist. Unknown keys are dropped
 -- so the stored JSON can never grow arbitrary client-controlled fields.
 function PhoneValidation.settings(payload)
@@ -70,13 +79,13 @@ function PhoneValidation.settings(payload)
     local out, err = {}
     out.name, err = PhoneValidation.string(payload.name, 'name', 1, 64)
     if not out.name then return nil, err end
-    out.theme, err = PhoneValidation.enum(payload.theme or 'light', 'theme', SETTINGS_THEMES)
+    out.theme, err = PhoneValidation.enum(currentId(payload.theme) or 'light', 'theme', SETTINGS_THEMES)
     if not out.theme then return nil, err end
-    out.wallpaper, err = PhoneValidation.enum(payload.wallpaper or 'qbcore', 'wallpaper', SETTINGS_WALLPAPERS)
+    out.wallpaper, err = PhoneValidation.enum(currentId(payload.wallpaper) or 'kora_core', 'wallpaper', SETTINGS_WALLPAPERS)
     if not out.wallpaper then return nil, err end
     out.phoneStyle, err = PhoneValidation.enum(payload.phoneStyle or 'classic', 'phoneStyle', SETTINGS_STYLES)
     if not out.phoneStyle then return nil, err end
-    out.phoneCase, err = PhoneValidation.enum(payload.phoneCase or 'default', 'phoneCase', SETTINGS_CASES)
+    out.phoneCase, err = PhoneValidation.enum(currentId(payload.phoneCase) or 'default', 'phoneCase', SETTINGS_CASES)
     if not out.phoneCase then return nil, err end
     out.iconStyle, err = PhoneValidation.enum(payload.iconStyle or 'circle', 'iconStyle', SETTINGS_ICONS)
     if not out.iconStyle then return nil, err end

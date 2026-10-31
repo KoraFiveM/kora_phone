@@ -74,6 +74,11 @@ export function normalizeData(value?: DeviceData): DeviceData {
   // Stored settings may predate the Flip color theme's removal.
   type Stored = Omit<Settings, 'theme'> & { theme?: Theme | 'flip' };
   const settings: Stored = { name: 'Nothing Phone', volume: 0.5, scale: 1, wallpaper: 'kora_core', ...value?.settings };
+  // The old default id "qbcore" was renamed "kora_core"; saved handsets may still carry it.
+  const legacy = settings as { wallpaper: string; theme?: string; phoneCase?: string };
+  if (legacy.wallpaper === 'qbcore') legacy.wallpaper = 'kora_core';
+  if (legacy.theme === 'qbcore') legacy.theme = 'kora_core';
+  if (legacy.phoneCase === 'qbcore') legacy.phoneCase = 'kora_core';
   // The Flip color theme is retired: legacy devices map to a real theme, keeping the flip style.
   if (settings.theme === 'flip') { settings.theme = 'dark'; settings.phoneStyle ??= 'flip'; }
   return { customApps: value?.customApps || {}, contacts: asList(value?.contacts), notes: asList(value?.notes), photos: asList(value?.photos), stations: asList(value?.stations), alarms: asList(value?.alarms), installedApps: installedApps(value?.installedApps), settings: settings as Settings };
