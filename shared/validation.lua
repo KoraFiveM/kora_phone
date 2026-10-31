@@ -74,6 +74,31 @@ end
 
 -- Whitelists the appearance settings a client may persist. Unknown keys are dropped
 -- so the stored JSON can never grow arbitrary client-controlled fields.
+-- Apps a player installs from the store; they only appear in the home order while installed.
+local OPTIONAL_APPS = { banking=true, social=true, classifieds=true, gps=true, services=true, notes=true, mail=true,
+    weather=true, calculator=true, property=true, vehicles=true, flash=true, music=true, clock=true }
+
+-- Read at use time so a config change applies without touching callers.
+function PhoneValidation.homeReorderAllowed()
+    return not Config.HomeScreen or Config.HomeScreen.allowReorder ~= false
+end
+
+-- Turns a submitted home order into a clean permutation: unknown and repeated ids drop out, optional apps
+-- that are not installed drop out, and installed apps the list missed are appended at the end.
+function PhoneValidation.homeOrder(order, installed)
+    local keep, seen, out = {}, {}, {}
+    if installed then for _, id in ipairs(installed) do keep[id] = true end end
+    for _, id in ipairs(order) do
+        local known = not Config.LaunchApps or Config.LaunchApps[id]
+        local present = not installed or not OPTIONAL_APPS[id] or keep[id]
+        if known and present and not seen[id] then seen[id] = true; out[#out + 1] = id end
+    end
+    for _, id in ipairs(installed or {}) do
+        if not seen[id] then seen[id] = true; out[#out + 1] = id end
+    end
+    return out
+end
+
 function PhoneValidation.settings(payload)
     if type(payload) ~= 'table' then return nil, 'settings must be an object' end
     local out, err = {}
@@ -130,6 +155,14 @@ function PhoneValidation.settings(payload)
             out.appOrder[i] = id
         end
     end
+    if payload.dockOrder ~= nil then
+        if type(payload.dockOrder) ~= 'table' or #payload.dockOrder > 8 then return nil, 'dockOrder is invalid' end
+        out.dockOrder = {}
+        for i, id in ipairs(payload.dockOrder) do
+            if type(id) ~= 'string' or #id > 24 or not id:match('^[a-z]+$') then return nil, 'dockOrder is invalid' end
+            out.dockOrder[i] = id
+        end
+    end
     if payload.installedApps ~= nil then
         if type(payload.installedApps) ~= 'table' or #payload.installedApps>20 then return nil,'Invalid installed apps' end
         out.installedApps={}
@@ -137,6 +170,12 @@ function PhoneValidation.settings(payload)
             if not Config.LaunchApps or not Config.LaunchApps[id] then return nil,'App is unavailable' end
             out.installedApps[#out.installedApps+1]=id
         end
+    end
+    if not PhoneValidation.homeReorderAllowed() then
+        out.appOrder, out.dockOrder = nil, nil
+    else
+        if out.appOrder then out.appOrder = PhoneValidation.homeOrder(out.appOrder, out.installedApps) end
+        if out.dockOrder then out.dockOrder = PhoneValidation.homeOrder(out.dockOrder) end
     end
     return out
 end

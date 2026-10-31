@@ -81,7 +81,7 @@ function Phone.bootstrap(source)
             lastName = pd.charinfo and pd.charinfo.lastname or '',
             job = pd.job and { name = pd.job.name, label = pd.job.label, grade = pd.job.grade and pd.job.grade.level or 0, onDuty = pd.job.onduty == true } or nil
         },
-        features = { maps = #Config.Server.Maps.Locations > 0, garage = QBPhone.Services.Garage.available(), property = QBPhone.Services.Property.available(), media = QBPhone.Storage.provider() ~= 'disabled', transfers = QBPhone.Integrations.Banking.canTransfer(),
+        features = { homeReorder = PhoneValidation.homeReorderAllowed(), maps = #Config.Server.Maps.Locations > 0, garage = QBPhone.Services.Garage.available(), property = QBPhone.Services.Property.available(), media = QBPhone.Storage.provider() ~= 'disabled', transfers = QBPhone.Integrations.Banking.canTransfer(),
             flash = QBPhone.Storage.supportsVideo() and { maxSeconds = QBPhone.Storage.Config().MaxVideoSeconds, maxBytes = QBPhone.Storage.Config().MaxVideoBytes } or false,
             video = Config.Calls.Video and Config.Calls.Video.Enabled and { iceServers = Config.Calls.Video.IceServers or {} } or false },
         locations = Config.Server.Maps.Locations,
@@ -155,6 +155,11 @@ function Phone.saveSettings(source, payload)
     end
     local settings, validationError = PhoneValidation.settings(payload)
     if not settings then return PhoneError(PhoneConstants.Errors.INVALID_INPUT, validationError) end
+    if not PhoneValidation.homeReorderAllowed() and device.settingsJson and device.settingsJson ~= '' then
+        -- Arranging is switched off: keep whatever order the player saved earlier instead of wiping it.
+        local ok, previous = pcall(json.decode, device.settingsJson)
+        if ok and type(previous) == 'table' then settings.appOrder, settings.dockOrder = previous.appOrder, previous.dockOrder end
+    end
     if not QBPhone.Repositories.Phones.updateSettings(device.id, json.encode(settings)) then
         return PhoneError(PhoneConstants.Errors.INTERNAL, 'Unable to save settings')
     end

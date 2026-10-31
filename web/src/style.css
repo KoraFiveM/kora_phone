@@ -96,7 +96,10 @@ svg { flex-shrink: 0; }
 .app-icon.dragging > span { transform: scale(.92); }
 .app-icon.drop-target > span { background: var(--red); color: #fff; box-shadow: 0 0 0 2px var(--red); }
 .icon-button.active { background: var(--red); color: #fff; }
-.home-edit-hint { font: 9px 'Space Mono', monospace; letter-spacing: .5px; color: var(--tone-8a8a8a,#8a8a8a); text-align: center; margin: 10px 0 -8px; }
+.home-edit-hint { font: 9px 'Space Mono', monospace; letter-spacing: .5px; color: var(--tone-8a8a8a,#8a8a8a); display: flex; align-items: center; justify-content: center; gap: 10px; margin: 10px 0 -8px; }
+.home-edit-hint button { font: inherit; letter-spacing: inherit; color: var(--tone-fff,#fff); background: var(--red); border-radius: 10px; padding: 4px 10px; }
+.app-icon.jiggle, .app-icon.dragging { touch-action: none; }
+.app-icon.dragging { cursor: grabbing; }
 @media (prefers-reduced-motion:reduce) { .app-icon.jiggle { animation: none; } }
 .app-social > span { background: var(--tone-363636,#363636); color: var(--tone-f3f3f3,#f3f3f3); border-color: var(--tone-363636,#363636); }
 .app-social:hover > span { background: var(--tone-4d4d4d,#4d4d4d); }

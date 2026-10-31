@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import type { CSSProperties, ComponentType, DragEvent } from 'react';
+import type { CSSProperties, ComponentType, PointerEvent as ReactPointerEvent } from 'react';
 import { AlarmClock, Aperture, ArrowDown, ArrowRight, ArrowUpRight, BatteryFull, Bell, Calculator, Camera, Car, Check, ChevronLeft, CloudSun, ContactRound, CreditCard, Fingerprint, House, Image, LockKeyhole, Mail, MapPin, MessageCircle, Moon, Music, Mic, MicOff, Pause, Play, Phone, PhoneIncoming, PhoneOff, Power, Radio, Settings as SettingsIcon, ShieldAlert, ShieldCheck, Signal, Smartphone, SlidersHorizontal, StickyNote, Store as StoreIcon, Sun, Tag, Video, VideoOff, SwitchCamera, Wifi, X } from 'lucide-react';
+import { LONG_PRESS_MS, MOVE_TOLERANCE, mergeOrder, moveItem } from './homeReorder';
 import { adaptBootstrap, adaptLiveCall, api, isPreview, launchApps, nui, sendSignal } from './api';
 import { previewBootstrap, previewIncoming, resetPreview } from './mock';
 import { normalizeData } from './types';
@@ -85,13 +86,13 @@ const lastApp = (value?: Bootstrap): AppId => {
   if (!apps.some(item => item.id === id) || !launchApps.has(id) || value?.capabilities[id] === false) return 'home';
   return id;
 };
-function AppIcon({ id, onClick, dock = false, badge = 0, editing = false, dragging = false, over = false, onDragStart, onDragOver, onDrop, onDragEnd }: {
+function AppIcon({ id, onClick, dock = false, badge = 0, editing = false, dragging = false, over = false, onPointerDown }: {
   id: AppId; onClick: () => void; dock?: boolean; badge?: number; editing?: boolean; dragging?: boolean; over?: boolean;
-  onDragStart?: (e: DragEvent<HTMLButtonElement>) => void; onDragOver?: (e: DragEvent<HTMLButtonElement>) => void; onDrop?: (e: DragEvent<HTMLButtonElement>) => void; onDragEnd?: (e: DragEvent<HTMLButtonElement>) => void;
+  onPointerDown?: (e: ReactPointerEvent<HTMLButtonElement>) => void;
 }) {
   const { icon: Icon } = iconOf(id);
   const { label } = appCopy(id);
-  return <button draggable={editing} onDragStart={onDragStart} onDragOver={onDragOver} onDrop={onDrop} onDragEnd={onDragEnd} onClick={onClick} className={`app-icon ${dock ? 'dock-icon' : ''} app-${id} ${editing ? 'jiggle' : ''} ${dragging ? 'dragging' : ''} ${over ? 'drop-target' : ''}`} aria-label={`Open ${label}`}><span><Icon size={25} strokeWidth={1.6} /></span>{badge > 0 && <b className="app-badge" aria-label={`${badge} new`}>{badge > 9 ? '9+' : badge}</b>}{!dock && <small>{label}</small>}{editing && <i className="edit-handle" aria-hidden="true" />}</button>;
+  return <button data-app-id={id} data-zone={dock ? 'dock' : 'grid'} draggable={false} onPointerDown={onPointerDown} onClick={onClick} className={`app-icon ${dock ? 'dock-icon' : ''} app-${id} ${editing ? 'jiggle' : ''} ${dragging ? 'dragging' : ''} ${over ? 'drop-target' : ''}`} aria-label={`Open ${label}`}><span><Icon size={25} strokeWidth={1.6} /></span>{badge > 0 && <b className="app-badge" aria-label={`${badge} new`}>{badge > 9 ? '9+' : badge}</b>}{!dock && <small>{label}</small>}{editing && <i className="edit-handle" aria-hidden="true" />}</button>;
 }
 function useTime() { const [date, setDate] = useState(new Date()); useEffect(() => { const timer = setInterval(() => setDate(new Date()), 1000); return () => clearInterval(timer); }, []); return date; }
 export default function App() {
@@ -105,6 +106,8 @@ export default function App() {
   const [editing, setEditing] = useState(false);
   const [dragId, setDragId] = useState<AppId | null>(null);
   const [overId, setOverId] = useState<AppId | null>(null);
+  const suppressClick = useRef(false);
+  const dragCleanup = useRef<(() => void) | null>(null);
   const [folded, setFolded] = useState(false);
   const [serviceOpen, setServiceOpen] = useState(false);
   const [serviceRequest, setServiceRequest] = useState<{id:string;label:string;operation:string}>();
@@ -463,21 +466,60 @@ export default function App() {
   const available = (id: AppId) => launchApps.has(id) && device?.capabilities[id] !== false;
   const gridEligible = (item: { id: AppId }) => item.id !== 'store' && item.id !== 'phone' && item.id !== 'messages' && item.id !== 'contacts' && item.id !== 'camera' && item.id !== 'settings';
   const gridBase = apps.filter(gridEligible).filter(item => available(item.id));
-  const savedOrder = (data.settings.appOrder ?? []).filter(id => gridBase.some(item => item.id === id));
-  const homeApps = [...savedOrder.map(id => iconOf(id)), ...gridBase.filter(item => !savedOrder.includes(item.id))];
-  const reorder = (from: AppId, to: AppId) => {
-    if (from === to) return;
-    const list = homeApps.filter(item => item.id !== 'store');
-    const sourceIndex = list.findIndex(item => item.id === from);
-    const targetIndex = list.findIndex(item => item.id === to);
-    if (sourceIndex < 0 || targetIndex < 0) return;
-    const next = [...list];
-    const [moved] = next.splice(sourceIndex, 1);
-    next.splice(targetIndex, 0, moved);
-    const appOrder = next.map(item => item.id);
-    updateData({ ...data, settings: { ...data.settings, appOrder } });
-    void run(async () => { updateData(await api('settings', { ...data.settings, appOrder })); });
+  const gridIds = mergeOrder(data.settings.appOrder, gridBase.map(item => item.id));
+  const homeApps = gridIds.map(id => iconOf(id));
+  const dockIds = mergeOrder(data.settings.dockOrder, ['phone', 'messages', 'contacts', available('camera') ? 'camera' : 'gallery'] as AppId[]);
+  // Server turns this off with Config.HomeScreen.allowReorder; the preview and older servers leave it on.
+  const reorderAllowed = device?.homeReorder !== false;
+  const saveOrder = (patch: Partial<typeof data.settings>) => {
+    const settings = { ...data.settings, ...patch };
+    updateData({ ...data, settings });
+    void (async () => { try { updateData(await api('settings', settings)); } catch (e) { setToast(e instanceof Error ? e.message : 'Could not save the app order'); } })();
   };
+  const reorder = (zone: 'grid' | 'dock', from: AppId, to: AppId) => {
+    const current = zone === 'dock' ? dockIds : gridIds;
+    const next = moveItem(current, from, to);
+    if (next.join() !== current.join()) saveOrder(zone === 'dock' ? { dockOrder: next } : { appOrder: next });
+  };
+  // Pointer events instead of HTML5 drag-and-drop (unreliable in CEF): press and hold an icon to start
+  // arranging, or press one straight away while arranging. Hovering a page dot turns the page.
+  const beginPress = (e: ReactPointerEvent<HTMLButtonElement>, id: AppId, zone: 'grid' | 'dock') => {
+    if (!reorderAllowed || e.button !== 0 || dragCleanup.current) return;
+    const startX = e.clientX, startY = e.clientY;
+    let active = false, over: AppId | null = null, timer: number | undefined;
+    const activate = (byLongPress: boolean) => { active = true; if (byLongPress) suppressClick.current = true; setEditing(true); setDragId(id); setOverId(null); };
+    const move = (ev: PointerEvent) => {
+      const travelled = Math.hypot(ev.clientX - startX, ev.clientY - startY) > MOVE_TOLERANCE;
+      if (!active) { if (travelled) end(false); return; }
+      ev.preventDefault();
+      if (travelled) suppressClick.current = true;
+      const hit = document.elementFromPoint(ev.clientX, ev.clientY);
+      const dot = hit?.closest<HTMLElement>('[data-home-page]');
+      if (dot && zone === 'grid') setHomePage(Number(dot.dataset.homePage));
+      const icon = hit?.closest<HTMLElement>('[data-app-id]');
+      const next = icon && icon.dataset.zone === zone && icon.dataset.appId !== id ? icon.dataset.appId as AppId : null;
+      if (next !== over) { over = next; setOverId(next); }
+    };
+    const up = () => end(true);
+    const cancel = () => end(false);
+    const end = (drop: boolean) => {
+      window.clearTimeout(timer);
+      window.removeEventListener('pointermove', move);
+      window.removeEventListener('pointerup', up);
+      window.removeEventListener('pointercancel', cancel);
+      dragCleanup.current = null;
+      if (active) { if (drop && over) reorder(zone, id, over); setDragId(null); setOverId(null); }
+      window.setTimeout(() => { suppressClick.current = false; }, 60);
+    };
+    window.addEventListener('pointermove', move, { passive: false });
+    window.addEventListener('pointerup', up);
+    window.addEventListener('pointercancel', cancel);
+    dragCleanup.current = () => end(false);
+    if (editing) activate(false); else timer = window.setTimeout(() => activate(true), LONG_PRESS_MS);
+  };
+  const iconClick = (id: AppId) => { if (suppressClick.current) { suppressClick.current = false; return; } if (editing) setEditing(false); else navigate(id); };
+  useEffect(() => () => dragCleanup.current?.(), []);
+  useEffect(() => { if (app !== 'home' || !reorderAllowed) { setEditing(false); setDragId(null); setOverId(null); } }, [app, reorderAllowed]);
   const toggleQuiet = () => {
     if (quiet && !data.settings.dnd) { notify(`Quiet hours are on until ${data.settings.dndTo}. Change them in Settings.`); return; }
     const settings = { ...data.settings, dnd: !data.settings.dnd };
@@ -581,7 +623,7 @@ export default function App() {
           <div className="status-bar" onPointerDown={startPhoneDrag} onPointerMove={movePhone} onPointerUp={stopPhoneDrag} onPointerCancel={stopPhoneDrag}><span className="status-time">{time}</span><div className="camera-dot" /><span className="status-icons">{quiet && <Moon size={12} aria-label="Do Not Disturb is on" />}<Signal size={13} /><Wifi size={14} /><BatteryFull size={17} /></span></div>
           <PhoneContext.Provider value={{ device, data, updateData, navigate, notify, run, busy, setCall, setHasPin: value => setDevice(current => current ? { ...current, hasPin: value } : current), revision }}>
             {locked ? <div className="lock-screen"><LockKeyhole size={19} /><p>{date.toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long' })}</p><div className={`handset-clock ${model === 'standard' ? 'nothing-clock' : ''}`} aria-label={model === 'standard' ? undefined : time}>{model === 'standard' ? <DotClock value={time} /> : time}</div><div className="handset-lock-brand"><Smartphone size={34} strokeWidth={1} /><span>{brand}</span></div>{active && <div className="locked-call"><PhoneIncoming size={19} /><div><strong>Incoming call</strong><small>{call.number} Â· Unlock to answer</small></div></div>}<form onSubmit={unlock} className="unlock-form">{device.hasPin && <input autoFocus type="password" aria-label="Phone PIN" inputMode="numeric" pattern="[0-9]{4,8}" maxLength={8} required placeholder="Enter PIN" autoComplete="off" value={pin} onChange={e => setPin(e.target.value)} />}{lockError && <p className="pin-error" role="alert">{lockError}</p>}<button className="unlock-button" disabled={busy}><Fingerprint size={28} /><span>{device.hasPin ? 'Unlock phone' : 'Make yourself at home'}</span><ArrowRight size={17} /></button></form><button type="button" className="face-unlock" disabled={busy} onClick={() => void run(async () => { const response = await nui<{ok:boolean;error?:string|{message?:string}}>('handset:action', { op: 'faceUnlock' }); if (!response.ok) throw new Error(typeof response.error === 'string' ? response.error : response.error?.message || 'Face ID did not recognise you'); await reloadHandset(); })}><Fingerprint size={18} />Use Face ID</button><small className="lock-bottom">{brand} / YOUR WORLD, CONNECTED</small></div>
-              : !data.settings.setupComplete ? <SetupScreen /> : app === 'home' ? <main className="home-screen"><div className="home-top"><span className="eyebrow">{date.toLocaleDateString('en-GB', { weekday: 'short', day: '2-digit', month: 'short' }).toUpperCase()}</span><div><button className={`icon-button ${editing ? 'active' : ''}`} aria-label={editing ? 'Done arranging apps' : 'Arrange apps'} onClick={() => { setEditing(!editing); setDragId(null); setOverId(null); }}>{editing ? <Check size={17} /> : <SlidersHorizontal size={16} />}</button><button className={`icon-button ${quiet ? 'active' : ''}`} aria-label={quiet ? 'Turn off Do Not Disturb' : 'Turn on Do Not Disturb'} aria-pressed={quiet} onClick={toggleQuiet}><Moon size={16} /></button><button className="icon-button" aria-label="Notifications" onClick={() => setShowNotifications(!showNotifications)}><Bell size={17} />{notifications.length > 0 && <i className="notification-dot" />}</button><button className="icon-button" aria-label="Lock phone" onClick={lock}><LockKeyhole size={16} /></button></div></div><div className={`handset-clock ${model === 'standard' ? 'nothing-clock' : ''}`} aria-label={model === 'standard' ? undefined : time}>{model === 'standard' ? <DotClock value={time} /> : time}</div><div className="home-widgets"><button className="city-widget" onClick={() => navigate(available('weather') ? 'weather' : 'gps')}><Sun size={31} strokeWidth={1.2} /><div><strong>Los Santos</strong><span>{available('weather') ? 'Your day, at a glance' : 'Find your way'}</span></div><ArrowUpRight size={14} /></button><button className="settings-widget" aria-label="Open Settings" onClick={() => navigate('settings')}><SettingsIcon size={25} strokeWidth={1.3} /><span>Make it yours</span></button></div><div className="home-section"><span>EVERYTHING, IN REACH.</span><span>( 01 )</span></div><div className="app-grid">{homeApps.slice(visiblePage * pageSize, visiblePage * pageSize + pageSize).map(item => <AppIcon key={item.id} id={item.id} badge={unread(item.id)} editing={editing} dragging={dragId === item.id} over={overId === item.id} onClick={() => editing ? setEditing(false) : navigate(item.id)} onDragStart={() => setDragId(item.id)} onDragOver={e => { if (editing && dragId && dragId !== item.id) { e.preventDefault(); setOverId(item.id); } }} onDrop={e => { e.preventDefault(); if (dragId) reorder(dragId, item.id); setDragId(null); setOverId(null); }} onDragEnd={() => { setDragId(null); setOverId(null); }} />)}</div>{editing && <p className="home-edit-hint">Drag to rearrange Â· tap check to finish</p>}<button className="home-note" onClick={() => navigate(notifications[0]?.app || 'messages')}><span className="note-symbol"><MessageCircle size={21} strokeWidth={1.5} /></span><span><strong>{(notifications[0] && (data.contacts.find(c => c.number === notifications[0].title)?.name ?? notifications[0].title)) || 'A little closer.'}</strong><small>{notifications[0]?.body || 'Good conversations start with hello.'}</small></span><ArrowUpRight size={16} /></button><div className="home-page-dots">{Array.from({ length: pageCount }, (_, i) => <button key={i} aria-label={`App page ${i + 1}`} aria-current={visiblePage === i ? 'page' : undefined} onClick={() => setHomePage(i)}><i /></button>)}</div><nav className="dock" aria-label="Favorite apps">{(['phone', 'messages', 'contacts', available('camera') ? 'camera' : 'gallery'] as AppId[]).map(id => <AppIcon key={id} id={id} dock badge={unread(id)} onClick={() => navigate(id)} />)}</nav></main>
+              : !data.settings.setupComplete ? <SetupScreen /> : app === 'home' ? <main className="home-screen"><div className="home-top"><span className="eyebrow">{date.toLocaleDateString('en-GB', { weekday: 'short', day: '2-digit', month: 'short' }).toUpperCase()}</span><div>{reorderAllowed && <button className={`icon-button ${editing ? 'active' : ''}`} aria-label={editing ? 'Done arranging apps' : 'Arrange apps'} onClick={() => { setEditing(!editing); setDragId(null); setOverId(null); }}>{editing ? <Check size={17} /> : <SlidersHorizontal size={16} />}</button>}<button className={`icon-button ${quiet ? 'active' : ''}`} aria-label={quiet ? 'Turn off Do Not Disturb' : 'Turn on Do Not Disturb'} aria-pressed={quiet} onClick={toggleQuiet}><Moon size={16} /></button><button className="icon-button" aria-label="Notifications" onClick={() => setShowNotifications(!showNotifications)}><Bell size={17} />{notifications.length > 0 && <i className="notification-dot" />}</button><button className="icon-button" aria-label="Lock phone" onClick={lock}><LockKeyhole size={16} /></button></div></div><div className={`handset-clock ${model === 'standard' ? 'nothing-clock' : ''}`} aria-label={model === 'standard' ? undefined : time}>{model === 'standard' ? <DotClock value={time} /> : time}</div><div className="home-widgets"><button className="city-widget" onClick={() => navigate(available('weather') ? 'weather' : 'gps')}><Sun size={31} strokeWidth={1.2} /><div><strong>Los Santos</strong><span>{available('weather') ? 'Your day, at a glance' : 'Find your way'}</span></div><ArrowUpRight size={14} /></button><button className="settings-widget" aria-label="Open Settings" onClick={() => navigate('settings')}><SettingsIcon size={25} strokeWidth={1.3} /><span>Make it yours</span></button></div><div className="home-section"><span>EVERYTHING, IN REACH.</span><span>( 01 )</span></div><div className="app-grid">{homeApps.slice(visiblePage * pageSize, visiblePage * pageSize + pageSize).map(item => <AppIcon key={item.id} id={item.id} badge={unread(item.id)} editing={editing} dragging={dragId === item.id} over={overId === item.id} onClick={() => iconClick(item.id)} onPointerDown={e => beginPress(e, item.id, 'grid')} />)}</div>{editing && <div className="home-edit-hint"><span>Press and drag to rearrange</span><button onClick={() => setEditing(false)}>Done</button></div>}<button className="home-note" onClick={() => navigate(notifications[0]?.app || 'messages')}><span className="note-symbol"><MessageCircle size={21} strokeWidth={1.5} /></span><span><strong>{(notifications[0] && (data.contacts.find(c => c.number === notifications[0].title)?.name ?? notifications[0].title)) || 'A little closer.'}</strong><small>{notifications[0]?.body || 'Good conversations start with hello.'}</small></span><ArrowUpRight size={16} /></button><div className="home-page-dots">{Array.from({ length: pageCount }, (_, i) => <button key={i} data-home-page={i} aria-label={`App page ${i + 1}`} aria-current={visiblePage === i ? 'page' : undefined} onClick={() => setHomePage(i)}><i /></button>)}</div><nav className="dock" aria-label="Favorite apps">{dockIds.map(id => <AppIcon key={id} id={id} dock badge={unread(id)} editing={editing} dragging={dragId === id} over={overId === id} onClick={() => iconClick(id)} onPointerDown={e => beginPress(e, id, 'dock')} />)}</nav></main>
                 : <>{app !== 'social' && app !== 'flash' && <PageHeader title={meta?.label || ''} subtitle={meta?.subtitle} back={() => navigate('home')} />}<div className={`handset-app-layout ${fold && !folded && app === 'messages' ? 'expanded-messages' : ''}`}>{fold && !folded && app === 'messages' && <aside className="fold-message-list"><h3>Conversations</h3><button className="text-button" onClick={() => navigate('messages')}>New message</button>{foldInbox.map(conversation => { const number = (conversation.members || '').split(',').find(value => value !== device.number) || conversation.members || ''; return <button key={conversation.id} className={number === target ? 'selected' : ''} onClick={() => navigate('messages', number)}><strong>{data.contacts.find(contact => contact.number === number)?.name || number}</strong><small>{previewText(conversation.lastMessagePreview || conversation.last_body) || 'No messages yet'}</small></button>; })}{foldInboxMore && <button disabled={busy} onClick={()=>run(async()=>{
                   const last=foldInbox[foldInbox.length-1];const expected=device.id;
                   const rows=await api('conversations',{before:last.sortId??last.lastMessageId??last.id,cursorId:last.id});

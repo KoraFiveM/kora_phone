@@ -7,7 +7,7 @@
     "dev": "vite --host 127.0.0.1",
     "build": "tsc --noEmit && vite build",
     "preview": "vite preview --host 127.0.0.1",
-    "test": "node ../tests/web-contract.test.js && node ../tests/static-security.test.js"
+    "test": "node ../tests/web-contract.test.js && node ../tests/static-security.test.js && node ../tests/home-reorder.test.js"
   },
   "dependencies": {
     "@fontsource/dm-sans": "^5.3.0",
