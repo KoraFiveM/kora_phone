@@ -1349,3 +1349,11 @@ svg { flex-shrink: 0; }
 .video-shutter span { background: #e31335; }
 .photo-view video { width: 100%; max-height: 420px; border-radius: 12px; }
 .gallery-grid video { width: 100%; height: 100%; object-fit: cover; pointer-events: none; }
+
+.media-expand { position: relative; display: block; width: 100%; padding: 0; margin: 10px 0; border-radius: 12px; overflow: hidden; cursor: zoom-in; background: none; }
+.media-expand img, .media-expand video { display: block; width: 100%; max-height: 400px; object-fit: contain; margin: 0; pointer-events: none; }
+.media-expand span { position: absolute; right: 8px; bottom: 8px; display: flex; align-items: center; gap: 6px; padding: 4px 9px; border-radius: 999px; font-size: 12px; background: rgba(0,0,0,.65); color: #fff; }
+.media-lightbox { position: fixed; inset: 0; z-index: 2147483000; display: flex; align-items: center; justify-content: center; background: rgba(0,0,0,.94); }
+.media-lightbox-body { display: flex; align-items: center; justify-content: center; max-width: 94vw; max-height: 92vh; }
+.media-lightbox-body img, .media-lightbox-body video { max-width: 94vw; max-height: 92vh; width: auto; height: auto; object-fit: contain; border-radius: 6px; background: #000; }
+.media-lightbox-close { position: absolute; top: 18px; right: 18px; display: grid; place-items: center; width: 44px; height: 44px; border-radius: 50%; background: rgba(255,255,255,.16); color: #fff; }

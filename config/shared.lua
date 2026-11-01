@@ -29,3 +29,8 @@ Config.Settings.LegacyIds = { qbcore = "kora_core" }
 -- arrange controls are hidden, the server ignores order changes and any order already saved is kept.
 Config.HomeScreen = Config.HomeScreen or {}
 Config.HomeScreen.allowReorder = true
+
+-- Gallery. fullscreenViewer opens a photo or video in a large full-screen viewer (click the picture, Esc or
+-- click outside to close). Set false to keep the small in-phone view with the plain video controls.
+Config.Gallery = Config.Gallery or {}
+Config.Gallery.fullscreenViewer = true

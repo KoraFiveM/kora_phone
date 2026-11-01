@@ -81,7 +81,7 @@ function Phone.bootstrap(source)
             lastName = pd.charinfo and pd.charinfo.lastname or '',
             job = pd.job and { name = pd.job.name, label = pd.job.label, grade = pd.job.grade and pd.job.grade.level or 0, onDuty = pd.job.onduty == true } or nil
         },
-        features = { homeReorder = PhoneValidation.homeReorderAllowed(), maps = #Config.Server.Maps.Locations > 0, garage = QBPhone.Services.Garage.available(), property = QBPhone.Services.Property.available(), media = QBPhone.Storage.provider() ~= 'disabled', transfers = QBPhone.Integrations.Banking.canTransfer(),
+        features = { homeReorder = PhoneValidation.homeReorderAllowed(), galleryViewer = not Config.Gallery or Config.Gallery.fullscreenViewer ~= false, maps = #Config.Server.Maps.Locations > 0, garage = QBPhone.Services.Garage.available(), property = QBPhone.Services.Property.available(), media = QBPhone.Storage.provider() ~= 'disabled', transfers = QBPhone.Integrations.Banking.canTransfer(),
             flash = QBPhone.Storage.supportsVideo() and { maxSeconds = QBPhone.Storage.Config().MaxVideoSeconds, maxBytes = QBPhone.Storage.Config().MaxVideoBytes } or false,
             video = Config.Calls.Video and Config.Calls.Video.Enabled and { iceServers = Config.Calls.Video.IceServers or {} } or false },
         locations = Config.Server.Maps.Locations,
