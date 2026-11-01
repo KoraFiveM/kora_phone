@@ -93,7 +93,7 @@
 .phone.handset-standard :is(.primary,.small-primary,.hs-primary) { background:var(--ui-ink); color:var(--ui-bg); border-radius:999px; font-weight:500; }
 .phone.handset-standard :is(.theme-choice,.theme-swatch,.cover-choice,.cover-thumb) { box-shadow:none; }
 .phone.handset-standard .notification-shade { background:var(--ui-bg); }
-.phone.handset-standard .notification-dot,.phone.handset-standard .app-badge { background:var(--red); color:#fff; }
+.phone.handset-standard .notification-dot,.phone.handset-standard .app-badge { background:var(--red); color: var(--on-red,#fff); }
 .phone.handset-standard .lock-screen { color:var(--ui-ink); background:var(--ui-bg); }
 .phone.handset-standard .lock-screen > .nothing-clock { margin:15px 0 0; }
 .phone.handset-standard .handset-lock-brand { opacity:1; }
