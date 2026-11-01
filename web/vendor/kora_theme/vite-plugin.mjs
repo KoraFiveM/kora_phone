@@ -5,7 +5,7 @@ import { fileURLToPath } from "node:url";
 const resourceRoot = dirname(fileURLToPath(import.meta.url));
 const developmentBase = "/@qbtheme";
 const productionBase = "https://cfx-nui-kora_theme";
-const runtimeVersion = "3";
+const runtimeVersion = "4";
 
 export default function qbtheme() {
   let command = "build";
@@ -28,16 +28,14 @@ export default function qbtheme() {
     configureServer(server) {
       server.middlewares.use(async (request, response, next) => {
         const url = request.url?.split("?", 1)[0];
-        const name = url === `${developmentBase}/theme.css`
-          ? "theme.css"
-          : url === `${developmentBase}/theme.js` ? "theme.js"
-          : url === `${developmentBase}/theme.json` ? "theme.json" : null;
+        // theme.json is served too: theme.js reads the colours from it, so the
+        // dev server shows the same palette as the resource.
+        const name = ["theme.css", "theme.js", "theme.json"].find((file) => url === `${developmentBase}/${file}`);
         if (!name) return next();
         response.statusCode = 200;
         response.setHeader("Cache-Control", "no-store");
-        response.setHeader("Content-Type", name.endsWith(".css") ? "text/css; charset=utf-8" : name.endsWith('.json') ? 'application/json' : "text/javascript; charset=utf-8");
-        const contents=await readFile(join(resourceRoot,name),'utf8');
-        response.end(name==='theme.js' ? contents.replace(`${productionBase}/theme.json`,`${developmentBase}/theme.json`) : contents);
+        response.setHeader("Content-Type", name.endsWith(".css") ? "text/css; charset=utf-8" : name.endsWith(".json") ? "application/json; charset=utf-8" : "text/javascript; charset=utf-8");
+        response.end(await readFile(join(resourceRoot, name)));
       });
     },
   };

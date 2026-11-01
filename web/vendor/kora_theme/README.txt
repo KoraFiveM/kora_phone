@@ -1,2 +1,2 @@
-Copied from kora_theme (primary synced to the current #95FF00 default; production reads the live cfx-nui-kora_theme) so CI can build without access to that private repo.
+Copied from kora_theme at commit 47ad01e (theme.json is the single source of truth for colours; theme.js reads it, resolved next to its own script URL), byte-identical to that resource so CI can build without access to that private repo. Production reads the live cfx-nui-kora_theme; the dev server serves theme.js, theme.css and theme.json from /@qbtheme.
 Remove once the release workflow can clone qbtheme (QBTHEME_TOKEN secret) and point web/vite.config.ts back at ../../kora_theme.

@@ -1,4 +1,5 @@
 {
+  "name": "Kora green",
   "colors": {
     "background": "#101010",
     "surface": "#171717",
@@ -17,5 +18,15 @@
     "danger": "#EF4444",
     "info": "#D4D4D4",
     "armour": "#3B9EFF"
-  }
+  },
+  "presets": [
+    { "label": "Crimson", "colour": "#DC143C" },
+    { "label": "Orange", "colour": "#F97316" },
+    { "label": "Amber", "colour": "#F59E0B" },
+    { "label": "Emerald", "colour": "#22C55E" },
+    { "label": "Cyan", "colour": "#06B6D4" },
+    { "label": "Blue", "colour": "#3B82F6" },
+    { "label": "Violet", "colour": "#7C3AED" },
+    { "label": "Pink", "colour": "#EC4899" }
+  ]
 }

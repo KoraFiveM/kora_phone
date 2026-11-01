@@ -1,20 +1,26 @@
 (() => {
   "use strict";
 
-  const providerUrl = "https://cfx-nui-kora_theme/theme.json";
+  // theme.json is the only source of colours; nothing is embedded here. Read it
+  // next to this script (so Vite dev serves its own copy) and default to the
+  // kora_theme NUI origin.
+  const providerUrl = (() => {
+    try {
+      const src = document.currentScript && document.currentScript.src;
+      if (src && /\/theme\.js(\?|$)/.test(src)) return new URL("theme.json", src).href;
+    } catch (_) { /* fall through to the NUI origin */ }
+    return "https://cfx-nui-kora_theme/theme.json";
+  })();
   const tokenName = /^[a-z][a-z0-9-]{0,63}$/;
   const hex = /^#[0-9a-f]{6}$/i;
   const retryDelay = 250;
   const retryCount = 40;
   const roles = ["background", "surface", "surfacePopover", "surfaceRaised", "surfaceHover", "foreground", "mutedForeground", "border", "borderStrong", "control", "controlHover", "primary", "success", "warning", "danger", "info", "armour"];
-  const fallback = {
-    background: "#101010", surface: "#171717", surfacePopover: "#1B1B1B", surfaceRaised: "#242424", surfaceHover: "#2A2A2A", foreground: "#F5F5F5", mutedForeground: "#949494", border: "#343434", borderStrong: "#444444", control: "#666666", controlHover: "#7A7A7A", primary: "#95FF00", success: "#22C55E", warning: "#F59E0B", danger: "#EF4444", info: "#D4D4D4", armour: "#3B9EFF",
-  };
-  let configured = { ...fallback };
+  let configured = {};
   let overrides = null;
 
   const number = (value) => Number.isInteger(value) ? String(value) : String(Math.round(value * 10) / 10);
-  const colour = (value, fallbackValue) => typeof value === "string" && hex.test(value) ? value.toUpperCase() : fallbackValue;
+  const colour = (value) => typeof value === "string" && hex.test(value) ? value.toUpperCase() : undefined;
 
   function hsl(hexValue, alpha, lightnessOffset = 0) {
     const red = parseInt(hexValue.slice(1, 3), 16) / 255;
@@ -34,23 +40,27 @@
     return alpha == null ? value : `${value} / ${number(alpha)}`;
   }
 
+  const linear = (value) => value <= 0.03928 ? value / 12.92 : ((value + 0.055) / 1.055) ** 2.4;
+  // Fixed dark text grey (16/255) used for primary-foreground contrast.
+  const darkLuminance = linear(16 / 255);
+
   function luminance(hexValue) {
-    const channel = (offset) => {
-      const value = parseInt(hexValue.slice(offset, offset + 2), 16) / 255;
-      return value <= 0.03928 ? value / 12.92 : ((value + 0.055) / 1.055) ** 2.4;
-    };
+    const channel = (offset) => linear(parseInt(hexValue.slice(offset, offset + 2), 16) / 255);
     return 0.2126 * channel(1) + 0.7152 * channel(3) + 0.0722 * channel(5);
   }
 
   function contrast(hexValue) {
+    if (!hexValue) return undefined;
     const value = luminance(hexValue);
-    return 1.05 / (value + 0.05) >= (value + 0.05) / (luminance("#101010") + 0.05) ? "0 0% 100%" : "0 0% 6.3%";
+    return 1.05 / (value + 0.05) >= (value + 0.05) / (darkLuminance + 0.05) ? "0 0% 100%" : "0 0% 6.3%";
   }
 
   function tokensFrom(colours) {
     const c = {};
-    for (const role of roles) c[role] = colour(colours[role], fallback[role]);
-    const token = (role, alpha, offset) => hsl(c[role], alpha, offset);
+    for (const role of roles) c[role] = colour(colours[role]);
+    // A role missing from theme.json leaves its tokens unset rather than
+    // substituting a second copy of the palette.
+    const token = (role, alpha, offset) => c[role] ? hsl(c[role], alpha, offset) : undefined;
     return {
       background: token("background"), foreground: token("foreground"), card: token("surface"), "card-foreground": token("foreground"), popover: token("surfacePopover"), "popover-foreground": token("foreground"), secondary: token("surfaceRaised"), "secondary-foreground": token("foreground"), muted: token("surfaceRaised"), "muted-foreground": token("mutedForeground"), accent: token("surfaceHover"), "accent-foreground": token("foreground"), border: token("border"), "border-strong": token("borderStrong"), input: token("control"), "control-border": token("control"), "control-border-hover": token("controlHover"), "surface-raised": token("surfaceRaised"), "surface-hover": token("surfaceHover"), hud: token("surface", 0.72), "modal-overlay": token("background", 0.68),
       primary: token("primary"), ring: token("primary"), "focus-ring": token("primary", 0.55), selection: token("primary", 0.35), "brand-hover": token("primary", null, -5.1), "brand-pressed": token("primary", null, -10.6), "brand-soft": token("primary", 0.14), "brand-border": token("primary", 0.45), "primary-foreground": contrast(c.primary),
@@ -97,8 +107,8 @@
     try {
       const response = await fetch(providerUrl);
       const payload = response.ok && await response.json();
-      if (!payload || typeof payload.colors !== "object") throw new Error("invalid theme.json");
-      configured = { ...configured, ...payload.colors };
+      if (!payload || !payload.colors || typeof payload.colors !== "object") throw new Error("invalid theme.json");
+      configured = payload.colors;
       applyConfigured();
       return true;
     } catch (error) {
