@@ -105,7 +105,7 @@ function Storage.validateRequest(mimeType, byteSize)
 end
 
 local function fivemanageToken()
-    local convar = GetConvar('qbphone_fivemanage_token', '')
+    local convar = GetConvar('kora_fivemanage_token', '')
     if convar ~= '' then return convar end
     return tostring(cfg().Fivemanage.Token or '')
 end
@@ -137,7 +137,7 @@ function Storage.begin(ticket, callback)
             local ok, decoded = pcall(json.decode, body or '')
             local url = ok and type(decoded) == 'table' and type(decoded.data) == 'table' and decoded.data.presignedUrl
             if status < 200 or status >= 300 or type(url) ~= 'string' then
-                print(('[qbphone] Fivemanage would not issue an upload URL (HTTP %s). Check the qbphone_fivemanage_token convar.'):format(tostring(status)))
+                print(('[qbphone] Fivemanage would not issue an upload URL (HTTP %s). Check the kora_fivemanage_token convar.'):format(tostring(status)))
                 return callback(false, nil, 'PROVIDER_BEGIN_FAILED')
             end
             if not hostAllowed(url, fm.UploadHosts) then return callback(false, nil, 'UPLOAD_HOST_DENIED') end

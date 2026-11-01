@@ -64,7 +64,7 @@ Config.Server = {
         LocationsTable = 'houselocations', NameColumn = 'name', LabelColumn = 'label', CoordsColumn = 'coords'
     },
     -- Photos and video clips. Provider: disabled | local-development (photos only) | external (your own
-    -- broker) | fivemanage (see docs/media-storage.md; the token goes in the qbphone_fivemanage_token convar).
+    -- broker) | fivemanage (see docs/media-storage.md; the token goes in the kora_fivemanage_token convar).
     Media = {
         Provider = 'fivemanage',
         MaxVideoBytes = 24 * 1024 * 1024, -- a 15 second clip is about 3 MB; this is the ceiling

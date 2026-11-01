@@ -131,7 +131,7 @@ for (const [route, callback] of [["media:request", "requestMediaUpload"], ["medi
   assert.match(nui, new RegExp(`\\['${route}'\\] = 'qbphone:server:${callback}'`), `${route} must map to ${callback}`);
   assert.match(api, new RegExp(`'${route}'`), `the UI must call ${route}`);
 }
-assert.match(storageSvc, /GetConvar\('qbphone_fivemanage_token'/, "the Fivemanage token must come from a server convar");
+assert.match(storageSvc, /GetConvar\('kora_fivemanage_token'/, "the Fivemanage token must come from a server convar");
 assert.doesNotMatch(storageSvc.split("function Storage.begin")[1].split("function Storage.completeLocal")[0].replace(/\{ Authorization = token \}/, ""), /apiToken|Authorization\s*=\s*token[^}]*token = /, "the API token must never be put in the upload instruction");
 assert.match(storageSvc, /completeFivemanage/, "uploads to Fivemanage must be verified server-side");
 assert.match(storageSvc, /hostAllowed\(fm\.ApiBase, fm\.UploadHosts\)/, "the presign host must be allowlisted");

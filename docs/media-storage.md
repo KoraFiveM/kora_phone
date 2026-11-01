@@ -53,7 +53,7 @@ Provider endpoints must use HTTPS and exact hostname allowlists. Redirect destin
 `Provider = 'fivemanage'` is the ready-made way to turn on **photos, Flash and video clips in chat** without writing a broker. Put your Fivemanage Media API token in `server.cfg` (never in a shared or client file):
 
 ```
-set qbphone_fivemanage_token "your-media-token"
+set kora_fivemanage_token "your-media-token"
 ```
 
 and switch the provider on:

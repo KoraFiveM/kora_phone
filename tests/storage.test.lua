@@ -36,7 +36,7 @@ local Storage = QBPhone.Storage
 local function reset(provider, extra)
     Config.Server.Media = { Provider = provider }
     for key, value in pairs(extra or {}) do Config.Server.Media[key] = value end
-    convars = { qbphone_fivemanage_token = 'secret-token' }
+    convars = { kora_fivemanage_token = 'secret-token' }
     http.status, http.body = 200, '#none'
 end
 local function result(fn)
@@ -112,7 +112,7 @@ test("the token can also come from config, but the convar wins", function()
     reset('fivemanage', { Fivemanage = { Token = 'from-config' } }); convars = {}
     fakes['#begin'] = { data = { presignedUrl = 'https://fmapi.net/api/v3/file/presigned-url/x' } }; http.body = '#begin'
     result(function(cb) Storage.begin(ticket(), cb) end); equal(http.last.headers.Authorization, 'from-config')
-    convars = { qbphone_fivemanage_token = 'from-convar' }
+    convars = { kora_fivemanage_token = 'from-convar' }
     result(function(cb) Storage.begin(ticket(), cb) end); equal(http.last.headers.Authorization, 'from-convar')
 end)
 

@@ -102,7 +102,7 @@ Set secrets **before** starting the resources. Keep the PIN pepper stable betwee
 
 ```cfg
 set qbphone_pin_pepper "REPLACE_WITH_A_LONG_RANDOM_SECRET"
-set qbphone_fivemanage_token "YOUR_FIVEMANAGE_TOKEN"
+set kora_fivemanage_token "YOUR_FIVEMANAGE_TOKEN"
 set qbphone_workshop_wifi_password "YOUR_PRIVATE_HOTSPOT_PASSWORD"
 
 ensure kora_lib
