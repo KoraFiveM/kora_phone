@@ -17,7 +17,7 @@
 .phone-screen.theme-ember { --ui-bg: #2d211c; --ui-surface: #403027; --ui-field: #503c31; --ui-muted: #d0bcae; --ui-line: #685042; }
 .phone-screen.theme-kora_core { --ui-bg: #17140f; --ui-surface: #221e18; --ui-field: #2c2721; --ui-ink: #f2ece1; --ui-muted: #a6a09b; --ui-line: #3b362d; --ui-action: #d86b59; --ui-action-ink: #17140f; }
 .phone-screen :is(.page-header,.status-bar,.system-nav) { color: var(--ui-ink); }
-.phone-screen .app-content { scroll-behavior: smooth; overscroll-behavior: contain; padding-bottom: 24px; scrollbar-color: var(--ui-line) transparent; }
+.phone-screen .app-content { scroll-behavior: smooth; overscroll-behavior: contain; padding-bottom: 24px; }
 .phone-screen :is(.panel,.note-card,.vehicle-card,.property-card,.notification-card,.city-widget,.home-note,.row-icon,.segments,.bubble,.keypad button,.calc-keys button) { background: var(--ui-surface); color: var(--ui-ink); border-color: var(--ui-line); }
 .phone-screen :is(input,textarea,select) { background: var(--ui-field); color: var(--ui-ink); border-color: var(--ui-line); font-size: 13px; line-height: 1.5; }
 .phone-screen :is(input,textarea)::placeholder { color: var(--ui-muted); opacity: .85; }

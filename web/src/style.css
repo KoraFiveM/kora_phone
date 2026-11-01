@@ -8,6 +8,11 @@
 :root { font-family: 'DM Sans', Arial, sans-serif; color: hsl(var(--foreground)); font-synthesis: none; -webkit-font-smoothing: antialiased; }
 html, body, #root { width: 100%; height: 100%; overflow: hidden; }
 * { box-sizing: border-box; }
+/* Round/icon buttons centre their glyph: the UA default button padding would push it off-centre. */
+.call-button, .keypad button, .home-page-dots button, .pulse-send, .heads-up-icon { padding: 0; }
+/* Scrollbars are hidden everywhere (scrolling still works) so a scrollbar never shifts the layout. */
+* { scrollbar-width: none; }
+*::-webkit-scrollbar { display: none; width: 0; height: 0; }
 body { margin: 0; background: transparent; }
 /* UI text is not selectable (the setup screen turned into a wall of highlighted text); fields stay editable. */
 html, body, #root { user-select: none; -webkit-user-select: none; }
@@ -128,8 +133,7 @@ svg { flex-shrink: 0; }
 .header-spacer { width: 32px; }
 .page-header h1 { font-weight: 500; font-size: 27px; letter-spacing: -.6px; margin: 0 0 5px; }
 .page-header p { margin: 0; font-size: 11px; color: var(--muted); }
-.app-content { flex: 1; min-height: 0; overflow-y: auto; padding: 18px 20px 10px; scrollbar-width: thin; scrollbar-color: var(--tone-cdcdcd,#cdcdcd) transparent; }
-.app-content::-webkit-scrollbar { width: 3px; }.app-content::-webkit-scrollbar-thumb { background: var(--tone-cdcdcd,#cdcdcd); border-radius: 3px; }
+.app-content { flex: 1; min-height: 0; overflow-y: auto; padding: 18px 20px 10px; }
 .panel { padding: 16px; background: var(--tone-eaeaea,#eaeaea); border: 1px solid var(--tone-e0e0e0,#e0e0e0); border-radius: 18px; margin: 14px 0; }
 .panel h3 { font-size: 14px; font-weight: 600; margin: 0 0 13px; display: flex; justify-content: space-between; align-items: center; }
 .form { display: flex; flex-direction: column; gap: 13px; }
@@ -209,7 +213,7 @@ svg { flex-shrink: 0; }
 .camera-viewfinder { height: 315px; border-radius: 18px; background: var(--tone-2c2c2c,#2c2c2c); color: var(--tone-c0c0c0,#c0c0c0); position: relative; overflow: hidden; display: flex; align-items: center; justify-content: center; flex-direction: column; }
 .viewfinder-grid { position: absolute; inset: 0; background: linear-gradient(90deg, transparent 33%, var(--tone-ececec10,#ececec10) 33%, var(--tone-ececec10,#ececec10) 33.3%, transparent 33.3%, transparent 66%, var(--tone-ececec10,#ececec10) 66%, var(--tone-ececec10,#ececec10) 66.3%, transparent 66.3%), linear-gradient(transparent 33%, var(--tone-ececec10,#ececec10) 33%, var(--tone-ececec10,#ececec10) 33.3%, transparent 33.3%, transparent 66%, var(--tone-ececec10,#ececec10) 66%, var(--tone-ececec10,#ececec10) 66.3%, transparent 66.3%); }
 .camera-viewfinder p { margin: 18px 0 8px; font-size: 13px; }.camera-viewfinder small { font-size: 8px; color: var(--tone-939393,#939393); }.camera-caption { text-align: center; margin: 18px 0; }
-.shutter { width: 66px; height: 66px; margin: 0 auto; border: 2px solid var(--tone-3c3c3c,#3c3c3c); border-radius: 50%; display: grid; place-items: center; }.shutter span { width: 52px; height: 52px; background: var(--red); border-radius: 50%; }
+.shutter { width: 66px; height: 66px; margin: 0 auto; padding: 0; border: 2px solid var(--tone-3c3c3c,#3c3c3c); border-radius: 50%; display: grid; place-items: center; }.shutter span { display: block; width: 52px; height: 52px; background: var(--red); border-radius: 50%; }
 .gallery-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; margin-top: 15px; }.gallery-grid button { padding: 0; border-radius: 12px; overflow: hidden; aspect-ratio: 1; }.gallery-grid img { width: 100%; height: 100%; object-fit: cover; }.photo-view img { display: block; width: 100%; max-height: 400px; object-fit: contain; margin: 10px 0; border-radius: 12px; background: var(--tone-dadada,#dadada); }
 .map-graphic { height: 340px; border-radius: 20px; position: relative; overflow: hidden; background: #1a62ad; border: 1px solid var(--tone-d6d6d6,#d6d6d6); touch-action: none; cursor: grab; user-select: none; }
 .map-graphic:active { cursor: grabbing; }

@@ -18,7 +18,7 @@
 .social-search { display: flex; gap: 9px; align-items: center; background: var(--ui-surface); border: 1px solid var(--ui-line); border-radius: 14px; padding: 0 12px; color: var(--ui-muted); }
 .phone-screen .social-search input { min-height: 43px; background: transparent; border: 0; padding: 10px 0; font-size: 12px; }
 .social-section-title { display: flex; align-items: center; justify-content: space-between; margin-bottom: 15px; }
-.pulse-inbox-scroll,.flash-scroll { flex: 1; min-height: 0; overflow-y: auto; scrollbar-width: thin; scrollbar-color: var(--ui-line) transparent; overscroll-behavior: contain; }
+.pulse-inbox-scroll,.flash-scroll { flex: 1; min-height: 0; overflow-y: auto; overscroll-behavior: contain; }
 .pulse-inbox-scroll { padding: 0 20px 12px; }
 .pulse-intro { position: relative; padding: 15px 0 19px; overflow: hidden; }
 .pulse-intro h2 { font-size: 30px; letter-spacing: -1.3px; font-weight: 500; margin: 9px 0 8px; }
@@ -51,7 +51,7 @@
 .pulse-thread-header > div { flex: 1; min-width: 0; }
 .pulse-thread-header h2 { font-size: 14px; margin: 0 0 4px; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
 .pulse-thread-header small { color: var(--ui-muted); font-size: 10px; }
-.pulse-message-list { flex: 1; overflow-y: auto; min-height: 0; padding: 0 18px 15px; overscroll-behavior: contain; scrollbar-width: thin; scrollbar-color: var(--ui-line) transparent; }
+.pulse-message-list { flex: 1; overflow-y: auto; min-height: 0; padding: 0 18px 15px; overscroll-behavior: contain; }
 .conversation-intro { display: flex; flex-direction: column; align-items: center; padding: 28px 0 20px; gap: 9px; text-align: center; }
 .conversation-intro .social-avatar { width: 58px; height: 58px; border-radius: 21px; }
 .conversation-intro strong { font-size: 14px; }
@@ -110,7 +110,7 @@
 .social-sheet > header > div { flex: 1; }
 .social-sheet h2 { font-size: 24px; letter-spacing: -.8px; font-weight: 500; margin: 0 0 7px; }
 .social-sheet header p { font-size: 12px; line-height: 1.5; color: var(--ui-muted); margin: 0; }
-.social-sheet-body { padding: 18px 20px 25px; min-height: 0; overflow-y: auto; overscroll-behavior: contain; scrollbar-width: thin; }
+.social-sheet-body { padding: 18px 20px 25px; min-height: 0; overflow-y: auto; overscroll-behavior: contain; }
 .social-record-stage { position: relative; background: #222821; color: #f2f3ef; min-height: 180px; border-radius: 20px; padding: 27px 15px; margin: 16px 0 20px; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; overflow: hidden; }
 .social-record-stage > video { width: 100%; max-height: 250px; border-radius: 12px; }
 .social-record-stage p { font-size: 17px; margin: 15px 0 8px; letter-spacing: -.3px; }
