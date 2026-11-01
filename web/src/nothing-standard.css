@@ -107,7 +107,8 @@
 .phone.handset-standard .call-button { background:var(--red); }
 .phone.handset-standard .call-button.accept { background:var(--ui-ink); color:var(--ui-bg); }
 .phone.handset-standard .toast { background:var(--ui-surface); color:var(--ui-ink); border:1px solid var(--ui-line); border-radius:8px; box-shadow:none; }
-.phone.handset-standard .nothing-status { position:static; inset:auto; transform:none; animation:none; flex-shrink:0; margin:4px 14px; padding:8px 10px; font:10px 'Space Mono',monospace; }
+.phone.handset-standard .nothing-status button { pointer-events:auto; }
+.phone.handset-standard .nothing-status { transform:none; animation:none; pointer-events:none; margin:0; padding:8px 10px; font:10px 'Space Mono',monospace; }
 .phone.handset-standard :is(.city-widget,.settings-widget,.panel,.home-note,.app-icon > span,.dock) { background-image:none; }
 .phone.handset-standard :is(strong,h1,h2,h3) { font-weight:500; }
 .phone.handset-standard .onboard,.phone.handset-standard .onboard-footer { background:var(--ui-bg); color:var(--ui-ink); }

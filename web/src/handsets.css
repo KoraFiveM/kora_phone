@@ -4,7 +4,7 @@
 .hs-header > div { display:flex; justify-content:space-between; align-items:center; gap:12px; margin-top:5px; }
 .hs-header h2 { margin:0; font-size:23px; letter-spacing:-.8px; font-weight:600; }
 .hs-header p { margin:5px 0 0; color:var(--hs-muted); }
-.hs-icon { border:1px solid var(--hs-line); border-radius:50%; width:34px; height:34px; display:grid; place-items:center; }
+.hs-icon { border:1px solid var(--hs-line); border-radius:50%; width:34px; height:34px; padding:0; line-height:0; display:grid; place-items:center; }
 .hs-preview { font-size:10px; padding:8px 10px; color:var(--hs-muted); border:1px dashed var(--hs-line); border-radius:10px; }
 .hs-grid { display:grid; grid-template-columns:minmax(0,1fr); gap:12px; }
 .hs-card { min-width:0; padding:16px; border:1px solid var(--hs-line); border-radius:17px; background:var(--hs-surface); }
