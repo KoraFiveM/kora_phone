@@ -67,7 +67,7 @@
 .fold-message-list { overflow:auto; border-right:1px solid var(--line,#d6dde3); padding:20px 14px; background:var(--paper,#f9fbfd); }
 .fold-message-list h3 { font-size:15px; letter-spacing:-.3px; }
 .fold-message-list > button:not(.text-button) { display:block; width:100%; text-align:left; padding:13px 10px; border-radius:12px; margin:4px 0; }
-.fold-message-list > button.selected { background:#287bce12; }
+.fold-message-list > button.selected { background:hsl(var(--primary) / .07); }
 .fold-message-list strong,.fold-message-list small { display:block; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
 .fold-message-list strong { font-size:11px; font-weight:600; }.fold-message-list small,.fold-message-list p { font-size:10px; color:var(--muted,#83909c); margin-top:4px; }
 .has-video.call-screen { padding:18px 16px; gap:7px; }
