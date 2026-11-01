@@ -4,6 +4,9 @@ Config.Handsets = {
 }
 Config.SimItem = 'phone_sim'
 Config.SimSwap = 'both' -- player | shop | both
+-- Inserting a SIM moves its item into the phone (exactly one item leaves the inventory); removing it returns the
+-- same item with its number. The inventory gateway does this; the phone re-checks it. Set false to skip the re-check.
+Config.ConsumeSimOnInstall = true
 Config.LaunchApps = { phone=true, contacts=true, messages=true, camera=true, gallery=true, gps=true,
     settings=true, mail=true, notes=true, calculator=true, clock=true, weather=true, music=true }
 Config.PhoneServices = {

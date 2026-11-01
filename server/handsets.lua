@@ -279,6 +279,31 @@ local function restore(src,d,account)
     QBPhone.Sessions.close(src)
     return PhoneResult({restored=true})
 end
+-- The inventory gateway moves the SIM item in the same commit as the handset metadata. This confirms
+-- the result so an older companion file cannot leave the SIM both inserted and loose (or lost on removal).
+function H.settleSimItem(src,op,request,info)
+    if op=='insertSim' then
+        local left=exports.kora_core:getItemBySlot(src,request.simSlot)
+        if left and left.name==Config.SimItem and left.amount==1 and left.info and left.info.simId==request.simId then
+            local removed,why=exports.kora_inventory:RemoveItem(src,Config.SimItem,1,request.simSlot,'phone-sim-install')
+            if not removed then
+                print('[kora_phone] SIM install could not consume the SIM item: '..tostring(why))
+                return false,'SIM item could not be moved into the phone'
+            end
+        end
+    else
+        for _,item in pairs(inventory(src)) do
+            if item.name==Config.SimItem and item.info and item.info.simId==request.simId then return true end
+        end
+        if type(info)~='table' or info.simId~=request.simId then return false,'SIM details are missing' end
+        local added,why=exports.kora_inventory:AddItem(src,Config.SimItem,1,nil,info,'phone-sim-remove')
+        if not added then
+            print('[kora_phone] SIM removal could not return the SIM item: '..tostring(why))
+            return false,'No room to return the SIM to your inventory'
+        end
+    end
+    return true
+end
 function H.action(src,p)
     local op=p.op
     if op=='select' then
@@ -328,7 +353,7 @@ function H.action(src,p)
         local request={op=op,handsetSlot=handset.slot,handsetId=d.handsetId,simId=handset.info.phoneSimId}
         if op=='insertSim' then
             local item=exports.kora_core:getItemBySlot(src,tonumber(p.slot) or -1)
-            if not item or item.name~=Config.SimItem then return fail('SIM not found') end
+            if not item or item.name~=Config.SimItem or item.amount~=1 then return fail('SIM not found') end
             if not (item.info and item.info.simId) then
                 local id=random(); update('INSERT INTO phone_sims(id,phone_number,owner_citizenid) VALUES(?,?,?)',{id,simNumber(),cid(src)})
                 local bound=inv(src,{op='bindSim',simSlot=item.slot,itemName=item.name,simId=id})
@@ -350,8 +375,13 @@ function H.action(src,p)
             request.simSlot=item.slot; request.simId=sim.id
         end
         QBPhone.Services.Calling.disconnect(src,'sim_changed')
+        local returnedInfo=op=='removeSim' and handset.info.phoneSimInfo or nil
         local ok,reason=inv(src,request)
         if not ok then return fail(tostring(reason)) end
+        if Config.ConsumeSimOnInstall~=false then
+            local settled,problem=H.settleSimItem(src,op,request,returnedInfo)
+            if not settled then return fail(problem) end
+        end
         H.current(src,false); QBPhone.Sessions.close(src); return PhoneResult(true)
     elseif op=='registerCloud' then
         if d.accountId then return fail('An account is already signed in') end
