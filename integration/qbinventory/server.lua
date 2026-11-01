@@ -2952,9 +2952,11 @@ inventory.internal = {
 
 -- A handset's inserted SIM lives in its metadata, so consuming/returning the
 -- loose SIM and changing the handset commit together in one inventory write.
+-- The folder name varies per install (kora_phone-stevie on this server), so both are accepted.
+local phoneCallers = { ['kora_phone-stevie'] = true, kora_phone = true }
 local phoneHandsets = { phone = true, phone_standard = true, phone_flip = true, phone_fold = true }
 local function phoneItemTransaction(src, request)
-    if GetInvokingResource() ~= 'kora_phone' then
+    if not phoneCallers[GetInvokingResource()] then
         return false, 'phone integration only'
     end
     if type(src) ~= 'number' or src < 1 or src % 1 ~= 0 or type(request) ~= 'table' then
