@@ -5,8 +5,6 @@ local config = Config.qbinventory
 local inventory = QbInventory
 local resourceName = GetCurrentResourceName()
 
--- Runtime state -------------------------------------------------------------
-
 local inventories = {}
 local sessions = {}
 local dropViewers = {}
@@ -32,8 +30,6 @@ local dropCreate
 -- `owner = true` registrations are templates, not one globally shared stash.
 -- The actual secondary record is created lazily per citizen when they open it.
 
--- Framework adapters --------------------------------------------------------
-
 local function now()
     return GetGameTimer()
 end
@@ -53,7 +49,6 @@ end
 local function playerItems(src)
     return exports.kora_core:getPlayerData(src, { 'items' }) or {}
 end
--- Physical cash policy ------------------------------------------------------
 
 -- This policy is intentionally server-only. Cash item operations are never
 -- exposed to a browser or trusted from a resource-provided item payload.
@@ -99,8 +94,6 @@ local function recordAudit(action, src, details)
     end
     TriggerEvent('qbinventory:server:audit', action, src, details)
 end
-
--- Canonical item records ----------------------------------------------------
 
 local canonicalItemFields = {
     amount = true,
@@ -206,8 +199,6 @@ local function showItemBox(src, name, amount, action, item)
     -- from the native event above.
     TriggerClientEvent('qb-inventory:client:ItemBox', src, payload, action, amount)
 end
-
--- Inventory registry and access --------------------------------------------
 
 local secondaryOptionFields = { 'label', 'coords', 'distance', 'bucket', 'groups', 'owner', 'prices', 'currency' }
 
@@ -580,15 +571,11 @@ local function broadcast(inventoryKey)
             TriggerClientEvent('qbinventory:client:sessionPatched', src, session.token, update)
             -- Legacy qb-inventory dependants listen for this to re-read their
             -- own PlayerData after a change. kora_inventory's own client bridge
-            -- treats it as a refresh request, and third-party scripts that only
-            -- know the upstream name now hear about committed changes at all --
-            -- previously nothing outside kora_inventory was ever notified.
+            -- treats it as a refresh request.
             TriggerClientEvent('qb-inventory:client:updateInventory', src)
         end
     end
 end
-
--- Mutation primitives -------------------------------------------------------
 
 local function lock(keys, transaction)
     table.sort(keys)
@@ -669,12 +656,8 @@ end
 ---anything that is not a player inventory.
 ---
 ---Returns `(ok, err, removed)` -- three values, matching removePlayer. The
----middle slot is the ERROR and stays nil on success; the item is third. This
----returned `(true, removed)` for a long time, one value short, so every call
----site's `local ok, err, removed = removeFrom(...)` bound the item to `err` and
----left `removed` nil -- and the next line crashed with "attempt to index a nil
----value (local 'removed')". That made a transfer OUT of any secondary
----inventory fail, which is most of what a stash is for.
+---middle slot is the ERROR and stays nil on success; the item is third, so
+---callers' `local ok, err, removed = removeFrom(...)` binds correctly.
 ---@param inv table
 ---@param slot integer
 ---@param amount integer|nil Defaults to the whole stack.
@@ -802,8 +785,6 @@ local function removePlayer(src, slot, amount)
     local ok, err = playerSetPath(src, { 'items', slot }, nextItem)
     return ok, err, removed
 end
-
--- Physical cash operations -------------------------------------------------
 
 -- These functions are called only by kora_core's money module. They bypass the
 -- public AddItem/RemoveItem compatibility layer deliberately: that layer
@@ -1076,8 +1057,6 @@ local function runHooks(name, src, payload)
     return true
 end
 
--- Sessions and transfers ----------------------------------------------------
-
 local function close(src, reason)
     local session = sessions[src]
     if not session then
@@ -1348,7 +1327,6 @@ local function transfer(src, request)
     end)
 end
 
--- Validated client intents --------------------------------------------------
 -- UI actions are intentionally narrower than arbitrary exports. Each one
 -- starts from the current server-issued session, derives every inventory key
 -- from it, and checks the revision supplied by the client mirror.
@@ -1726,8 +1704,6 @@ local function handleIntent(src, request)
     end
     return false, 'unsupported intent'
 end
-
--- Player inventory API ------------------------------------------------------
 
 ---@param src integer
 ---@return number currentWeight
@@ -2127,8 +2103,6 @@ end
 local useables, builtInUseables = {}, {}
 local builtInUseableKinds = {}
 
--- Useable item API ----------------------------------------------------------
-
 -- Declared on its own line first: a `local x = ... function() x end` would
 -- close over the *global* x, since the local is not in scope until after its
 -- own statement -- and the cleanup only runs on resource stop, so the nil
@@ -2249,8 +2223,6 @@ local function ownedStash(src, identifier, opts)
     -- Namespace durable private storage; never trust a client-chosen owner.
     return secondary('stash', ('%s:%s'):format(tostring(identifier), data.citizenid), opts)
 end
-
--- Secondary inventories ----------------------------------------------------
 
 ---@param identifier string|number
 ---@return table items
@@ -2414,7 +2386,6 @@ local function dropTake(src, id, slot, amount)
     return result, err
 end
 
--- Registration and shops ---------------------------------------------------
 -- Ox-style inventory constructors and shops.
 local function refreshRegistration(inv, opts)
     inv.label = opts.label or inv.label
@@ -2725,8 +2696,6 @@ end
 local function removeInspectionAccess(id)
     inspectionHooks[id] = nil
 end
-
--- Internal module API -------------------------------------------------------
 
 -- Trusted server-side extension seam. Compatibility/domain modules load after
 -- this authority and may use these helpers, but no client event ever receives
@@ -3173,8 +3142,6 @@ local function phoneItemTransaction(src, request)
     end)
 end
 
--- Public exports ------------------------------------------------------------
-
 -- Compatibility aliases. The matching __cfx handlers below make these callable
 -- through the qb-inventory and ox_inventory provided identities as well.
 local api = {
@@ -3276,8 +3243,6 @@ for name, fn in pairs(physicalCashApi) do
 end
 inventory.api = api
 
--- Network transport ---------------------------------------------------------
-
 RegisterNetEvent('qbinventory:server:open', function(invType, data)
     if GetInvokingResource() then
         return
@@ -3334,8 +3299,6 @@ RegisterNetEvent('QBCore:Server:UseItem', function(item)
         useItem(source, slot)
     end
 end)
-
--- Lifecycle and persistence ------------------------------------------------
 
 -- Persistence is deliberately a secondary-store concern. Hydrating happens
 -- only after its kora_sql migration succeeds; malformed rows remain quarantined
