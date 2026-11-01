@@ -123,6 +123,19 @@ test("complete accepts a verified upload and records what Fivemanage reports, no
     equal(r[2].byteSize, 1 * MB); equal(r[2].publicUrl, 'https://r2.fivemanage.com/abc/clip.webm'); equal(r[2].mimeType, 'video/webm')
     assert(http.last.url:find('/api/v3/file/abcDEF123456$'), 'the file is looked up by its id')
 end)
+test("camera photos accept provider categories and JPEG aliases", function()
+    for _, kind in ipairs({ 'image', 'image/jpeg', 'jpeg', 'jpg', 'image/webp' }) do
+        reset('fivemanage'); serve(GOOD_FILE({ type = kind }))
+        local r = result(function(cb) Storage.completeFivemanage(ticket({ mimeType = 'image/jpeg' }), 'abcDEF123456', cb) end)
+        equal(r[1], true)
+        equal(r[2].mimeType, 'image/jpeg')
+    end
+    for _, kind in ipairs({ 'video', 'video/webm', 'not-jpeg', 'application/pdf' }) do
+        reset('fivemanage'); serve(GOOD_FILE({ type = kind }))
+        equal(result(function(cb) Storage.completeFivemanage(ticket({ mimeType = 'image/jpeg' }), 'abcDEF123456', cb) end)[3], 'UPLOAD_MISMATCH')
+    end
+end)
+
 test("complete rejects a file bigger than the ticket allowed", function()
     reset('fivemanage'); serve(GOOD_FILE({ size = 9 * MB }))
     equal(result(function(cb) Storage.completeFivemanage(ticket(), 'abcDEF123456', cb) end)[3], 'UPLOAD_MISMATCH')

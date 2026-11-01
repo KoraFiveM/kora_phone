@@ -1,9 +1,10 @@
 import { useEffect, useRef, useState } from 'react';
 import { Camera, Car, CloudSun, Home, MapPin, Navigation, Plus, Save, ShieldCheck, StickyNote, Sun, Trash2 } from 'lucide-react';
-import { api, isPreview, nui, requestId } from './api';
+import { api, isPreview, requestId } from './api';
 import { PhotoImage } from './Images';
+import type { Photo } from './types';
 import { asList } from './types';
-import type { Note, Property, Vehicle } from './types';
+import type { MapBlip, Note, Property, Vehicle } from './types';
 import { calculate, DotClock, Empty, Row } from './components';
 import { LoadState, useLoad, usePhone } from './PhoneContext';
 
@@ -12,12 +13,15 @@ export function NotesScreen() {
   const [draft, setDraft] = useState<Note>();
   return <>{draft ? <form className="form" onSubmit={e => { e.preventDefault(); run(async () => { updateData(await api('notes', draft)); setDraft(undefined); }); }}><button type="button" className="text-button" onClick={() => setDraft(undefined)}>← All notes</button><label>Title<input required maxLength={100} value={draft.title} onChange={e => setDraft({ ...draft, title: e.target.value })} /></label><textarea className="note-editor" aria-label="Note body" required maxLength={4000} value={draft.body} placeholder="A thought worth keeping…" onChange={e => setDraft({ ...draft, body: e.target.value })} /><button className="primary" disabled={busy}><Save size={17} />Save note</button></form> : <><button className="primary" onClick={() => setDraft({ id: requestId(), title: '', body: '' })}><Plus size={18} />New note</button>{data.notes.map(note => <article className="note-card" key={note.id}><button onClick={() => setDraft({ ...note })}><StickyNote size={18} /><h3>{note.title}</h3><p>{note.body}</p></button><button className="icon-button" aria-label={`Delete note ${note.title}`} disabled={busy} onClick={() => run(async () => updateData(await api('notes', { ...note, remove: true })))}><Trash2 size={16} /></button></article>)}{!data.notes.length && <Empty title="Space to think" detail="Keep your plans, ideas, and little reminders here." />}</>}</>;
 }
-export function GalleryScreen({ camera = false }: { camera?: boolean }) {
+function GalleryItem({ item, controls = false }: { item: Photo; controls?: boolean }) {
+  return item.kind === 'video' ? <video src={item.url} controls={controls} muted={!controls} playsInline preload="metadata" aria-label={controls ? 'Saved phone video' : 'Video thumbnail'} /> : <PhotoImage src={item.url} alt={controls ? 'Saved phone photograph' : 'Gallery thumbnail'} />;
+}
+export function GalleryScreen() {
   const { data, updateData, run, busy, device, navigate } = usePhone();
   const [selected, setSelected] = useState<string>();
   const [confirmDelete, setConfirmDelete] = useState(false);
   const photo = data.photos.find(item => item.id === selected);
-  return <>{camera ? <><div className="camera-viewfinder"><div className="viewfinder-grid" /><Camera size={42} strokeWidth={1} /><p>{isPreview ? 'Preview camera' : 'Capture your view'}</p><small>{isPreview ? 'Creates a sample illustration' : 'The phone hides while the photo is taken'}</small></div><p className="muted camera-caption">A moment. Made yours.</p><button className="shutter" aria-label="Take photo" disabled={busy} onClick={() => run(async () => { try { updateData(await api('capture', {})); navigate('gallery'); } finally { await nui('captureDone'); } })}><span /></button><button className="text-button centered" onClick={() => navigate('gallery')}>Open gallery · {data.photos.length}</button></> : photo ? <div className="photo-view"><button className="text-button" onClick={() => { setSelected(undefined); setConfirmDelete(false); }}>← All photos</button><PhotoImage src={photo.url} alt="Saved phone photograph" /><button className="text-button danger" onClick={() => setConfirmDelete(true)}><Trash2 size={16} />Delete photo</button>{confirmDelete && <div className="panel"><p>Remove this photo from the phone gallery?</p><button className="primary" disabled={busy} onClick={() => run(async () => { updateData(await api('deletePhoto', { id: photo.id })); setSelected(undefined); setConfirmDelete(false); })}>Delete from gallery</button><button className="text-button" onClick={() => setConfirmDelete(false)}>Cancel</button></div>}</div> : <><div className="section-heading"><span className="section-label">YOUR MOMENTS / {data.photos.length}</span>{device.capabilities.camera && <button className="icon-button" aria-label="Open camera" onClick={() => navigate('camera')}><Camera size={20} /></button>}</div><div className="gallery-grid">{data.photos.map(item => <button key={item.id} onClick={() => setSelected(item.id)} aria-label="View photo"><PhotoImage src={item.url} alt="Gallery thumbnail" /></button>)}</div>{!data.photos.length && <Empty title="Collect a moment" detail={device.capabilities.camera ? 'Photos you take will appear here.' : 'Camera uploads have not been configured on this server.'} />}</>}</>;
+  return <>{photo ? <div className="photo-view"><button className="text-button" onClick={() => { setSelected(undefined); setConfirmDelete(false); }}>← All photos</button><GalleryItem item={photo} controls /><button className="text-button danger" onClick={() => setConfirmDelete(true)}><Trash2 size={16} />Delete photo</button>{confirmDelete && <div className="panel"><p>Remove this item from the phone gallery?</p><button className="primary" disabled={busy} onClick={() => run(async () => { updateData(await api('deletePhoto', { id: photo.id })); setSelected(undefined); setConfirmDelete(false); })}>Delete from gallery</button><button className="text-button" onClick={() => setConfirmDelete(false)}>Cancel</button></div>}</div> : <><div className="section-heading"><span className="section-label">YOUR MOMENTS / {data.photos.length}</span>{device.capabilities.camera && <button className="icon-button" aria-label="Open camera" onClick={() => navigate('camera')}><Camera size={20} /></button>}</div><div className="gallery-grid">{data.photos.map(item => <button key={item.id} onClick={() => setSelected(item.id)} aria-label="View photo"><GalleryItem item={item} /></button>)}</div>{!data.photos.length && <Empty title="Collect a moment" detail={device.capabilities.camera ? 'Photos and videos you take will appear here.' : 'Camera uploads have not been configured on this server.'} />}</>}</>;
 }
 // Calibration knob: World coords at the edges of web/public/map.jpg (road style, stitched from
 // zoom-5 tiles, cropped square to the island). Checked against the Del Perro pier
@@ -35,6 +39,7 @@ function LiveMap({ onPick }: { onPick: (x: number, y: number) => void }) {
   const [me, setMe] = useState<{ x: number; y: number; heading?: number }>();
   // Mirrors the game's own waypoint, so it survives leaving the app and shows ones set from the pause map.
   const [pin, setPin] = useState<{ x: number; y: number }>();
+  const [blips, setBlips] = useState<MapBlip[]>([]);
   const [missing, setMissing] = useState(false);
   const fit = (x: number, y: number, z: number) => {
     const el = box.current; if (!el) return { x, y, z };
@@ -44,11 +49,22 @@ function LiveMap({ onPick }: { onPick: (x: number, y: number) => void }) {
   const zoomAt = (factor: number, cx: number, cy: number) => setView(v => { const z = clamp(v.z * factor, 1, 24); return fit(cx - (cx - v.x) * z / v.z, cy - (cy - v.y) * z / v.z, z); });
   const center = (at: { x: number; y: number }, z: number) => { const el = box.current; if (!el) return; const { u, v } = worldToMap(at.x, at.y); const size = el.clientWidth * z; setView(fit(el.clientWidth / 2 - u * size, el.clientHeight / 2 - v * size, z)); };
   useEffect(() => {
+    let stopped = false;
+    let pending = false;
+    const pollBlips = async () => {
+      if (pending) return;
+      pending = true;
+      try { const next = await api('mapBlips', {}); if (!stopped) setBlips(asList<MapBlip>(next)); }
+      catch { if (!stopped) setBlips([]); }
+      finally { pending = false; }
+    };
+    void pollBlips();
+    const blipTimer = window.setInterval(pollBlips, 1000);
     let first = true;
     const poll = () => api('myLocation', {}).then(at => { setMe(at); if (!isPreview) setPin(at.waypoint); if (first) { first = false; center(at, 6); } }).catch(() => {});
     void poll();
     const timer = window.setInterval(poll, 1000);
-    return () => window.clearInterval(timer);
+    return () => { stopped = true; window.clearInterval(timer); window.clearInterval(blipTimer); };
   }, []);
   // The phone is CSS-scaled, so screen px are converted back to the map box's own px.
   const ratio = () => box.current!.getBoundingClientRect().width / box.current!.clientWidth || 1;
@@ -67,6 +83,7 @@ function LiveMap({ onPick }: { onPick: (x: number, y: number) => void }) {
     onPointerUp={e => { const d = drag.current; drag.current = undefined; if (!d || d.moved || !box.current) return; const { cx, cy } = local(e); const size = box.current.clientWidth * view.z; const at = mapToWorld((cx - view.x) / size, (cy - view.y) / size); const x = Math.round(at.x), y = Math.round(at.y); setPin({ x, y }); onPick(x, y); }}>
     <div className="map-layer" style={{ transform: `translate(${view.x}px, ${view.y}px) scale(${view.z})`, ['--z' as string]: view.z }}>
       <img src="./map.jpg" alt="" draggable={false} onError={() => setMissing(true)} />
+      {blips.map(blip => { const { u, v } = worldToMap(blip.x, blip.y); return <button key={blip.id} type="button" className="map-blip" title={blip.label} aria-label={`Set waypoint: ${blip.label}`} style={{ left: `${u * 100}%`, top: `${v * 100}%`, background: blip.colour }} onPointerDown={e => e.stopPropagation()} onPointerUp={e => e.stopPropagation()} onClick={() => { setPin(blip); onPick(blip.x, blip.y); }}><MapPin size={13} /></button>; })}
       {pin && marker(pin, 'map-pin', 'Waypoint')}
       {me && marker(me, 'map-me', 'You are here')}
     </div>

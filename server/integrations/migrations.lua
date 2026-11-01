@@ -26,8 +26,8 @@ local ALREADY_DONE = {
 }
 
 local function alreadyDone(err)
-    err = tostring(err)
-    for _, needle in ipairs(ALREADY_DONE) do if err:find(needle, 1, true) then return true end end
+    err = tostring(err):lower()
+    for _, needle in ipairs(ALREADY_DONE) do if err:find(needle:lower(), 1, true) then return true end end
     return false
 end
 

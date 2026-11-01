@@ -42,7 +42,7 @@ async function uploadMedia(p:{blob:Blob;onProgress?:(fraction:number)=>void}){
   const receipt=await sendFile(up.uploadUrl,String(up.field||'file'),p.blob,typeof up.tag==='string'?up.tag:'',p.onProgress);
   const saved=await server<any>('media:complete',{token:up.token,receipt});
   return{id:Number(saved.id),url:String(saved.publicUrl),kind:kindOf(saved.mimeType,saved.publicUrl)||'photo'}}
-const toPhotos=(g:any):Photo[]=>(g?.items||[]).map((x:any)=>({id:String(x.id),url:String(x.publicUrl),created_at:Number(x.createdAt||0)}));
+const toPhotos=(g:any):Photo[]=>(g?.items||[]).map((x:any)=>({id:String(x.id),url:String(x.publicUrl),created_at:Number(x.createdAt||0),kind:kindOf(x.mimeType,x.publicUrl)}));
 const defaultData=():DeviceData=>normalizeData({settings:{name:'Nothing Phone',volume:.5,scale:1,wallpaper:'kora_core',theme:'kora_core',setupComplete:false},contacts:[],notes:[],photos:[],stations:[],alarms:[]});
 let cached:DeviceData=defaultData();
 let activeDeviceId:string|undefined;
@@ -82,7 +82,7 @@ async function execute(action:keyof Api,p:any,id:string):Promise<any>{switch(act
   case'sendMessage':await server('messages:send',{to:p.recipient,body:p.body,clientRequestId:id});return{sent:true};case'messages':throw new Error('Conversation history needs the peer-number repository upgrade');
   case'bank':{const[balance,history]=await Promise.all([server<any>('bank:getData'),server<any>('bank:getTransactions',{limit:50})]);const account=String(balance.number||balance.account);return{balance:balance.balance,account,name:balance.holder||'Personal',history:(history.items||[]).map((x:any)=>({id:String(x.id),citizenid:x.direction==='incoming'?String(x.peer||'Phone transfer'):account,recipient:x.direction==='incoming'?account:String(x.peer||'Phone transfer'),amount:Number(x.amount),status:x.status,created_at:stamp(x.createdAt)}))} as Bank}
   case'transfer':{const v=await server<any>('bank:transfer',{to:p.recipient,amount:p.amount,clientRequestId:id});return{status:v.transaction?.status||'completed'}}
-  case'capture':{await server('camera:open');await new Promise(r=>setTimeout(r,400));/* let the UI finish hiding so the phone is not in the screenshot */await server('camera:capture');const g=await server<any>('gallery:list',{limit:100});cached={...cached,photos:toPhotos(g)};return cached}
+  case'capture':{await server('camera:open',{front:p.front});await new Promise(r=>setTimeout(r,400));/* let the UI finish hiding so the phone is not in the screenshot */await server('camera:capture');const g=await server<any>('gallery:list',{limit:100});cached={...cached,photos:toPhotos(g)};return cached}
   case'deletePhoto':await server('gallery:delete',{id:Number(p.id)});cached={...cached,photos:cached.photos.filter(x=>x.id!==String(p.id))};return cached;
   case'feed':{if(p.kind==='classifieds'){const q=await server<any>('market:getListings',{limit:30,cursor:p.before});return(q.items||[]).map((x:any)=>({id:x.id,number:x.sellerHandle||x.sellerName||'seller',body:x.title+(x.description?`\n${x.description}`:''),price:x.price,created_at:stamp(x.createdAt),likes:0,comments:0,liked:false,mine:x.isOwner})) as Post[]}const q=await server<any>('social:getFeed',{limit:30,cursor:p.before});return(q.items||[]).map((x:any)=>({id:x.id,number:x.handle||x.displayName,body:x.body,price:0,created_at:stamp(x.createdAt),likes:x.likeCount||0,comments:x.commentCount||0,liked:!!x.liked,mine:x.mine===1||x.mine===true,media_url:x.mediaUrl||undefined,media_kind:kindOf(x.mediaMime,x.mediaUrl)})) as Post[]}
   case'post':if(p.kind==='classifieds'){const lines=String(p.body).split('\n');await server('market:createListing',{title:lines[0].slice(0,80),description:lines.slice(1).join('\n'),category:'other',price:p.price,clientRequestId:id})}else await server('social:createPost',{body:p.body,mediaId:p.mediaId,clientRequestId:id});return true;
@@ -134,6 +134,6 @@ async function execute(action:keyof Api,p:any,id:string):Promise<any>{switch(act
     const rest=(cached[key] as {id:string}[]).filter(x=>x.id!==p.id);cached={...cached,[key]:remove?rest:[item,...rest]};return cached}
 case'waypoint':await server('waypoint',{x:p.x,y:p.y});return true;
     case'videoSignal':await server('calls:signal',{id:p.id,epoch:p.epoch,kind:p.kind,sdp:p.sdp,candidate:p.candidate});return true;
-  case'wallet':return server('wallet:get');case'showWallet':return server('wallet:show');case'myLocation':return server('location:mine');default:throw new Error(`${String(action)} is not supported by QBPhone v1`)
+  case'wallet':return server('wallet:get');case'showWallet':return server('wallet:show');case'myLocation':return server('location:mine');case'mapBlips':return server('map:blips');default:throw new Error(`${String(action)} is not supported by QBPhone v1`)
 }}
 export type{Response};

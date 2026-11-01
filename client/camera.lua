@@ -25,21 +25,29 @@ local function finishMode()
     QBPhone.SendNui('camera:closed')
 end
 
-function Camera.Open()
+function Camera.Open(options)
+    options = type(options) == 'table' and options or {}
     if QBPhone.State.cameraMode then return true end
     local ped = Kora.cache.ped()
     if IsEntityDead(ped) then return false, 'PLAYER_DEAD' end
     if QBPhone.Video and QBPhone.Video.active then return false,'Close video before opening the camera' end
     Camera.previousRadar = not IsRadarHidden()
     QBPhone.State.cameraMode = true
-    Camera.front=false
+    Camera.front=options.front == true
     Camera.handle=CreateCam('DEFAULT_SCRIPTED_CAMERA',true)
     if not Camera.handle or Camera.handle==0 then Camera.handle=nil; QBPhone.State.cameraMode=false; return false,'CAMERA_UNAVAILABLE' end
     SetCamFov(Camera.handle,60.0); updateCamera(); RenderScriptCams(true,false,0,true,true)
-    SetNuiFocus(false, false)
+    SetNuiFocus(options.preview == true, options.preview == true)
     SetNuiFocusKeepInput(false)
     DisplayRadar(false)
-    QBPhone.SendNui('phone:visibility', false)
+    QBPhone.SendNui('phone:visibility', options.preview == true)
+    return true
+end
+
+function Camera.SetFacing(front)
+    if not QBPhone.State.cameraMode or type(front) ~= 'boolean' then return false end
+    Camera.front = front
+    updateCamera()
     return true
 end
 
@@ -58,11 +66,23 @@ function Camera.Capture(done)
     if GetResourceState('screenshot-basic') ~= 'started' then
         return done({ ok = false, error = 'SCREENSHOT_PROVIDER_UNAVAILABLE' })
     end
+    local reply, finished = done, false
+    done = function(result)
+        if finished then return end
+        finished = true
+        reply(result)
+    end
+    SetTimeout(30000, function()
+        if finished then return end
+        Camera.Close()
+        done({ ok = false, error = { code = 'CAPTURE_TIMEOUT', message = 'Taking the photo timed out. Please try again.' } })
+    end)
     QBPhone.ServerCallback('qbphone:server:requestMediaUpload', {
         mimeType = 'image/jpeg',
         -- This is only an upper-bound declaration. The provider verifies the actual size.
         byteSize = 8 * 1024 * 1024
     }, function(result)
+        if finished then return end
         if type(result) ~= 'table' or result.ok ~= true then return done(result) end
         local instruction = result.data and result.data.upload
         if type(instruction) ~= 'table' or type(instruction.token) ~= 'string' then
@@ -81,11 +101,12 @@ function Camera.Capture(done)
 
         -- uploadUrl is issued by the server's configured provider. NUI data can
         -- never supply or override it.
-        exports['screenshot-basic']:requestScreenshotUpload(
+        local started = pcall(function() exports['screenshot-basic']:requestScreenshotUpload(
             instruction.uploadUrl,
             type(instruction.field) == 'string' and instruction.field or 'file',
             { encoding = 'jpg', quality = 0.90 },
             function(responseBody)
+                if finished then return end
                 local receipt
                 if type(responseBody) == 'string' and #responseBody <= 8192 then
                     local ok, response = pcall(json.decode, responseBody)
@@ -100,7 +121,11 @@ function Camera.Capture(done)
                     receipt = receipt
                 }, done)
             end
-        )
+        ) end)
+        if not started then
+            Camera.Close()
+            done({ ok = false, error = 'UPLOAD_FAILED' })
+        end
     end)
 end
 
@@ -119,7 +144,6 @@ CreateThread(function()
             DisableControlAction(0, 44, true)
             HideHudAndRadarThisFrame()
             if IsControlJustReleased(0, 177) then Camera.Close() end
-            if IsControlJustReleased(0, 38) then Camera.front=not Camera.front end
         else
             Wait(500)
         end

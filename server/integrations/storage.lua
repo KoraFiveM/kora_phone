@@ -231,11 +231,17 @@ function Storage.completeFivemanage(ticket, receipt, callback)
         local file = ok and type(decoded) == 'table' and type(decoded.data) == 'table' and decoded.data or nil
         if status < 200 or status >= 300 or not file or tostring(file.id) ~= receipt then return callback(false, nil, 'UPLOAD_NOT_VERIFIED') end
         local size = tonumber(file.size)
-        if not size or size < 1 or size > ticket.byteSize then return callback(false, nil, 'UPLOAD_MISMATCH') end
-        -- The reported type may be "video/webm" or just "webm"; either must agree with what the ticket was for.
+        if not size or size < 1 or size > ticket.byteSize then
+            print(('[qbphone] Upload size mismatch: provider=%s, maximum=%s'):format(tostring(size), tostring(ticket.byteSize)))
+            return callback(false, nil, 'UPLOAD_MISMATCH')
+        end
+        -- Providers may report a media category, MIME type, or bare extension.
         local kind = tostring(file.type or ''):lower()
         local major, minor = ticket.mimeType:match('^(%a+)/(.+)$')
-        if kind ~= '' and not (kind:find('^' .. major .. '/') or kind:find(minor, 1, true)) then return callback(false, nil, 'UPLOAD_MISMATCH') end
+        if kind ~= '' and not (kind == major or kind:find('^' .. major .. '/') or kind == minor or (minor == 'jpeg' and kind == 'jpg')) then
+            print(('[qbphone] Upload type mismatch: provider=%s, expected=%s'):format(kind, ticket.mimeType))
+            return callback(false, nil, 'UPLOAD_MISMATCH')
+        end
         local hosts = mergedHosts(fm.PublicHosts, c.AllowedPublicHosts)
         local url = hostAllowed(file.url, hosts) and file.url or (hostAllowed(file.originalUrl, hosts) and file.originalUrl or nil)
         if not url then return callback(false, nil, 'PUBLIC_HOST_DENIED') end

@@ -2,9 +2,10 @@ import type { Theme } from './themes';
 import { installedApps } from './catalog';
 export type AppId = 'custom' | 'store' | 'home' | 'phone' | 'contacts' | 'messages' | 'banking' | 'camera' | 'gallery' | 'social' | 'classifieds' | 'gps' | 'services' | 'mail' | 'notes' | 'weather' | 'calculator' | 'property' | 'vehicles' | 'flash' | 'music' | 'clock' | 'settings' | 'moderation';
 export interface Settings { name: string; volume: number; scale: number; wallpaper: 'orbit' | 'plain' | 'midnight' | 'slate' | 'ember' | 'kora_core' | 'custom'; wallpaperUrl?: string; theme?: Theme; setupComplete?: boolean; phoneStyle?: 'classic' | 'standard' | 'flip' | 'fold'; phoneCase?: 'default' | 'nightdrive' | 'citypop' | 'sakura' | 'touge' | 'garage' | 'kora_core' | 'arcade' | 'space' | 'palms' | 'skyline' | 'custom'; phoneCaseUrl?: string; iconStyle?: 'circle' | 'squircle' | 'outline' | 'solid'; dnd?: boolean; dndFrom?: string; dndTo?: string; installedApps?: AppId[]; appOrder?: AppId[]; dockOrder?: AppId[] }
+export interface MapBlip { id: number; x: number; y: number; sprite: number; label: string; colour: string }
 export interface Contact { id?: number; name: string; number: string; photo?: string; favorite?: boolean }
 export interface Note { id: string; title: string; body: string }
-export interface Photo { id: string; url: string; created_at: number }
+export interface Photo { id: string; url: string; created_at: number; kind?: MediaKind }
 export interface Station { id: string; label: string; url: string }
 export interface Alarm { id: string; label: string; time: string; days: number[]; enabled: boolean }
 export interface DeviceData { contacts: Contact[]; notes: Note[]; photos: Photo[]; stations: Station[]; alarms: Alarm[]; settings: Settings; installedApps?: AppId[]; customApps?: Record<string, boolean> }
@@ -58,11 +59,12 @@ export type Api = {
   bank: [Record<string, never>, Bank]; transfer: [{ recipient: string; amount: number }, { status: string }];
   property: [Record<string, never>, Property[]]; vehicles: [Record<string, never>, Vehicle[]]; services: [Record<string, never>, Service[]];
   job: [Record<string, never>, JobData]; setDuty: [{ onDuty: boolean }, JobData]; jobAction: [{ action: string }, { completed: boolean }];
-  capture: [Record<string, never>, DeviceData]; deletePhoto: [{ id: string }, DeviceData];
+  capture: [{ front?: boolean }, DeviceData]; deletePhoto: [{ id: string }, DeviceData];
   blocked: [Record<string, never>, string[]]; setBlocked: [{ number: string; blocked: boolean }, boolean];
   legacyMailList: [{ before?: number }, MailItem[]]; legacyActivity: [{ before?: number }, LegacyActivity[]]; mailAccept: [{ id: number }, boolean]; legacyMailRead: [{ id: number }, boolean]; legacyMailDelete: [{ id: number }, boolean];
   mailList: [{ box: 'inbox' | 'sent'; before?: number }, MailItem[]]; mailSend: [{ to: string; subject: string; body: string }, boolean]; mailRead: [{ id: number }, boolean]; mailDelete: [{ id: number }, boolean];
   wallet: [Record<string, never>, WalletCard]; showWallet: [Record<string, never>, { shown: boolean }]; myLocation: [Record<string, never>, { x: number; y: number; label: string; heading?: number; waypoint?: { x: number; y: number } }];
+  mapBlips: [Record<string, never>, MapBlip[]];
   waypoint: [{ x: number; y: number }, boolean]; weather: [Record<string, never>, Weather];
   videoSignal: [{ id: string; epoch?: string; kind: 'offer' | 'answer' | 'ice'; sdp?: RTCSessionDescriptionInit; candidate?: RTCIceCandidateInit }, boolean];
 };

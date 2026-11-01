@@ -10,6 +10,7 @@ export function PhotoImage({ src, className = '', alt = '' }: { src?: string; cl
   return src && imageUrl(src) && src !== failed ? <img className={className} src={src} alt={alt} referrerPolicy="no-referrer" loading="lazy" onError={() => setFailed(src)} /> : <UserRound className={className} aria-label={alt || 'No photo'} />;
 }
 export function ImagePicker({ label, value, onChange, photos, galleryOnly = false }: { label: string; value: string; onChange: (value: string) => void; photos: Photo[]; galleryOnly?: boolean }) {
+  photos = photos.filter(photo => photo.kind !== 'video');
   const input = useRef<HTMLInputElement>(null);
   const valid = !value || imageUrl(value) || photos.some(photo => photo.url === value);
   useEffect(() => { input.current?.setCustomValidity(valid ? '' : 'Use a complete HTTPS image link.'); }, [valid]);

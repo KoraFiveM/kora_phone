@@ -138,7 +138,7 @@ function Media.findOwned(deviceId,mediaId)
         ((m.owner_device_id=? AND m.deleted_at IS NULL) OR EXISTS(SELECT 1 FROM phone_gallery_links l WHERE l.device_id=? AND l.media_id=m.id))]],{mediaId,deviceId,deviceId})
 end
 function Media.listOwned(deviceId,limit,cursor)
-    return MySQL.query.await('SELECT '..columns..[[ FROM phone_media m WHERE m.id<? AND m.mime_type LIKE 'image/%' AND
+    return MySQL.query.await('SELECT '..columns..[[ FROM phone_media m WHERE m.id<? AND (m.mime_type LIKE 'image/%' OR m.mime_type LIKE 'video/%') AND
         ((m.owner_device_id=? AND m.deleted_at IS NULL) OR EXISTS(SELECT 1 FROM phone_gallery_links l WHERE l.device_id=? AND l.media_id=m.id)) ORDER BY m.id DESC LIMIT ?]],
         {cursor or 9007199254740991,deviceId,deviceId,limit}) or {}
 end

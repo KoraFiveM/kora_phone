@@ -64,3 +64,11 @@ Phone behaviour worth knowing:
 - **Share a Flash post to a chat** works in game: the clip or photo goes as a link the other phone plays (hidden until tapped if the sender isn't in your contacts), followed by the caption.
 - **Automatic database setup:** on start the resource applies the SQL files listed in `fxmanifest.lua` (`migration '...'` lines) once each and records them in `phone_migrations`, so you don't import anything by hand and a restart runs nothing. A failure stops the resource with the reason printed and resumes at that statement next time; an existing hand-imported database is adopted. `Config.Server.AutoMigrate = false` turns it off. A new migration file must be added to the manifest (a test enforces it).
 - **Home and lock text** follow the wallpaper, so any theme and wallpaper pairing stays readable.
+
+Maps automatically mirrors visible client GTA blips (sprite IDs 0–1023) once per second while the app is open. Tap a coloured marker to set a waypoint. Moving and removed blips update on the next refresh, including after another resource stops. No job-script exports are needed. Hidden/transparent blips, the player arrow and waypoint are excluded. Markers use street names and generic pin icons because custom blip names are not exposed by GTA; custom-drawn markers without GTA blips are not imported. Native references: https://docs.fivem.net/natives/?_0x1BEDE233E6CD2A1F and https://docs.fivem.net/natives/?_0x9029B2F3DA924928.
+
+### Camera controls
+
+Open Camera for a live in-game preview. Use the switch-camera button for selfies or the rear camera, then the shutter for a photo. Select Video to record a silent in-game clip; press Stop or let it stop at the configured limit (15 seconds by default). Photos and clips appear in Gallery, where clips have playback controls. Closing the phone or leaving Camera cancels an unfinished recording and releases its camera and stream.
+
+Video recording requires a provider that supports video (Fivemanage or the external broker), canvas capture, and MediaRecorder in FiveM's browser. The phone records the game view, not a real webcam. Game audio and microphone audio are not recorded.

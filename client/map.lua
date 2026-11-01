@@ -70,4 +70,35 @@ function Map.Cleanup()
     if Map.active then Map.Hide() end
 end
 
+-- Read existing client blips without changing their owning resource or route.
+-- Sprite IDs currently fit below 1024; extend this bound for newer game builds.
+function Map.Blips()
+    local result, seen = {}, {}
+    local playerBlip = GetBlipFromEntity(PlayerPedId())
+    for sprite = 0, 1023 do
+        if sprite ~= 8 and sprite ~= 6 then
+            local blip = GetFirstBlipInfoId(sprite)
+            while DoesBlipExist(blip) and not seen[blip] do
+                seen[blip] = true
+                local display = GetBlipInfoIdDisplay(blip)
+                if blip ~= playerBlip and display >= 2 and display ~= 7 and GetBlipAlpha(blip) > 0 then
+                    local at = GetBlipInfoIdCoord(blip)
+                    if at.x == at.x and at.y == at.y and math.abs(at.x) <= 20000 and math.abs(at.y) <= 20000 then
+                        local r, g, b = GetHudColour(GetBlipHudColour(blip))
+                        -- GTA exposes no getter for names assigned with SetBlipName.
+                        local street = GetStreetNameFromHashKey((GetStreetNameAtCoord(at.x, at.y, at.z)))
+                        result[#result + 1] = {
+                            id = blip, x = at.x, y = at.y, sprite = sprite,
+                            label = street ~= '' and street or ('Map location ' .. sprite),
+                            colour = ('#%02x%02x%02x'):format(r, g, b)
+                        }
+                    end
+                end
+                blip = GetNextBlipInfoId(sprite)
+            end
+        end
+    end
+    return result
+end
+
 QBPhone.Map = Map

@@ -29,8 +29,8 @@ end
 function Media.listOwned(deviceId, limit, cursor)
     local cursorSql = cursor and 'AND id < ?' or ''
     local params = cursor and { deviceId, cursor, limit } or { deviceId, limit }
-    -- The gallery lists photos; clips live in the posts and messages that use them.
-    return MySQL.query.await(("SELECT %s FROM phone_media WHERE owner_device_id = ? AND deleted_at IS NULL AND mime_type LIKE 'image/%%' %s ORDER BY id DESC LIMIT ?")
+    -- The gallery includes camera photos and recorded clips.
+    return MySQL.query.await(("SELECT %s FROM phone_media WHERE owner_device_id = ? AND deleted_at IS NULL AND (mime_type LIKE 'image/%%' OR mime_type LIKE 'video/%%') %s ORDER BY id DESC LIMIT ?")
         :format(SELECT_COLUMNS, cursorSql), params) or {}
 end
 

@@ -107,7 +107,7 @@ function ConversationThread({ conversation, onBack }: { conversation: Conversati
       </div>
     </SocialSheet>}
     {sheet === 'photos' && <SocialSheet title="Choose a photo." detail="Only photos with an https link can be shared." onClose={() => setSheet('')}>
-      {data.photos.some(photo => imageUrl(photo.url) && photoBody(photo.url).length <= 2000) ? <div className="image-picker-gallery">{data.photos.filter(photo => imageUrl(photo.url) && photoBody(photo.url).length <= 2000).map(photo => <button type="button" key={photo.id} aria-label={`Send gallery photo ${photo.id}`} disabled={busy} onClick={() => sendToken(photoBody(photo.url))}><PhotoImage src={photo.url} alt="Gallery photo" /></button>)}</div> : <p className="muted">No shareable photos yet. Take one with the Camera first.</p>}
+      {data.photos.some(photo => photo.kind !== 'video' && imageUrl(photo.url) && photoBody(photo.url).length <= 2000) ? <div className="image-picker-gallery">{data.photos.filter(photo => photo.kind !== 'video' && imageUrl(photo.url) && photoBody(photo.url).length <= 2000).map(photo => <button type="button" key={photo.id} aria-label={`Send gallery photo ${photo.id}`} disabled={busy} onClick={() => sendToken(photoBody(photo.url))}><PhotoImage src={photo.url} alt="Gallery photo" /></button>)}</div> : <p className="muted">No shareable photos yet. Take one with the Camera first.</p>}
     </SocialSheet>}
     {saving !== null && <SocialSheet title="Save this number." detail={peerNumber(conversation)} onClose={() => setSaving(null)}>
       <form className="form" onSubmit={e => { e.preventDefault(); run(async () => { updateData(await api('contactSave', { name: saving.trim(), number: peerNumber(conversation) })); setSaving(null); notify('Saved to contacts'); }); }}>

@@ -126,9 +126,13 @@ RegisterNUICallback('route:changed', function(_, cb)
     cb({ ok = true })
 end)
 
-RegisterNUICallback('camera:open', function(_, cb)
-    local ok, errorCode = QBPhone.Camera.Open()
+RegisterNUICallback('camera:open', function(data, cb)
+    local ok, errorCode = QBPhone.Camera.Open(data)
     cb({ ok = ok == true, error = errorCode })
+end)
+
+RegisterNUICallback('camera:facing', function(data, cb)
+    cb({ ok = QBPhone.Camera.SetFacing(type(data) == 'table' and data.front) })
 end)
 
 RegisterNUICallback('camera:close', function(_, cb)
@@ -214,4 +218,8 @@ end)
 
 RegisterNUICallback('calls:setSpeaker', function(data, cb)
     cb({ ok = QBPhone.Voice.SetSpeaker(type(data) == 'table' and data.speaker == true) })
+end)
+
+RegisterNUICallback('map:blips', function(_, cb)
+    cb({ ok = true, data = QBPhone.Map.Blips() })
 end)

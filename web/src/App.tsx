@@ -1,3 +1,4 @@
+import { CameraScreen } from './CameraScreen';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { CSSProperties, ComponentType, PointerEvent as ReactPointerEvent } from 'react';
 import { AlarmClock, Aperture, ArrowDown, ArrowRight, ArrowUpRight, BatteryFull, Bell, Calculator, Camera, Car, Check, ChevronLeft, CloudSun, ContactRound, CreditCard, Fingerprint, House, Image, LockKeyhole, Mail, MapPin, MessageCircle, Moon, Music, Mic, MicOff, Pause, Play, Phone, PhoneIncoming, PhoneOff, Power, Radio, Settings as SettingsIcon, ShieldAlert, ShieldCheck, Signal, Smartphone, SlidersHorizontal, StickyNote, Store as StoreIcon, Sun, Tag, Video, VideoOff, SwitchCamera, Wifi, X } from 'lucide-react';
@@ -578,7 +579,7 @@ export default function App() {
       case 'social': return <PulseScreen />;
       case 'classifieds': return <FeedScreen />;
       case 'notes': return <NotesScreen />;
-      case 'camera': return <GalleryScreen camera />;
+      case 'camera': return <CameraScreen />;
       case 'gallery': return <GalleryScreen />;
       case 'gps': return <GPSScreen />;
       case 'services': return <ServicesScreen />;
