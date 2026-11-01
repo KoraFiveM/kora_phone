@@ -240,3 +240,7 @@
 .upload-progress i { display: block; height: 100%; background: var(--red); transition: width .15s; }
 .flash-profile { margin: 12px 0; }
 
+
+/* Phone dock button keeps a call-red fill with an icon colour derived from it (see handsetThemeTokens); !important because per-handset/theme/icon-style rules re-colour dock icons and used to leave a white glyph on a light fill. */
+.phone-screen .dock .dock-icon.app-phone > span { background: var(--ui-call, #c83e32) !important; border-color: var(--ui-call, #c83e32) !important; color: var(--ui-call-ink, #fff) !important; }
+.phone-screen .dock .dock-icon.app-phone > span svg { color: inherit !important; }

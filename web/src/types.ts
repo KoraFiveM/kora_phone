@@ -1,7 +1,7 @@
 import type { Theme } from './themes';
 import { installedApps } from './catalog';
 export type AppId = 'custom' | 'store' | 'home' | 'phone' | 'contacts' | 'messages' | 'banking' | 'camera' | 'gallery' | 'social' | 'classifieds' | 'gps' | 'services' | 'mail' | 'notes' | 'weather' | 'calculator' | 'property' | 'vehicles' | 'flash' | 'music' | 'clock' | 'settings' | 'moderation';
-export interface Settings { name: string; volume: number; scale: number; wallpaper: 'orbit' | 'plain' | 'midnight' | 'slate' | 'ember' | 'kora_core' | 'custom'; wallpaperUrl?: string; theme?: Theme; setupComplete?: boolean; phoneStyle?: 'classic' | 'standard' | 'flip' | 'fold'; phoneCase?: 'default' | 'nightdrive' | 'citypop' | 'sakura' | 'touge' | 'garage' | 'kora_core' | 'arcade' | 'space' | 'palms' | 'skyline' | 'custom'; phoneCaseUrl?: string; iconStyle?: 'circle' | 'squircle' | 'outline' | 'solid'; dnd?: boolean; dndFrom?: string; dndTo?: string; installedApps?: AppId[]; appOrder?: AppId[] }
+export interface Settings { name: string; volume: number; scale: number; wallpaper: 'orbit' | 'plain' | 'midnight' | 'slate' | 'ember' | 'kora_core' | 'custom'; wallpaperUrl?: string; theme?: Theme; setupComplete?: boolean; phoneStyle?: 'classic' | 'standard' | 'flip' | 'fold'; phoneCase?: 'default' | 'nightdrive' | 'citypop' | 'sakura' | 'touge' | 'garage' | 'kora_core' | 'arcade' | 'space' | 'palms' | 'skyline' | 'custom'; phoneCaseUrl?: string; iconStyle?: 'circle' | 'squircle' | 'outline' | 'solid'; dnd?: boolean; dndFrom?: string; dndTo?: string; installedApps?: AppId[]; appOrder?: AppId[]; dockOrder?: AppId[] }
 export interface Contact { id?: number; name: string; number: string; photo?: string; favorite?: boolean }
 export interface Note { id: string; title: string; body: string }
 export interface Photo { id: string; url: string; created_at: number }
@@ -16,7 +16,7 @@ export interface Location { label: string; x: number; y: number }
 export interface Service { label: string; description: string; numbers: string[] }
 export interface JobData { job: { name: string; label: string; grade: number; gradeLabel: string; onDuty: boolean }; actions: { id: string; label: string }[] }
 export interface ModerationReport { id: number; targetType: 'profile' | 'post' | 'comment' | 'listing'; targetId: number; reason: string; details: string; status: string; createdAt: string; snapshot?: Record<string, unknown> }
-export interface Bootstrap { model?: 'standard' | 'flip' | 'fold'; characterName?: string; transfers?: boolean; moderator?: boolean; id: string; number: string; locked: boolean; hasPin: boolean; data?: DeviceData; preferences?: Settings; capabilities: Partial<Record<AppId, boolean>>; unavailable: Record<string, string>; locations: Location[]; services: Service[]; call?: Call; video: { iceServers: RTCIceServer[] } | false; flash: { maxSeconds: number; maxBytes?: number } | false; admin: boolean }
+export interface Bootstrap { homeReorder?: boolean; model?: 'standard' | 'flip' | 'fold'; characterName?: string; transfers?: boolean; moderator?: boolean; id: string; number: string; locked: boolean; hasPin: boolean; data?: DeviceData; preferences?: Settings; capabilities: Partial<Record<AppId, boolean>>; unavailable: Record<string, string>; locations: Location[]; services: Service[]; call?: Call; video: { iceServers: RTCIceServer[] } | false; flash: { maxSeconds: number; maxBytes?: number } | false; admin: boolean }
 export type MediaKind = 'photo' | 'video';
 export interface Message { id: number; sender: string; recipient: string; kind: 'sms' | 'mail'; subject: string; body: string; created_at: string }
 export interface CallHistory { id: string; caller: string; recipient: string; status: string; created_at: string }
@@ -74,6 +74,11 @@ export function normalizeData(value?: DeviceData): DeviceData {
   // Stored settings may predate the Flip color theme's removal.
   type Stored = Omit<Settings, 'theme'> & { theme?: Theme | 'flip' };
   const settings: Stored = { name: 'Nothing Phone', volume: 0.5, scale: 1, wallpaper: 'kora_core', ...value?.settings };
+  // The old default id "qbcore" was renamed "kora_core"; saved handsets may still carry it.
+  const legacy = settings as { wallpaper: string; theme?: string; phoneCase?: string };
+  if (legacy.wallpaper === 'qbcore') legacy.wallpaper = 'kora_core';
+  if (legacy.theme === 'qbcore') legacy.theme = 'kora_core';
+  if (legacy.phoneCase === 'qbcore') legacy.phoneCase = 'kora_core';
   // The Flip color theme is retired: legacy devices map to a real theme, keeping the flip style.
   if (settings.theme === 'flip') { settings.theme = 'dark'; settings.phoneStyle ??= 'flip'; }
   return { customApps: value?.customApps || {}, contacts: asList(value?.contacts), notes: asList(value?.notes), photos: asList(value?.photos), stations: asList(value?.stations), alarms: asList(value?.alarms), installedApps: installedApps(value?.installedApps), settings: settings as Settings };

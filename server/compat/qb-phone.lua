@@ -32,7 +32,7 @@ local function sendMail(citizenId,data,allowButton)
 end
 local function sendOffline(citizenId,data) sendMail(citizenId,data,true) end
 exports('sendNewMailToOffline',sendOffline)
-QB.compat.provideExport('qb-phone','sendNewMailToOffline',sendOffline)
+Kora.compat.provideExport('qb-phone','sendNewMailToOffline',sendOffline)
 RegisterNetEvent('qb-phone:server:sendNewMail',function(data)
     local src=source; local citizenId=QBPhone.GetCitizenId(src)
     if citizenId and QBPhone.RateLimits.consume(src,'sendMessage') then sendMail(citizenId,data,false) end

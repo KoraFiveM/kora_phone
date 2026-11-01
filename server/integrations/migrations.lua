@@ -91,7 +91,7 @@ function Migrations.run()
         local text = LoadResourceFile(resource, path)
         if not text then return false, ('migration file %s is listed in fxmanifest.lua but cannot be read'):format(path) end
         if name == '012_handsets.sql' or name == '013_legacy_qb_phone.sql' then
-            local migrated, reason = QB.sql.migrateFiles(resource,{{version=tonumber(name:sub(1,3)),name=name:sub(5,-5),file=path}})
+            local migrated, reason = Kora.sql.migrateFiles(resource,{{version=tonumber(name:sub(1,3)),name=name:sub(5,-5),file=path}})
             if not migrated then return false, tostring(reason) end
             goto continue
         end

@@ -7,7 +7,7 @@ function QBPhone.ServerCallback(name, payload, done)
     pendingCallbacks = pendingCallbacks + 1
     local generation = QBPhone.State.generation
     CreateThread(function()
-        local result = QB.callback.trigger(name, payload or {})
+        local result = Kora.callback.trigger(name, payload or {})
         pendingCallbacks = math.max(0, pendingCallbacks - 1)
         if generation ~= QBPhone.State.generation then
             return done({ ok = false, error = 'SESSION_CHANGED' })
@@ -19,7 +19,7 @@ end
 -- Config.Client.DisableWhileDead: no phone while dead or in last stand (QBCore's isdead / inlaststand).
 function QBPhone.Unavailable()
     if not Config.Client.DisableWhileDead then return false end
-    if QB.cache.isDead() then return true end
+    if Kora.cache.isDead() then return true end
     local data = exports.kora_core:getPlayerData()
     local metadata = data and data.metadata or {}
     return metadata.isdead == true or metadata.inlaststand == true
@@ -125,7 +125,7 @@ local function togglePhone()
     if QBPhone.State.open then
         QBPhone.Close(false)
     elseif not QBPhone.Open() and QBPhone.Unavailable() then
-        QB.notify.send({ title = 'Phone', message = 'You cannot use your phone right now', type = 'error', duration = 3000 })
+        Kora.notify.send({ title = 'Phone', message = 'You cannot use your phone right now', type = 'error', duration = 3000 })
     end
 end
 

@@ -56,7 +56,11 @@ export const themeOptions = (model:HandsetModel) => themes
   .filter(theme=>theme.id!=='kora_core' && (model!=='standard' || theme.id==='dark' || theme.id==='light'))
   .map(theme=>resolveHandsetTheme(model,theme.id));
 
-export function handsetThemeTokens(palette:ReturnType<typeof resolveHandsetTheme>, wallpaper?:string) {
+// Phone dock button: a fixed call-red fill whose icon colour is derived from the fill, so the glyph keeps contrast on every theme/handset.
+const luminance=(hex:string)=>{const c=[1,3,5].map(i=>parseInt(hex.slice(i,i+2),16)/255).map(v=>v<=.03928?v/12.92:((v+.055)/1.055)**2.4);return .2126*c[0]+.7152*c[1]+.0722*c[2];};
+export const readableInk=(bg:string)=>(1.05/(luminance(bg)+.05))>=((luminance(bg)+.05)/(luminance('#101820')+.05)) ? '#ffffff' : '#101820';
+export function handsetThemeTokens(palette:ReturnType<typeof resolveHandsetTheme>, wallpaper?:string, model:HandsetModel='flip') {
+  const call=model==='standard' ? '#d71921' : '#c83e32';
   const lightScene=wallpaper==='orbit' || wallpaper==='slate';
   const darkScene=wallpaper==='midnight' || wallpaper==='ember' || wallpaper==='custom';
   return {
@@ -64,6 +68,7 @@ export function handsetThemeTokens(palette:ReturnType<typeof resolveHandsetTheme
     '--ui-ink':palette.ink,'--ui-muted':palette.muted,'--ui-line':palette.line,
     '--ui-action':palette.accent,'--ui-action-ink':palette.actionInk,'--ui-accent':palette.accent,
     '--handset-wallpaper':palette.wallpaper,
+    '--ui-call':call,'--ui-call-ink':readableInk(call),
     '--wp-ink':lightScene?'#20252a':darkScene?'#f5f5f5':palette.ink,
     '--wp-ink-muted':lightScene?'#535e69':darkScene?'#c4c4c4':palette.muted,
     colorScheme:palette.dark ? 'dark' : 'light',

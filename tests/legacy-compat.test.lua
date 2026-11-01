@@ -2,7 +2,7 @@
 local handlers, aliases, nativeExports, callbacks, sent, queries = {}, {}, {}, {}, {}, {}
 local citizen, device, allowRate, savedMail, money = 'CID', { id = 5, ownerCitizenId = 'CID' }, true, nil, 100
 source = 12
-QB = { compat = { provideExport = function(identity, name, fn) aliases[identity .. ':' .. name] = fn end } }
+Kora = { compat = { provideExport = function(identity, name, fn) aliases[identity .. ':' .. name] = fn end } }
 exports = setmetatable({ kora_core = { getPlayerByCitizenId = function(_, id) return id == 'CID' and { source = 12 } end } }, {
     __call = function(_, name, fn) nativeExports[name] = fn end,
 })

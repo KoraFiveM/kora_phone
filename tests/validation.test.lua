@@ -336,5 +336,65 @@ test("conversation pages preserve tied sort keys without changing numeric cursor
     QBPhone, MySQL, PhoneConstants, PhoneResult, PhoneError = oldPhone, oldMySQL, oldConstants, oldResult, oldError
 end)
 
+
+test("settings maps legacy qbcore ids to kora_core", function()
+    local out = PhoneValidation.settings(okSettings({ theme = "qbcore", wallpaper = "qbcore", phoneCase = "qbcore" }))
+    equal(out.theme, "kora_core"); equal(out.wallpaper, "kora_core"); equal(out.phoneCase, "kora_core")
+end)
+test("settings rejects legacy ids when AcceptLegacyIds is off", function()
+    Config.Settings.AcceptLegacyIds = false
+    local out = PhoneValidation.settings(okSettings({ wallpaper = "qbcore" }))
+    Config.Settings.AcceptLegacyIds = true
+    equal(out, nil)
+end)
+test("settings still rejects unknown wallpaper and empty-string wallpaper", function()
+    equal(PhoneValidation.settings(okSettings({ wallpaper = "signature" })), nil)
+    equal(PhoneValidation.settings(okSettings({ wallpaper = "" })), nil)
+end)
+test("settings accepts every wallpaper the setup UI offers", function()
+    for _, id in ipairs({ "kora_core", "orbit", "plain", "midnight", "slate", "ember" }) do
+        equal(PhoneValidation.settings(okSettings({ wallpaper = id })).wallpaper, id)
+    end
+end)
+
+
+local function joined(list) return list and table.concat(list, ",") or "nil" end
+local function withHome(allow, fn)
+    local oldApps, oldHome = Config.LaunchApps, Config.HomeScreen
+    Config.LaunchApps = { gps = true, notes = true, mail = true, music = true, gallery = true }
+    Config.HomeScreen = { allowReorder = allow }
+    local ok, err = pcall(fn)
+    Config.LaunchApps, Config.HomeScreen = oldApps, oldHome
+    assert(ok, err)
+end
+test("appOrder keeps a valid order and drops repeated and unknown apps", function()
+    withHome(true, function()
+        local out = PhoneValidation.settings(okSettings({ appOrder = { "music", "gps", "music", "bogus", "gallery" } }))
+        equal(joined(out.appOrder), "music,gps,gallery")
+    end)
+end)
+test("appOrder follows installedApps: removed apps drop out, new apps append", function()
+    withHome(true, function()
+        local out = PhoneValidation.settings(okSettings({ appOrder = { "music", "gps", "gallery" }, installedApps = { "gps", "notes" } }))
+        equal(joined(out.appOrder), "gps,gallery,notes")
+    end)
+end)
+test("dockOrder is cleaned the same way", function()
+    withHome(true, function()
+        equal(joined(PhoneValidation.settings(okSettings({ dockOrder = { "mail", "gps", "mail", "bogus" } })).dockOrder), "mail,gps")
+        equal(PhoneValidation.settings(okSettings({ dockOrder = { "Bad Id" } })), nil)
+    end)
+end)
+test("appOrder with bad ids is still rejected", function()
+    withHome(true, function() equal(PhoneValidation.settings(okSettings({ appOrder = { "../x" } })), nil) end)
+end)
+test("Config.HomeScreen.allowReorder = false ignores order changes", function()
+    withHome(false, function()
+        local out = PhoneValidation.settings(okSettings({ appOrder = { "gps" }, dockOrder = { "mail" } }))
+        equal(out.appOrder, nil)
+        equal(out.dockOrder, nil)
+    end)
+end)
+
 io.write(("\n%d passed, %d failed\n"):format(passed, failed))
 if failed > 0 then os.exit(1) end

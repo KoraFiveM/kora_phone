@@ -9,7 +9,7 @@ end)
 RegisterNetEvent('qbphone:client:serviceResult',function(data) QBPhone.SendNui('service:result',data) end)
 CreateThread(function()
     for id,s in pairs(Config.PhoneServices.shops) do
-        QB.interact.addCircleZone('qbphone:shop:'..id,vector3(s.coords.x,s.coords.y,s.coords.z),s.distance,
+        Kora.interact.addCircleZone('qbphone:shop:'..id,vector3(s.coords.x,s.coords.y,s.coords.z),s.distance,
             {options={{label=s.label,event='qbphone:client:openServices'}}},false)
     end
 end)
