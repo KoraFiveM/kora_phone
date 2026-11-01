@@ -71,7 +71,19 @@ function H.current(src,provision)
             item=exports.kora_core:getItemBySlot(src,H.preferredSlot[src])
             if item and not Config.Handsets[item.name] then item=nil end
         else
-            for _,v in pairs(inventory(src)) do if Config.Handsets[v.name] then item=v; break end end
+            -- After a relog/restart nothing is selected yet. Face ID and PIN belong to one handset, so with several
+            -- phones in the bag resume the one enrolled for this character instead of whichever pairs() yields first.
+            local held={}
+            for _,v in pairs(inventory(src)) do if Config.Handsets[v.name] then held[#held+1]=v end end
+            table.sort(held,function(a,b) return (tonumber(a.slot) or 0)<(tonumber(b.slot) or 0) end)
+            item=held[1]
+            local cfg=Config.Server and Config.Server.Handsets
+            if #held>1 and not (cfg and cfg.ResumeEnrolledHandset==false) then
+                for _,v in ipairs(held) do
+                    local hid=v.info and v.info.handsetId
+                    if hid and row('SELECT 1 AS ok FROM phone_handsets WHERE id=? AND face_citizenid=?',{hid,cid(src)}) then item=v; break end
+                end
+            end
         end
         if not item then return nil end
         if item.amount~=1 then

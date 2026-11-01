@@ -31,6 +31,9 @@ Config.Server = {
     Banking = { Enabled = true, Account = 'bank', MaximumTransfer = 1000000, AllowCompensatingTransfers = false },
     Jobs = { Enabled = true, AllowDutyToggle = true, Actions = {} },
     Pin = { MaxAttempts = 5, LockSeconds = 300 },
+    -- With several handsets in the inventory and none selected yet (after a relog or restart), resume the handset
+    -- whose Face ID is enrolled for this character instead of the first one found. Set false for the old behaviour.
+    Handsets = { ResumeEnrolledHandset = true },
     -- The Wallet ID card: licences read from QBCore character metadata, shown to the closest player.
     Wallet = {
         ShowDistance = 3.0,
