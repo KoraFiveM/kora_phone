@@ -19,7 +19,8 @@ function SetCamRot() end
 function SetCamFov() end
 function RenderScriptCams() end
 function SetNuiFocus(mouse, keyboard) focus = mouse and keyboard end
-function SetNuiFocusKeepInput() end
+local keepInput = false
+function SetNuiFocusKeepInput(on) keepInput = on end
 function DisplayRadar() end
 function ClearFocus() end
 function DoesCamExist() return true end
@@ -27,12 +28,17 @@ function DestroyCam() destroyed = true end
 dofile('client/camera.lua')
 assert(QBPhone.Camera.Open({preview=true,front=true}))
 assert(focus and visible and selfie and QBPhone.State.cameraMode)
+assert(keepInput)
+assert(QBPhone.Camera.SetLooking(true) and not focus and not keepInput)
+assert(QBPhone.Camera.SetLooking(false) and focus and keepInput)
 assert(QBPhone.Camera.SetFacing(false) and not selfie)
 assert(QBPhone.Camera.SetFacing(true) and selfie)
 assert(not QBPhone.Camera.SetFacing('front'))
 QBPhone.Camera.Close()
+assert(not keepInput)
 assert(destroyed and not QBPhone.State.cameraMode and focus and visible)
 assert(not QBPhone.Camera.SetFacing(true))
 assert(QBPhone.Camera.Open())
-assert(not focus and not visible and not selfie)
+assert(not focus and not visible and not selfie and not keepInput)
+assert(not QBPhone.Camera.SetLooking(true))
 print('PASS camera preview: visible controls, selfie/rear switching, validation and cleanup')

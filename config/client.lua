@@ -5,6 +5,15 @@ Config.Client = {
     NotificationSound = true -- the game's own text-message tone when the phone is closed
 }
 
+-- Camera app. The live preview needs the mouse for the phone UI, so aiming works through a key:
+-- lookMode 'hold' aims while lookKey is held, 'toggle' switches aiming on and off with it, 'off' keeps the
+-- camera fixed to where the player faces. lookKey is a default players can rebind in their key settings.
+-- hint shows the on-screen help line while the camera is open.
+Config.Camera = {
+    lookMode = 'hold', -- hold | toggle | off
+    lookKey = 'LMENU', -- keyboard key name (LMENU = left Alt)
+    hint = true
+}
 
 -- Phone prop and animation while the phone is open. The player holds a phone and plays the texting pose
 -- (the in-car pose when seated, the call pose during a call). The prop and pose go away when the phone
