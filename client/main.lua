@@ -25,10 +25,27 @@ function QBPhone.Unavailable()
     return metadata.isdead == true or metadata.inlaststand == true
 end
 
+-- If the player goes down with the phone open, put it away instead of leaving it holding the mouse.
+-- Runs only while the phone is open (started by QBPhone.Open, exits once it closes). Unavailable()
+-- also reads kora_core's isdead/inlaststand metadata, which has no cache key, so it stays a check.
+local downedWatchRunning = false
+local function watchDownedWhileOpen()
+    if downedWatchRunning then return end
+    downedWatchRunning = true
+    CreateThread(function()
+        while QBPhone.State.open do
+            Wait(500)
+            if QBPhone.State.open and QBPhone.Unavailable() then QBPhone.Close(false) end
+        end
+        downedWatchRunning = false
+    end)
+end
+
 function QBPhone.Open(app, payload)
     if QBPhone.State.open or not QBPhone.State.playerLoaded or QBPhone.Unavailable() then return false end
     QBPhone.State.open = true
     QBPhone.State.currentApp = type(app) == 'string' and app or nil
+    watchDownedWhileOpen()
     local started, animationError = pcall(QBPhone.Animations.Start)
     if not started then print(('[qbphone] phone animation failed: %s'):format(animationError)) end
     SetNuiFocus(true, true)
@@ -143,13 +160,6 @@ AddEventHandler('onClientResourceStop', function(resource)
     QBPhone.Calls.Cleanup(false)
 end)
 
--- If the player goes down with the phone open, put it away instead of leaving it holding the mouse.
-CreateThread(function()
-    while true do
-        Wait(500)
-        if QBPhone.State.open and QBPhone.Unavailable() then QBPhone.Close(false) end
-    end
-end)
 
 CreateThread(function()
     while not NetworkIsSessionStarted() do Wait(250) end
