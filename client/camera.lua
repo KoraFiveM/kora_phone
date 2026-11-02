@@ -1,5 +1,5 @@
 QBPhone = QBPhone or {}
-local Camera = { handle = nil, previousRadar = true, front=false, preview=false, looking=false }
+local Camera = { handle = nil, previousRadar = true, front=false, preview=false, looking=false, fov=nil, targetFov=nil, zoom=nil }
 
 local watchCamera
 
@@ -8,6 +8,44 @@ local function lookSettings()
     local mode = cfg.lookMode
     if mode ~= 'toggle' and mode ~= 'off' then mode = 'hold' end
     return mode, cfg.lookKey or 'LMENU', cfg.hint ~= false
+end
+
+-- Field of view the camera opened at before zoom existed; zoom.maxFov / defaultFov fall back to it.
+local DEFAULT_FOV = 60.0
+
+-- Read for the current facing: the selfie camera can narrow the range through zoom.selfie.
+local function zoomSettings()
+    local cfg = Config and Config.Camera and Config.Camera.zoom
+    cfg = type(cfg) == 'table' and cfg or {}
+    local lens = Camera.front and type(cfg.selfie) == 'table' and cfg.selfie or cfg
+    local minFov = math.max(1.0, tonumber(lens.minFov) or tonumber(cfg.minFov) or 10.0)
+    local maxFov = math.min(130.0, math.max(minFov, tonumber(lens.maxFov) or tonumber(cfg.maxFov) or DEFAULT_FOV))
+    local fov = tonumber(lens.defaultFov) or tonumber(cfg.defaultFov) or DEFAULT_FOV
+    return {
+        enabled = cfg.enabled ~= false,
+        minFov = minFov,
+        maxFov = maxFov,
+        fov = math.max(minFov, math.min(maxFov, fov)),
+        step = math.abs(tonumber(cfg.step) or 5.0),
+        smooth = cfg.smooth ~= false,
+        speed = math.max(0.1, tonumber(cfg.smoothSpeed) or 10.0),
+    }
+end
+
+local function resetZoom()
+    Camera.zoom = zoomSettings()
+    Camera.fov, Camera.targetFov = Camera.zoom.fov, Camera.zoom.fov
+    if Camera.handle then SetCamFov(Camera.handle, Camera.fov) end
+end
+
+-- Eases the field of view towards the zoom target; called by the camera loop and a no-op once it gets there.
+local function stepZoom()
+    local fov, target = Camera.fov, Camera.targetFov
+    if not Camera.handle or not fov or not target or fov == target then return end
+    fov = fov + (target - fov) * math.min(1.0, GetFrameTime() * Camera.zoom.speed)
+    if math.abs(target - fov) < 0.05 then fov = target end
+    Camera.fov = fov
+    SetCamFov(Camera.handle, fov)
 end
 
 local function updateCamera()
@@ -32,6 +70,7 @@ local function finishMode()
     RenderScriptCams(false, true, 250, true, true)
     if Camera.handle and DoesCamExist(Camera.handle) then DestroyCam(Camera.handle, false) end
     Camera.handle = nil
+    Camera.fov, Camera.targetFov, Camera.zoom = nil, nil, nil
     ClearFocus()
     Camera.looking = false
     SetNuiFocusKeepInput(false)
@@ -51,7 +90,7 @@ function Camera.Open(options)
     Camera.front=options.front == true
     Camera.handle=CreateCam('DEFAULT_SCRIPTED_CAMERA',true)
     if not Camera.handle or Camera.handle==0 then Camera.handle=nil; QBPhone.State.cameraMode=false; return false,'CAMERA_UNAVAILABLE' end
-    SetCamFov(Camera.handle,60.0); updateCamera(); RenderScriptCams(true,false,0,true,true)
+    resetZoom(); updateCamera(); RenderScriptCams(true,false,0,true,true)
     Camera.preview = options.preview == true
     Camera.looking = false
     SetNuiFocus(Camera.preview, Camera.preview)
@@ -64,9 +103,27 @@ end
 
 function Camera.SetFacing(front)
     if not QBPhone.State.cameraMode or type(front) ~= 'boolean' then return false end
-    Camera.front = front
+    -- Rear and selfie have their own zoom range, so flipping starts the new lens at its default view.
+    if front ~= Camera.front then Camera.front = front; resetZoom() end
     updateCamera()
     return true
+end
+
+-- dir 1 zooms in (narrower field of view), -1 zooms out, one step per call.
+function Camera.Zoom(dir)
+    if not QBPhone.State.cameraMode or not Camera.handle or not Camera.zoom or (dir ~= 1 and dir ~= -1) then return false end
+    local zoom = Camera.zoom
+    if not zoom.enabled then return false end
+    Camera.targetFov = math.max(zoom.minFov, math.min(zoom.maxFov, (Camera.targetFov or zoom.fov) - dir * zoom.step))
+    if not zoom.smooth then
+        Camera.fov = Camera.targetFov
+        SetCamFov(Camera.handle, Camera.fov)
+    end
+    return true
+end
+
+function Camera.ZoomEnabled()
+    return (Camera.zoom or zoomSettings()).enabled
 end
 
 -- While the player holds the look key the cursor is released so the mouse aims the camera.
@@ -166,7 +223,9 @@ end
 local function lookHint()
     local _, key = lookSettings()
     BeginTextCommandDisplayHelp('STRING')
-    AddTextComponentSubstringPlayerName(Camera.looking and ('Aiming - release ' .. key .. ' to use the phone.') or ('Hold ' .. key .. ' and move the mouse to aim the camera.'))
+    local text = Camera.looking and ('Aiming - release ' .. key .. ' to use the phone.') or ('Hold ' .. key .. ' and move the mouse to aim the camera.')
+    if Camera.zoom and Camera.zoom.enabled then text = text .. ' Scroll to zoom.' end
+    AddTextComponentSubstringPlayerName(text)
     EndTextCommandDisplayHelp(0, false, false, -1)
 end
 
@@ -186,6 +245,12 @@ end
 -- The per-frame loop only exists while the camera is open: Camera.Open starts it and it ends itself once
 -- cameraMode is cleared (finishMode / character reset).
 local watching = false
+-- Every control bound to the mouse wheel (weapon wheel, weapon select on foot and in vehicles, cursor scroll).
+local wheelControls = { 14, 15, 16, 17, 99, 100, 241, 242, 261, 262 }
+local function wheelDirection()
+    if IsDisabledControlJustPressed(0, 241) or IsDisabledControlJustPressed(0, 15) or IsDisabledControlJustPressed(0, 17) then return 1 end
+    if IsDisabledControlJustPressed(0, 242) or IsDisabledControlJustPressed(0, 14) or IsDisabledControlJustPressed(0, 16) then return -1 end
+end
 function watchCamera()
     if watching then return end
     watching = true
@@ -193,6 +258,14 @@ function watchCamera()
         while QBPhone.State and QBPhone.State.cameraMode do
             Wait(0)
             updateCamera()
+            stepZoom()
+            -- The wheel zooms instead of cycling weapons. While the phone cursor is up the NUI receives the wheel
+            -- and forwards it (camera:zoom), so the game-side wheel is only read while the game has the mouse.
+            for i = 1, #wheelControls do DisableControlAction(0, wheelControls[i], true) end
+            if not Camera.preview or Camera.looking then
+                local dir = wheelDirection()
+                if dir then Camera.Zoom(dir) end
+            end
             local mode, _, hint = lookSettings()
             if hint and Camera.preview and mode ~= 'off' then lookHint() end
             -- With the phone cursor up the view is frozen: keep-input would otherwise let the mouse rotate the

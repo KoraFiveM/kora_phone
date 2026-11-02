@@ -128,7 +128,12 @@ end)
 
 RegisterNUICallback('camera:open', function(data, cb)
     local ok, errorCode = QBPhone.Camera.Open(data)
-    cb({ ok = ok == true, error = errorCode })
+    cb({ ok = ok == true, error = errorCode, zoom = ok == true and QBPhone.Camera.ZoomEnabled() or nil })
+end)
+
+-- The phone cursor owns the mouse wheel while it is up, so the Camera app forwards wheel steps here.
+RegisterNUICallback('camera:zoom', function(data, cb)
+    cb({ ok = QBPhone.Camera.Zoom(type(data) == 'table' and tonumber(data.dir) or nil) })
 end)
 
 RegisterNUICallback('camera:facing', function(data, cb)

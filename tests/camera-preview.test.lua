@@ -17,7 +17,8 @@ function PointCamAtPedBone() selfie = true end
 function StopCamPointing() selfie = false end
 function SetCamCoord() end
 function SetCamRot() end
-function SetCamFov() end
+local fov
+function SetCamFov(_, value) fov = value end
 function RenderScriptCams() end
 function SetNuiFocus(mouse, keyboard) focus = mouse and keyboard end
 local keepInput = false
@@ -39,6 +40,27 @@ assert(QBPhone.Camera.SetLooking(false) and focus and keepInput)
 assert(QBPhone.Camera.SetFacing(false) and not selfie)
 assert(QBPhone.Camera.SetFacing(true) and selfie)
 assert(not QBPhone.Camera.SetFacing('front'))
+-- Zoom: defaults (smooth) only move the target; the frame loop eases the field of view towards it.
+assert(fov == 60.0 and QBPhone.Camera.ZoomEnabled())
+assert(QBPhone.Camera.Zoom(1) and QBPhone.Camera.targetFov == 55.0 and fov == 60.0)
+assert(not QBPhone.Camera.Zoom(5) and not QBPhone.Camera.Zoom(nil))
+for _ = 1, 20 do QBPhone.Camera.Zoom(1) end
+assert(QBPhone.Camera.targetFov == 10.0, 'zoom stops at minFov')
+QBPhone.Camera.Close()
+Config = { Camera = { zoom = { smooth = false, step = 10.0, selfie = { minFov = 30.0 } } } }
+assert(QBPhone.Camera.Open({preview=true,front=true}) and fov == 60.0)
+assert(QBPhone.Camera.Zoom(1) and fov == 50.0, 'without smoothing the step applies at once')
+for _ = 1, 10 do QBPhone.Camera.Zoom(1) end
+assert(fov == 30.0, 'the selfie lens has its own minFov')
+assert(QBPhone.Camera.Zoom(-1) and fov == 40.0)
+assert(QBPhone.Camera.SetFacing(false) and fov == 60.0, 'flipping resets the zoom')
+for _ = 1, 10 do QBPhone.Camera.Zoom(1) end
+assert(fov == 10.0, 'the rear lens uses the shared range')
+QBPhone.Camera.Close()
+assert(QBPhone.Camera.fov == nil and QBPhone.Camera.targetFov == nil and not QBPhone.Camera.Zoom(1))
+Config = { Camera = { zoom = { enabled = false } } }
+assert(QBPhone.Camera.Open({preview=true,front=true}) and not QBPhone.Camera.ZoomEnabled() and not QBPhone.Camera.Zoom(1))
+Config = nil
 QBPhone.Camera.Close()
 assert(not keepInput)
 assert(destroyed and not QBPhone.State.cameraMode and focus and visible)
@@ -46,4 +68,4 @@ assert(not QBPhone.Camera.SetFacing(true))
 assert(QBPhone.Camera.Open())
 assert(not focus and not visible and not selfie and not keepInput)
 assert(not QBPhone.Camera.SetLooking(true))
-print('PASS camera preview: visible controls, selfie/rear switching, validation and cleanup')
+print('PASS camera preview: visible controls, selfie/rear switching, zoom, validation and cleanup')
