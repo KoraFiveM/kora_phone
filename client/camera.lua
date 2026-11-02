@@ -75,8 +75,9 @@ function Camera.SetLooking(on)
     on = on == true
     if on == Camera.looking then return true end
     Camera.looking = on
+    -- Keep-input stays on for the whole preview so the key mapping still fires while the phone has focus
+    -- (NUI focus without keep-input swallows every key). Releasing the cursor is what hands the mouse to the game.
     SetNuiFocus(not on, not on)
-    SetNuiFocusKeepInput(not on)
     return true
 end
 
@@ -165,7 +166,7 @@ end
 local function lookHint()
     local _, key = lookSettings()
     BeginTextCommandDisplayHelp('STRING')
-    AddTextComponentSubstringPlayerName(Camera.looking and ('Aiming the camera. Release ' .. key .. ' to use the phone.') or ('Hold ' .. key .. ' and move the mouse to aim the camera.'))
+    AddTextComponentSubstringPlayerName(Camera.looking and ('Aiming - release ' .. key .. ' to use the phone.') or ('Hold ' .. key .. ' and move the mouse to aim the camera.'))
     EndTextCommandDisplayHelp(0, false, false, -1)
 end
 
@@ -194,6 +195,12 @@ function watchCamera()
             updateCamera()
             local mode, _, hint = lookSettings()
             if hint and Camera.preview and mode ~= 'off' then lookHint() end
+            -- With the phone cursor up the view is frozen: keep-input would otherwise let the mouse rotate the
+            -- camera while the player is trying to reach the capture button. Only the look key unfreezes it.
+            if Camera.preview and not Camera.looking then
+                for control = 1, 6 do DisableControlAction(0, control, true) end
+            end
+            DisableControlAction(0, 19, true)
             DisableControlAction(0, 24, true)
             DisableControlAction(0, 25, true)
             DisableControlAction(0, 37, true)
@@ -204,5 +211,11 @@ function watchCamera()
         watching = false
     end)
 end
+
+-- NUI focus is released by the engine on stop; this also drops the scripted camera and keep-input flag.
+AddEventHandler('onResourceStop', function(resource)
+    if resource ~= GetCurrentResourceName() then return end
+    if QBPhone.State.cameraMode or Camera.handle then finishMode(); SetNuiFocus(false, false) end
+end)
 
 QBPhone.Camera = Camera

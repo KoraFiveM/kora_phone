@@ -26,13 +26,15 @@ function DisplayRadar() end
 function ClearFocus() end
 function DoesCamExist() return true end
 function DestroyCam() destroyed = true end
+function AddEventHandler() end
+function GetCurrentResourceName() return 'kora_phone' end
 dofile('client/camera.lua')
 assert(threads == 0, 'no camera loop may run before the camera opens')
 assert(QBPhone.Camera.Open({preview=true,front=true}))
 assert(focus and visible and selfie and QBPhone.State.cameraMode)
 assert(keepInput)
 assert(threads == 1, 'opening the camera starts exactly one frame loop')
-assert(QBPhone.Camera.SetLooking(true) and not focus and not keepInput)
+assert(QBPhone.Camera.SetLooking(true) and not focus and keepInput)
 assert(QBPhone.Camera.SetLooking(false) and focus and keepInput)
 assert(QBPhone.Camera.SetFacing(false) and not selfie)
 assert(QBPhone.Camera.SetFacing(true) and selfie)
