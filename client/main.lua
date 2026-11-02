@@ -25,9 +25,25 @@ function QBPhone.Unavailable()
     return metadata.isdead == true or metadata.inlaststand == true
 end
 
+-- Puts the phone away if the player goes down while it is open. Only polls while the phone is open (started from
+-- QBPhone.Open and exits on close), so nothing runs with the phone in the pocket.
+local watching = false
+local function watchUnavailable()
+    if watching then return end
+    watching = true
+    CreateThread(function()
+        while QBPhone.State.open do
+            Wait(500)
+            if QBPhone.State.open and QBPhone.Unavailable() then QBPhone.Close(false) end
+        end
+        watching = false
+    end)
+end
+
 function QBPhone.Open(app, payload)
     if QBPhone.State.open or not QBPhone.State.playerLoaded or QBPhone.Unavailable() then return false end
     QBPhone.State.open = true
+    watchUnavailable()
     QBPhone.State.currentApp = type(app) == 'string' and app or nil
     local started, animationError = pcall(QBPhone.Animations.Start)
     if not started then print(('[qbphone] phone animation failed: %s'):format(animationError)) end
@@ -141,14 +157,6 @@ AddEventHandler('onClientResourceStop', function(resource)
     if resource ~= GetCurrentResourceName() then return end
     QBPhone.Close(true)
     QBPhone.Calls.Cleanup(false)
-end)
-
--- If the player goes down with the phone open, put it away instead of leaving it holding the mouse.
-CreateThread(function()
-    while true do
-        Wait(500)
-        if QBPhone.State.open and QBPhone.Unavailable() then QBPhone.Close(false) end
-    end
 end)
 
 CreateThread(function()

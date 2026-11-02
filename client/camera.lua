@@ -1,6 +1,8 @@
 QBPhone = QBPhone or {}
 local Camera = { handle = nil, previousRadar = true, front=false, preview=false, looking=false }
 
+local watchCamera
+
 local function lookSettings()
     local cfg = Config and Config.Camera or {}
     local mode = cfg.lookMode
@@ -56,6 +58,7 @@ function Camera.Open(options)
     SetNuiFocusKeepInput(Camera.preview and lookSettings() ~= 'off')
     DisplayRadar(false)
     QBPhone.SendNui('phone:visibility', options.preview == true)
+    watchCamera()
     return true
 end
 
@@ -179,9 +182,14 @@ do
     end
 end
 
-CreateThread(function()
-    while true do
-        if QBPhone.State and QBPhone.State.cameraMode then
+-- The per-frame loop only exists while the camera is open: Camera.Open starts it and it ends itself once
+-- cameraMode is cleared (finishMode / character reset).
+local watching = false
+function watchCamera()
+    if watching then return end
+    watching = true
+    CreateThread(function()
+        while QBPhone.State and QBPhone.State.cameraMode do
             Wait(0)
             updateCamera()
             local mode, _, hint = lookSettings()
@@ -192,10 +200,9 @@ CreateThread(function()
             DisableControlAction(0, 44, true)
             HideHudAndRadarThisFrame()
             if IsControlJustReleased(0, 177) then Camera.Close() end
-        else
-            Wait(500)
         end
-    end
-end)
+        watching = false
+    end)
+end
 
 QBPhone.Camera = Camera

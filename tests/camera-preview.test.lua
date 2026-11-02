@@ -4,7 +4,8 @@ QBPhone = { State = { cameraMode = false, open = true }, SendNui = function(name
     if name == 'phone:visibility' then visible = data end
 end }
 Kora = { cache = { ped = function() return 1 end } }
-function CreateThread() end
+local threads = 0
+function CreateThread() threads = threads + 1 end
 function IsEntityDead() return false end
 function IsRadarHidden() return false end
 function CreateCam() return 10 end
@@ -26,9 +27,11 @@ function ClearFocus() end
 function DoesCamExist() return true end
 function DestroyCam() destroyed = true end
 dofile('client/camera.lua')
+assert(threads == 0, 'no camera loop may run before the camera opens')
 assert(QBPhone.Camera.Open({preview=true,front=true}))
 assert(focus and visible and selfie and QBPhone.State.cameraMode)
 assert(keepInput)
+assert(threads == 1, 'opening the camera starts exactly one frame loop')
 assert(QBPhone.Camera.SetLooking(true) and not focus and not keepInput)
 assert(QBPhone.Camera.SetLooking(false) and focus and keepInput)
 assert(QBPhone.Camera.SetFacing(false) and not selfie)
