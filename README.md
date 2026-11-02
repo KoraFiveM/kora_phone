@@ -94,7 +94,7 @@ See [deployment, migration and rollback](docs/three-handsets.md) before upgradin
 | [config/server.lua](config/server.lua) | Media provider, limits, automatic migrations, STUN and video configuration |
 | [config/client.lua](config/client.lua) | Phone command/keybind, death restrictions and notification sound |
 
-Replace the example shop coordinates, business job names and hotspot settings for your server. SIM swapping supports `player`, `shop` or `both`; the default is `both`.
+Circuit Mobile counters are preset at the Digital Den doors (Vinewood, Mirror Park, Sinner St) and Alta St; add more entries under `shops` for other stores. Replace the example shop coordinates, business job names and hotspot settings for your server. SIM swapping supports `player`, `shop` or `both`; the default is `both`.
 
 `Config.ConsumeSimOnInstall` (default `true`, in `config/handsets.lua`): inserting a SIM moves its item into the phone so exactly one SIM item leaves the inventory, and removing it returns the same item with its number. The inventory gateway does the move; the phone re-checks the result and corrects it through `kora_inventory` `RemoveItem`/`AddItem` if an older companion file left the SIM loose or lost it. Set `false` to skip the re-check.
 
