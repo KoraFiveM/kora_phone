@@ -10,12 +10,15 @@ Config.ConsumeSimOnInstall = true
 Config.LaunchApps = { phone=true, contacts=true, messages=true, camera=true, gallery=true, gps=true,
     settings=true, mail=true, notes=true, calculator=true, clock=true, weather=true, music=true }
 Config.PhoneServices = {
-    -- Replace coordinates and business job names for your server.
+    -- Replace coordinates and business job names for your server. Place each shop where no other interaction
+    -- (bank teller/ATM, inventory shop, job point) sits within a few metres, or both prompts open together.
+    -- The default Circuit Mobile spot is on the Alta St pavement near Legion Square, about 25 m from the
+    -- Legion Fleeca teller (149.05, -1041.3). distance is the interaction radius in metres; keep it small (2.0).
     shops = {
-        legion = { label='Circuit Mobile', coords={x=149.7,y=-1040.2,z=29.4}, distance=3.0,
+        legion = { label='Circuit Mobile', coords={x=127.4,y=-1029.2,z=29.4}, distance=2.0,
             bucket=0, recoveryFee=500, replacementFee=100, resalePercent=50,
             prices={phone_standard=1200,phone_flip=1800,phone_fold=2400,phone_sim=100} },
-        technician = { label='Mobile Workshop', coords={x=-40.1,y=-1090.7,z=26.4}, distance=3.0,
+        technician = { label='Mobile Workshop', coords={x=-40.1,y=-1090.7,z=26.4}, distance=2.0,
             bucket=0, job='mechanic', grade=0, recoveryFee=500, replacementFee=100, resalePercent=50,
             prices={phone_standard=1200,phone_flip=1800,phone_fold=2400,phone_sim=100} }
     },
