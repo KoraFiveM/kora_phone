@@ -34,3 +34,10 @@ Config.HomeScreen.allowReorder = true
 -- click outside to close). Set false to keep the small in-phone view with the plain video controls.
 Config.Gallery = Config.Gallery or {}
 Config.Gallery.fullscreenViewer = true
+
+-- Compatibility with resources written for the legacy kora_phone resource (kora_housing, kora_police, ...).
+-- koraPhoneExports: also answer exports.kora_phone:sendMailToOffline / sendMail / sendMessage / getNumber /
+-- getNumberByCitizenId / hasPhone (server) and open / close / isOpen (client). Needs a restart to apply.
+-- Never run this resource alongside the legacy kora_phone: both provide the same names.
+Config.compat = Config.compat or {}
+Config.compat.koraPhoneExports = { enabled = true }

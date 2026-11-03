@@ -31,6 +31,8 @@ local function sendMail(citizenId,data,allowButton)
     return true,id
 end
 local function sendOffline(citizenId,data) sendMail(citizenId,data,true) end
+QBPhone.Compat=QBPhone.Compat or {}
+QBPhone.Compat.sendMail=sendMail -- used by server/compat/kora-phone.lua
 exports('sendNewMailToOffline',sendOffline)
 Kora.compat.provideExport('qb-phone','sendNewMailToOffline',sendOffline)
 RegisterNetEvent('qb-phone:server:sendNewMail',function(data)

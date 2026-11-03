@@ -88,6 +88,10 @@ function TriggerEvent(name, payload) events[#events + 1] = { name, payload } end
 function TriggerServerEvent(name, payload) serverEvents[#serverEvents + 1] = { name, payload } end
 QBPhone.Notifications = { Push = function(value) notifications[#notifications + 1] = value end }
 QBPhone.Bootstrap = function() end
+Config = { compat = { koraPhoneExports = { enabled = true } } }
+function GetCurrentResourceName() return 'kora_phone-stevie' end
+QBPhone.State = { open = false }
+QBPhone.Open, QBPhone.Close = function() return true end, function() end
 QBPhone.ServerCallback = function(name, payload, reply)
     assert(name == 'qbphone:server:acceptLegacyMail' and payload.id == 77 and not payload.buttonEvent)
     reply(PhoneResult({ buttonEvent = 'trusted:action', buttonData = 5 }))

@@ -1,6 +1,6 @@
 # Test scaffolding
 
-Run independent checks from the resource root:
+`bash tests/run.sh` runs everything below plus a `luac -p` syntax check of the Lua sources (web-dependent checks are skipped until `npm ci --prefix web`; CI runs it before every release). Run independent checks from the resource root:
 
 ```bash
 node tests/static-security.test.js

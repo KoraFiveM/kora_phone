@@ -12,6 +12,23 @@ Adapted from `qbcore2/qbphone-Stevie-` commit `bf1ef3921845a413cd018b07c1dd90909
 - `qb-phone:client:RemoveBankMoney`: informational notification only.
 - Client/server `qb-phone:*:AddTransaction`: validated transaction notes, retained under the caller's character and displayed in Mail → Activity. These routes never debit or credit money.
 
+## `kora_phone` exports (replacing the legacy kora_phone resource)
+
+This resource `provide`s `kora_phone` and answers the exports that kora_housing, kora_police and other resources call on it. Server (trusted callers only):
+
+| Export | Behaviour |
+|---|---|
+| `sendMailToOffline(citizenid, data)`, `sendNewMailToOffline(citizenid, data)` | System mail to a character, online or offline; may carry an Accept action. Returns `ok, error` (the `qb-phone` identity keeps the upstream void return). |
+| `sendMail(source, data)` | The same, addressed by player source. |
+| `sendMessage(from, to, content)` | A text from any valid number (a business or service need not own a handset) into the recipient handset's mailbox. Refused for unknown or blocked recipients and invalid text. |
+| `getNumber(source)` | The selected handset's number, or `nil` without an active SIM. |
+| `getNumberByCitizenId(citizenid)` | The selected handset's number for an online character, otherwise the character's active SIM number. |
+| `hasPhone(source)` | Whether the player holds a handset. |
+
+Client: `open(app)`, `close()` and `isOpen()`. The `qb-phone:client:addPoliceAlert` event shows an on-duty officer a phone notification (title, description).
+
+The camelCase exports are always available on this resource's own name. Whether it also answers as `exports.kora_phone` is `Config.compat.koraPhoneExports.enabled` (default `true`, restart to apply; edit it in `/config`). This resource and the legacy `kora_phone` resource provide the same names and are mutually exclusive. If the folder itself is named `kora_phone` the exports are native and the setting has no effect.
+
 For example, from a trusted server resource after phone startup:
 
 ```lua

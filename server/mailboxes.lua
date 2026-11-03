@@ -115,6 +115,38 @@ function M.send(src,p)
     end
     return PhoneResult(message(sent,d,t))
 end
+-- Trusted server delivery (the kora_phone `sendMessage` export). `from` may be any number, including one no
+-- handset owns (a business or automated service); the text lands in the recipient handset's mailbox like a
+-- normal incoming message, and replies to a number nobody owns are refused by M.send as usual.
+function M.deliverSystem(from,to,content)
+    local sender=PhoneValidation.phoneNumber(from)
+    if not sender then return false,'kora_phone: invalid sender number' end
+    local number=PhoneValidation.phoneNumber(to)
+    if not number then return false,'kora_phone: invalid recipient number' end
+    local body=type(content)=='string' and content:match('^%s*(.-)%s*$') or nil
+    if not body or body=='' or #body>Config.Limits.MessageBody then return false,'kora_phone: invalid message' end
+    if sender==number then return false,'kora_phone: cannot message the same number' end
+    local recipient=QBPhone.Repositories.Phones.findByNumber(number)
+    if not recipient then return false,'kora_phone: that number is unavailable' end
+    local origin=QBPhone.Repositories.Phones.findByNumber(sender)
+    if origin and QBPhone.Repositories.Blocks.isEitherBlocked(origin.id,recipient.id) then
+        return false,'kora_phone: messaging is unavailable for this contact'
+    end
+    local t=ensure(recipient,sender)
+    local key='sys:'..exports[GetCurrentResourceName()]:randomHex(16)
+    local id=MySQL.insert.await('INSERT INTO phone_mailboxes(device_id,peer_number,sender_number,body,request_id,is_outgoing) VALUES(?,?,?,?,?,0)',
+        {recipient.id,sender,sender,body,key})
+    if not id or id<=0 then return false,'kora_phone: message could not be delivered' end
+    local target=QBPhone.Sessions.sourceByNumber(number)
+    if target then
+        local delivered=message(id,recipient,t)
+        if delivered then
+            delivered.deviceId=tostring(recipient.id)
+            TriggerClientEvent('qbphone:client:messages:new',target,delivered)
+        end
+    end
+    return true
+end
 function M.markRead(src,p)
     local d,e=QBPhone.Permissions.requireDevice(src); if not d then return e end
     local t=thread(d,p.conversationId); if not t then return fail('Conversation not found') end

@@ -90,3 +90,9 @@ Config.Calls = {
         IceServers = { { urls = 'stun:stun.l.google.com:19302' } }
     }
 }
+
+-- Registers the server-only settings with kora_lib's /config editor (config/register.lua does the rest).
+-- Keeping them in a server script means they are never part of a client configuration snapshot.
+if Kora and Kora.config and Kora.config.extend then
+    Kora.config.extend({ Server = Config.Server, Calls = Config.Calls }, { scope = 'server', skipUnsupported = true })
+end

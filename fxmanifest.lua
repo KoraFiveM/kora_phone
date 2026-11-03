@@ -1,9 +1,13 @@
 fx_version 'cerulean'
 game 'gta5'
 
-name 'kora_phone'
--- Keep the legacy resource name resolvable for exports['qbphone-stevie'] callers.
+name 'kora_phone-stevie'
+-- Keep the legacy resource names resolvable: exports['qbphone-stevie'] callers, and kora_phone callers
+-- (kora_housing, kora_police) through the compat exports in server/compat/kora-phone.lua.
+-- This resource REPLACES the legacy kora_phone resource and the phones listed at the bottom. They provide
+-- the same names, so run only one of them: starting two breaks export and dependency resolution.
 provide 'qbphone-stevie'
+provide 'kora_phone'
 author 'Kora Team'
 description 'Server-authoritative QBCore phone'
 version '0.2.0'
@@ -17,6 +21,8 @@ shared_scripts {
     '@kora_core/shared/locale.lua',
     'config/shared.lua',
     'config/handsets.lua',
+    'config/client.lua',
+    'config/register.lua',
     'shared/constants.lua',
     'shared/validation.lua',
     'shared/contracts.lua'
@@ -24,7 +30,6 @@ shared_scripts {
 
 client_scripts {
     '@kora_theme/client/bridge.lua',
-    'config/client.lua',
     'client/**/*.lua'
 }
 
@@ -49,6 +54,7 @@ server_scripts {
     'server/modules/community_callbacks.lua',
     'server/handset_callbacks.lua',
     'server/compat/qb-phone.lua',
+    'server/compat/kora-phone.lua',
     'server/main.lua'
 }
 
