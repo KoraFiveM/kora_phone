@@ -74,7 +74,7 @@ function PhoneContracts.callSignal(payload)
         } }
     end
     if type(payload.sdp) ~= 'table' or payload.sdp.type ~= kind then return nil, 'sdp must be an ' .. kind .. ' description' end
-    local text; text, err = PhoneValidation.string(payload.sdp.sdp, 'sdp', 1, 20000)
+    local text; text, err = PhoneValidation.string(payload.sdp.sdp, 'sdp', 1, 20000, false, true) -- raw: trimming drops the final CRLF and the peer rejects the SDP
     if not text then return nil, err end
     return { id = id, kind = kind, sdp = { type = kind, sdp = text } }
 end

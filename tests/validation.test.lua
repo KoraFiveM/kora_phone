@@ -248,6 +248,11 @@ test("a call signal must be a valid offer, answer, or ICE candidate for a real c
     equal(PhoneContracts.callSignal({ id = callId, kind = "offer" }), nil)
     equal(PhoneContracts.callSignal({ id = callId, kind = "ice", candidate = { candidate = string.rep("a", 2001) } }), nil)
 end)
+test("a call signal keeps the SDP byte-for-byte, including its final CRLF", function()
+    local callId = "12345678-1234-4123-8123-123456789012"
+    local sdp = "v=0\r\no=- 1 2 IN IP4 127.0.0.1\r\ns=-\r\n"
+    equal(PhoneContracts.callSignal({ id = callId, kind = "offer", sdp = { type = "offer", sdp = sdp } }).sdp.sdp, sdp)
+end)
 test("conversation pages preserve tied sort keys without changing numeric cursors", function()
     local oldPhone, oldMySQL, oldConstants, oldResult, oldError = QBPhone, MySQL, PhoneConstants, PhoneResult, PhoneError
     dofile(root .. "/shared/constants.lua")

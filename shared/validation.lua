@@ -4,9 +4,10 @@ local function trim(value)
     return type(value) == 'string' and value:match('^%s*(.-)%s*$') or value
 end
 
-function PhoneValidation.string(value, field, minimum, maximum, allowEmpty)
+-- `raw` keeps the value byte-for-byte (no trimming) where whitespace is significant, e.g. SDP, whose lines must end in CRLF.
+function PhoneValidation.string(value, field, minimum, maximum, allowEmpty, raw)
     if type(value) ~= 'string' then return nil, field .. ' must be a string' end
-    value = trim(value)
+    if not raw then value = trim(value) end
     local length = #value
     if not allowEmpty and length == 0 then return nil, field .. ' is required' end
     if minimum and length < minimum then return nil, field .. ' is too short' end
