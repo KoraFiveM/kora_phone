@@ -280,7 +280,7 @@ local function restore(src,d,account)
     return PhoneResult({restored=true})
 end
 -- The inventory gateway moves the SIM item in the same commit as the handset metadata. This confirms
--- the result so an older companion file cannot leave the SIM both inserted and loose (or lost on removal).
+-- the result so an older kora_inventory cannot leave the SIM both inserted and loose (or lost on removal).
 function H.settleSimItem(src,op,request,info)
     if op=='insertSim' then
         local left=exports.kora_core:getItemBySlot(src,request.simSlot)
@@ -516,7 +516,7 @@ function H.migrate()
 end
 function H.start()
     local gateway=pcall(function() exports.kora_inventory:PhoneItemTransaction(0,{op='probe'}) end)
-    if not gateway then error('Install the qbinventory PhoneItemTransaction companion before starting qbphone') end
+    if not gateway then error('Start a kora_inventory that provides PhoneItemTransaction before starting qbphone') end
     H.migrate()
     for name,model in pairs(Config.Handsets) do
         exports.kora_core:registerShared('items',name,{name=name,label=({standard='Orchard One',flip='Circuit Flip',fold='Atlas Fold'})[model],weight=250,type='item',image='phone.png',unique=true,useable=true,shouldClose=true,description='Personal handset'})

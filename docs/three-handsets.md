@@ -14,7 +14,7 @@ New PINs use salted scrypt with the server pepper; old PINs remain verifiable un
 
 ## Inventory companion API
 
-The supplied `[v2]/kora_inventory/server.lua` now exposes `PhoneItemTransaction(source, request)` and its lowercase alias, callable only by resource **kora_phone**.
+`kora_inventory` exposes `PhoneItemTransaction(source, request)` and its lowercase alias, callable only by this resource (folder `kora_phone-stevie`, or `kora_phone`).
 
 | Operation | Trusted request fields |
 |---|---|
@@ -29,7 +29,7 @@ Returns `ok, error, handsetOrBoundItem, returnedSim`. Slots, serials, definition
 
 Supported unique item names are `phone`, `phone_standard`, `phone_flip`, `phone_fold`, and `phone_sim`. Disabling models through config is supported; arbitrary new item names require a deliberate gateway update. Phone shops reserve 64 slots for stock and used handsets.
 
-The gateway and its smoke test are also copied under `integration/kora_inventory/` for deployment review. This is a companion source copy, not another resource to start. Back up the inventory resource and compare versions before replacing its server file.
+The gateway ships with `kora_inventory`; this resource no longer carries a copy of it. Keep `kora_inventory` current rather than replacing its server file.
 
 ## Migration rehearsal and rollback
 

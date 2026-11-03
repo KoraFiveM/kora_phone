@@ -48,7 +48,7 @@ System Mail is character-owned, so job offers, billing messages and activity not
 
 ## Requirements
 
-Use the resource names below. The phone integrates with the custom `[v2]` APIs and the included inventory companion.
+Use the resource names below. The phone integrates with the custom `[v2]` APIs, including the `PhoneItemTransaction` gateway that `kora_inventory` already provides.
 
 | Resource/service | Used for |
 |---|---|
@@ -65,13 +65,13 @@ Live video travels through WebRTC, directly or through your configured TURN rela
 
 ## Installation
 
-### 1. Install the resource and inventory companion
+### 1. Install the resource
 
 Place this resource in your server's resources folder and name its directory **`kora_phone-stevie`** (or **`kora_phone`**). The inventory gateway only accepts those two resource names.
 
-Integrate [the companion kora_inventory server file](integration/qbinventory/server.lua) with your `[v2]` inventory resource. It supplies `PhoneItemTransaction`, which handles handset binding, SIM exchange and resale through inventory authority. Compare it with your installed version before replacing files.
+The current `kora_inventory` already supplies `PhoneItemTransaction`, which handles handset binding, SIM exchange and resale through inventory authority. Nothing needs to be copied into the inventory resource, and no companion file ships with this resource. Do not replace `kora_inventory/server.lua` with an older copy.
 
-Keep one phone provider enabled. Stop the previous phone before starting this replacement.
+Keep one phone provider enabled. This resource and the legacy `kora_phone` resource both provide `qb-phone` and the `kora_phone` export identity, so they are mutually exclusive: stop the previous phone before starting this replacement.
 
 ### 2. Choose the database setup
 
@@ -96,7 +96,7 @@ See [deployment, migration and rollback](docs/three-handsets.md) before upgradin
 
 Circuit Mobile counters are preset at the Digital Den doors (Vinewood, Mirror Park, Sinner St) and Alta St; add more entries under `shops` for other stores. Replace the example shop coordinates, business job names and hotspot settings for your server. SIM swapping supports `player`, `shop` or `both`; the default is `both`.
 
-`Config.ConsumeSimOnInstall` (default `true`, in `config/handsets.lua`): inserting a SIM moves its item into the phone so exactly one SIM item leaves the inventory, and removing it returns the same item with its number. The inventory gateway does the move; the phone re-checks the result and corrects it through `kora_inventory` `RemoveItem`/`AddItem` if an older companion file left the SIM loose or lost it. Set `false` to skip the re-check.
+`Config.ConsumeSimOnInstall` (default `true`, in `config/handsets.lua`): inserting a SIM moves its item into the phone so exactly one SIM item leaves the inventory, and removing it returns the same item with its number. The inventory gateway does the move; the phone re-checks the result and corrects it through `kora_inventory` `RemoveItem`/`AddItem` if an older `kora_inventory` left the SIM loose or lost it. Set `false` to skip the re-check.
 
 ### 4. Add your server configuration
 
