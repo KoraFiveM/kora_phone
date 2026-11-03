@@ -21,7 +21,7 @@ local threads, flags, closes
 local function setup()
     threads, closes = {}, 0
     flags = { dead = false, metadata = {} }
-    _G.Config = { Client = { DisableWhileDead = true, Command = "phone", Keybind = "M" } }
+    _G.Config = { Client = { DisableWhileDead = true, UiBlockBag = "koraUiBlocked", Command = "phone", Keybind = "M" } }
     _G.QBPhone = {
         State = { open = false, playerLoaded = true, generation = 0, Public = function() return {} end },
         Animations = { Start = function() end, Stop = function() end },
@@ -41,7 +41,13 @@ local function setup()
     _G.exports = setmetatable({
         kora_core = { getPlayerData = function() return { metadata = flags.metadata } end },
     }, { __call = function() end })
-    _G.Kora = { cache = { isDead = function() return flags.dead end }, notify = { send = function() end } }
+    _G.LocalPlayer = { state = {} }
+    _G.GetPlayerServerId = function() return 7 end
+    _G.PlayerId = function() return 0 end
+    _G.Kora = {
+        cache = { isDead = function() return flags.dead end }, notify = { send = function() end },
+        state = { onChange = function(key, bag, handler) flags.stateKey, flags.stateHandler = key, handler end },
+    }
     dofile(root .. "/client/main.lua")
 end
 
@@ -88,6 +94,36 @@ test("reopening never starts a second watcher", function()
     QBPhone.Close(false)
     tick()
     equal(live(), base)
+end)
+
+test("a blocked phone does not open, and opens again once the block clears", function()
+    setup()
+    equal(flags.stateKey, "koraUiBlocked")
+    LocalPlayer.state.koraUiBlocked = true
+    equal(QBPhone.Open(), false)
+    equal(QBPhone.State.open, false)
+    LocalPlayer.state.koraUiBlocked = nil
+    equal(QBPhone.Open(), true)
+end)
+
+test("the bag turning true closes an open phone; other players and false values do not", function()
+    setup()
+    assert(QBPhone.Open())
+    flags.stateHandler({ value = true, bagName = "player:9" })
+    equal(QBPhone.State.open, true)
+    flags.stateHandler({ value = false, bagName = "player:7" })
+    equal(QBPhone.State.open, true)
+    flags.stateHandler({ value = true, bagName = "player:7" })
+    equal(QBPhone.State.open, false)
+    equal(closes, 1)
+end)
+
+test("UiBlockBag = false turns the block off", function()
+    setup()
+    Config.Client.UiBlockBag = false
+    dofile(root .. "/client/main.lua")
+    LocalPlayer.state.koraUiBlocked = true
+    equal(QBPhone.Open(), true)
 end)
 
 print(("downed-watch: %d passed, %d failed"):format(passed, failed))

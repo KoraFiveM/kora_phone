@@ -84,6 +84,7 @@ function Camera.Open(options)
     if QBPhone.State.cameraMode then return true end
     local ped = Kora.cache.ped()
     if IsEntityDead(ped) then return false, 'PLAYER_DEAD' end
+    if QBPhone.UiBlocked and QBPhone.UiBlocked() then return false, 'UI_BLOCKED' end
     if QBPhone.Video and QBPhone.Video.active then return false,'Close video before opening the camera' end
     Camera.previousRadar = not IsRadarHidden()
     QBPhone.State.cameraMode = true

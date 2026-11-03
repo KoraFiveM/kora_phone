@@ -40,8 +40,27 @@ local function watchUnavailable()
     end)
 end
 
+-- True while another resource holds the phone shut through Config.Client.UiBlockBag.
+function QBPhone.UiBlocked()
+    local name = Config.Client.UiBlockBag
+    return type(name) == 'string' and name ~= '' and LocalPlayer.state[name] == true
+end
+
+-- Put an open phone away as soon as the block starts (state bag handler, no polling). The handler gets the new value
+-- in change.value; the bag itself may still hold the old one.
+do
+    local name = Config.Client.UiBlockBag
+    if type(name) == 'string' and name ~= '' then
+        Kora.state.onChange(name, nil, function(change)
+            if change.value ~= true or not QBPhone.State.open then return end
+            if change.bagName ~= ('player:%d'):format(GetPlayerServerId(PlayerId())) then return end
+            QBPhone.Close(false)
+        end)
+    end
+end
+
 function QBPhone.Open(app, payload)
-    if QBPhone.State.open or not QBPhone.State.playerLoaded or QBPhone.Unavailable() then return false end
+    if QBPhone.State.open or not QBPhone.State.playerLoaded or QBPhone.Unavailable() or QBPhone.UiBlocked() then return false end
     QBPhone.State.open = true
     watchUnavailable()
     QBPhone.State.currentApp = type(app) == 'string' and app or nil

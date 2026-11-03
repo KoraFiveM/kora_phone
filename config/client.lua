@@ -2,7 +2,12 @@ Config.Client = {
     Command = 'phone',
     Keybind = 'M',
     DisableWhileDead = true,
-    NotificationSound = true -- the game's own text-message tone when the phone is closed
+    NotificationSound = true, -- the game's own text-message tone when the phone is closed
+    -- Player state bag that keeps the phone shut while it is true. Another resource sets it while its own camera or
+    -- editor is up (kora_emotemenu's Emote Maker freecam does); the phone then refuses to open (key, item, export,
+    -- camera app) and closes if it was open. kora_inventory honours the same bag. false or '' turns this off.
+    -- Read once at resource start.
+    UiBlockBag = 'koraUiBlocked',
 }
 
 -- Camera app. The live preview needs the mouse for the phone UI, so aiming works through a key:
