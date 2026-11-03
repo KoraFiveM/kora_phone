@@ -11,7 +11,7 @@ const read = (file) => fs.readFileSync(path.join(root, file), "utf8");
 const banking = read("server/services/banking.lua");
 const bankIntegration = read("server/integrations/banking.lua");
 const jobs = read("server/services/jobs.lua");
-const migration = read("migrations/005_economy_audit.sql");
+const migration = read("server/schema.lua");
 const callbacks = read("server/modules/economy_callbacks.lua");
 const config = read("config/server.lua");
 
@@ -32,7 +32,7 @@ assert.match(jobs, /snapshot\.grade < \(tonumber\(action\.minimumGrade\)/, "job 
 assert.match(jobs, /action\.requireDuty == true and not snapshot\.onDuty/, "job actions must enforce duty state");
 assert.doesNotMatch(jobs, /payload\.(?:job|grade|citizenId)/, "client must not select its job, grade or identity");
 
-assert.match(migration, /UNIQUE KEY `uq_phone_economy_idempotency`/, "database must enforce transfer idempotency");
+assert.match(migration, /name = 'uq_phone_economy_idempotency'[^\n]*unique = true/, "database must enforce transfer idempotency");
 assert.match(migration, /'manual_review'/, "audit schema must represent failed compensation");
 for (const name of ["getBankBalance", "getBankHistory", "transferBankMoney", "getJob", "setJobDuty", "runJobAction"]) {
   assert.match(callbacks, new RegExp(`register(?:Callback)?\\('${name}'`), `missing callback ${name}`);

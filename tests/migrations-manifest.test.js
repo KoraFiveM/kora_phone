@@ -1,24 +1,36 @@
 #!/usr/bin/env node
 "use strict";
 
-// The startup migration runner only knows the files listed in fxmanifest.lua. A new .sql file that is not
-// listed there would never be applied, so this fails until it is.
+// Tables are declared in server/schema.lua and created by Kora.sql.ensureTables at start. This fails if the
+// schema is not loaded before the runner, a table is dropped from it, or the old .sql files come back.
 const assert = require("node:assert/strict");
 const fs = require("node:fs");
 const path = require("node:path");
 
 const root = path.resolve(__dirname, "..");
 const manifest = fs.readFileSync(path.join(root, "fxmanifest.lua"), "utf8");
-const listed = [...manifest.matchAll(/^migration\s+'([^']+)'/gm)].map((match) => match[1]);
-const onDisk = fs.readdirSync(path.join(root, "migrations")).filter((file) => file.endsWith(".sql")).sort().map((file) => `migrations/${file}`);
+const schema = fs.readFileSync(path.join(root, "server/schema.lua"), "utf8");
 
-assert.deepEqual(listed, onDisk, "every migrations/*.sql file must be listed in fxmanifest.lua, in filename order");
-for (const file of onDisk) assert.match(path.basename(file), /^\d{3}_[a-z0-9_]+\.sql$/, `${file} must be named NNN_name.sql`);
-assert.equal(new Set(onDisk.map((file) => path.basename(file).slice(0, 3))).size, onDisk.length, "migration numbers must be unique");
+const tables = [...schema.matchAll(/^\s{8}name = '(phone_[a-z_]+)'/gm)].map((match) => match[1]);
+assert.equal(tables.length, 34, "schema must declare all 34 phone tables");
+assert.equal(new Set(tables).size, tables.length, "a table is declared twice");
+for (const table of ["phone_devices", "phone_messages", "phone_calls", "phone_economy_audit", "phone_sims", "phone_handsets", "phone_legacy_mail", "phone_legacy_transactions"]) {
+  assert.ok(tables.includes(table), `schema must declare ${table}`);
+}
+assert.match(schema, /^QBPhoneSchema = \{/m, "schema must expose the QBPhoneSchema global");
+assert.match(schema, /chk_phone_economy_positive_amount/, "the positive amount check must stay declared");
+assert.match(schema, /generated = \{ expr = /, "phone_sims.active_number must stay a generated column");
+assert.match(schema, /name = 'message_type'[^\n]*'video'[^\n]*modify = true/, "message_type must be widened with modify");
+
+assert.ok(manifest.indexOf("'server/schema.lua'") !== -1, "fxmanifest must load server/schema.lua");
+assert.ok(manifest.indexOf("'server/schema.lua'") < manifest.indexOf("'server/integrations/*.lua'"), "schema must load before the runner");
+assert.doesNotMatch(manifest, /^migration\s+'/m, "no .sql migrations may be listed");
+assert.equal(fs.existsSync(path.join(root, "migrations")), false, "the migrations/ .sql files are replaced by the schema");
 
 const main = fs.readFileSync(path.join(root, "server/main.lua"), "utf8");
-assert.match(main, /QBPhone\.Migrations\.run\(\)/, "the resource must run migrations at start");
-assert.match(main, /Database setup failed, stopping resource/, "a failed migration must stop the resource, not run on a half-built schema");
+assert.match(main, /QBPhone\.Migrations\.run\(\)/, "the resource must set up the database at start");
+assert.match(main, /Database setup failed, stopping resource/, "a failed setup must stop the resource, not run on a half-built schema");
+assert.match(fs.readFileSync(path.join(root, "server/integrations/migrations.lua"), "utf8"), /Kora\.sql\.ensureTables, QBPhoneSchema/, "the runner must call ensureTables");
 assert.match(fs.readFileSync(path.join(root, "config/server.lua"), "utf8"), /AutoMigrate = true/, "AutoMigrate must default on");
 
-console.log(`PASS migrations-manifest: ${listed.length} migrations listed in order and run at start`);
+console.log(`PASS migrations-manifest: ${tables.length} tables declared in schema.lua and created at start`);

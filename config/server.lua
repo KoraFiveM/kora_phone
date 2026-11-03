@@ -1,6 +1,6 @@
 Config.Server = {
-    -- Create and upgrade the database tables when the resource starts (each .sql file in fxmanifest.lua runs once).
-    -- Set to false to import the files in migrations/ yourself.
+    -- Create missing tables/columns/indexes from server/schema.lua when the resource starts (never alters existing ones).
+    -- Set to false to create the schema yourself.
     AutoMigrate = true,
     AutoProvisionDevice = true,
     DatabaseReadyTimeoutMs = 15000,

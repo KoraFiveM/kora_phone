@@ -6,15 +6,15 @@ const path = require("node:path");
 const root = path.resolve(__dirname, "..");
 const read = p => fs.readFileSync(path.join(root, p), "utf8");
 
-const migration = read("migrations/006_community.sql");
+const migration = read("server/schema.lua");
 for (const table of ["phone_social_profiles", "phone_social_posts", "phone_social_comments",
   "phone_social_likes", "phone_social_follows", "phone_blocks", "phone_market_listings",
   "phone_reports", "phone_moderation_audit"]) {
-  assert.match(migration, new RegExp("CREATE TABLE IF NOT EXISTS `" + table + "`"), `missing ${table}`);
+  assert.match(migration, new RegExp("name = '" + table + "'"), `missing ${table}`);
 }
-assert.match(migration, /UNIQUE KEY `uq_phone_social_post_request`/);
-assert.match(migration, /UNIQUE KEY `uq_phone_market_request`/);
-assert.match(migration, /UNIQUE KEY `uq_phone_report_repeat`/);
+assert.match(migration, /name = 'uq_phone_social_post_request'[^\n]*unique = true/);
+assert.match(migration, /name = 'uq_phone_market_request'[^\n]*unique = true/);
+assert.match(migration, /name = 'uq_phone_report_repeat'[^\n]*unique = true/);
 
 const repositoryFiles = ["social", "marketplace", "blocks", "reports"]
   .map(name => read(`server/repositories/${name}.lua`));

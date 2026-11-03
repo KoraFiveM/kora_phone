@@ -27,7 +27,7 @@ Pin and document the minimum supported versions before release. Do not silently 
 
 ## Clean-install verification
 
-1. Start with an empty database and start the resource. The tables are created automatically on first start: every file in `migrations/` (listed in `fxmanifest.lua`) runs once, in order, and is remembered in a `phone_migrations` table, so a restart runs nothing. If a statement fails, the reason is printed, the resource stops, and the next start resumes at that statement. A database you already imported by hand is adopted: statements that report "already exists" are recorded as done. To manage the SQL yourself, set `Config.Server.AutoMigrate = false` and import the files in filename order, each exactly once.
+1. Start with an empty database and start the resource. The tables are declared in `server/schema.lua` and created automatically on first start; on later starts only missing tables, columns, indexes and keys are added (existing ones are never altered or dropped, and differences are logged as warnings). If setup fails, the reason is printed and the resource stops. To manage the schema yourself, set `Config.Server.AutoMigrate = false`.
 2. Create two characters and confirm unique persistent numbers.
 3. Give both characters the configured phone item.
 4. Complete one call, message, image share, transfer, social post and marketplace contact flow.
@@ -37,7 +37,7 @@ Pin and document the minimum supported versions before release. Do not silently 
 ## Upgrade verification
 
 - Back up the database before applying migrations.
-- A new version's migrations apply automatically on start (and are recorded); with `AutoMigrate = false`, apply each new one exactly once yourself.
+- Schema additions in a new version apply automatically on start; with `AutoMigrate = false`, apply them yourself.
 - Confirm existing phone numbers, messages, media references and settings remain valid.
 - Verify downgrade expectations explicitly; destructive automatic downgrade is unsupported.
 

@@ -11,7 +11,7 @@ const repository = read("server/repositories/messages.lua");
 const service = read("server/services/messaging.lua");
 const callbacks = read("server/callbacks.lua");
 const nui = read("client/nui.lua");
-const migration = read("migrations/007_messaging.sql");
+const migration = read("server/schema.lua");
 const web = read("web/src/api.ts");
 const contracts = read("shared/contracts.lua");
 
@@ -35,7 +35,7 @@ assert.match(contracts, /PhoneValidation\.string\(payload\.clientRequestId, 'cli
   "messages must require a bounded idempotency key");
 assert.match(repository, /lastMessagePreview/, "conversation rows need a message preview");
 assert.match(repository, /unreadCount/, "conversation rows need unread counts");
-assert.match(migration, /UNIQUE KEY `uq_phone_conversations_direct_key`/, "direct conversations need concurrency uniqueness");
+assert.match(migration, /name = 'uq_phone_conversations_direct_key'[^\n]*unique = true/, "direct conversations need concurrency uniqueness");
 
 assert.match(web, /messages:getConversations/, "UI must load real conversations");
 assert.match(web, /messages:getPage/, "UI must load real message pages");

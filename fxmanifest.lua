@@ -32,6 +32,7 @@ server_scripts {
     'server/crypto.js',
     '@kora_sql/lib/MySQL.lua',
     'config/server.lua',
+    'server/schema.lua',
     'server/integrations/*.lua',
     'server/repositories/*.lua',
     'server/services/*.lua',
@@ -51,21 +52,6 @@ server_scripts {
     'server/compat/qb-phone.lua',
     'server/main.lua'
 }
-
--- Applied in this order when the resource starts, once each (server/integrations/migrations.lua).
-migration 'migrations/001_initial.sql'
-migration 'migrations/002_indexes.sql'
-migration 'migrations/003_calls.sql'
-migration 'migrations/004_media.sql'
-migration 'migrations/005_economy_audit.sql'
-migration 'migrations/006_community.sql'
-migration 'migrations/007_messaging.sql'
-migration 'migrations/008_pin.sql'
-migration 'migrations/009_items.sql'
-migration 'migrations/010_mail.sql'
-migration 'migrations/011_media_posts.sql'
-migration 'migrations/012_handsets.sql'
-migration 'migrations/013_legacy_qb_phone.sql'
 
 ui_page 'web/dist/index.html'
 

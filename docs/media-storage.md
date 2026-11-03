@@ -86,7 +86,7 @@ Notes and limits:
 
 ## Loading and migration
 
-The media tables (`migrations/004_media.sql`) and the columns that let Flash posts and chat messages carry media (`migrations/011_media_posts.sql`) are created automatically at start. Ensure the resource loads `server/modules/media_callbacks.lua` after integrations, repositories, services, rate limits and permissions.
+The media tables (`phone_media` in `server/schema.lua`) and the columns that let Flash posts and chat messages carry media (`media_id` on `phone_social_posts`/`phone_messages` in `server/schema.lua`) are created automatically at start. Ensure the resource loads `server/modules/media_callbacks.lua` after integrations, repositories, services, rate limits and permissions.
 
 Gallery reads use descending ID cursors. Deletion requires device ownership and refuses media referenced by a contact or live message. Records are first soft-deleted; external objects are then deleted and the row is removed only after provider confirmation. Failed provider deletion leaves a tombstone for later cleanup rather than exposing the media again.
 

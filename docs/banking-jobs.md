@@ -59,7 +59,7 @@ The configured server event receives one context table containing the verified `
 | `setJobDuty` | Boolean duty-state request |
 | `runJobAction` | Execute one configured, grade-checked action |
 
-Load `server/modules/economy_callbacks.lua` after the integrations, repository and services. The `phone_economy_audit` table (`migrations/005_economy_audit.sql`) is created automatically at start.
+Load `server/modules/economy_callbacks.lua` after the integrations, repository and services. The `phone_economy_audit` table (`server/schema.lua`) is created automatically at start.
 
 ## Operational checks
 

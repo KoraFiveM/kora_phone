@@ -41,7 +41,7 @@ Notifications carry character/handset identity when available. The native client
 
 ## Schema and existing data
 
-`013_legacy_qb_phone.sql` adds `phone_legacy_mail` and `phone_legacy_transactions`. Existing migrations 001–012 are unchanged, including handset migration 012. Both 012 and 013 use kora_sql's checksum-owned runner. Fresh installs can still use the one-file `qbphone.sql`, now containing all 13 tracked migrations. Existing databases should use automatic migrations, not reimport the master.
+`phone_legacy_mail` and `phone_legacy_transactions` (formerly `013_legacy_qb_phone.sql`) are declared in `server/schema.lua` and created by `Kora.sql.ensureTables` at start; existing databases are left untouched.
 
 This adapts the upstream extension without making the old device-mail foreign keys nullable. Native device-to-device mail tables and routes remain intact and outside this launch interface.
 

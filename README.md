@@ -77,10 +77,10 @@ Keep one phone provider enabled. Stop the previous phone before starting this re
 
 | Your database | What to do |
 |---|---|
-| **Fresh installation** | Leave `Config.Server.AutoMigrate = true` and let startup create the schema. If you prefer a manual import, import **[qbphone.sql](qbphone.sql)** once before startup. |
+| **Fresh installation** | Leave `Config.Server.AutoMigrate = true` and let startup create the schema from `server/schema.lua`. |
 | **Existing Stevie/QBPhone installation** | Back up the database and inventories together, then use automatic migrations. Do not import the fresh-install master over existing phone tables. |
 
-Keep automatic migrations enabled after a fresh manual import so startup adopts the schema history. The numbered files in `migrations/` are internal upgrade history and must ship with the resource.
+The tables are declared in `server/schema.lua` and created or extended (never altered or dropped) by `Kora.sql.ensureTables` at start.
 
 Startup writes `migration-report.json` before legacy identity conversion. Unknown registering characters, invalid legacy numbers or malformed settings stop conversion for review. Existing numbers and supported content use resumable claims; characters without handsets do not receive duplicate phones or subscriptions.
 

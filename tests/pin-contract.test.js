@@ -8,7 +8,7 @@ const path = require("node:path");
 const root = path.resolve(__dirname, "..");
 const read = (file) => fs.readFileSync(path.join(root, file), "utf8");
 
-const migration = read("migrations/008_pin.sql");
+const migration = read("server/schema.lua");
 const phone = read("server/services/phone.lua");
 const repo = read("server/repositories/phones.lua");
 const permissions = read("server/permissions.lua");
@@ -24,7 +24,7 @@ const api = read("web/src/api.ts");
 // The PIN is never stored: only a salted SHA-256 computed inside the database.
 assert.match(migration, /pin_hash/, "migration must add a hash column");
 assert.match(migration, /pin_salt/, "migration must add a salt column");
-assert.doesNotMatch(migration, /`pin`\s/, "no plaintext pin column may exist");
+assert.doesNotMatch(migration, /name = 'pin'/, "no plaintext pin column may exist");
 assert.match(repo, /SHA2\(CONCAT\(/, "the hash must be computed in SQL so Lua never holds a hash of the PIN");
 assert.doesNotMatch(phone + repo, /print\([^)]*pin/i, "the PIN must never be logged");
 

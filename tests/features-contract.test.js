@@ -54,7 +54,7 @@ const callbacks = read("server/callbacks.lua");
 const items = read("server/services/items.lua");
 const garage = read("server/services/garage.lua");
 const messaging = read("server/services/messaging.lua");
-const migration9 = read("migrations/009_items.sql");
+const migration9 = read("server/schema.lua");
 for (const [route, callback] of [["items:save", "saveItem"], ["items:remove", "removeItem"], ["garage:list", "getVehicles"], ["messages:createGroup", "createGroup"], ["messages:leaveGroup", "leaveGroup"]]) {
   assert.match(nui, new RegExp(`\\['${route}'\\] = 'qbphone:server:${callback}'`), `${route} must map to ${callback}`);
   assert.match(callbacks, new RegExp(`registerCallback\\('${callback}'`), `${callback} must be registered on the server`);
@@ -64,7 +64,7 @@ assert.match(nui, /RegisterNUICallback\('weather:get'/);
 assert.match(nui, /RegisterNUICallback\('alarm'/);
 assert.match(items, /PhoneValidation\.item\(/, "items must be validated on the server");
 assert.match(items, /Config\.Server\.Items\[kind\]/, "items must be limited per phone");
-assert.match(migration9, /PRIMARY KEY \(`device_id`, `kind`, `item_key`\)/, "an item is unique per device, kind and key");
+assert.match(migration9, /primary = \{ 'device_id', 'kind', 'item_key' \}/, "an item is unique per device, kind and key");
 assert.match(garage, /\^\[%w_\]\+\$/, "the vehicles table name must be checked before it is put in SQL");
 assert.match(garage, /device\.ownerCitizenId/, "vehicles must be looked up by the caller's own character");
 assert.match(messaging, /otherMembers\(conversationId, sender\.id\)/, "group messages must go to the other members");
@@ -125,7 +125,7 @@ const mediaSvc = read("server/services/media.lua");
 const socialSvc = read("server/services/social.lua");
 const socialRepo = read("server/repositories/social.lua");
 const mediaRepo = read("server/repositories/media.lua");
-const migration11 = read("migrations/011_media_posts.sql");
+const migration11 = read("server/schema.lua");
 const flash = read("web/src/Flash.tsx");
 for (const [route, callback] of [["media:request", "requestMediaUpload"], ["media:complete", "completeMediaUpload"]]) {
   assert.match(nui, new RegExp(`\\['${route}'\\] = 'qbphone:server:${callback}'`), `${route} must map to ${callback}`);
@@ -142,7 +142,7 @@ assert.match(mediaRepo, /phone_social_posts WHERE media_id/, "media used by a Fl
 assert.match(mediaRepo, /NULLIF\(\?, -1\)/, "media rows without dimensions must not drop trailing SQL parameters");
 assert.match(socialSvc, /Media\.findOwned\(device\.id, mediaId\)/, "a post may only carry the author's own media");
 assert.match(socialRepo, /\(po\.author_profile_id = \?\) AS mine/, "the feed must say which posts are the viewer's own");
-assert.match(migration11, /ADD COLUMN `media_id`/, "posts need a media column");
+assert.match(migration11, /name = 'media_id'[^\n]*after = 'body'/, "posts need a media column");
 assert.match(migration11, /'video'/, "messages need a video type");
 assert.match(api, /if\(action==='uploadMedia'\)/, "uploads must bypass the serial request queue so they don't block the phone");
 assert.match(api, /qbphoneTicket/, "the upload must carry its ticket tag");

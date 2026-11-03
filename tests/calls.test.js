@@ -10,7 +10,7 @@ const read = (file) => fs.readFileSync(path.join(root, file), "utf8");
 const service = read("server/services/calling.lua");
 const repository = read("server/repositories/calls.lua");
 const moduleSource = read("server/modules/call_callbacks.lua");
-const migration = read("migrations/003_calls.sql");
+const migration = read("server/schema.lua");
 const client = read("client/calls.lua");
 const voice = read("client/integrations/voice.lua");
 const serverVoice = read("server/integrations/voice.lua");
