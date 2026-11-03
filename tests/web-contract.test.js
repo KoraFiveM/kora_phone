@@ -269,8 +269,8 @@ main().catch(error => { console.error(error); process.exitCode = 1; });
   assert.ok(themed >= 50, "the generic UI fonts are themed");
   assert.ok(Object.values(css).every((text) => !/var\(--font-(?:sans|mono|heading)\)/.test(text)), "font tokens always carry the original stack as a fallback");
 
-  // The bundled fonts load from cfx-nui-kora_theme, which the page CSP must allow.
+  // The bundled fonts load from cfx-nui-kora_theme, and an underscore host is an invalid CSP source, so font-src allows the https: scheme.
   const indexHtml = fs.readFileSync(path.join(root, "web/index.html"), "utf8");
-  assert.match(indexHtml, /font-src 'self' https:\/\/cfx-nui-kora_theme;/, "CSP allows kora_theme's bundled fonts");
+  assert.match(indexHtml, /font-src 'self' data: https:;/, "CSP allows kora_theme's bundled fonts");
   console.log(`PASS web-contract: kora_theme fonts vendored; ${themed} UI font declarations follow the theme tokens`);
 }
