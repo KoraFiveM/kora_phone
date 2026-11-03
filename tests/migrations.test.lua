@@ -40,6 +40,22 @@ MySQL = { query = { await = function(sql, params)
     return {}
 end } }
 
+-- Migrations 012 and 013 run through kora_sql's checksum-owned runner; model it with the same fake database:
+-- every statement runs once, is remembered, and a failure stops that file and reports the reason.
+Kora = { sql = { migrateFiles = function(resource, entries)
+    for _, entry in ipairs(entries) do
+        local name = ('%03d_%s.sql'):format(entry.version, entry.name)
+        for step, statement in ipairs(QBPhone.Migrations.split(LoadResourceFile(resource, entry.file))) do
+            if not db.tracked[name .. ':' .. step] then
+                db.executed[#db.executed + 1] = statement
+                if db.failOn and #db.executed == db.failOn then return false, name .. ' failed' end
+                db.tracked[name .. ':' .. step] = true
+            end
+        end
+    end
+    return true
+end } }
+
 Config = { Server = {} }
 dofile(root .. "/server/integrations/migrations.lua")
 local Migrations = QBPhone.Migrations

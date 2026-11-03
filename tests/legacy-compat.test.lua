@@ -1,6 +1,6 @@
 -- This file is installed as tests/legacy-compat.test.lua.
 local handlers, aliases, nativeExports, callbacks, sent, queries = {}, {}, {}, {}, {}, {}
-local citizen, device, allowRate, savedMail, money = 'CID', { id = 5, ownerCitizenId = 'CID' }, true, nil, 100
+local citizen, device, allowRate, savedMail, money = 'CID', { id = 5, holderCitizenId = 'CID' }, true, nil, 100
 source = 12
 Kora = { compat = { provideExport = function(identity, name, fn) aliases[identity .. ':' .. name] = fn end } }
 exports = setmetatable({ kora_core = { getPlayerByCitizenId = function(_, id) return id == 'CID' and { source = 12 } end } }, {
@@ -18,14 +18,17 @@ QBPhone = {
     GetCitizenId = function() return citizen end,
     RateLimits = { consume = function() return allowRate end },
     Permissions = { requireDevice = function() return device, PhoneError('locked') end },
-    Repositories = { Mail = {
-        insertLegacy = function(id, mail) savedMail = { citizen = id, mail = mail }; return 77 end,
-        takeLegacyButton = function(id, owner, mailId)
-            assert(id == 5 and owner == 'CID'); if mailId ~= 77 then return end
+    -- Handset architecture: system mail is character-owned (phone_legacy_mail), delivered to the selected handset.
+    Handsets = { current = function() return device end },
+    Repositories = { LegacyMail = {
+        insert = function(id, mail) savedMail = { citizen = id, mail = mail }; return 77 end,
+        takeButton = function(id, mailId)
+            assert(id == 'CID'); if mailId ~= 77 then return end
             return { buttonEvent = 'job:accept', buttonData = { mission = 7 } }
         end,
+        markRead = function() return true end, delete = function() return true end, clearButton = function() return true end,
+        list = function() return {} end, activity = function() return {} end,
     } },
-    Services = { Mail = { delete = function(src, payload) assert(src == 12 and payload.id == 77) end } },
     registerCallback = function(name, _, fn) callbacks[name] = fn end,
 }
 MySQL = { insert = { await = function(sql, values) queries[#queries + 1] = { sql, values }; return 1 end } }
@@ -52,7 +55,7 @@ assert(savedMail == previous)
 allowRate = true
 device = nil
 assert(not callbacks.acceptLegacyMail(12, { id = 77 }).ok)
-device = { id = 5, ownerCitizenId = 'CID' }
+device = { id = 5, holderCitizenId = 'CID' }
 assert(not callbacks.acceptLegacyMail(12, { id = 99 }).ok)
 assert(callbacks.acceptLegacyMail(12, { id = 77 }).data.buttonData.mission == 7)
 handlers['qb-phone:server:AddTransaction']({ TransactionTitle = 'Credit', TransactionMessage = 'Received 5 BTC' })
@@ -60,23 +63,23 @@ assert(#queries == 1 and queries[1][2][1] == 'CID' and money == 100)
 handlers['qb-phone:server:AddTransaction']({ TransactionTitle = 'Credit', TransactionMessage = {} })
 assert(#queries == 1)
 
--- Native repository retains inbox/sent separation, ownership, cursor and one-use buttons.
+-- The character-owned legacy mailbox keeps ownership, cursor paging and one-use buttons.
 local changed, queryValues = 1
 MySQL.query = { await = function(sql, values) queryValues = values; queries[#queries + 1] = { sql, values }; return {} end }
-MySQL.single = { await = function(sql, values) queryValues = values; return { legacy_button = 'encoded' } end }
+MySQL.single = { await = function(sql, values) queryValues = values; return { button_json = 'encoded' } end }
 MySQL.update = { await = function(sql, values) queryValues = values; return changed end }
-dofile('server/repositories/mail.lua')
-local repo = QBPhone.Repositories.Mail
-repo.list(5, 'inbox', 50, 100, 'CID')
-assert(queryValues[1] == 5 and queryValues[2] == 'CID' and queryValues[3] == 100 and queryValues[4] == 50)
-assert(queries[#queries][1]:find('LEFT JOIN', 1, true) and queries[#queries][1]:find('recipient_citizenid = ?', 1, true))
-repo.list(5, 'sent', 50, nil, 'CID')
-assert(queryValues[1] == 5 and queryValues[2] == 50 and not queries[#queries][1]:find('recipient_citizenid = ?', 1, true))
-assert(repo.takeLegacyButton(5, 'CID', 77).buttonEvent == 'job:accept')
+dofile('server/repositories/legacy_mail.lua')
+local repo = QBPhone.Repositories.LegacyMail
+repo.list('CID', 50, 100)
+assert(queryValues[1] == 'CID' and queryValues[2] == 100 and queryValues[3] == 50)
+assert(queries[#queries][1]:find('citizenid=?', 1, true) and queries[#queries][1]:find('LIMIT ?', 1, true))
+repo.list('CID', 50)
+assert(queryValues[2] == 9007199254740991, 'no cursor starts from the newest mail')
+assert(repo.takeButton('CID', 77).buttonEvent == 'job:accept')
 changed = 0
-assert(not repo.takeLegacyButton(5, 'CID', 77), 'concurrent/replayed accepts must not execute twice')
-repo.markRead(5, 77, 'CID')
-assert(queryValues[3] == 'CID')
+assert(not repo.takeButton('CID', 77), 'concurrent/replayed accepts must not execute twice')
+repo.markRead('CID', 77)
+assert(queryValues[1] == 77 and queryValues[2] == 'CID')
 
 -- Client handlers send only informational state and server-checked action ids.
 local nui, notifications, events, serverEvents = {}, {}, {}, {}

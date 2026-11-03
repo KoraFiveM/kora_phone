@@ -10,11 +10,14 @@ local function fixture(mode)
         check(state.migrated, 'cleanup ran before migrations')
         if mode == 'recovery_failure' then error('controlled SQL failure') end
         return 0
-    end } }, Database = { isReady = function() return true end }, Migrations = { run = function()
+    end }, LegacyMail = { import = function() end } }, Database = { isReady = function() return true end }, Migrations = { run = function()
         coroutine.yield('migration pending')
         state.migrated = mode ~= 'migration_failure'
         return state.migrated, 'controlled migration failure'
-    end } }
+    end },
+    -- Handset architecture: a data preflight and handset startup run after migrations and call recovery.
+    MigrationReport = { run = function() return { blocking = 0 } end, save = function() return true end },
+    Handsets = { start = function() end } }
     env.CreateThread = function(fn) state.threads[#state.threads + 1] = coroutine.create(fn) end
     env.AddEventHandler = function(name, fn)
         state.handlers[name] = state.handlers[name] or {}

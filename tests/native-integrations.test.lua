@@ -1,6 +1,6 @@
 -- Run from qbphone-stevie: lua5.4 tests/native-integrations.test.lua
 local balance, duty, phone, allowDuty = 100, false, true, true
-Config = { RequirePhoneItem = true, PhoneItem = 'phone', Server = {} }
+Config = { RequirePhoneItem = true, PhoneItem = 'phone', Handsets = { phone = 'standard' }, Server = {} }
 QBPhone = { Permissions = { requireDevice = function() return {} end } }
 PhoneConstants = { Errors = { CONFLICT = 'conflict', INVALID_INPUT = 'invalid', NOT_FOUND = 'missing' } }
 PhoneError = function(code) return { ok = false, error = code } end

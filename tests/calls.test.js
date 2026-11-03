@@ -39,8 +39,8 @@ assert.match(voice, /GetResourceState\(name\) == 'started'/, "voice resource mus
 assert.doesNotMatch(client, /Voice\.Join/, "clients must not assign themselves to call channels");
 assert.match(service, /Integrations\.Voice\.join/, "the server must assign voice call membership");
 assert.match(service, /Integrations\.Voice\.leave/, "the server must remove voice call membership");
-assert.match(serverVoice, /setPlayerCall/, "voice assignment must use the trusted server export");
-assert.match(serverVoice, /removePlayerFromCall/, "voice cleanup must use the trusted server export");
+assert.match(serverVoice, /invoke\('setPlayerCall',\s*firstSource,\s*channel\)/, "voice assignment must use the trusted server export");
+assert.match(serverVoice, /invoke\('setPlayerCall',\s*source,\s*0\)/, "voice cleanup must reset the call channel through the trusted server export");
 assert.doesNotMatch(voice, /MumbleSetPlayerMuted/, "call mute must not misuse receive-side player muting");
 
 console.log("PASS calls: server authority, persistence, routing and cleanup contracts verified");
@@ -62,6 +62,7 @@ end
 local function host()
     local state = { pending = {}, rows = {}, events = {}, timers = {}, callbacks = {}, handlers = {}, voice = {}, pause = nil }
     QBPhone, MySQL = {}, nil
+    Kora = { callback = { register = function(name, fn) state.callbacks[name] = fn end } }
     dofile(root .. '/config/shared.lua')
     dofile(root .. '/config/server.lua')
     dofile(root .. '/shared/constants.lua')
@@ -69,14 +70,11 @@ local function host()
     local devices, byNumber, players = {}, {}, {}
     for i = 1, 4 do
         local citizenId, number = 'character-' .. i, '555000000' .. i
-        devices[citizenId] = { id = i, ownerCitizenId = citizenId, phoneNumber = number, isActive = 1 }
+        -- Handset architecture: a device is a selected, held handset with an active SIM (cellular).
+        devices[citizenId] = { id = i, ownerCitizenId = citizenId, phoneNumber = number, isActive = 1, cellular = true, handsetId = i }
         byNumber[number] = devices[citizenId]
-        players[i] = { PlayerData = { source = i, citizenid = citizenId }, Functions = { GetItemByName = function() return { name = 'phone' } end } }
+        players[i] = { source = i, citizenid = citizenId }
     end
-    local core = { Functions = {
-        GetPlayer = function(source) return players[source] end,
-        CreateCallback = function(name, fn) state.callbacks[name] = fn end,
-    } }
     GetCurrentResourceName = function() return 'kora_phone-stevie' end
     GetNumResourceMetadata = function() return 0 end
     GetGameTimer = function() return 60000 end
@@ -90,13 +88,12 @@ local function host()
     end
     RegisterNetEvent = function() end
     local voice = {
-        setPlayerCall = function(source, channel) state.voice[#state.voice + 1] = { 'join', source, channel }; return true end,
-        removePlayerFromCall = function(source, channel) state.voice[#state.voice + 1] = { 'leave', source, channel }; return true end,
+        -- The trusted server export joins a channel; channel 0 removes the player from the call.
+        setPlayerCall = function(_, source, channel) state.voice[#state.voice + 1] = { channel == 0 and 'leave' or 'join', source, channel }; return true end,
     }
-    exports = { qbcore = {
-        getPlayerData = function(_, src) return players[src] and players[src].PlayerData end,
+    exports = { kora_core = {
+        getPlayerData = function(_, src) return players[src] end,
         getItemByName = function(_, src) return players[src] and { name = 'phone' } end,
-        createCallback = function(_, name, fn) state.callbacks[name] = fn end,
     }, ['pma-voice'] = voice }
     promise = { new = function()
         local p = {}
@@ -117,12 +114,14 @@ local function host()
         elseif query:find('phone_blocks', 1, true) then phase = 'block'
         elseif query:find('INSERT INTO phone_calls', 1, true) then phase = 'create'
         elseif query:find('UPDATE phone_calls SET status', 1, true) then phase = 'transition'
+        elseif query:find('UPDATE phone_handsets', 1, true) then phase = 'handset'
         else error('unexpected SQL: ' .. query) end
         local function complete(value, err)
             if err then cb(nil, err); return end
             if phase == 'caller' then value = devices[params[1]]
             elseif phase == 'lookup' then value = byNumber[params[1]]
             elseif phase == 'block' then value = 0
+            elseif phase == 'handset' then value = 1
             elseif phase == 'create' then
                 value = value == nil and 1 or value
                 if value == 1 then state.rows[params[1]] = { status = 'ringing' } end
@@ -149,8 +148,26 @@ local function host()
         end }
     end
     for _, file in ipairs({ 'server/integrations/qbcore.lua', 'server/repositories/phones.lua', 'server/repositories/blocks.lua',
-        'server/repositories/calls.lua', 'server/services/phone.lua', 'server/rate_limits.lua', 'server/permissions.lua',
-        'server/sessions.lua', 'server/integrations/voice.lua', 'server/services/calling.lua' }) do dofile(root .. '/' .. file) end
+        'server/repositories/calls.lua', 'server/rate_limits.lua', 'server/sessions.lua',
+        'server/integrations/voice.lua', 'server/services/calling.lua' }) do dofile(root .. '/' .. file) end
+    -- server/handsets.lua owns handset resolution and installs Permissions.requireDevice; model its contract here:
+    -- the selected handset is read from the database, must still belong to the loaded character, and gets a session.
+    QBPhone.Handsets = { selected = {}, revoke = function() end, locked = function(_, handler) return handler() end }
+    for i = 1, 4 do QBPhone.Handsets.selected[i] = i end
+    QBPhone.Handsets.current = function(src)
+        local player = players[src]
+        return player and devices[player.citizenid] or nil
+    end
+    QBPhone.Permissions = { requireDevice = function(src)
+        local citizenId = QBPhone.GetCitizenId(src)
+        if not citizenId then return nil, PhoneError(PhoneConstants.Errors.UNAUTHORIZED, 'Character is not loaded') end
+        local device = QBPhone.Repositories.Phones.findByCitizenId(citizenId)
+        if not device or QBPhone.GetCitizenId(src) ~= citizenId then
+            return nil, PhoneError(PhoneConstants.Errors.FORBIDDEN, 'Select a valid handset in your inventory')
+        end
+        QBPhone.Sessions.ensure(src, device)
+        return device
+    end }
     local file = assert(io.open(root .. '/server/callbacks.lua')); local callbackSource = file:read('*a'); file:close()
     -- Use the real protected dispatcher, without registering unrelated phone services.
     local boundary = assert(callbackSource:find("QBPhone.registerCallback('getBootstrap'", 1, true))
@@ -174,14 +191,15 @@ local function host()
     end
     function state.reopen(src, id)
         local device = devices['character-' .. id]
-        players[src] = { PlayerData = { source = src, citizenid = device.ownerCitizenId }, Functions = { GetItemByName = function() return { name = 'phone' } end } }
+        players[src] = { source = src, citizenid = device.ownerCitizenId }
+        QBPhone.Handsets.selected[src] = id
         QBPhone.Sessions.open(src, device)
     end
     state.calling = QBPhone.Services.Calling
     function state.request(name, source, payload)
         local response
         local thread = coroutine.create(function()
-            state.callbacks['qbphone:server:calls:' .. name](source, function(...) response = table.pack(...) end, payload)
+            response = table.pack(state.callbacks['qbphone:server:calls:' .. name](source, payload))
         end)
         local ok, err = coroutine.resume(thread); assert(ok, err)
         return { thread = thread, result = function() return response and response[1] end, arity = function() return response and response.n end }
@@ -195,9 +213,9 @@ local function host()
     return state
 end
 
-local function conflict(response, message)
+local function conflict(response, message, code)
     equal(response.ok, false, message)
-    equal(response.error.code, 'CONFLICT', message)
+    equal(response.error.code, code or 'CONFLICT', message)
 end
 
 for _, second in ipairs({ { 1, '5550000003' }, { 3, '5550000002' }, { 2, '5550000001' } }) do
@@ -286,7 +304,7 @@ for _, phase in ipairs({ 'caller', 'lookup', 'block', 'create' }) do
         h.retire(1)
         if replaced then h.reopen(1, 4) end
         h.complete(request)
-        conflict(request.result(), 'retired caller cannot continue after ' .. phase)
+        conflict(request.result(), 'retired caller cannot continue after ' .. phase, 'FORBIDDEN')
         equal(request.arity(), 1)
         equal(count(h.calling.activeById), 0)
         equal(h.calling.callByDevice[1], nil)
@@ -315,7 +333,7 @@ for _, participant in ipairs({ 1, 2 }) do
     local request = h.request('start', 1, { to = '5550000002' })
     h.retire(participant, true)
     h.complete(request)
-    conflict(request.result(), 'raw drop retires a pending participant')
+    conflict(request.result(), 'raw drop retires a pending participant', participant == 1 and 'FORBIDDEN' or 'CONFLICT')
     equal(count(h.calling.activeById), 0)
     equal(count(h.calling.callByDevice), 0)
     equal(#h.events, 0)
@@ -327,7 +345,7 @@ local sessionlessRetired = host()
 QBPhone.Sessions.close(1); sessionlessRetired.pause = 'create'
 local oldStart = sessionlessRetired.request('start', 1, { to = '5550000002' })
 sessionlessRetired.retire(1); sessionlessRetired.complete(oldStart)
-conflict(oldStart.result(), 'current-character check still protects an initially sessionless caller')
+conflict(oldStart.result(), 'current-character check still protects an initially sessionless caller', 'FORBIDDEN')
 equal(#sessionlessRetired.events, 0)
 for _, failure in ipairs({ 'false', 'error' }) do
     local h = host(); h.pause = 'create'
@@ -357,7 +375,14 @@ process.stdout.write(execFileSync(process.env.LUA || "lua", ["-", root], { input
 
 // Run the actual App callbacks with inert camera/RTC boundaries, never a camera device.
 async function videoConsentRegression() {
-  const ts = require(path.join(root, "web/node_modules/typescript"));
+  // The web dependencies are installed by `npm ci --prefix web` (the CI test step does this); skip cleanly without them.
+  let ts;
+  try { ts = require(path.join(root, "web/node_modules/typescript")); }
+  catch (error) {
+    if (error.code !== "MODULE_NOT_FOUND") throw error;
+    console.log("SKIP video consent: web dependencies are not installed (run npm ci --prefix web)");
+    return;
+  }
   const vm = require("node:vm");
   const source = ts.createSourceFile("App.tsx", read("web/src/App.tsx"), ts.ScriptTarget.Latest, true, ts.ScriptKind.TSX);
   const wanted = new Set(["stopVideo", "ensurePeer", "startVideo", "handleVideoSignal"]);
