@@ -1,9 +1,10 @@
 (() => {
   "use strict";
 
-  // theme.json is the only source of colours; nothing is embedded here. Read it
-  // next to this script (so Vite dev serves its own copy) and default to the
-  // kora_theme NUI origin.
+  // theme.json is the only source of colours and font choices; nothing is
+  // embedded here. Read it next to this script (so Vite dev serves its own copy)
+  // and default to the kora_theme NUI origin. fonts/catalog.json lists the
+  // bundled fonts that theme.json may name by id.
   const providerUrl = (() => {
     try {
       const src = document.currentScript && document.currentScript.src;
@@ -11,13 +12,19 @@
     } catch (_) { /* fall through to the NUI origin */ }
     return "https://cfx-nui-kora_theme/theme.json";
   })();
+  const catalogUrl = new URL("fonts/catalog.json", providerUrl).href;
   const tokenName = /^[a-z][a-z0-9-]{0,63}$/;
   const hex = /^#[0-9a-f]{6}$/i;
   const retryDelay = 250;
   const retryCount = 40;
   const roles = ["background", "surface", "surfacePopover", "surfaceRaised", "surfaceHover", "foreground", "mutedForeground", "border", "borderStrong", "control", "controlHover", "primary", "success", "warning", "danger", "info", "armour"];
+  // slot -> [CSS variable, kind]. Unset variables fall back to theme.css.
+  const fontSlots = { body: ["font-sans", "sans"], heading: ["font-heading", "sans"], mono: ["font-mono", "mono"] };
+  const familyList = /^[A-Za-z0-9 ,'"-]+$/;
   let configured = {};
   let overrides = null;
+  let fileFonts = {};
+  let serverFonts = null;
 
   const number = (value) => Number.isInteger(value) ? String(value) : String(Math.round(value * 10) / 10);
   const colour = (value) => typeof value === "string" && hex.test(value) ? value.toUpperCase() : undefined;
@@ -76,6 +83,58 @@
     }
   }
 
+  // Same rule as theme_loader.lua: only names, commas, quotes and hyphens.
+  function family(value, maxLength = 200) {
+    if (typeof value !== "string") return undefined;
+    value = value.trim();
+    if (!value || value.length > maxLength || !familyList.test(value) || !/[A-Za-z]/.test(value)) return undefined;
+    if ((value.split('"').length - 1) % 2 || (value.split("'").length - 1) % 2) return undefined;
+    return value;
+  }
+
+  // Resolves theme.json "fonts" to slot -> stack, leaving "default" slots unset.
+  async function fontsFrom(fonts) {
+    const out = {};
+    if (!fonts || typeof fonts !== "object") return out;
+    const wanted = Object.keys(fontSlots).filter((slot) => typeof fonts[slot] === "string" && fonts[slot] !== "default");
+    if (!wanted.length) return out;
+    let catalog = null;
+    try {
+      const response = await fetch(catalogUrl);
+      catalog = response.ok && await response.json();
+    } catch (_) { /* custom family lists still work without the catalog */ }
+    const entries = Array.isArray(catalog?.fonts) ? catalog.fonts : [];
+    for (const slot of wanted) {
+      const value = fonts[slot];
+      const font = entries.find((entry) => entry && entry.id === value.toLowerCase());
+      const fallback = catalog?.defaults?.[fontSlots[slot][1]];
+      const custom = family(value);
+      if (font && family(font.stack, 400)) out[slot] = font.stack;
+      else if (custom) out[slot] = family(fallback, 400) ? `${custom}, ${fallback}` : custom;
+      else console.warn(`[qbtheme] ignoring invalid theme.json font "${slot}"`);
+    }
+    return out;
+  }
+
+  // Server fonts (from the Lua bridge, including /config overrides) win over
+  // theme.json; a default heading follows the body font.
+  function applyFonts() {
+    const root = document.documentElement.style;
+    const server = (slot) => {
+      const font = serverFonts && serverFonts[slot];
+      return font && font.source !== "default" ? family(font.stack, 400) : undefined;
+    };
+    const stacks = {};
+    for (const slot of Object.keys(fontSlots)) stacks[slot] = server(slot) || fileFonts[slot];
+    stacks.heading = stacks.heading || stacks.body;
+    for (const [slot, [name]] of Object.entries(fontSlots)) {
+      if (stacks[slot]) root.setProperty(`--${name}`, stacks[slot]);
+      else root.removeProperty(`--${name}`);
+    }
+  }
+
+  const fontPayload = (value) => value && typeof value === "object" && !Array.isArray(value) ? value : null;
+
   function applyConfigured() {
     const colours = { ...configured };
     if (typeof overrides === "string" && hex.test(overrides)) colours.primary = overrides;
@@ -98,6 +157,10 @@
         overrides = payload.overrides || null;
         applyConfigured();
       }
+      if (payload && Object.prototype.hasOwnProperty.call(payload, "fonts")) {
+        serverFonts = fontPayload(payload.fonts);
+        applyFonts();
+      }
     } catch (_) {
       // Loading screens and other bridge-free pages only use the server theme.
     }
@@ -109,7 +172,9 @@
       const payload = response.ok && await response.json();
       if (!payload || !payload.colors || typeof payload.colors !== "object") throw new Error("invalid theme.json");
       configured = payload.colors;
+      fileFonts = await fontsFrom(payload.fonts);
       applyConfigured();
+      applyFonts();
       return true;
     } catch (error) {
       if (remaining > 0) window.setTimeout(() => void loadTheme(remaining - 1), retryDelay);
@@ -123,6 +188,9 @@
     if (event.data?.action === "qbtheme:override") {
       overrides = event.data.data || null;
       applyConfigured();
+    } else if (event.data?.action === "qbtheme:fonts") {
+      serverFonts = fontPayload(event.data.data);
+      applyFonts();
     } else if (event.data?.action === "qbtheme:refresh") {
       void loadTheme();
     }

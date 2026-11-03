@@ -1,3 +1,7 @@
+/* Bundled fonts. Relative, so it resolves next to theme.css both from
+   https://cfx-nui-kora_theme/theme.css and from the Vite dev helper. */
+@import url("fonts/fonts.css");
+
 :root {
   /* Do not request a dark browser colour scheme here. In FiveM CEF it can colour the
      browser canvas itself, turning otherwise transparent NUI pages opaque. */
@@ -5,7 +9,10 @@
      derives them from theme.json and sets them on :root; theme.json is the only
      place colours are edited. Only fixed, non-colour tokens live in this file. */
 
+  /* Font defaults. theme.js overrides them from theme.json "fonts" and the
+     /config font settings; the stacks match fonts/catalog.json "defaults". */
   --font-sans: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  --font-heading: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
   --font-mono: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
   --space: 0.25rem;
   --space-1: 0.25rem;
@@ -43,6 +50,8 @@
   -webkit-font-smoothing: antialiased;
   text-rendering: optimizeLegibility;
 }
+
+:where(h1, h2, h3, h4, h5, h6) { font-family: var(--font-heading); }
 
 :where(button, input, select, textarea) {
   border: 1px solid hsl(var(--control-border));

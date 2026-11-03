@@ -111,7 +111,7 @@
 .logo-satellite,.logo-period { fill: #e45142; }
 .logo-orbit { transform-origin: 120px 120px; animation: logo-revolve 18s linear infinite; }
 .logo-period { animation: logo-breathe 4s ease-in-out infinite; }
-.lock-brand-label { font: 8px 'Space Mono',monospace; letter-spacing: 2px; color: var(--ui-muted); }
+.lock-brand-label { font: 8px var(--font-mono, 'Space Mono',monospace); letter-spacing: 2px; color: var(--ui-muted); }
 .setup-mark .lock-brand { flex: none; min-height: 0; width: auto; gap: 5px; padding: 0; }
 .setup-mark .lock-logo { width: 116px; height: 116px; min-height: 0; }
 .setup-mark.small .lock-logo { width: 76px; height: 76px; }
@@ -160,16 +160,16 @@
 .heads-up-text small { font-size: 11px; color: #d7dcd3; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 @keyframes heads-up-in { from { transform: translateY(-140%); opacity: 0; } to { transform: none; opacity: 1; } }
 .notification-card > span { flex: 1; min-width: 0; }
-.notification-card time { font: 8px 'Space Mono', monospace; letter-spacing: .6px; color: var(--ui-muted); flex-shrink: 0; }
+.notification-card time { font: 8px var(--font-mono, 'Space Mono', monospace); letter-spacing: .6px; color: var(--ui-muted); flex-shrink: 0; }
 .heads-up { touch-action: none; user-select: none; }
 .shade-actions { display: flex; align-items: center; gap: 10px; }
 
 /* Settings: the auto-save status line and the phone-style label. */
-.settings-status { font: 9px 'Space Mono', monospace; letter-spacing: .8px; text-align: center; margin: 0 0 14px; color: var(--ui-muted); }
+.settings-status { font: 9px var(--font-mono, 'Space Mono', monospace); letter-spacing: .8px; text-align: center; margin: 0 0 14px; color: var(--ui-muted); }
 .settings-status[data-status="error"] { color: #d1493b; }
 .settings-label { display: block; font-size: 12px; margin-bottom: 10px; color: var(--ui-muted); }
 .settings-heading { display: flex; align-items: center; justify-content: flex-start; gap: 8px; }
-.settings-state { margin-left: auto; font: 8px 'Space Mono', monospace; letter-spacing: 1px; padding: 3px 7px; border-radius: 10px; border: 1px solid currentColor; color: var(--ui-muted); }
+.settings-state { margin-left: auto; font: 8px var(--font-mono, 'Space Mono', monospace); letter-spacing: 1px; padding: 3px 7px; border-radius: 10px; border: 1px solid currentColor; color: var(--ui-muted); }
 .settings-choices { gap: 6px; }
 .settings-choices .theme-choice { flex-direction: row; justify-content: flex-start; gap: 5px; padding: 8px 6px; font-size: 10px; min-width: 0; }
 .settings-choices .theme-choice { overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }

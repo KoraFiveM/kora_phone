@@ -4,7 +4,7 @@
 .settings-device-mark.model-standard { border-radius:50%; width:64px; height:64px; border-style:dotted; background:transparent; }
 .settings-device-mark.model-flip { border-radius:18px; height:62px; }
 .settings-device-mark.model-fold { width:70px; height:60px; }
-.settings-overline { display:block; color:var(--ui-muted); font:9px 'Space Mono',monospace; text-transform:uppercase; letter-spacing:.12em; line-height:1.5; }
+.settings-overline { display:block; color:var(--ui-muted); font:9px var(--font-mono, 'Space Mono',monospace); text-transform:uppercase; letter-spacing:.12em; line-height:1.5; }
 .settings-identity h2 { font-size:23px; letter-spacing:-.8px; font-weight:500; margin:6px 0; overflow-wrap:anywhere; }
 .settings-identity p { font-size:11px; color:var(--ui-muted); line-height:1.7; margin:0; }.settings-identity p span { display:block; }
 .settings-intro { font-size:12px; color:var(--ui-muted); margin:0 0 15px; }
@@ -16,19 +16,19 @@
 .settings-category-copy { min-width:0; flex:1; }.settings-category-copy strong { display:block; font-size:13px; font-weight:500; line-height:1.4; }.settings-category-copy small { display:block; font-size:10px; color:var(--ui-muted); margin-top:4px; line-height:1.5; }
 .settings-category-value { color:var(--ui-muted); font-size:9px; max-width:70px; text-align:right; }
 .settings-category > svg { color:var(--ui-muted); flex-shrink:0; }
-.settings-system-note { font:9px 'Space Mono',monospace; line-height:1.8; text-transform:uppercase; letter-spacing:.06em; color:var(--ui-muted); margin:25px 0 0; }
+.settings-system-note { font:9px var(--font-mono, 'Space Mono',monospace); line-height:1.8; text-transform:uppercase; letter-spacing:.06em; color:var(--ui-muted); margin:25px 0 0; }
 .settings-return { display:inline-flex; align-items:center; gap:7px; color:var(--ui-muted); font-size:11px; padding:4px 0 13px; }
 .settings-detail-heading { margin:4px 0 22px; }.settings-detail-heading h2 { font-size:25px; line-height:1.2; font-weight:500; letter-spacing:-.9px; margin:6px 0 0; outline-offset:4px; }
 .settings-detail-description,.settings-explanation { font-size:11px; line-height:1.75; color:var(--ui-muted); margin:0 0 15px; }
 .settings-group { padding:0 0 23px; margin:0 0 23px; border:0; border-bottom:1px solid var(--ui-line); border-radius:0; background:transparent; }
 .settings-group:last-of-type { border-bottom:0; }.settings-group h3 { font-size:14px; font-weight:500; margin:0 0 13px; display:flex; align-items:center; gap:8px; }
-.settings-group .settings-state { margin-left:auto; color:var(--ui-muted); font:9px 'Space Mono',monospace; }
+.settings-group .settings-state { margin-left:auto; color:var(--ui-muted); font:9px var(--font-mono, 'Space Mono',monospace); }
 .settings-group label { display:block; position:relative; font-size:12px; color:var(--ui-ink); line-height:1.6; }
 .settings-group label > input:not([type=range]) { margin-top:8px; }
 .settings-hub input[type=range] { display:block; width:100%; min-width:0; box-sizing:border-box; margin:10px 0 0; }
-.settings-field-value { float:right; font:11px 'Space Mono',monospace; color:var(--ui-muted); }
+.settings-field-value { float:right; font:11px var(--font-mono, 'Space Mono',monospace); color:var(--ui-muted); }
 .settings-theme-preview { min-height:105px; border:1px solid var(--ui-line); border-radius:16px; padding:19px; margin:0 0 25px; display:flex; justify-content:space-between; align-items:center; }
-.settings-theme-preview span:not(.settings-preview-dots) { display:block; font:9px 'Space Mono',monospace; letter-spacing:.06em; text-transform:uppercase; opacity:.75; }.settings-theme-preview strong { display:block; font-size:24px; font-weight:500; letter-spacing:-.6px; margin-top:7px; }
+.settings-theme-preview span:not(.settings-preview-dots) { display:block; font:9px var(--font-mono, 'Space Mono',monospace); letter-spacing:.06em; text-transform:uppercase; opacity:.75; }.settings-theme-preview strong { display:block; font-size:24px; font-weight:500; letter-spacing:-.6px; margin-top:7px; }
 .settings-preview-dots { width:53px; display:flex; flex-wrap:wrap; gap:5px; }.settings-preview-dots i { width:11px; height:11px; border-radius:50%; background:currentColor; }
 .settings-palette-grid,.settings-wallpaper-grid,.settings-icon-options { padding:0; margin:0 0 24px; border:0; display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:9px; }
 .settings-hub legend { font-size:11px; color:var(--ui-muted); margin-bottom:12px; }
@@ -40,7 +40,7 @@
 .settings-icon-options { display:flex; flex-wrap:wrap; }.settings-icon-options button { border:1px solid var(--ui-line); border-radius:999px; padding:8px 11px; font-size:10px; }.settings-icon-options button[aria-pressed=true] { color:var(--ui-action-ink); background:var(--ui-action); border-color:var(--ui-action); }
 .settings-about-model { display:flex; align-items:center; gap:13px; margin-bottom:20px; }.settings-about-model h3 { margin:0 0 4px; }.settings-about-model p { margin:0; color:var(--ui-muted); font-size:10px; }
 .settings-device-facts { margin:7px 0 0; }.settings-device-facts > div { display:flex; align-items:center; gap:15px; justify-content:space-between; padding:11px 0; border-bottom:1px solid var(--ui-line); font-size:11px; }.settings-device-facts dt { color:var(--ui-muted); }.settings-device-facts dd { margin:0; text-align:right; overflow-wrap:anywhere; }
-.settings-save-state { display:flex; align-items:center; gap:6px; font:9px 'Space Mono',monospace; line-height:1.7; color:var(--ui-muted); margin:25px 0 0; }.settings-save-state[data-status=error] { color:var(--red,#d71921); }
+.settings-save-state { display:flex; align-items:center; gap:6px; font:9px var(--font-mono, 'Space Mono',monospace); line-height:1.7; color:var(--ui-muted); margin:25px 0 0; }.settings-save-state[data-status=error] { color:var(--red,#d71921); }
 .settings-detail .handset-panel { padding-top:0; }.settings-detail .hs-header { padding-top:0; }.settings-detail .hs-header h2 { font-size:17px; }.settings-detail .hs-header .hs-kicker { display:none; }.settings-detail .hs-preview { margin-top:0; }
 .phone.handset-standard .settings-category-icon { background:transparent; border:1px solid var(--ui-line); border-radius:50%; }
 .phone.handset-standard .settings-theme-preview { border-style:dotted; }.phone.handset-standard .settings-palette-grid { grid-template-columns:repeat(2,minmax(0,1fr)); }
