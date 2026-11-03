@@ -71,4 +71,15 @@ Maps automatically mirrors visible client GTA blips (sprite IDs 0–1023) once p
 
 Open Camera for a live in-game preview. Use the switch-camera button for selfies or the rear camera, then the shutter for a photo. Select Video to record a silent in-game clip; press Stop or let it stop at the configured limit (15 seconds by default). Photos and clips appear in Gallery, where clips have playback controls. Closing the phone or leaving Camera cancels an unfinished recording and releases its camera and stream.
 
+Hold the look key (left Alt by default, `Config.Camera.lookKey`) to aim; release it to use the phone again. Scroll the mouse wheel to zoom, either with the phone cursor up or while aiming, in both the rear and selfie cameras. While the camera is open the wheel does not switch weapons. The zoom eases in and out and resets when you close the camera or the phone, or flip between rear and selfie. Set it up in `Config.Camera.zoom` (`config/client.lua`):
+
+| Option | Default | Meaning |
+| --- | --- | --- |
+| `enabled` | `true` | `false` turns wheel zoom off (the wheel then scrolls the phone as before) |
+| `minFov` / `maxFov` | `10.0` / `60.0` | Narrowest (most zoomed) and widest field of view in degrees |
+| `defaultFov` | `60.0` | View the camera opens at and returns to |
+| `step` | `5.0` | Degrees per wheel notch |
+| `smooth` / `smoothSpeed` | `true` / `10.0` | Ease towards each step (higher is quicker); `false` jumps straight to it |
+| `selfie` | `{ minFov = 30.0, maxFov = 60.0 }` | Overrides `minFov` / `maxFov` / `defaultFov` for the selfie camera |
+
 Video recording requires a provider that supports video (Fivemanage or the external broker), canvas capture, and MediaRecorder in FiveM's browser. The phone records the game view, not a real webcam. Game audio and microphone audio are not recorded.

@@ -11,6 +11,8 @@ json = { decode = function() return { receipt = 'receipt' } end }
 QBPhone = { State = { cameraMode = true }, ServerCallback = function(name, _, callback)
     request = { name = name, callback = callback }
 end }
+function AddEventHandler() end
+function GetCurrentResourceName() return "kora_phone" end
 dofile('client/camera.lua')
 QBPhone.Camera.Close = function() closes = closes + 1; QBPhone.State.cameraMode = false end
 local function start()

@@ -33,6 +33,40 @@ function Video.Cleanup()
     DisplayRadar(Video.previousRadar)
 end
 
+-- The per-frame loop only exists while a video call camera (or cover) is active; it is started from the two places
+-- that set Video.active and ends itself once Video.Cleanup() clears it. The death check stays per frame (a native),
+-- the QBPhone.Unavailable() check (cache + player-data exports) runs every 250 ms.
+local watching = false
+local function watchVideo()
+    if watching then return end
+    watching = true
+    CreateThread(function()
+        local nextUnavailableCheck = 0
+        while Video.active do
+            local call = QBPhone.State and QBPhone.State.activeCall
+            local now = GetGameTimer()
+            local unavailable = false
+            if QBPhone.Unavailable and now >= nextUnavailableCheck then
+                nextUnavailableCheck = now + 250
+                unavailable = QBPhone.Unavailable()
+            end
+            if not QBPhone.State or not QBPhone.State.open or (not Video.cover and (not call or call.status ~= 'active'))
+                or IsEntityDead(PlayerPedId()) or unavailable then
+                Video.Cleanup()
+                QBPhone.SendNui('video:stopped', { reason = 'Camera session ended' })
+            else
+                updateCamera()
+                HideHudAndRadarThisFrame()
+                DisableControlAction(0, 24, true)
+                DisableControlAction(0, 25, true)
+                DisableControlAction(0, 37, true)
+            end
+            Wait(0)
+        end
+        watching = false
+    end)
+end
+
 RegisterNUICallback('camera:videoStart', function(data, cb)
     if type(data) ~= 'table' or type(data.token) ~= 'string' or #data.token > 64 or #data.token < 1 then
         cb({ ok = false, error = 'Invalid camera session' })
@@ -63,6 +97,7 @@ RegisterNUICallback('camera:videoStart', function(data, cb)
             return
         end
         Video.active = true
+        watchVideo()
         updateCamera()
         RenderScriptCams(true, false, 0, true, true)
         DisplayRadar(false)
@@ -97,31 +132,9 @@ RegisterNUICallback('camera:coverStart',function(data,cb)
     Video.previousRadar=not IsRadarHidden(); Video.front=true; Video.cover=true
     Video.camera=CreateCam('DEFAULT_SCRIPTED_CAMERA',true)
     if not Video.camera or Video.camera==0 then Video.camera=nil; Video.cover=false; return cb({ok=false,error='Camera unavailable'}) end
-    Video.active=true; Video.token='cover'; updateCamera()
+    Video.active=true; Video.token='cover'; watchVideo(); updateCamera()
     RenderScriptCams(true,false,0,true,true); DisplayRadar(false)
     cb({ok=true})
-end)
-
-CreateThread(function()
-    while true do
-        if Video.active then
-            local call = QBPhone.State and QBPhone.State.activeCall
-            if not QBPhone.State or not QBPhone.State.open or (not Video.cover and (not call or call.status ~= 'active'))
-                or IsEntityDead(PlayerPedId()) or (QBPhone.Unavailable and QBPhone.Unavailable()) then
-                Video.Cleanup()
-                QBPhone.SendNui('video:stopped', { reason = 'Camera session ended' })
-            else
-                updateCamera()
-                HideHudAndRadarThisFrame()
-                DisableControlAction(0, 24, true)
-                DisableControlAction(0, 25, true)
-                DisableControlAction(0, 37, true)
-            end
-            Wait(0)
-        else
-            Wait(100)
-        end
-    end
 end)
 
 RegisterNetEvent('qbphone:client:calls:ended', function() Video.Cleanup() end)

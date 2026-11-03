@@ -17,9 +17,11 @@ if root == script then root = "." end
 
 local ped, ent, played, props, deleted, threads, stopped, handlers
 local flags -- toggles the stubbed ped state
+local pedListeners, pedReads -- cache.onChange("ped") handlers and Kora.cache.ped() export calls
 
 local function setup(config)
     played, props, deleted, threads, stopped, handlers = {}, {}, {}, {}, 0, {}
+    pedListeners, pedReads = {}, 0
     flags = { dead = false, cuffed = false, ragdoll = false, swimming = false, vehicle = false }
     ent = {}
     _G.QBPhone = { State = { activeCall = nil } }
@@ -44,7 +46,10 @@ local function setup(config)
     _G.CreateObject = function(hash) local id = 100 + #props + 1; ent[id] = true; props[#props + 1] = { id = id, hash = hash }; return id end
     _G.AttachEntityToEntity = function(e, _, bone, ox, oy, oz) props[#props].bone, props[#props].ox = bone, ox end
     _G.QB = {
-        cache = { ped = function() return 1 end },
+        cache = {
+            ped = function() pedReads = pedReads + 1; return 1 end,
+            onChange = function(key, fn) if key == "ped" then pedListeners[#pedListeners + 1] = fn end end,
+        },
         stream = { loadModel = function(model, cb) cb(model); return true end },
         anim = {
             play = function(entity, dict, clip, opts) played[#played + 1] = { dict = dict, clip = clip, flag = opts.flag }; return { entity = entity, n = #played } end,
@@ -69,6 +74,21 @@ test("start holds the phone prop and plays the text pose", function()
     equal(props[1].bone, 28422)
     equal(props[1].ox, 0.1)
     equal(QBPhone.State.phoneObject, props[1].id)
+end)
+
+test("the watcher follows the mirrored ped instead of calling the cache export every tick", function()
+    setup({})
+    QBPhone.Animations.Start()
+    equal(pedReads, 1)
+    tick(); tick(); tick()
+    equal(pedReads, 1)
+    equal(#pedListeners, 1)
+    pedListeners[1](2) -- ped 2 does not exist: the prop is put away
+    tick()
+    equal(livingProps(), 0)
+    pedListeners[1](1)
+    tick()
+    equal(livingProps(), 1)
 end)
 
 test("stop removes the prop and the pose, and the watcher ends", function()

@@ -18,18 +18,20 @@ export function CameraScreen() {
   const [capturing, setCapturing] = useState(false);
   const [seconds, setSeconds] = useState(0);
   const [attempt, setAttempt] = useState(0);
+  const [zoom, setZoom] = useState(false);
 
   useEffect(() => {
     mounted.current = true;
     let cancelled = false, animation = 0;
     let view: ReturnType<typeof createGameView> | undefined;
-    setReady(false); setError('');
+    setReady(false); setError(''); setZoom(false);
     void (async () => {
       if (isPreview) { setReady(true); return; }
       await closeRequest.current;
       if (cancelled) return;
-      const reply = await nui<{ok:boolean;error?:string}>('camera:open', { preview: true, front });
+      const reply = await nui<{ok:boolean;error?:string;zoom?:boolean}>('camera:open', { preview: true, front });
       if (!reply.ok) throw new Error(reply.error || 'The game camera is unavailable.');
+      if (!cancelled) setZoom(reply.zoom === true);
       if (cancelled || !canvas.current) return;
       view = createGameView(canvas.current, { preserveDrawingBuffer: true, onContextLost: () => {
         recording.current?.cancel('The game camera stopped. Please reopen Camera.');
@@ -53,6 +55,20 @@ export function CameraScreen() {
     // Facing is changed on the existing native camera, without restarting its renderer.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [device.id, attempt]);
+
+  // While the phone cursor is up the game never sees the mouse wheel, so the preview forwards it to the native camera.
+  useEffect(() => {
+    if (!ready || !zoom) return;
+    let last = -Infinity;
+    const wheel = (event: WheelEvent) => {
+      event.preventDefault();
+      if (!event.deltaY || event.timeStamp - last < 40) return;
+      last = event.timeStamp;
+      void nui('camera:zoom', { dir: event.deltaY < 0 ? 1 : -1 }).catch(() => undefined);
+    };
+    window.addEventListener('wheel', wheel, { passive: false });
+    return () => window.removeEventListener('wheel', wheel);
+  }, [ready, zoom]);
 
   useEffect(() => {
     if (!capturing) return;

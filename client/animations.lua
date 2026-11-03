@@ -32,6 +32,9 @@ end
 
 local wanted = false
 local generation = 0
+-- Mirror of Kora.cache.ped() so the 250 ms watcher reads an upvalue instead of making an export call per tick.
+local cachedPed
+Kora.cache.onChange('ped', function(ped) cachedPed = ped end)
 local handle, currentKey, prop
 
 local function removeProp()
@@ -101,6 +104,7 @@ function Animations.Start()
     Animations.Stop()
     if not option('enabled') then return false end
     local ped = Kora.cache.ped()
+    cachedPed = ped
     if not DoesEntityExist(ped) or IsEntityDead(ped) then return false end
     wanted = true
     generation = generation + 1
@@ -111,7 +115,7 @@ function Animations.Start()
         while wanted and mine == generation do
             Wait(250)
             if not wanted or mine ~= generation then break end
-            local current = Kora.cache.ped()
+            local current = cachedPed
             if blocked(current) then release() else pcall(apply, current) end
         end
     end)

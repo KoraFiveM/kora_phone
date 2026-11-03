@@ -9,10 +9,24 @@ Config.Client = {
 -- lookMode 'hold' aims while lookKey is held, 'toggle' switches aiming on and off with it, 'off' keeps the
 -- camera fixed to where the player faces. lookKey is a default players can rebind in their key settings.
 -- hint shows the on-screen help line while the camera is open.
+-- zoom: the mouse wheel zooms the rear and selfie cameras, both with the phone cursor up and while aiming.
+-- Values are the field of view in degrees (lower is closer). The camera opens at defaultFov and goes back to it
+-- when it closes or flips between rear and selfie. smooth eases to each step (smoothSpeed: higher is quicker)
+-- instead of jumping. selfie overrides minFov / maxFov / defaultFov for the selfie camera held at arm's length.
 Config.Camera = {
     lookMode = 'hold', -- hold | toggle | off
     lookKey = 'LMENU', -- keyboard key name (LMENU = left Alt)
-    hint = true
+    hint = true,
+    zoom = {
+        enabled = true,
+        minFov = 10.0,
+        maxFov = 60.0,
+        defaultFov = 60.0,
+        step = 5.0, -- degrees per wheel notch
+        smooth = true,
+        smoothSpeed = 10.0,
+        selfie = { minFov = 30.0, maxFov = 60.0 },
+    },
 }
 
 -- Phone prop and animation while the phone is open. The player holds a phone and plays the texting pose
