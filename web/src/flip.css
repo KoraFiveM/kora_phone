@@ -7,7 +7,7 @@
 .style-flip .phone-screen { border-radius:24px; transition:opacity .15s; }
 .flip-crease { position:absolute; top:50%; left:8px; right:8px; height:18px; transform:translateY(-50%); background:linear-gradient(transparent,#00000020 40%,#ffffff12 50%,#00000018 60%,transparent); pointer-events:none; z-index:65; }
 .flip-hinge { position:absolute; top:calc(50% - 10px); width:9px; height:20px; border-radius:3px; background:linear-gradient(90deg,#161616,#888,#222); z-index:66; }.flip-hinge.left { left:-3px; }.flip-hinge.right { right:-3px; }
-.fold-control { position:absolute; right:19px; top:-27px; background:var(--tone-2f2f2f,#2f2f2f); color:var(--tone-f5f5f5,#f5f5f5); border:1px solid var(--tone-d0d0d0,#d0d0d0); font:9px 'Space Mono',monospace; letter-spacing:2px; padding:5px 12px; border-radius:10px; box-shadow:0 1px 0 var(--tone-1e1e1e,#1e1e1e); }
+.fold-control { position:absolute; right:19px; top:-27px; background:var(--tone-2f2f2f,#2f2f2f); color:var(--tone-f5f5f5,#f5f5f5); border:1px solid var(--tone-d0d0d0,#d0d0d0); font:9px var(--font-mono, 'Space Mono',monospace); letter-spacing:2px; padding:5px 12px; border-radius:10px; box-shadow:0 1px 0 var(--tone-1e1e1e,#1e1e1e); }
 .phone.style-flip.is-folded { height:420px; top:calc(400px * var(--phone-scale, 1)); box-shadow:0 24px 45px #0005,inset 0 0 0 3px #686868,inset 0 -8px 0 #111; }
 .is-folded .phone-screen { visibility:hidden; opacity:0; pointer-events:none; }
 .is-folded .flip-crease { display:none; }

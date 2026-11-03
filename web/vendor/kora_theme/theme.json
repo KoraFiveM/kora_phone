@@ -1,5 +1,6 @@
 {
   "name": "Kora green",
+  "fonts": { "heading": "default", "body": "default", "mono": "default" },
   "colors": {
     "background": "#101010",
     "surface": "#171717",

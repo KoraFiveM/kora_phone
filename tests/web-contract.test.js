@@ -225,3 +225,52 @@ main().catch(error => { console.error(error); process.exitCode = 1; });
   assert.ok(offered.includes("kora_core"), "the default Signature wallpaper uses kora_core");
   assert.match(fs.readFileSync(path.join(root, "web/src/types.ts"), "utf8"), /wallpaper === \x27qbcore\x27\) legacy\.wallpaper = \x27kora_core\x27/, "legacy qbcore wallpaper is normalised");
 }
+
+{
+  // The vendored kora_theme ships the font tokens and its bundled fonts/, and the dev helper serves them.
+  const vendor = path.join(root, "web/vendor/kora_theme");
+  const themeCss = fs.readFileSync(path.join(vendor, "theme.css"), "utf8");
+  assert.match(themeCss, /@import url\("fonts\/fonts\.css"\)/, "vendored theme.css imports its bundled fonts");
+  for (const token of ["--font-sans", "--font-heading", "--font-mono"]) assert.match(themeCss, new RegExp(`${token}:`), `vendored theme.css defines ${token}`);
+  const fontsCss = fs.readFileSync(path.join(vendor, "fonts/fonts.css"), "utf8");
+  const files = [...fontsCss.matchAll(/url\("([^"]+)"\)/g)].map((match) => match[1]);
+  assert.ok(files.length > 0 && files.every((file) => file.endsWith(".woff2") && fs.existsSync(path.join(vendor, "fonts", file))), "every vendored @font-face file exists");
+  const catalog = JSON.parse(fs.readFileSync(path.join(vendor, "fonts/catalog.json"), "utf8"));
+  for (const font of catalog.fonts) {
+    assert.ok(fontsCss.includes(`font-family: "${font.family}";`), `vendored fonts.css declares ${font.family}`);
+    assert.ok(fs.existsSync(path.join(vendor, "fonts", font.id, "OFL.txt")), `vendored ${font.id} keeps its OFL licence`);
+  }
+  const plugin = fs.readFileSync(path.join(vendor, "vite-plugin.mjs"), "utf8");
+  assert.match(plugin, /fonts\\\//, "the vendored dev helper serves fonts/");
+  assert.match(plugin, /woff2: "font\/woff2"/, "the vendored dev helper serves woff2 with a font MIME type");
+  assert.match(fs.readFileSync(path.join(vendor, "README.txt"), "utf8"), /theme-fonts-20261102 at commit d21375a/, "README names the vendored kora_theme commit");
+
+  // UI text follows the kora_theme font tokens, keeping the original stacks as fallbacks.
+  const src = path.join(root, "web/src");
+  const css = Object.fromEntries(fs.readdirSync(src).filter((file) => file.endsWith(".css")).map((file) => [file, fs.readFileSync(path.join(src, file), "utf8")]));
+  assert.match(css["style.css"], /:root \{ font-family: var\(--font-sans, 'DM Sans', Arial, sans-serif\);/, "body text uses --font-sans with the DM Sans fallback");
+  assert.match(css["style.css"], /:where\(h1, h2, h3, h4, h5, h6\) \{ font-family: var\(--font-heading, var\(--font-sans, 'DM Sans', Arial, sans-serif\)\); \}/, "headings use --font-heading, falling back to the body stack");
+  assert.match(css["handset-shells.css"], /font-family:var\(--font-sans, 'DM Sans',Arial,sans-serif\);/, "handset shells use --font-sans");
+  // Deliberately fixed: the Nothing OS mimic (standard handset), the flip cover display, and text-built logo marks.
+  const fixed = [/^\.cover-display small$/, /^\.onboard-orbit > span$/, /^\.setup-mark$/, /^\.lock-orbit span$/];
+  let themed = 0;
+  for (const [file, text] of Object.entries(css)) {
+    for (const rule of text.replace(/\/\*[\s\S]*?\*\//g, "").replace(/@import[^;]*;/g, "").split("}")) {
+      const declarations = [...rule.matchAll(/font(?:-family)?:([^;]*(?:'DM Sans'|'Space Mono'|'Space Grotesk')[^;]*)/g)].map((match) => match[1].trim());
+      if (declarations.length === 0) continue;
+      const selector = rule.slice(0, rule.indexOf("{")).trim();
+      if (fixed.some((pattern) => pattern.test(selector)) || (file === "nothing-standard.css" && /^\.phone\.handset-standard/.test(selector))) continue;
+      for (const value of declarations) {
+        assert.match(value, /var\(--font-(?:sans|mono|heading), /, `${file} ${selector} uses a kora_theme font token with a fallback`);
+        themed += 1;
+      }
+    }
+  }
+  assert.ok(themed >= 50, "the generic UI fonts are themed");
+  assert.ok(Object.values(css).every((text) => !/var\(--font-(?:sans|mono|heading)\)/.test(text)), "font tokens always carry the original stack as a fallback");
+
+  // The bundled fonts load from cfx-nui-kora_theme, which the page CSP must allow.
+  const indexHtml = fs.readFileSync(path.join(root, "web/index.html"), "utf8");
+  assert.match(indexHtml, /font-src 'self' https:\/\/cfx-nui-kora_theme;/, "CSP allows kora_theme's bundled fonts");
+  console.log(`PASS web-contract: kora_theme fonts vendored; ${themed} UI font declarations follow the theme tokens`);
+}

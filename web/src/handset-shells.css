@@ -1,5 +1,5 @@
 /* Each physical model owns its shell; preferences never change the handset type. */
-.phone.handset-standard,.phone.handset-flip,.phone.handset-fold { width:var(--handset-width,370px); font-family:'DM Sans',Arial,sans-serif; }
+.phone.handset-standard,.phone.handset-flip,.phone.handset-fold { width:var(--handset-width,370px); font-family:var(--font-sans, 'DM Sans',Arial,sans-serif); }
 .handset-app-layout { flex:1; min-height:0; display:flex; overflow:hidden; }
 .handset-app-layout > .app-content { flex:1; min-width:0; }
 .handset-clock { font-variant-numeric:tabular-nums; letter-spacing:-4px; font-size:76px; font-weight:500; line-height:1.1; text-align:center; }
