@@ -12,7 +12,7 @@ A FiveM phone system with distinct Standard, Flip and Fold interfaces, physical 
 | **Circuit Flip** | `phone_flip` | A tall inner display and a closed cover screen for the clock, notifications, voice calls, local music controls and camera preview. |
 | **Atlas Fold** | `phone_fold` | A complete outer phone that unfolds into larger app layouts, including conversations beside the selected chat and expanded Settings. |
 
-Each handset has its own visual identity, with coordinated colors across the launcher, apps and Settings. Legacy `phone` items convert to the Standard model.
+Each handset has its own visual identity, with coordinated colors across the launcher, apps and Settings. Legacy `phone` items are treated as the Standard model.
 
 <p align="center"><em>Browser previews using demonstration data.</em></p>
 
@@ -53,7 +53,7 @@ Use the resource names below. The phone integrates with the custom `[v2]` APIs a
 | Resource/service | Used for |
 |---|---|
 | `kora_lib` | Shared helpers, interactions and callbacks |
-| `kora_sql` | Database access and tracked migrations |
+| `kora_sql` | Database access and table setup |
 | `kora_core` | Character identity, shared items, jobs and money |
 | `kora_inventory` | Physical handset/SIM ownership and locked inventory changes |
 | `kora_theme` | Shared theme runtime and client bridge |
@@ -77,21 +77,18 @@ Keep one phone provider enabled. Stop the previous phone before starting this re
 
 | Your database | What to do |
 |---|---|
-| **Fresh installation** | Leave `Config.Server.AutoMigrate = true` and let startup create the schema from `server/schema.lua`. |
-| **Existing Stevie/QBPhone installation** | Back up the database and inventories together, then use automatic migrations. Do not import the fresh-install master over existing phone tables. |
+| **New server (empty database)** | Nothing to do: startup creates the tables from `server/schema.lua`. No migrations or data conversion exist. |
 
-The tables are declared in `server/schema.lua` and created or extended (never altered or dropped) by `Kora.sql.ensureTables` at start.
+The tables are declared in `server/schema.lua` and created by `Kora.sql.ensureTables` at start.
 
-Startup writes `migration-report.json` before legacy identity conversion. Unknown registering characters, invalid legacy numbers or malformed settings stop conversion for review. Existing numbers and supported content use resumable claims; characters without handsets do not receive duplicate phones or subscriptions.
-
-See [deployment, migration and rollback](docs/three-handsets.md) before upgrading an existing server.
+See [deployment and rollback](docs/three-handsets.md) for backups.
 
 ### 3. Configure your city
 
 | File | Settings |
 |---|---|
 | [config/handsets.lua](config/handsets.lua) | Models, shop stock/prices, business jobs, counter locations, SIM-swap rules and Wi-Fi hotspots |
-| [config/server.lua](config/server.lua) | Media provider, limits, automatic migrations, STUN and video configuration |
+| [config/server.lua](config/server.lua) | Media provider, limits, STUN and video configuration |
 | [config/client.lua](config/client.lua) | Phone command/keybind, death restrictions and notification sound |
 
 Circuit Mobile counters are preset at the Digital Den doors (Vinewood, Mirror Park, Sinner St) and Alta St; add more entries under `shops` for other stores. Replace the example shop coordinates, business job names and hotspot settings for your server. SIM swapping supports `player`, `shop` or `both`; the default is `both`.
@@ -182,4 +179,4 @@ The launch interface includes the apps listed above. Legacy group history remain
 
 Battery, physical damage, account-based Wi-Fi calling and technician crafting/wiping/SIM-hacking gameplay are deferred.
 
-Before production deployment, verify native calls/video, provider uploads and database migration/rollback on an isolated copy of your server. Shop locations, permissions and hotspot routing buckets must match your setup.
+Before production deployment, verify native calls/video, provider uploads and backup/rollback on an isolated copy of your server. Shop locations, permissions and hotspot routing buckets must match your setup.

@@ -476,48 +476,9 @@ QBPhone.Repositories.Phones.clearPin=function(id)
         {query='UPDATE phone_devices SET pin_hash=NULL,pin_salt=NULL,pin_failed_attempts=0,pin_locked_until=NULL WHERE id=?',values={id}}
     })
 end
-function H.migrate()
-    for _,d in ipairs(query('SELECT d.* FROM phone_devices d LEFT JOIN phone_handsets h ON h.device_id=d.id WHERE h.id IS NULL')) do
-        local handset,account=random(),random()
-        local sim=random()
-        local ok=MySQL.transaction.await({
-            {query='INSERT INTO phone_cloud_accounts(id,owner_citizenid,recovery_hash) VALUES(?,?,SHA2(?,256))',values={account,d.owner_citizenid,random()}},
-            {query='INSERT INTO phone_handsets(id,model,device_id,account_id) VALUES(?,?,?,?)',values={handset,'standard',d.id,account}},
-            {query='INSERT INTO phone_sims(id,phone_number,owner_citizenid,handset_id) VALUES(?,?,?,?)',values={sim,d.phone_number,d.owner_citizenid,handset}},
-            {query='INSERT INTO phone_legacy_claims(device_id,citizenid,handset_id,account_id) VALUES(?,?,?,?)',values={d.id,d.owner_citizenid,handset,account}}
-        })
-        if not ok then error('Legacy identity conversion failed for '..d.id) end
-    end
-    -- Every legacy member receives only the history they could previously read.
-    if not row("SELECT name FROM phone_upgrade_state WHERE name='legacy-mailboxes'") then
-    local imported=MySQL.transaction.await({{query=[[INSERT IGNORE INTO phone_mailboxes(device_id,peer_number,sender_number,body,media_id,request_id,created_at,is_read,is_outgoing)
-        SELECT cm.device_id,IF(c.type='group',CONCAT('@group:',c.id),COALESCE((SELECT d.phone_number FROM phone_conversation_members other
-            JOIN phone_devices d ON d.id=other.device_id WHERE other.conversation_id=m.conversation_id AND other.device_id<>cm.device_id LIMIT 1),'unknown')),
-            sender.phone_number,COALESCE(m.body,''),m.media_id,CONCAT('legacy:',m.id),m.created_at,1,m.sender_device_id=cm.device_id
-        FROM phone_messages m JOIN phone_conversation_members cm ON cm.conversation_id=m.conversation_id
-        JOIN phone_devices sender ON sender.id=m.sender_device_id JOIN phone_conversations c ON c.id=m.conversation_id
-        WHERE m.deleted_at IS NULL AND cm.left_at IS NULL AND NOT EXISTS(SELECT 1 FROM phone_message_deletions x WHERE x.message_id=m.id AND x.device_id=cm.device_id)]],values={}},
-        {query='INSERT IGNORE INTO phone_threads(device_id,peer_number) SELECT DISTINCT device_id,peer_number FROM phone_mailboxes',values={}},
-        {query="INSERT INTO phone_upgrade_state(name) VALUES('legacy-mailboxes')",values={}}})
-    if not imported then error('Legacy message import failed') end
-    end
-    for _,h in ipairs(query('SELECT id FROM phone_handsets WHERE account_id IS NOT NULL')) do
-        local d=phoneRow(h.id)
-        update('UPDATE phone_cloud_accounts SET snapshot_json=? WHERE id=? AND snapshot_json IS NULL',{json.encode(snapshot(d)),d.accountId})
-        local account=row('SELECT snapshot_json FROM phone_cloud_accounts WHERE id=?',{d.accountId})
-        local saved=account and account.snapshot_json and json.decode(account.snapshot_json)
-        for _,m in ipairs(saved and saved.media or {}) do
-            update('INSERT IGNORE INTO phone_cloud_media(account_id,media_id) SELECT ?,id FROM phone_media WHERE id=?',{d.accountId,m.id})
-        end
-    end
-    update([[INSERT IGNORE INTO phone_migration_issues(device_id,issue_key,detail)
-        SELECT owner_device_id,CONCAT('media:',id),'Media record has no provider key or URL'
-        FROM phone_media WHERE public_url='' OR storage_key='' OR public_url IS NULL]])
-end
 function H.start()
     local gateway=pcall(function() exports.kora_inventory:PhoneItemTransaction(0,{op='probe'}) end)
     if not gateway then error('Install the qbinventory PhoneItemTransaction companion before starting qbphone') end
-    H.migrate()
     for name,model in pairs(Config.Handsets) do
         exports.kora_core:registerShared('items',name,{name=name,label=({standard='Orchard One',flip='Circuit Flip',fold='Atlas Fold'})[model],weight=250,type='item',image='phone.png',unique=true,useable=true,shouldClose=true,description='Personal handset'})
         exports.kora_core:createUseable(name,function(src,item)

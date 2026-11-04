@@ -24,12 +24,12 @@ Kora = { sql = { NULL = '\0qbsql:null\0', ensureTables = function(spec)
 end } }
 Config = { Server = {} }
 dofile(root .. "/server/schema.lua")
-dofile(root .. "/server/integrations/migrations.lua")
-local Migrations = QBPhone.Migrations
-local function reset() stub.calls, stub.spec, stub.reports, stub.err, stub.throw, printed = 0, nil, {}, nil, nil, {}; Config.Server.AutoMigrate = nil end
+dofile(root .. "/server/integrations/schema_setup.lua")
+local Migrations = QBPhone.SchemaSetup
+local function reset() stub.calls, stub.spec, stub.reports, stub.err, stub.throw, printed = 0, nil, {}, nil, nil, {} end
 
-test("the schema declares all 34 tables, each once", function()
-    equal(#QBPhoneSchema, 34)
+test("the schema declares all 33 tables, each once", function()
+    equal(#QBPhoneSchema, 33)
     local seen = {}
     for _, spec in ipairs(QBPhoneSchema) do assert(not seen[spec.name], 'duplicate ' .. spec.name); seen[spec.name] = true end
     for _, name in ipairs({ 'phone_devices', 'phone_messages', 'phone_calls', 'phone_economy_audit', 'phone_social_posts', 'phone_items',
@@ -64,11 +64,5 @@ test("a thrown error is reported, not propagated", function()
     local ok, reason = Migrations.run()
     equal(ok, false); assert(reason:find('kaput', 1, true), reason)
 end)
-test("AutoMigrate = false leaves the database alone", function()
-    reset(); Config.Server.AutoMigrate = false
-    equal(Migrations.run(), true); equal(stub.calls, 0)
-    Config.Server.AutoMigrate = nil
-end)
-
 io.write(("\n%d passed, %d failed\n"):format(passed, failed))
 if failed > 0 then os.exit(1) end

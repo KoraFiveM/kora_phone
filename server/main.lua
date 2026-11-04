@@ -8,23 +8,13 @@ CreateThread(function()
         StopResource(GetCurrentResourceName())
         return
     end
-    local migrated, reason = QBPhone.Migrations.run()
-    if not migrated then
+    local ready, reason = QBPhone.SchemaSetup.run()
+    if not ready then
         print('[qbphone] Database setup failed, stopping resource: ' .. tostring(reason))
         StopResource(GetCurrentResourceName())
         return
     end
-    local checked,report=pcall(function()
-        local value=QBPhone.MigrationReport.run()
-        if not QBPhone.MigrationReport.save(value) then error('Cannot save migration-report.json') end
-        return value
-    end)
-    if not checked or report.blocking>0 then
-        print('[qbphone] data preflight requires review; see migration-report.json: '..tostring(checked and report.blocking or report))
-        StopResource(GetCurrentResourceName()); return
-    end
     local started,startError=pcall(function()
-        QBPhone.Repositories.LegacyMail.import()
         QBPhone.Services.Calling.initialize()
         QBPhone.Handsets.start()
     end)
@@ -45,7 +35,7 @@ RegisterNetEvent('qbphone:server:phone:closed', function()
 end)
 
 AddEventHandler('QBCore:Server:PlayerLoaded', function(player)
-    -- Provision only when a physical handset is selected, after migrations finish.
+    -- Provision only when a physical handset is selected, after startup finishes.
 end)
 
 -- /phonereset [id]: wipes a player's phone settings and PIN so the setup screen shows again.

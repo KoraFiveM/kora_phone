@@ -39,7 +39,6 @@ server_scripts {
     'server/rate_limits.lua',
     'server/permissions.lua',
     'server/sessions.lua',
-    'server/migration_report.lua',
     'server/handsets.lua',
     'server/mailboxes.lua',
     'server/phone_commerce.lua',

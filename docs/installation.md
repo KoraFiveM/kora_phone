@@ -27,19 +27,16 @@ Pin and document the minimum supported versions before release. Do not silently 
 
 ## Clean-install verification
 
-1. Start with an empty database and start the resource. The tables are declared in `server/schema.lua` and created automatically on first start; on later starts only missing tables, columns, indexes and keys are added (existing ones are never altered or dropped, and differences are logged as warnings). If setup fails, the reason is printed and the resource stops. To manage the schema yourself, set `Config.Server.AutoMigrate = false`.
+1. Start with an empty database and start the resource. The tables are declared in `server/schema.lua` and created automatically on first start; on later starts only missing tables, columns, indexes and keys are added (existing ones are never altered or dropped, and differences are logged as warnings). If setup fails, the reason is printed and the resource stops.
 2. Create two characters and confirm unique persistent numbers.
 3. Give both characters the configured phone item.
 4. Complete one call, message, image share, transfer, social post and marketplace contact flow.
 5. Reconnect both characters and verify persistence and unread state.
 6. Restart `kora_phone` during an active call and confirm voice routing is cleaned up.
 
-## Upgrade verification
+## Updating
 
-- Back up the database before applying migrations.
-- Schema additions in a new version apply automatically on start; with `AutoMigrate = false`, apply them yourself.
-- Confirm existing phone numbers, messages, media references and settings remain valid.
-- Verify downgrade expectations explicitly; destructive automatic downgrade is unsupported.
+This resource targets a new server with an empty database. Nothing is migrated or converted; start-up only creates missing tables from `server/schema.lua`. Back up the database before updating the resource.
 
 ## Operational guidance
 

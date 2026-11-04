@@ -41,12 +41,10 @@ Notifications carry character/handset identity when available. The native client
 
 ## Schema and existing data
 
-`phone_legacy_mail` and `phone_legacy_transactions` (formerly `013_legacy_qb_phone.sql`) are declared in `server/schema.lua` and created by `Kora.sql.ensureTables` at start; existing databases are left untouched.
+`phone_legacy_mail` and `phone_legacy_transactions` are declared in `server/schema.lua` and created by `Kora.sql.ensureTables` at start.
 
 This adapts the upstream extension without making the old device-mail foreign keys nullable. Native device-to-device mail tables and routes remain intact and outside this launch interface.
 
-After the normal data preflight succeeds, startup checks for the upstream `phone_mail.recipient_citizenid`, `legacy_sender` and `legacy_button` columns. If all are present, character-owned legacy rows are copied into the new mailbox, preserving sender, subject/body, button, creation/read times and deletion state. A unique `legacy_source_id` mapping prevents duplication or resurrection on later starts. Original rows are not rewritten. Existing `phone_legacy_transactions` rows are read in place. If the upstream mail extension is absent, adoption is skipped.
+Nothing from an older qb-phone install is imported or converted; this is for a new server with an empty database. Do not run two phone providers together.
 
-Back up the database and inventories together before upgrade. Do not run two phone providers together. Rollback restores the consistent backup and the previous resource together; no destructive down-migration is supplied. With automatic migrations disabled, install migration 013 yourself before starting this version; missing legacy tables stop startup clearly.
-
-Live FiveM alias resolution, downstream job effects and database adoption/rollback still require server verification.
+Live FiveM alias resolution, downstream job effects and backup/rollback still require server verification.

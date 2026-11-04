@@ -2,7 +2,7 @@
 
 ## Phase 1 — foundation
 
-- QBCore bridge, SQL migrations and phone identity
+- QBCore bridge, declarative SQL schema and phone identity
 - Inventory ownership check and phone open/close lifecycle
 - NUI shell, app routing, settings and reusable notifications
 - Shared validation, rate limiting, logging and pagination conventions

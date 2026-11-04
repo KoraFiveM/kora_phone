@@ -1,12 +1,10 @@
 QBPhone = QBPhone or {}
-local Migrations = {}
-QBPhone.Migrations = Migrations
+local SchemaSetup = {}
+QBPhone.SchemaSetup = SchemaSetup
 
--- Creates missing phone_* tables and adds missing columns/indexes/keys from server/schema.lua (QBPhoneSchema).
--- Existing tables are never altered or dropped. Set Config.Server.AutoMigrate = false to manage the schema yourself.
--- Returns true when the schema is ready, or false plus a reason.
-function Migrations.run()
-    if Config.Server.AutoMigrate == false then return true end
+-- Creates the phone_* tables declared in server/schema.lua (QBPhoneSchema) on a fresh database.
+-- Nothing is converted or imported. Returns true when the schema is ready, or false plus a reason.
+function SchemaSetup.run()
     local called, reports, err = pcall(Kora.sql.ensureTables, QBPhoneSchema)
     if not called then return false, 'schema setup failed: ' .. tostring(reports) end
     if not reports then return false, 'schema setup failed: ' .. tostring(err) end

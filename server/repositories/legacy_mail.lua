@@ -36,19 +36,3 @@ function Mail.activity(citizenId,limit,cursor)
         FROM phone_legacy_transactions WHERE citizenid=? AND id<? ORDER BY id DESC LIMIT ?]],
         {citizenId,cursor or 9007199254740991,limit}) or {}
 end
-
--- Adopt the upstream legacy mail extension when present; original rows remain untouched.
-function Mail.import()
-    -- Fail startup clearly if a manually managed database has not installed migration 013.
-    MySQL.scalar.await('SELECT id FROM phone_legacy_mail LIMIT 1')
-    MySQL.scalar.await('SELECT id FROM phone_legacy_transactions LIMIT 1')
-    local columns=tonumber(MySQL.scalar.await([[SELECT COUNT(*) FROM information_schema.COLUMNS
-        WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME='phone_mail'
-        AND COLUMN_NAME IN ('recipient_citizenid','legacy_sender','legacy_button')]])) or 0
-    if columns~=3 then return 0 end
-    return MySQL.update.await([[INSERT IGNORE INTO phone_legacy_mail
-        (legacy_source_id,citizenid,sender,subject,body,button_json,read_at,deleted_at,created_at)
-        SELECT id,recipient_citizenid,legacy_sender,subject,body,legacy_button,read_at,
-            CASE WHEN recipient_deleted=1 THEN CURRENT_TIMESTAMP ELSE NULL END,created_at
-        FROM phone_mail WHERE recipient_citizenid IS NOT NULL AND legacy_sender IS NOT NULL]])
-end

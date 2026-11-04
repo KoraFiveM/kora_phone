@@ -504,14 +504,6 @@ QBPhoneSchema = {
         },
     },
     {
-        name = 'phone_upgrade_state', collate = COLLATE,
-        columns = {
-            { name = 'name', type = 'varchar(64)' },
-            { name = 'completed_at', type = 'timestamp', default = { raw = 'CURRENT_TIMESTAMP' } },
-        },
-        primary = { 'name' },
-    },
-    {
         name = 'phone_call_hidden', collate = COLLATE,
         columns = { idRef('device_id'), { name = 'call_id', type = 'char(36)' } },
         primary = { 'device_id', 'call_id' },

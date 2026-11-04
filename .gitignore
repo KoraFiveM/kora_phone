@@ -11,4 +11,3 @@ test-results/
 .playwright/
 release/
 
-migration-report.json

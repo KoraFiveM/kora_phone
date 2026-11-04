@@ -1,4 +1,4 @@
--- Cold starts must recover calls only after migrations finish, even under load.
+-- Cold starts must recover calls only after schema setup finishes, even under load.
 local checks = 0
 local function check(value, message) assert(value, message); checks = checks + 1 end
 local function fixture(mode)
@@ -10,7 +10,7 @@ local function fixture(mode)
         check(state.migrated, 'cleanup ran before migrations')
         if mode == 'recovery_failure' then error('controlled SQL failure') end
         return 0
-    end } }, Database = { isReady = function() return true end }, Migrations = { run = function()
+    end } }, Handsets = { start = function() end }, Database = { isReady = function() return true end }, SchemaSetup = { run = function()
         coroutine.yield('migration pending')
         state.migrated = mode ~= 'migration_failure'
         return state.migrated, 'controlled migration failure'
@@ -49,4 +49,7 @@ for _, mode in ipairs({ 'success', 'migration_failure', 'recovery_failure' }) do
     local ready = table.concat(state.messages, '\n'):find('foundation ready', 1, true) ~= nil
     check(ready == (mode == 'success'), 'misleading ready log')
 end
+-- Boot runs schema setup only: no legacy conversion, import or data preflight is wired in.
+local mainSource = assert(io.open('server/main.lua')):read('a')
+check(mainSource:find('QBPhone.SchemaSetup.run()', 1, true) and not mainSource:find('Migrat', 1, true) and not mainSource:find('LegacyMail', 1, true), 'boot must call schema setup and no legacy conversion')
 print(('PASS phone migration/recovery lifecycle: %d checks'):format(checks))

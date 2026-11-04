@@ -12,7 +12,7 @@ const manifest = fs.readFileSync(path.join(root, "fxmanifest.lua"), "utf8");
 const schema = fs.readFileSync(path.join(root, "server/schema.lua"), "utf8");
 
 const tables = [...schema.matchAll(/^\s{8}name = '(phone_[a-z_]+)'/gm)].map((match) => match[1]);
-assert.equal(tables.length, 34, "schema must declare all 34 phone tables");
+assert.equal(tables.length, 33, "schema must declare all 33 phone tables");
 assert.equal(new Set(tables).size, tables.length, "a table is declared twice");
 for (const table of ["phone_devices", "phone_messages", "phone_calls", "phone_economy_audit", "phone_sims", "phone_handsets", "phone_legacy_mail", "phone_legacy_transactions"]) {
   assert.ok(tables.includes(table), `schema must declare ${table}`);
@@ -28,9 +28,12 @@ assert.doesNotMatch(manifest, /^migration\s+'/m, "no .sql migrations may be list
 assert.equal(fs.existsSync(path.join(root, "migrations")), false, "the migrations/ .sql files are replaced by the schema");
 
 const main = fs.readFileSync(path.join(root, "server/main.lua"), "utf8");
-assert.match(main, /QBPhone\.Migrations\.run\(\)/, "the resource must set up the database at start");
+assert.match(main, /QBPhone\.SchemaSetup\.run\(\)/, "the resource must set up the database at start");
 assert.match(main, /Database setup failed, stopping resource/, "a failed setup must stop the resource, not run on a half-built schema");
-assert.match(fs.readFileSync(path.join(root, "server/integrations/migrations.lua"), "utf8"), /Kora\.sql\.ensureTables, QBPhoneSchema/, "the runner must call ensureTables");
-assert.match(fs.readFileSync(path.join(root, "config/server.lua"), "utf8"), /AutoMigrate = true/, "AutoMigrate must default on");
+assert.match(fs.readFileSync(path.join(root, "server/integrations/schema_setup.lua"), "utf8"), /Kora\.sql\.ensureTables, QBPhoneSchema/, "the runner must call ensureTables");
+assert.doesNotMatch(fs.readFileSync(path.join(root, "config/server.lua"), "utf8"), /AutoMigrate/, "no AutoMigrate flag");
+const handsets = fs.readFileSync(path.join(root, "server/handsets.lua"), "utf8");
+assert.doesNotMatch(main + handsets, /H\.migrate|MigrationReport|LegacyMail\.import/, "boot must not run any legacy conversion");
+assert.equal(fs.existsSync(path.join(root, "server/migration_report.lua")), false, "migration_report.lua is removed");
 
 console.log(`PASS migrations-manifest: ${tables.length} tables declared in schema.lua and created at start`);

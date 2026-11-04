@@ -31,15 +31,13 @@ Supported unique item names are `phone`, `phone_standard`, `phone_flip`, `phone_
 
 The gateway and its smoke test are also copied under `integration/kora_inventory/` for deployment review. This is a companion source copy, not another resource to start. Back up the inventory resource and compare versions before replacing its server file.
 
-## Migration rehearsal and rollback
+## Backup and rollback
 
-1. Stop phone interactions and take one consistent backup of all phone tables, player inventories/money and kora_inventory durable stock. Preserve provider files. Restore into an isolated test database and a separate FXServer.
-2. Stop Stevie; deploy the new phone and inventory gateway. Keep SQL files `001`–`011` unchanged. New schema `012` uses kora_sql's checksum-protected runner; do not edit it after deployment.
-3. Review `migration-report.json` generated before identity conversion. Blocking issues stop startup; reconcile unknown character owners, invalid subscription numbers and malformed settings, then restart. Keep this report with the rehearsal backups. Provider objects are explicitly unverified in this report. After startup, console command `phonepreflight` refreshes the read-only report and includes unclaimed mappings. Inspect `phone_legacy_claims`. Open a legacy phone and verify its number, contacts, texts, deleted-message exclusions, photos and PIN. An unclaimed character can acquire any handset model and claim their data once. Split stacked legacy phones before conversion.
-4. Reboot twice. Confirm no duplicate serials, numbers, deliveries or claims. A character without a handset must retain an unclaimed mapping without receiving an extra item or subscription.
-5. Review `phone_migration_issues` and unresolved `phone_legacy_claims`. Verify remote media separately; a database URL cannot prove the provider object exists.
-6. Interrupt SIM insertion/removal. A valid loose SIM must recover stale SQL location without needing the old handset. Fail replacement activation: `phone_sim_replacements` must stay prepared, and reopening the new handset must finish activation without another fee.
-7. Rehearse rollback by stopping the new phone and restoring database, inventories and shop stock **together**, then restoring the old resources. Never restore only the phone tables.
+This resource is for a new server with an empty database: tables are created from `server/schema.lua` at start and no legacy phone data is migrated or converted.
+
+1. Take one consistent backup of all phone tables, player inventories/money and kora_inventory durable stock. Preserve provider files.
+2. Interrupt SIM insertion/removal. A valid loose SIM must recover stale SQL location without needing the old handset. Fail replacement activation: `phone_sim_replacements` must stay prepared, and reopening the new handset must finish activation without another fee.
+3. Rehearse rollback by stopping the phone and restoring database, inventories and shop stock **together**. Never restore only the phone tables.
 
 Inventory/core persistence retains its documented hard-crash flush window. Reconciliation and the replacement journal recover committed identities, but cannot recover player-item writes lost by the underlying persistence layer. Include that limit in backup and restart procedures.
 

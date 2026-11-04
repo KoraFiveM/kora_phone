@@ -84,7 +84,7 @@ Notes and limits:
 - Videos are hidden from the Gallery (they live in the posts and messages that use them) and count against `MaxVideosPerDay`, not the photo limit.
 - The webcam and microphone are the player's real ones, through the browser's recorder. There is no in-game camera capture for clips yet.
 
-## Loading and migration
+## Loading and schema
 
 The media tables (`phone_media` in `server/schema.lua`) and the columns that let Flash posts and chat messages carry media (`media_id` on `phone_social_posts`/`phone_messages` in `server/schema.lua`) are created automatically at start. Ensure the resource loads `server/modules/media_callbacks.lua` after integrations, repositories, services, rate limits and permissions.
 
