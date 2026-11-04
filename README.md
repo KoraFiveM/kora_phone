@@ -1,4 +1,4 @@
-# QBPhone
+# Kore Phone
 
 **Three handsets. One connected city.**
 
