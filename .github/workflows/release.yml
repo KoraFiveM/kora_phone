@@ -46,7 +46,7 @@ jobs:
       - name: Package resource
         run: |
           mkdir -p pkg/kora_phone/web
-          cp -r fxmanifest.lua README.md qbphone.sql client config server shared migrations local-media integration pkg/kora_phone/
+          cp -r fxmanifest.lua README.md client config server shared local-media integration pkg/kora_phone/
           cp -r web/dist pkg/kora_phone/web/
           sed -i "s/^version '.*'/version '${{ steps.tag.outputs.new_version }}'/" pkg/kora_phone/fxmanifest.lua
           cd pkg && zip -r ../kora_phone-${{ steps.tag.outputs.new_tag }}.zip kora_phone
