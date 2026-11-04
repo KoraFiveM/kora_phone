@@ -1,15 +1,15 @@
-RegisterNetEvent('qbphone:client:openServices',function()
+RegisterNetEvent('kora_phone:client:openServices',function()
     SetNuiFocus(true,true)
-    QBPhone.SendNui('service:open',{})
+    KoraPhone.SendNui('service:open',{})
 end)
-RegisterNetEvent('qbphone:client:serviceRequest',function(data)
+RegisterNetEvent('kora_phone:client:serviceRequest',function(data)
     SetNuiFocus(true,true)
-    QBPhone.SendNui('service:request',data)
+    KoraPhone.SendNui('service:request',data)
 end)
-RegisterNetEvent('qbphone:client:serviceResult',function(data) QBPhone.SendNui('service:result',data) end)
+RegisterNetEvent('kora_phone:client:serviceResult',function(data) KoraPhone.SendNui('service:result',data) end)
 CreateThread(function()
     for id,s in pairs(Config.PhoneServices.shops) do
-        Kora.interact.addCircleZone('qbphone:shop:'..id,vector3(s.coords.x,s.coords.y,s.coords.z),s.distance,
-            {options={{label=s.label,event='qbphone:client:openServices'}}},false)
+        Kora.interact.addCircleZone('kora_phone:shop:'..id,vector3(s.coords.x,s.coords.y,s.coords.z),s.distance,
+            {options={{label=s.label,event='kora_phone:client:openServices'}}},false)
     end
 end)

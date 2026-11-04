@@ -1,6 +1,6 @@
-QBPhone.Services = QBPhone.Services or {}
+KoraPhone.Services = KoraPhone.Services or {}
 local Garage = {}
-QBPhone.Services.Garage = Garage
+KoraPhone.Services.Garage = Garage
 
 local available
 
@@ -18,7 +18,7 @@ function Garage.available()
 end
 
 function Garage.list(source)
-    local device, err = QBPhone.Permissions.requireDevice(source)
+    local device, err = KoraPhone.Permissions.requireDevice(source)
     if not device then return err end
     if not Garage.available() then return PhoneError(PhoneConstants.Errors.CONFLICT, 'Garage is not available') end
     local rows = MySQL.query.await(('SELECT vehicle, plate, garage, state, fuel FROM `%s` WHERE citizenid = ? ORDER BY plate LIMIT 100'):format(Config.Server.Garage.Table), { device.ownerCitizenId }) or {}

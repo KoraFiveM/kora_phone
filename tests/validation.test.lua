@@ -254,7 +254,7 @@ test("a call signal keeps the SDP byte-for-byte, including its final CRLF", func
     equal(PhoneContracts.callSignal({ id = callId, kind = "offer", sdp = { type = "offer", sdp = sdp } }).sdp.sdp, sdp)
 end)
 test("conversation pages preserve tied sort keys without changing numeric cursors", function()
-    local oldPhone, oldMySQL, oldConstants, oldResult, oldError = QBPhone, MySQL, PhoneConstants, PhoneResult, PhoneError
+    local oldPhone, oldMySQL, oldConstants, oldResult, oldError = KoraPhone, MySQL, PhoneConstants, PhoneResult, PhoneError
     dofile(root .. "/shared/constants.lua")
     -- An inert row host applies the emitted keyset predicates, not a database engine.
     local rows = {
@@ -293,14 +293,14 @@ test("conversation pages preserve tied sort keys without changing numeric cursor
         for i = 1, math.min(params[#params], #selected) do out[i] = selected[i] end
         return out
     end } }
-    QBPhone = { Repositories = {}, Permissions = { requireDevice = function(source)
+    KoraPhone = { Repositories = {}, Permissions = { requireDevice = function(source)
         if source == 7 then return { id = 11 } end
         if source == 8 then return { id = 22 } end
         return nil, PhoneError(PhoneConstants.Errors.UNAUTHORIZED, 'No device')
     end } }
     dofile(root .. "/server/repositories/messages.lua")
     dofile(root .. "/server/services/messaging.lua")
-    local list, repository = QBPhone.Services.Messaging.listConversations, QBPhone.Repositories.Messages
+    local list, repository = KoraPhone.Services.Messaging.listConversations, KoraPhone.Repositories.Messages
     local first = list(7, { limit = 2 }).data
     local second = list(7, { limit = 2, cursor = first.nextCursor, cursorId = first.items[#first.items].id }).data
     equal(second.items[1].id, 7) -- Original strict cutoff skips this tied conversation.
@@ -338,7 +338,7 @@ test("conversation pages preserve tied sort keys without changing numeric cursor
     equal(list(7, { cursor = '50', cursorId = '50', limit = 2 }).data.items[1].id, 7)
     equal(list(99, { cursorId = -1 }).error.code, PhoneConstants.Errors.UNAUTHORIZED)
     equal(PhoneValidation.page({ cursor = 50, cursorId = -1 }).cursor, 50)
-    QBPhone, MySQL, PhoneConstants, PhoneResult, PhoneError = oldPhone, oldMySQL, oldConstants, oldResult, oldError
+    KoraPhone, MySQL, PhoneConstants, PhoneResult, PhoneError = oldPhone, oldMySQL, oldConstants, oldResult, oldError
 end)
 
 

@@ -28,10 +28,10 @@ function SaveResourceFile() return true end
 function GetCurrentResourceName() return 'kora_phone' end
 function GetResourceState() return 'missing' end
 
-QBPhone = {}
+KoraPhone = {}
 Config = { Server = { Media = { Provider = 'fivemanage' } } }
 dofile(root .. "/server/integrations/storage.lua")
-local Storage = QBPhone.Storage
+local Storage = KoraPhone.Storage
 
 local function reset(provider, extra)
     Config.Server.Media = { Provider = provider }
@@ -52,7 +52,7 @@ local ticket = function(over)
     return t
 end
 local GOOD_FILE = function(over)
-    local f = { id = 'abcDEF123456', filename = 'clip.webm', type = 'video/webm', size = 1 * MB, url = 'https://r2.fivemanage.com/abc/clip.webm', metadata = { qbphoneTicket = 'tag123' } }
+    local f = { id = 'abcDEF123456', filename = 'clip.webm', type = 'video/webm', size = 1 * MB, url = 'https://r2.fivemanage.com/abc/clip.webm', metadata = { koraPhoneTicket = 'tag123' } }
     for k, v in pairs(over or {}) do f[k] = v end
     return f
 end
@@ -161,7 +161,7 @@ test("complete rejects a mismatched file id and malformed receipts", function()
     equal(result(function(cb) Storage.completeFivemanage(ticket(), nil, cb) end)[3], 'INVALID_RECEIPT')
 end)
 test("complete refuses a file whose ticket tag is someone else's", function()
-    reset('fivemanage'); serve(GOOD_FILE({ metadata = { qbphoneTicket = 'other-ticket' } }))
+    reset('fivemanage'); serve(GOOD_FILE({ metadata = { koraPhoneTicket = 'other-ticket' } }))
     equal(result(function(cb) Storage.completeFivemanage(ticket(), 'abcDEF123456', cb) end)[3], 'UPLOAD_NOT_BOUND')
 end)
 test("RequireTag makes an untagged upload fail; otherwise it is allowed", function()

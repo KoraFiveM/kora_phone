@@ -1,4 +1,4 @@
-QBPhone = QBPhone or {}
+KoraPhone = KoraPhone or {}
 local Animations = {}
 
 -- Fallbacks for configs copied from before Config.Animation existed; config/client.lua is the real source.
@@ -43,7 +43,7 @@ local function removeProp()
         DeleteEntity(prop)
     end
     prop = nil
-    if QBPhone.State then QBPhone.State.phoneObject = nil end
+    if KoraPhone.State then KoraPhone.State.phoneObject = nil end
 end
 
 local function stopAnimation()
@@ -65,7 +65,7 @@ local function blocked(ped)
 end
 
 local function onCall()
-    local call = QBPhone.State and QBPhone.State.activeCall
+    local call = KoraPhone.State and KoraPhone.State.activeCall
     if not call then return false end
     return call.status == 'active' or (call.status == 'ringing' and call.direction ~= 'incoming')
 end
@@ -95,7 +95,7 @@ local function apply(ped)
     handle, currentKey = started, key
     if not prop or not DoesEntityExist(prop) then
         prop = createProp(ped)
-        if QBPhone.State then QBPhone.State.phoneObject = prop end
+        if KoraPhone.State then KoraPhone.State.phoneObject = prop end
     end
     return true
 end
@@ -132,4 +132,4 @@ AddEventHandler('onClientResourceStop', function(resource)
     if resource == GetCurrentResourceName() then Animations.Stop() end
 end)
 
-QBPhone.Animations = Animations
+KoraPhone.Animations = Animations

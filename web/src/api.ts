@@ -1,12 +1,17 @@
 import type { Api, Bank, Bootstrap, Call, CallHistory, ChatMessage, Comment, Conversation, DeviceData, MailItem, ModerationReport, Photo, Post, Response } from './types';
 import { normalizeData } from './types';
-import { mockRequest } from './mock';
+import { isDemo, mockRequest } from './mock';
 import { recall, remember } from './lastScreen';
 import { photoBody, videoBody } from './chatTokens';
 import { starterApps } from './catalog';
 declare global { interface Window { GetParentResourceName?: () => string } }
-export const launchApps=new Set(['home','phone','contacts','messages','camera','gallery','gps','settings','notes','calculator','clock','weather','music','mail']);
-export const isPreview = !window.GetParentResourceName;
+export const launchApps=new Set(['home','phone','contacts','messages','camera','gallery','gps','settings','notes','calculator','clock','weather','music','mail','store','banking','social','classifieds','services','property','vehicles','flash','moderation']);
+// mock.ts owns isDemo (import cycle)
+const demoParam = new URLSearchParams(window.location?.search).get('demo');
+export { isDemo };
+export const isEmbed = isDemo && new URLSearchParams(window.location?.search).get('embed') === 'screen';
+export const demoModel = (['standard', 'flip', 'fold'] as const).find(value => value === demoParam) ?? 'fold';
+export const isPreview = isDemo || !window.GetParentResourceName;
 export const requestId = () => crypto.randomUUID();
 const aliases: Record<string,string> = { uiReady:'phone:ready', close:'phone:close', captureDone:'camera:close' };
 export async function nui<T>(route:string, body:unknown={}):Promise<T>{
@@ -28,7 +33,7 @@ const mapMessage=(m:any):ChatMessage=>({...m,sender_number:String(m.senderNumber
 // One file straight to the media host's presigned URL. XHR (not fetch) so the UI can show progress.
 function sendFile(url:string,field:string,blob:Blob,tag:string,onProgress?:(fraction:number)=>void):Promise<string>{return new Promise((resolve,reject)=>{
   const form=new FormData();form.append(field,blob,blob.type.startsWith('video/mp4')?'clip.mp4':blob.type.startsWith('video/')?'clip.webm':'photo.jpg');
-  if(tag)form.append('metadata',JSON.stringify({qbphoneTicket:tag}));
+  if(tag)form.append('metadata',JSON.stringify({koraPhoneTicket:tag}));
   const xhr=new XMLHttpRequest();xhr.open('POST',url);xhr.timeout=90000;
   xhr.upload.onprogress=e=>{if(e.lengthComputable)onProgress?.(e.loaded/e.total)};
   xhr.onload=()=>{try{const r=JSON.parse(xhr.responseText);const id=r?.data?.id??r?.receipt;if(xhr.status>=200&&xhr.status<300&&typeof id==='string')return resolve(id)}catch{/* fall through */}reject(new Error('The media host did not accept the upload'))};
@@ -49,13 +54,14 @@ let activeDeviceId:string|undefined;
 
 const stamp=(v?:number|string)=>typeof v==='number'?new Date(v*1000).toISOString():String(v||new Date().toISOString());
 export function adaptBootstrap(raw:Record<string,any>):Bootstrap{
-  const id=String(raw.device?.id||'qbphone');
+  const id=String(raw.device?.id||'kora_phone');
   activeDeviceId=id;
   cached=defaultData();
   const contacts=Array.isArray(raw.contacts)?raw.contacts.map((c:any)=>({id:Number(c.id),name:String(c.displayName||''),number:String(c.phoneNumber||''),photo:c.photo,favorite:c.isFavorite===1||c.isFavorite===true})):cached.contacts;
   cached=normalizeData({...cached,contacts,notes:raw.items?.notes??cached.notes,alarms:raw.items?.alarms??cached.alarms,stations:raw.items?.stations??cached.stations,settings:{...cached.settings,...(raw.device?.settings||{})},installedApps:(raw.device?.settings?.installedApps??starterApps) as any,customApps:customAppsInstalled});
+  const apps:Record<string,boolean>=raw.apps&&typeof raw.apps==='object'?raw.apps:{};
   const locked=raw.security?.locked===true;if(locked){cached={...defaultData(),settings:cached.settings};}return{model:raw.device?.model||'standard',homeReorder:raw.features?.homeReorder!==false,galleryViewer:raw.features?.galleryViewer!==false,id,number:String(raw.device?.phoneNumber||''),locked,hasPin:raw.security?.hasPin===true,moderator:raw.moderator===true,transfers:raw.features?.transfers===true,preferences:cached.settings,data:locked?undefined:cached,admin:raw.admin===true,video:raw.features?.video?{iceServers:Array.isArray(raw.features.video.iceServers)?raw.features.video.iceServers:[]}:false,characterName:[raw.character?.firstName,raw.character?.lastName].filter(Boolean).join(' '),flash:raw.features?.flash?{maxSeconds:Number(raw.features.flash.maxSeconds)||15,maxBytes:Number(raw.features.flash.maxBytes)||undefined}:false,
-    capabilities:{banking:false,camera:raw.features?.media===true,gallery:true,social:false,classifieds:false,services:false,calculator:true,clock:true,moderation:raw.moderator===true,gps:raw.features?.maps===true,mail:true,notes:true,weather:true,property:false,vehicles:false,flash:false,music:true},
+    capabilities:{store:raw.appStore!==false,banking:apps.banking!==false,camera:apps.camera!==false&&raw.features?.media===true,gallery:true,social:apps.social!==false,classifieds:apps.classifieds!==false,services:apps.services!==false,calculator:apps.calculator!==false,clock:apps.clock!==false,moderation:apps.moderation!==false&&raw.moderator===true,gps:apps.gps!==false&&raw.features?.maps===true,mail:apps.mail!==false,notes:apps.notes!==false,weather:apps.weather!==false,property:apps.property!==false&&raw.features?.property===true,vehicles:apps.vehicles!==false&&raw.features?.garage===true,flash:apps.flash!==false&&!!raw.features?.flash,music:apps.music!==false},
     unavailable:{flash:'Video uploads need a media host, which this server has not configured'},locations:Array.isArray(raw.locations)?raw.locations:[],services:[]};
 }
 async function reload(){
@@ -64,7 +70,7 @@ async function reload(){
   return value}
 // The server names conversation fields differently from the chat screens: map them once, here.
 const adaptConversation=(c:any):Conversation=>({...c,kind:c.type==='group'?'group':'direct',name:c.title??null,members:String(c.peerPhoneNumber||''),last_body:c.lastMessagePreview||'',last_kind:kindOf(c.lastMediaMime,c.lastMediaMime)??null,last_number:null,last_at:c.lastMessageAt?stamp(c.lastMessageAt):null});
-function adaptCall(v:any):Call{return{id:String(v.id),status:v.status==='rejected'?'declined':v.status,number:String(v.remoteNumber||''),direction:v.direction||'outgoing',deviceId:'qbphone'} as Call}
+function adaptCall(v:any):Call{return{id:String(v.id),status:v.status==='rejected'?'declined':v.status,number:String(v.remoteNumber||''),direction:v.direction||'outgoing',deviceId:'kora_phone'} as Call}
 export const adaptLiveCall = adaptCall;
 let queue:Promise<void>=Promise.resolve();
 // The server keeps no per-phone app list yet, so installs are remembered in this NUI's storage.
@@ -75,7 +81,7 @@ export function api<K extends keyof Api>(action:K,payload:Api[K][0],id=requestId
 async function execute(action:keyof Api,p:any,id:string):Promise<any>{switch(action){
   case'refresh':return reload();case'unlock':await server('security:unlock',{pin:p.pin});return reload();case'lock':await server('security:lock',{});return reload();
   case'settings':{const {expectedDeviceId,...settings}=p;await server('settings:save',{...settings,expectedDeviceId});cached=normalizeData({...cached,settings});return cached;}
-  case'installApp':{if(!launchApps.has(p.app))throw new Error('This app is not available in this release');const s=new Set(cached.installedApps||[]);p.installed?s.add(p.app):s.delete(p.app);installed=[...s] as string[];await server('settings:save',{...cached.settings,installedApps:installed});cached={...cached,installedApps:[...s] as any};return cached}
+  case'installApp':{const s=new Set(cached.installedApps||[]);p.installed?s.add(p.app):s.delete(p.app);installed=[...s] as string[];await server('settings:save',{...cached.settings,installedApps:installed});cached={...cached,installedApps:[...s] as any};return cached}
   case'contactSave':{const current=p.id?p:cached.contacts.find(c=>c.number===p.number) as any;if(p.remove)await server('contacts:delete',{id:current?.id});else await server(current?.id?'contacts:update':'contacts:create',{id:current?.id,displayName:p.name,phoneNumber:p.number,isFavorite:p.favorite===true,avatarMediaId:Number(cached.photos.find(x=>x.url===p.photo)?.id)||undefined});return(await reload()).data}
   case'history':{const page=await server<any>('calls:history',{limit:50});return(page.items||[]).map((x:any)=>({id:x.id,caller:x.callerNumber,recipient:x.calleeNumber,status:x.status,created_at:stamp(x.startedAt)})) as CallHistory[]}
   case'dial':return adaptCall(await server('calls:start',{to:p.number}));case'answer':return adaptCall(await server('calls:accept',{id:p.id}));case'hangup':await server(p.reject?'calls:reject':'calls:hangup',{id:p.id});return true;
@@ -134,6 +140,6 @@ async function execute(action:keyof Api,p:any,id:string):Promise<any>{switch(act
     const rest=(cached[key] as {id:string}[]).filter(x=>x.id!==p.id);cached={...cached,[key]:remove?rest:[item,...rest]};return cached}
 case'waypoint':await server('waypoint',{x:p.x,y:p.y});return true;
     case'videoSignal':await server('calls:signal',{id:p.id,epoch:p.epoch,kind:p.kind,sdp:p.sdp,candidate:p.candidate});return true;
-  case'wallet':return server('wallet:get');case'showWallet':return server('wallet:show');case'myLocation':return server('location:mine');case'mapBlips':return server('map:blips');default:throw new Error(`${String(action)} is not supported by QBPhone v1`)
+  case'wallet':return server('wallet:get');case'showWallet':return server('wallet:show');case'myLocation':return server('location:mine');case'mapBlips':return server('map:blips');default:throw new Error(`${String(action)} is not supported by KoraPhone v1`)
 }}
 export type{Response};

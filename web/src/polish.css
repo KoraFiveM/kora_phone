@@ -244,3 +244,13 @@
 /* Phone dock button keeps a call-red fill with an icon colour derived from it (see handsetThemeTokens); !important because per-handset/theme/icon-style rules re-colour dock icons and used to leave a white glyph on a light fill. */
 .phone-screen .dock .dock-icon.app-phone > span { background: var(--ui-call, #c83e32) !important; border-color: var(--ui-call, #c83e32) !important; color: var(--ui-call-ink, #fff) !important; }
 .phone-screen .dock .dock-icon.app-phone > span svg { color: inherit !important; }
+
+/* Peek: phone slides up briefly when a text arrives while closed */
+.phone-peek { position: fixed; right: 28px; bottom: 20px; z-index: 200; pointer-events: none; animation: peekIn .4s cubic-bezier(.2,.8,.2,1), peekOut .4s 3s cubic-bezier(.4,0,1,1) forwards; }
+.peek-card { display: flex; gap: 10px; align-items: center; padding: 14px 16px; border-radius: 20px; background: #1a1d19ee; color: #fff; border: 1px solid #697463; backdrop-filter: blur(12px); box-shadow: 0 12px 40px #000a; min-width: 220px; max-width: 300px; }
+.peek-card svg { flex-shrink: 0; color: #a4b098; }
+.peek-card div { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.peek-card strong { font: 600 12px/1.3 'DM Sans', sans-serif; }
+.peek-card small { font: 400 11px/1.4 'DM Sans', sans-serif; color: #d0d5cc; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 220px; }
+@keyframes peekIn { from { transform: translateY(120%); opacity: 0; } to { transform: none; opacity: 1; } }
+@keyframes peekOut { from { transform: none; opacity: 1; } to { transform: translateY(120%); opacity: 0; } }

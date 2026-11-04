@@ -1,4 +1,4 @@
-QBPhone = QBPhone or {}
+KoraPhone = KoraPhone or {}
 
 -- Lets other resources add installable apps to the phone: a native export, plus
 -- alias exports that answer the same calls other FiveM phone scripts use, so an
@@ -126,7 +126,7 @@ local function sendNotification(data)
     if type(data) ~= 'table' then return false end
     local title = type(data.title) == 'string' and data.title or 'Notification'
     local body = type(data.content) == 'string' and data.content or (type(data.body) == 'string' and data.body or '')
-    return QBPhone.Notifications.Native(title, body, false)
+    return KoraPhone.Notifications.Native(title, body, false)
 end
 
 -- Native contract.
@@ -217,4 +217,4 @@ AddEventHandler('onResourceStop', function(resource)
     end
 end)
 
-QBPhone.CustomApps = { List = list, Fire = fire }
+KoraPhone.CustomApps = { List = list, Fire = fire }

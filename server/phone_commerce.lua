@@ -1,8 +1,8 @@
-local H=QBPhone.Handsets
+local H=KoraPhone.Handsets
 H.serviceRequests={}
 local function fail(text) return PhoneError(PhoneConstants.Errors.FORBIDDEN,text) end
 local function near(src,s)
-    if not QBPhone.GetCitizenId(src) or GetPlayerRoutingBucket(src)~=(s.bucket or 0) then return false end
+    if not KoraPhone.GetCitizenId(src) or GetPlayerRoutingBucket(src)~=(s.bucket or 0) then return false end
     local ped=GetPlayerPed(src); if not ped or ped==0 then return false end
     local p=GetEntityCoords(ped); local c=s.coords
     return (p.x-c.x)^2+(p.y-c.y)^2+(p.z-c.z)^2 <= (s.distance or 3)^2
@@ -27,7 +27,7 @@ local function shopAccess(src,p)
     local s=type(p.shop)=='string' and Config.PhoneServices.shops[p.shop]
     if not s or not near(src,s) then return nil end
     if s.job then
-        local player=QBPhone.GetPlayer(src); local j=player and player.job
+        local player=KoraPhone.GetPlayer(src); local j=player and player.job
         if not j or j.name~=s.job or not j.onduty or (j.grade and j.grade.level or 0)<(s.grade or 0) then return nil end
     end
     return s
@@ -42,15 +42,15 @@ function H.commerce(actor,p,approved)
     local target=tonumber(p.target) or actor
     if target%1~=0 or not near(target,s) or (target~=actor and not s.job) then return fail('Customer must be at this counter') end
     if target~=actor and not approved then
-        local id=random(); H.serviceRequests[id]={actor=actor,actorCharacter=QBPhone.GetCitizenId(actor),target=target,payload=p,expires=os.time()+30,character=QBPhone.GetCitizenId(target)}
+        local id=random(); H.serviceRequests[id]={actor=actor,actorCharacter=KoraPhone.GetCitizenId(actor),target=target,payload=p,expires=os.time()+30,character=KoraPhone.GetCitizenId(target)}
         SetTimeout(31000,function() H.serviceRequests[id]=nil end)
-        TriggerClientEvent('qbphone:client:serviceRequest',target,{id=id,label=s.label,operation=p.op})
+        TriggerClientEvent('kora_phone:client:serviceRequest',target,{id=id,label=s.label,operation=p.op})
         return PhoneResult({pending=true})
     end
-    local citizenId=QBPhone.GetCitizenId(target)
+    local citizenId=KoraPhone.GetCitizenId(target)
     if p.op=='buy' then
         if type(p.item)~='string' or not s.prices[p.item] then return fail('Item is unavailable') end
-        local stock=exports.kora_inventory:shopGet('qbphone:'..p.shop)
+        local stock=exports.kora_inventory:shopGet('kora_phone:'..p.shop)
         local slot
         for key,i in pairs(stock or {}) do
             if i.name==p.item or (Config.Handsets[p.item] and Config.Handsets[i.name]==Config.Handsets[p.item]) then
@@ -59,8 +59,8 @@ function H.commerce(actor,p,approved)
             end
         end
         if not slot then return fail('Out of stock') end
-        if target~=actor then H.purchaseCustomers[target]={shop=p.shop,actor=actor,actorCharacter=QBPhone.GetCitizenId(actor),character=citizenId} end
-        local invoked,ok,err=pcall(function() return exports.kora_inventory:BuyItem(target,'qbphone:'..p.shop,slot,1) end)
+        if target~=actor then H.purchaseCustomers[target]={shop=p.shop,actor=actor,actorCharacter=KoraPhone.GetCitizenId(actor),character=citizenId} end
+        local invoked,ok,err=pcall(function() return exports.kora_inventory:BuyItem(target,'kora_phone:'..p.shop,slot,1) end)
         H.purchaseCustomers[target]=nil
         if not invoked then return fail('Purchase failed; try again') end
         if not ok then return fail(tostring(err)) end
@@ -100,7 +100,7 @@ function H.commerce(actor,p,approved)
         -- Install replacement into the selected handset. An unrelated SIM must be removed first.
         if d.sim and d.sim.id~=old.id then return fail('Remove the other SIM before replacing this subscription') end
         local item
-        local player=QBPhone.GetPlayer(target)
+        local player=KoraPhone.GetPlayer(target)
         for _,i in pairs(player.items or {}) do if i.info and i.info.handsetId==d.handsetId then item=i; break end end
         if not item then return fail('Handset is no longer held') end
         local newId=random()
@@ -128,7 +128,7 @@ function H.commerce(actor,p,approved)
         local price=s.prices[item.name] or s.prices.phone_standard
         if not price then return fail('This shop does not buy that handset') end
         local ok,reason=exports.kora_inventory:PhoneItemTransaction(target,{op='resell',handsetSlot=slot,handsetId=item.info.handsetId,
-            payout=math.floor(price*(s.resalePercent or 50)/100),shopId='qbphone:'..p.shop,salePrice=price})
+            payout=math.floor(price*(s.resalePercent or 50)/100),shopId='kora_phone:'..p.shop,salePrice=price})
         if not ok then return fail(tostring(reason)) end
         return PhoneResult({sold=true})
     end
@@ -139,10 +139,10 @@ function H.consent(src,p)
     if not request or request.target~=src then return fail('Service request expired') end
     H.serviceRequests[p.id]=nil
     if p.accept~=true then return PhoneResult({declined=true}) end
-    if request.expires<os.time() or request.character~=QBPhone.GetCitizenId(src)
-        or request.actorCharacter~=QBPhone.GetCitizenId(request.actor) then return fail('Service request expired') end
+    if request.expires<os.time() or request.character~=KoraPhone.GetCitizenId(src)
+        or request.actorCharacter~=KoraPhone.GetCitizenId(request.actor) then return fail('Service request expired') end
     local result=H.commerce(request.actor,request.payload,true)
-    TriggerClientEvent('qbphone:client:serviceResult',src,result)
+    TriggerClientEvent('kora_phone:client:serviceResult',src,result)
     return result
 end
 local originalAction=H.action
@@ -154,11 +154,11 @@ function H.action(src,p)
         local shops={}
         for id,s in pairs(Config.PhoneServices.shops) do if near(src,s) then shops[#shops+1]={id=id,label=s.label,prices=s.prices,business=s.job~=nil} end end
         return PhoneResult({handset={id='',model='standard'},cellular=false,number='',phones={},sims={},hotspots={},shops=shops,simSwap=Config.SimSwap,
-            accounts=MySQL.query.await('SELECT id FROM phone_cloud_accounts WHERE owner_citizenid=? ORDER BY created_at',{QBPhone.GetCitizenId(src)}) or {}})
+            accounts=MySQL.query.await('SELECT id FROM phone_cloud_accounts WHERE owner_citizenid=? ORDER BY created_at',{KoraPhone.GetCitizenId(src)}) or {}})
     end
     local result=originalAction(src,p)
     if p.op=='status' and result.ok then
-        result.data.accounts=MySQL.query.await('SELECT id FROM phone_cloud_accounts WHERE owner_citizenid=? ORDER BY created_at',{QBPhone.GetCitizenId(src)}) or {}
+        result.data.accounts=MySQL.query.await('SELECT id FROM phone_cloud_accounts WHERE owner_citizenid=? ORDER BY created_at',{KoraPhone.GetCitizenId(src)}) or {}
     end
     return result
 end

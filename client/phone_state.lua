@@ -1,4 +1,4 @@
-QBPhone = QBPhone or {}
+KoraPhone = KoraPhone or {}
 
 local State = {
     open = false,
@@ -42,5 +42,4 @@ function State.Public()
     }
 end
 
-QBPhone.State = State
-
+KoraPhone.State = State

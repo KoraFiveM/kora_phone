@@ -1,6 +1,6 @@
-QBPhone.Repositories = QBPhone.Repositories or {}
+KoraPhone.Repositories = KoraPhone.Repositories or {}
 local Transactions = {}
-QBPhone.Repositories.Transactions = Transactions
+KoraPhone.Repositories.Transactions = Transactions
 
 local function row(id)
     return MySQL.single.await([[
@@ -76,4 +76,3 @@ function Transactions.listForDevice(deviceId, page)
     end
     return rows, hasMore and rows[#rows] and rows[#rows].id or nil
 end
-

@@ -1,6 +1,6 @@
-QBPhone.Repositories = QBPhone.Repositories or {}
+KoraPhone.Repositories = KoraPhone.Repositories or {}
 local Mail = {}
-QBPhone.Repositories.Mail = Mail
+KoraPhone.Repositories.Mail = Mail
 
 -- Returns the new id, or nil when this request id was already used (a replay).
 function Mail.insert(senderId, recipientId, subject, body, clientRequestId)

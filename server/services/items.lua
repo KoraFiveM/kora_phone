@@ -1,6 +1,6 @@
-QBPhone.Services = QBPhone.Services or {}
+KoraPhone.Services = KoraPhone.Services or {}
 local Items = {}
-QBPhone.Services.Items = Items
+KoraPhone.Services.Items = Items
 
 local GROUP = { note = 'notes', alarm = 'alarms', station = 'stations' }
 
@@ -9,7 +9,7 @@ local function invalid(message) return PhoneError(PhoneConstants.Errors.INVALID_
 -- Everything a phone keeps, grouped for the bootstrap: { notes = {}, alarms = {}, stations = {} }.
 function Items.forDevice(deviceId)
     local out = { notes = {}, alarms = {}, stations = {} }
-    for _, row in ipairs(QBPhone.Repositories.Items.list(deviceId)) do
+    for _, row in ipairs(KoraPhone.Repositories.Items.list(deviceId)) do
         local ok, decoded = pcall(json.decode, row.payload)
         local group = out[GROUP[row.kind]]
         if ok and type(decoded) == 'table' and group then group[#group + 1] = decoded end
@@ -18,14 +18,14 @@ function Items.forDevice(deviceId)
 end
 
 function Items.save(source, payload)
-    local device, err = QBPhone.Permissions.requireDevice(source)
+    local device, err = KoraPhone.Permissions.requireDevice(source)
     if not device then return err end
     payload = type(payload) == 'table' and payload or {}
     local kind = payload.kind
     if not GROUP[kind] then return invalid('kind is invalid') end
     local item, validationError = PhoneValidation.item(kind, payload.item)
     if not item then return invalid(validationError) end
-    local repo = QBPhone.Repositories.Items
+    local repo = KoraPhone.Repositories.Items
     if not repo.exists(device.id, kind, item.id) and repo.count(device.id, kind) >= Config.Server.Items[kind] then
         return PhoneError(PhoneConstants.Errors.CONFLICT, ('You can keep up to %d %s'):format(Config.Server.Items[kind], GROUP[kind]))
     end
@@ -36,12 +36,12 @@ function Items.save(source, payload)
 end
 
 function Items.remove(source, payload)
-    local device, err = QBPhone.Permissions.requireDevice(source)
+    local device, err = KoraPhone.Permissions.requireDevice(source)
     if not device then return err end
     payload = type(payload) == 'table' and payload or {}
     if not GROUP[payload.kind] then return invalid('kind is invalid') end
     local id, validationError = PhoneValidation.string(payload.id, 'id', 1, 64)
     if not id then return invalid(validationError) end
-    QBPhone.Repositories.Items.remove(device.id, payload.kind, id)
+    KoraPhone.Repositories.Items.remove(device.id, payload.kind, id)
     return PhoneResult({ id = id })
 end

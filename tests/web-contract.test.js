@@ -15,8 +15,8 @@ async function checkDeviceCache() {
   const equal = (actual, expected, message) => { assert.deepEqual(actual, expected, message); checks++; };
   const replies = [];
   const storage = new Map([
-    ["qbphone:installed", JSON.stringify(["notes", "mail"])],
-    ["qbphone:customApps", JSON.stringify({ "test-addon": true })],
+    ["kora_phone:installed", JSON.stringify(["notes", "mail"])],
+    ["kora_phone:customApps", JSON.stringify({ "test-addon": true })],
   ]);
   const transport = async (url, options) => {
     const reply = replies.shift();

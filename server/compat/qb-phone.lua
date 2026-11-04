@@ -1,5 +1,5 @@
 -- Adapted from qbcore2/qbphone-Stevie- legacy support; mail belongs to the current character.
-local Repo=QBPhone.Repositories.LegacyMail
+local Repo=KoraPhone.Repositories.LegacyMail
 local function text(value,maximum)
     return type(value)=='string' and #value>0 and #value<=maximum and value or nil
 end
@@ -24,8 +24,8 @@ local function sendMail(citizenId,data,allowButton)
     if not id or id<=0 then return false end
     local player=exports.kora_core:getPlayerByCitizenId(citizenId)
     if player and player.source then
-        local device=QBPhone.Handsets.current(player.source,false)
-        TriggerClientEvent('qbphone:client:mail:new',player.source,{id=id,citizenId=citizenId,
+        local device=KoraPhone.Handsets.current(player.source,false)
+        TriggerClientEvent('kora_phone:client:mail:new',player.source,{id=id,citizenId=citizenId,
             deviceId=device and tostring(device.id),sender=mail.sender,subject=mail.subject})
     end
     return true,id
@@ -34,17 +34,17 @@ local function sendOffline(citizenId,data) sendMail(citizenId,data,true) end
 exports('sendNewMailToOffline',sendOffline)
 Kora.compat.provideExport('qb-phone','sendNewMailToOffline',sendOffline)
 RegisterNetEvent('qb-phone:server:sendNewMail',function(data)
-    local src=source; local citizenId=QBPhone.GetCitizenId(src)
-    if citizenId and QBPhone.RateLimits.consume(src,'sendMessage') then sendMail(citizenId,data,false) end
+    local src=source; local citizenId=KoraPhone.GetCitizenId(src)
+    if citizenId and KoraPhone.RateLimits.consume(src,'sendMessage') then sendMail(citizenId,data,false) end
 end)
 AddEventHandler('qb-phone:server:sendNewEventMail',function(citizenId,data)
     if source and source>0 then return end
     sendMail(citizenId,data,true)
 end)
 local function access(src,payload)
-    local device,err=QBPhone.Permissions.requireDevice(src)
+    local device,err=KoraPhone.Permissions.requireDevice(src)
     if not device then return nil,nil,err end
-    local citizenId=QBPhone.GetCitizenId(src)
+    local citizenId=KoraPhone.GetCitizenId(src)
     if not citizenId or device.holderCitizenId~=citizenId then
         return nil,nil,PhoneError(PhoneConstants.Errors.FORBIDDEN,'Handset session changed')
     end
@@ -58,8 +58,8 @@ local function list(src,payload,activity)
     local rows=(activity and Repo.activity or Repo.list)(citizenId,page.limit,page.cursor)
     return PhoneResult({items=rows,nextCursor=#rows==page.limit and rows[#rows].id or nil})
 end
-QBPhone.registerCallback('legacy:getMail','read',function(src,p) return list(src,p,false) end)
-QBPhone.registerCallback('legacy:getActivity','read',function(src,p) return list(src,p,true) end)
+KoraPhone.registerCallback('legacy:getMail','read',function(src,p) return list(src,p,false) end)
+KoraPhone.registerCallback('legacy:getActivity','read',function(src,p) return list(src,p,true) end)
 local function mutate(src,p,operation)
     local citizenId,id,err=access(src,p)
     if not citizenId then return err end
@@ -68,22 +68,22 @@ local function mutate(src,p,operation)
     if result==nil or result==false then return PhoneError(PhoneConstants.Errors.NOT_FOUND,'Mail action is no longer available') end
     return PhoneResult(result)
 end
-QBPhone.registerCallback('acceptLegacyMail','mutation',function(src,p) return mutate(src,p,Repo.takeButton) end)
-QBPhone.registerCallback('legacy:readMail','mutation',function(src,p) return mutate(src,p,Repo.markRead) end)
-QBPhone.registerCallback('legacy:deleteMail','mutation',function(src,p) return mutate(src,p,Repo.delete) end)
+KoraPhone.registerCallback('acceptLegacyMail','mutation',function(src,p) return mutate(src,p,Repo.takeButton) end)
+KoraPhone.registerCallback('legacy:readMail','mutation',function(src,p) return mutate(src,p,Repo.markRead) end)
+KoraPhone.registerCallback('legacy:deleteMail','mutation',function(src,p) return mutate(src,p,Repo.delete) end)
 RegisterNetEvent('qb-phone:server:ClearButtonData',function(id)
     local src=source
-    if QBPhone.RateLimits.consume(src,'mutation') then mutate(src,{id=id},Repo.clearButton) end
+    if KoraPhone.RateLimits.consume(src,'mutation') then mutate(src,{id=id},Repo.clearButton) end
 end)
 RegisterNetEvent('qb-phone:server:RemoveMail',function(id)
     local src=source
-    if QBPhone.RateLimits.consume(src,'mutation') then mutate(src,{id=id},Repo.delete) end
+    if KoraPhone.RateLimits.consume(src,'mutation') then mutate(src,{id=id},Repo.delete) end
 end)
 RegisterNetEvent('qb-phone:server:AddTransaction',function(data)
-    local src=source; local citizenId=QBPhone.GetCitizenId(src)
-    if not citizenId or type(data)~='table' or not QBPhone.RateLimits.consume(src,'mutation') then return end
+    local src=source; local citizenId=KoraPhone.GetCitizenId(src)
+    if not citizenId or type(data)~='table' or not KoraPhone.RateLimits.consume(src,'mutation') then return end
     local title,message=text(data.TransactionTitle,100),text(data.TransactionMessage,1000)
     if not title or not message then return end
     local id=MySQL.insert.await('INSERT INTO phone_legacy_transactions(citizenid,title,message) VALUES(?,?,?)',{citizenId,title,message})
-    if id and id>0 then TriggerClientEvent('qbphone:client:legacyTransactionSaved',src,{citizenId=citizenId}) end
+    if id and id>0 then TriggerClientEvent('kora_phone:client:legacyTransactionSaved',src,{citizenId=citizenId}) end
 end)

@@ -14,7 +14,7 @@ PhoneConstants = { Errors = { NOT_FOUND = 'missing', INVALID_INPUT = 'invalid' }
 PhoneError = function(code) return { ok = false, error = code } end
 PhoneResult = function(data) return { ok = true, data = data } end
 PhoneValidation = { integer = function(value) return type(value) == 'number' and value > 0 and value % 1 == 0 and value or nil end }
-QBPhone = {
+KoraPhone = {
     GetCitizenId = function() return citizen end,
     RateLimits = { consume = function() return allowRate end },
     Permissions = { requireDevice = function() return device, PhoneError('locked') end },
@@ -66,7 +66,7 @@ MySQL.query = { await = function(sql, values) queryValues = values; queries[#que
 MySQL.single = { await = function(sql, values) queryValues = values; return { legacy_button = 'encoded' } end }
 MySQL.update = { await = function(sql, values) queryValues = values; return changed end }
 dofile('server/repositories/mail.lua')
-local repo = QBPhone.Repositories.Mail
+local repo = KoraPhone.Repositories.Mail
 repo.list(5, 'inbox', 50, 100, 'CID')
 assert(queryValues[1] == 5 and queryValues[2] == 'CID' and queryValues[3] == 100 and queryValues[4] == 50)
 assert(queries[#queries][1]:find('LEFT JOIN', 1, true) and queries[#queries][1]:find('recipient_citizenid = ?', 1, true))
@@ -83,10 +83,10 @@ local nui, notifications, events, serverEvents = {}, {}, {}, {}
 function RegisterNUICallback(name, fn) nui[name] = fn end
 function TriggerEvent(name, payload) events[#events + 1] = { name, payload } end
 function TriggerServerEvent(name, payload) serverEvents[#serverEvents + 1] = { name, payload } end
-QBPhone.Notifications = { Push = function(value) notifications[#notifications + 1] = value end }
-QBPhone.Bootstrap = function() end
-QBPhone.ServerCallback = function(name, payload, reply)
-    assert(name == 'qbphone:server:acceptLegacyMail' and payload.id == 77 and not payload.buttonEvent)
+KoraPhone.Notifications = { Push = function(value) notifications[#notifications + 1] = value end }
+KoraPhone.Bootstrap = function() end
+KoraPhone.ServerCallback = function(name, payload, reply)
+    assert(name == 'kora_phone:server:acceptLegacyMail' and payload.id == 77 and not payload.buttonEvent)
     reply(PhoneResult({ buttonEvent = 'trusted:action', buttonData = 5 }))
 end
 dofile('client/compat.lua')

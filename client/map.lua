@@ -1,4 +1,4 @@
-QBPhone = QBPhone or {}
+KoraPhone = KoraPhone or {}
 local Map = { active = false, previousRadar = true }
 
 -- Vanilla 16:9 minimap rects (the widely used community reference values),
@@ -101,4 +101,4 @@ function Map.Blips()
     return result
 end
 
-QBPhone.Map = Map
+KoraPhone.Map = Map

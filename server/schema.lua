@@ -13,7 +13,7 @@ end
 local function nullable(name, type) return { name = name, type = type, null = true, default = NULL } end
 local function flag(name, default) return { name = name, type = 'tinyint(1)', default = default } end
 
-QBPhoneSchema = {
+KoraPhoneSchema = {
     {
         name = 'phone_devices', collate = COLLATE,
         columns = {

@@ -1,6 +1,6 @@
-QBPhone.Repositories=QBPhone.Repositories or {}
+KoraPhone.Repositories=KoraPhone.Repositories or {}
 local Mail={}
-QBPhone.Repositories.LegacyMail=Mail
+KoraPhone.Repositories.LegacyMail=Mail
 function Mail.insert(citizenId,mail)
     return MySQL.insert.await([[INSERT INTO phone_legacy_mail(citizenid,sender,subject,body,button_json)
         VALUES(?,?,?,?,NULLIF(?,''))]],{citizenId,mail.sender,mail.subject,mail.message,mail.button and json.encode(mail.button) or ''})

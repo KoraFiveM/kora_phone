@@ -34,3 +34,29 @@ Config.HomeScreen.allowReorder = true
 -- click outside to close). Set false to keep the small in-phone view with the plain video controls.
 Config.Gallery = Config.Gallery or {}
 Config.Gallery.fullscreenViewer = true
+
+-- App Store. Set false to hide the App Store icon from the home screen entirely.
+Config.AppStore = true
+
+-- Toggle individual apps on or off. Apps set to false won't appear in the App Store or on
+-- the home screen, and their server callbacks will be blocked. The server still checks extra
+-- requirements for some apps (media provider for camera, housing tables for property, etc.),
+-- so an app set to true here may still show "Unavailable on this server" in the Store if those
+-- requirements aren't met.
+Config.Apps = {
+    banking     = false,
+    social      = false,
+    classifieds = false,
+    services    = false,
+    property    = false,
+    vehicles    = false,
+    flash       = false,
+    moderation  = false,
+    gps         = true,
+    notes       = true,
+    mail        = true,
+    weather     = true,
+    calculator  = true,
+    clock       = true,
+    music       = true,
+}

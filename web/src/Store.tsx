@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { AlarmClock, Aperture, ArrowUpRight, Check, CloudSun, CreditCard, Download, House, Mail, MapPin, Music, Radio, Search, ShieldCheck, StickyNote, Tag, Calculator, Car, X } from 'lucide-react';
-import { api, launchApps } from './api';
+import { api } from './api';
 import { CustomAppStore } from './CustomApps';
 import { optionalApps } from './catalog';
 import type { OptionalApp } from './catalog';
@@ -34,7 +34,7 @@ export function StoreScreen() {
     try { updateData(await api('installApp', { app, installed: value })); setRemoving(undefined); }
     finally { setWorking(undefined); }
   });
-  const visible = optionalApps.filter(id => launchApps.has(id)).filter(id => (tab !== 'Installed' || installed(id)) && (category === 'All' || details[id].category === category) && `${appCopy(id).label} ${details[id].description}`.toLowerCase().includes(search.toLowerCase()));
+  const visible = optionalApps.filter(id => supported(id)).filter(id => (tab !== 'Installed' || installed(id)) && (category === 'All' || details[id].category === category) && `${appCopy(id).label} ${details[id].description}`.toLowerCase().includes(search.toLowerCase()));
   return <div className="store"><div className="segments"><button className={tab === 'Discover' ? 'selected' : ''} onClick={() => setTab('Discover')}>Discover</button><button className={tab === 'Installed' ? 'selected' : ''} onClick={() => setTab('Installed')}>Installed · {data.installedApps?.length || 0}</button></div>
     {tab === 'Discover' && !search && category === 'All' && <section className="store-feature"><span className="eyebrow">MADE FOR YOUR CITY</span><Radio size={40} strokeWidth={1} /><h2>Find your<br />frequency.</h2><p>Pulse. The conversation starts here.</p><button disabled={busy || !supported('social')} onClick={() => installed('social') ? navigate('social') : change('social', true)}>{working === 'social' ? <span className="store-spinner" aria-hidden="true" /> : <ArrowUpRight size={16} />}{working === 'social' ? 'Installing' : installed('social') ? 'Open Pulse' : 'Get Pulse — Free'}</button>{working === 'social' && <div className="store-progress store-progress-feature" aria-hidden="true"><i /></div>}<div className="store-orbit" /></section>}
     <label className="store-search"><Search size={17} /><input aria-label="Search apps" placeholder="Find your next favorite" value={search} onChange={e => setSearch(e.target.value)} /></label>

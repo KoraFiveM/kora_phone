@@ -6,8 +6,8 @@ local function fixture()
     local env = {}; for key, value in pairs(_G) do env[key] = value end
     local state = { items = {}, removed = 0, added = {}, removeOk = true, addOk = true }
     env.Config = { SimItem = 'phone_sim', Handsets = {} }
-    env.QBPhone = auto()
-    env.QBPhone.GetPlayer = function() return { items = state.items } end
+    env.KoraPhone = auto()
+    env.KoraPhone.GetPlayer = function() return { items = state.items } end
     env.PhoneError, env.PhoneResult, env.PhoneConstants = function() end, function() end, { Errors = {} }
     env.MySQL = auto()
     env.exports = setmetatable({}, { __call = function() end, __index = function(_, resource)
@@ -27,7 +27,7 @@ local function fixture()
     env.AddEventHandler, env.RegisterNetEvent, env.RegisterCommand, env.CreateThread = function() end, function() end, function() end, function() end
     env.print = function() end
     assert(loadfile('server/handsets.lua', 't', env))()
-    return state, env.QBPhone.Handsets
+    return state, env.KoraPhone.Handsets
 end
 local sim = string.rep('a', 32)
 local request = { simSlot = 7, simId = sim }

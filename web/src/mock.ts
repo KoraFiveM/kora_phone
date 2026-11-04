@@ -4,6 +4,7 @@ import { blobToDataUrl } from './useClipRecorder';
 import type { AppId } from './types';
 import type { Api, Bootstrap, Bank, Call, CallHistory, ChatMessage, Comment, Conversation, DeviceData, LegacyActivity, MailItem, Message, ModerationReport, Post } from './types';
 const key = 'nothing-phone-preview-v1';
+export const isDemo = new URLSearchParams(window.location?.search).has('demo');
 const timestamp = () => new Date().toISOString();
 const number = '5550102048';
 const seed: DeviceData = {
@@ -37,7 +38,8 @@ function initial(): Store {
     ] } };
 }
 let store: Store;
-try { store = JSON.parse(localStorage.getItem(key) || 'null') || initial(); store.data = normalizeData(store.data); } catch { store = initial(); }
+try { store = isDemo ? initial() : JSON.parse(localStorage.getItem(key) || 'null') || initial(); store.data = normalizeData(store.data); } catch { store = initial(); }
+if (isDemo) store.data.settings.setupComplete = true;
 // Preserve existing phones when a preview saved before Flash/Pulse is opened.
 store.flash = Array.isArray(store.flash) ? store.flash : initial().flash;
 store.conversations = Array.isArray(store.conversations) ? store.conversations : initial().conversations;
@@ -48,7 +50,7 @@ let activeCall: Call | undefined;
 let classifieds: Post[] = [{ id: 99, number: '5550192042', body: 'Karin Sultan Â· Great condition, low miles. Ready for its next adventure.', price: 18000, created_at: timestamp(), likes: 0, comments: 0, liked: false, mine: false }];
 let reports: (ModerationReport & { targetId: number })[] = [{ id: 1, targetType: 'listing', targetId: 99, reason: 'scam', details: 'The price seems too good to be true.', status: 'open', createdAt: timestamp(), snapshot: { title: 'Karin Sultan', description: 'Great condition, low miles. Ready for its next adventure.', price: 18000 } }];
 const completed = new Map<string, unknown>();
-function save() { localStorage.setItem(key, JSON.stringify(store)); }
+function save() { if (isDemo) return; localStorage.setItem(key, JSON.stringify(store)); }
 export function previewBootstrap(): Bootstrap {
   return { id: 'preview-device', number, locked: !!store.pin, hasPin: !!store.pin, data: store.pin ? undefined : structuredClone(store.data), preferences: structuredClone(store.data.settings),
     transfers: true, capabilities: { banking: true, camera: true, property: true, vehicles: true, weather: true, moderation: true }, unavailable: {}, admin: true, moderator: true, video: { iceServers: [] },
@@ -60,7 +62,7 @@ export function previewIncoming() {
   window.dispatchEvent(new MessageEvent('message', { data: { type: 'call', data: activeCall } }));
 }
 let demoDuty = true;
-export function resetPreview() { localStorage.removeItem(key); location.reload(); }
+export function resetPreview() { if (!isDemo) localStorage.removeItem(key); location.reload(); }
 export async function mockRequest<K extends keyof Api>(action: K, payload: Api[K][0], id: string): Promise<Api[K][1]> {
   await new Promise(resolve => setTimeout(resolve, 100));
   if (completed.has(id)) return structuredClone(completed.get(id)) as Api[K][1];

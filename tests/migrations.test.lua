@@ -25,13 +25,13 @@ end } }
 Config = { Server = {} }
 dofile(root .. "/server/schema.lua")
 dofile(root .. "/server/integrations/schema_setup.lua")
-local Migrations = QBPhone.SchemaSetup
+local Migrations = KoraPhone.SchemaSetup
 local function reset() stub.calls, stub.spec, stub.reports, stub.err, stub.throw, printed = 0, nil, {}, nil, nil, {} end
 
 test("the schema declares all 33 tables, each once", function()
-    equal(#QBPhoneSchema, 33)
+    equal(#KoraPhoneSchema, 33)
     local seen = {}
-    for _, spec in ipairs(QBPhoneSchema) do assert(not seen[spec.name], 'duplicate ' .. spec.name); seen[spec.name] = true end
+    for _, spec in ipairs(KoraPhoneSchema) do assert(not seen[spec.name], 'duplicate ' .. spec.name); seen[spec.name] = true end
     for _, name in ipairs({ 'phone_devices', 'phone_messages', 'phone_calls', 'phone_economy_audit', 'phone_social_posts', 'phone_items',
         'phone_mail', 'phone_handsets', 'phone_sims', 'phone_call_hidden', 'phone_legacy_mail', 'phone_legacy_transactions' }) do
         assert(seen[name], 'missing ' .. name)
@@ -39,14 +39,14 @@ test("the schema declares all 33 tables, each once", function()
 end)
 test("foreign key parents are listed before their children", function()
     local seen = {}
-    for _, spec in ipairs(QBPhoneSchema) do
+    for _, spec in ipairs(KoraPhoneSchema) do
         seen[spec.name] = true
         for _, fk in ipairs(spec.foreign or {}) do assert(seen[fk.ref_table], spec.name .. ' references ' .. fk.ref_table .. ' before it exists') end
     end
 end)
 test("the setup passes the schema to ensureTables once", function()
     reset()
-    equal(Migrations.run(), true); equal(stub.calls, 1); assert(stub.spec == QBPhoneSchema)
+    equal(Migrations.run(), true); equal(stub.calls, 1); assert(stub.spec == KoraPhoneSchema)
 end)
 test("created tables are summarised and warnings are logged", function()
     reset(); stub.reports = { { table = 'phone_devices', created = true }, { table = 'phone_mail', warnings = { 'type differs' } } }

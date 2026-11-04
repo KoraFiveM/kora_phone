@@ -1,4 +1,4 @@
-QBPhone = QBPhone or {}
+KoraPhone = KoraPhone or {}
 local Voice = { provider = 'none', channel = nil, muted = false, speaker = false }
 
 local function resourceStarted(name)
@@ -33,4 +33,4 @@ function Voice.Capabilities()
     return { provider = Voice.Detect(), available = Voice.provider ~= 'none' }
 end
 
-QBPhone.Voice = Voice
+KoraPhone.Voice = Voice

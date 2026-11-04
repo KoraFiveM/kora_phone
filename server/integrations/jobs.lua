@@ -1,8 +1,8 @@
-QBPhone = QBPhone or {}
-QBPhone.Integrations = QBPhone.Integrations or {}
+KoraPhone = KoraPhone or {}
+KoraPhone.Integrations = KoraPhone.Integrations or {}
 
 local Jobs = {}
-QBPhone.Integrations.Jobs = Jobs
+KoraPhone.Integrations.Jobs = Jobs
 
 Config.Server.Jobs = Config.Server.Jobs or {}
 local jobsConfig = Config.Server.Jobs

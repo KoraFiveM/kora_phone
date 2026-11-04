@@ -1,20 +1,20 @@
-QBPhone.registerCallback('calls:start', 'callStart', QBPhone.Services.Calling.start)
-QBPhone.registerCallback('calls:accept', 'mutation', QBPhone.Services.Calling.accept)
-QBPhone.registerCallback('calls:reject', 'mutation', QBPhone.Services.Calling.reject)
-QBPhone.registerCallback('calls:hangup', 'mutation', QBPhone.Services.Calling.hangup)
-QBPhone.registerCallback('calls:history', 'read', QBPhone.Services.Calling.history)
-QBPhone.registerCallback('calls:signal', 'videoSignal', QBPhone.Services.Calling.videoSignal)
+KoraPhone.registerCallback('calls:start', 'callStart', KoraPhone.Services.Calling.start)
+KoraPhone.registerCallback('calls:accept', 'mutation', KoraPhone.Services.Calling.accept)
+KoraPhone.registerCallback('calls:reject', 'mutation', KoraPhone.Services.Calling.reject)
+KoraPhone.registerCallback('calls:hangup', 'mutation', KoraPhone.Services.Calling.hangup)
+KoraPhone.registerCallback('calls:history', 'read', KoraPhone.Services.Calling.history)
+KoraPhone.registerCallback('calls:signal', 'videoSignal', KoraPhone.Services.Calling.videoSignal)
 
-RegisterNetEvent('qbphone:server:calls:voiceFailure', function(callId)
+RegisterNetEvent('kora_phone:server:calls:voiceFailure', function(callId)
     local requestSource = source
-    if QBPhone.RateLimits.consume(requestSource, 'mutation') then
-        QBPhone.Services.Calling.voiceFailure(requestSource, callId)
+    if KoraPhone.RateLimits.consume(requestSource, 'mutation') then
+        KoraPhone.Services.Calling.voiceFailure(requestSource, callId)
     end
 end)
 
-RegisterNetEvent('qbphone:server:calls:hangup', function(callId)
+RegisterNetEvent('kora_phone:server:calls:hangup', function(callId)
     local requestSource = source
-    if QBPhone.RateLimits.consume(requestSource, 'mutation') then
-        QBPhone.Services.Calling.hangup(requestSource, { id = callId })
+    if KoraPhone.RateLimits.consume(requestSource, 'mutation') then
+        KoraPhone.Services.Calling.hangup(requestSource, { id = callId })
     end
 end)

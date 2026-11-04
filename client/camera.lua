@@ -1,4 +1,4 @@
-QBPhone = QBPhone or {}
+KoraPhone = KoraPhone or {}
 local Camera = { handle = nil, previousRadar = true, front=false, preview=false, looking=false, fov=nil, targetFov=nil, zoom=nil }
 
 local watchCamera
@@ -75,35 +75,35 @@ local function finishMode()
     Camera.looking = false
     SetNuiFocusKeepInput(false)
     DisplayRadar(Camera.previousRadar)
-    QBPhone.State.cameraMode = false
-    QBPhone.SendNui('camera:closed')
+    KoraPhone.State.cameraMode = false
+    KoraPhone.SendNui('camera:closed')
 end
 
 function Camera.Open(options)
     options = type(options) == 'table' and options or {}
-    if QBPhone.State.cameraMode then return true end
+    if KoraPhone.State.cameraMode then return true end
     local ped = Kora.cache.ped()
     if IsEntityDead(ped) then return false, 'PLAYER_DEAD' end
-    if QBPhone.UiBlocked and QBPhone.UiBlocked() then return false, 'UI_BLOCKED' end
-    if QBPhone.Video and QBPhone.Video.active then return false,'Close video before opening the camera' end
+    if KoraPhone.UiBlocked and KoraPhone.UiBlocked() then return false, 'UI_BLOCKED' end
+    if KoraPhone.Video and KoraPhone.Video.active then return false,'Close video before opening the camera' end
     Camera.previousRadar = not IsRadarHidden()
-    QBPhone.State.cameraMode = true
+    KoraPhone.State.cameraMode = true
     Camera.front=options.front == true
     Camera.handle=CreateCam('DEFAULT_SCRIPTED_CAMERA',true)
-    if not Camera.handle or Camera.handle==0 then Camera.handle=nil; QBPhone.State.cameraMode=false; return false,'CAMERA_UNAVAILABLE' end
+    if not Camera.handle or Camera.handle==0 then Camera.handle=nil; KoraPhone.State.cameraMode=false; return false,'CAMERA_UNAVAILABLE' end
     resetZoom(); updateCamera(); RenderScriptCams(true,false,0,true,true)
     Camera.preview = options.preview == true
     Camera.looking = false
     SetNuiFocus(Camera.preview, Camera.preview)
     SetNuiFocusKeepInput(Camera.preview and lookSettings() ~= 'off')
     DisplayRadar(false)
-    QBPhone.SendNui('phone:visibility', options.preview == true)
+    KoraPhone.SendNui('phone:visibility', options.preview == true)
     watchCamera()
     return true
 end
 
 function Camera.SetFacing(front)
-    if not QBPhone.State.cameraMode or type(front) ~= 'boolean' then return false end
+    if not KoraPhone.State.cameraMode or type(front) ~= 'boolean' then return false end
     -- Rear and selfie have their own zoom range, so flipping starts the new lens at its default view.
     if front ~= Camera.front then Camera.front = front; resetZoom() end
     updateCamera()
@@ -112,7 +112,7 @@ end
 
 -- dir 1 zooms in (narrower field of view), -1 zooms out, one step per call.
 function Camera.Zoom(dir)
-    if not QBPhone.State.cameraMode or not Camera.handle or not Camera.zoom or (dir ~= 1 and dir ~= -1) then return false end
+    if not KoraPhone.State.cameraMode or not Camera.handle or not Camera.zoom or (dir ~= 1 and dir ~= -1) then return false end
     local zoom = Camera.zoom
     if not zoom.enabled then return false end
     Camera.targetFov = math.max(zoom.minFov, math.min(zoom.maxFov, (Camera.targetFov or zoom.fov) - dir * zoom.step))
@@ -129,7 +129,7 @@ end
 
 -- While the player holds the look key the cursor is released so the mouse aims the camera.
 function Camera.SetLooking(on)
-    if not QBPhone.State.cameraMode or not Camera.preview or lookSettings() == 'off' then return false end
+    if not KoraPhone.State.cameraMode or not Camera.preview or lookSettings() == 'off' then return false end
     on = on == true
     if on == Camera.looking then return true end
     Camera.looking = on
@@ -140,17 +140,17 @@ function Camera.SetLooking(on)
 end
 
 function Camera.Close()
-    if not QBPhone.State.cameraMode then return end
+    if not KoraPhone.State.cameraMode then return end
     finishMode()
-    if QBPhone.State.open then
+    if KoraPhone.State.open then
         SetNuiFocus(true, true)
-        QBPhone.SendNui('phone:visibility', true)
+        KoraPhone.SendNui('phone:visibility', true)
     end
 end
 
 function Camera.Capture(done)
     done = done or function() end
-    if not QBPhone.State.cameraMode then return done({ ok = false, error = 'CAMERA_NOT_OPEN' }) end
+    if not KoraPhone.State.cameraMode then return done({ ok = false, error = 'CAMERA_NOT_OPEN' }) end
     if GetResourceState('screenshot-basic') ~= 'started' then
         return done({ ok = false, error = 'SCREENSHOT_PROVIDER_UNAVAILABLE' })
     end
@@ -165,7 +165,7 @@ function Camera.Capture(done)
         Camera.Close()
         done({ ok = false, error = { code = 'CAPTURE_TIMEOUT', message = 'Taking the photo timed out. Please try again.' } })
     end)
-    QBPhone.ServerCallback('qbphone:server:requestMediaUpload', {
+    KoraPhone.ServerCallback('kora_phone:server:requestMediaUpload', {
         mimeType = 'image/jpeg',
         -- This is only an upper-bound declaration. The provider verifies the actual size.
         byteSize = 8 * 1024 * 1024
@@ -178,7 +178,7 @@ function Camera.Capture(done)
         end
 
         if instruction.mode == 'server-capture' then
-            return QBPhone.ServerCallback('qbphone:server:completeMediaUpload', {
+            return KoraPhone.ServerCallback('kora_phone:server:completeMediaUpload', {
                 token = instruction.token
             }, done)
         end
@@ -204,7 +204,7 @@ function Camera.Capture(done)
                 if type(receipt) ~= 'string' then
                     return done({ ok = false, error = { code = 'UPLOAD_FAILED' } })
                 end
-                QBPhone.ServerCallback('qbphone:server:completeMediaUpload', {
+                KoraPhone.ServerCallback('kora_phone:server:completeMediaUpload', {
                     token = instruction.token,
                     receipt = receipt
                 }, done)
@@ -218,7 +218,7 @@ function Camera.Capture(done)
 end
 
 function Camera.Cleanup()
-    if QBPhone.State.cameraMode or Camera.handle then finishMode() end
+    if KoraPhone.State.cameraMode or Camera.handle then finishMode() end
 end
 
 local function lookHint()
@@ -256,7 +256,7 @@ function watchCamera()
     if watching then return end
     watching = true
     CreateThread(function()
-        while QBPhone.State and QBPhone.State.cameraMode do
+        while KoraPhone.State and KoraPhone.State.cameraMode do
             Wait(0)
             updateCamera()
             stepZoom()
@@ -289,7 +289,7 @@ end
 -- NUI focus is released by the engine on stop; this also drops the scripted camera and keep-input flag.
 AddEventHandler('onResourceStop', function(resource)
     if resource ~= GetCurrentResourceName() then return end
-    if QBPhone.State.cameraMode or Camera.handle then finishMode(); SetNuiFocus(false, false) end
+    if KoraPhone.State.cameraMode or Camera.handle then finishMode(); SetNuiFocus(false, false) end
 end)
 
-QBPhone.Camera = Camera
+KoraPhone.Camera = Camera

@@ -1,15 +1,15 @@
-QBPhone.Services = QBPhone.Services or {}
+KoraPhone.Services = KoraPhone.Services or {}
 local JobsService = {}
-QBPhone.Services.Jobs = JobsService
+KoraPhone.Services.Jobs = JobsService
 
 local function requireJobPlayer(source)
-    local _, err = QBPhone.Permissions.requireDevice(source)
+    local _, err = KoraPhone.Permissions.requireDevice(source)
     if err then return nil, nil, err end
     if not Config.Server.Jobs.Enabled then
         return nil, nil, PhoneError(PhoneConstants.Errors.CONFLICT, 'Jobs app is disabled')
     end
-    local player = QBPhone.GetPlayer(source)
-    local snapshot = QBPhone.Integrations.Jobs.snapshot(player)
+    local player = KoraPhone.GetPlayer(source)
+    local snapshot = KoraPhone.Integrations.Jobs.snapshot(player)
     if not snapshot then return nil, nil, PhoneError(PhoneConstants.Errors.NOT_FOUND, 'No current job') end
     return player, snapshot
 end
@@ -41,10 +41,10 @@ function JobsService.setDuty(source, payload)
     if type(payload) ~= 'table' or type(payload.onDuty) ~= 'boolean' then
         return PhoneError(PhoneConstants.Errors.INVALID_INPUT, 'onDuty must be a boolean')
     end
-    if not QBPhone.Integrations.Jobs.setDuty(player, payload.onDuty) then
+    if not KoraPhone.Integrations.Jobs.setDuty(player, payload.onDuty) then
         return PhoneError(PhoneConstants.Errors.CONFLICT, 'Duty state could not be changed')
     end
-    local after = QBPhone.Integrations.Jobs.snapshot(QBPhone.GetPlayer(source))
+    local after = KoraPhone.Integrations.Jobs.snapshot(KoraPhone.GetPlayer(source))
     if not after or after.name ~= before.name then
         return PhoneError(PhoneConstants.Errors.CONFLICT, 'Job changed while duty state was being updated')
     end
@@ -57,7 +57,7 @@ function JobsService.runAction(source, payload)
     if type(payload) ~= 'table' then return PhoneError(PhoneConstants.Errors.INVALID_INPUT, 'payload must be an object') end
     local actionName, validationError = PhoneValidation.string(payload.action, 'action', 1, 48)
     if not actionName then return PhoneError(PhoneConstants.Errors.INVALID_INPUT, validationError) end
-    local action = QBPhone.Integrations.Jobs.getAction(snapshot.name, actionName)
+    local action = KoraPhone.Integrations.Jobs.getAction(snapshot.name, actionName)
     if not action then return PhoneError(PhoneConstants.Errors.NOT_FOUND, 'Job action is unavailable') end
     if snapshot.grade < (tonumber(action.minimumGrade) or 0) then
         return PhoneError(PhoneConstants.Errors.UNAUTHORIZED, 'Job grade is not permitted')
@@ -85,4 +85,3 @@ function JobsService.runAction(source, payload)
     if not ok or result == false then return PhoneError(PhoneConstants.Errors.CONFLICT, 'Job action failed') end
     return PhoneResult({ action = actionName, completed = true })
 end
-

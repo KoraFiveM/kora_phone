@@ -1,6 +1,6 @@
-QBPhone.Repositories = QBPhone.Repositories or {}
+KoraPhone.Repositories = KoraPhone.Repositories or {}
 local Calls = {}
-QBPhone.Repositories.Calls = Calls
+KoraPhone.Repositories.Calls = Calls
 
 function Calls.create(call)
     local inserted = MySQL.update.await([[

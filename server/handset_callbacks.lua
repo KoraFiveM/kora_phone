@@ -1,4 +1,4 @@
-QBPhone.registerCallback('handsetAction','mutation',function(src,p)
-    return QBPhone.Handsets.locked(src,QBPhone.Handsets.action,p)
+KoraPhone.registerCallback('handsetAction','mutation',function(src,p)
+    return KoraPhone.Handsets.locked(src,KoraPhone.Handsets.action,p)
 end)
-QBPhone.registerCallback('calls:videoControl','mutation',QBPhone.Services.Calling.videoControl)
+KoraPhone.registerCallback('calls:videoControl','mutation',KoraPhone.Services.Calling.videoControl)

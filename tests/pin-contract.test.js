@@ -39,7 +39,7 @@ assert.match(permissions, /Phone is locked/, "requireDevice must refuse a locked
 assert.match(permissions, /allowLocked/, "calls must be able to opt out of the lock");
 assert.match(calling, /requireDevice\(source, true\)/, "a locked phone must still be able to answer a call");
 assert.match(sessions, /unlocked = false/, "sessions must start locked");
-assert.match(sessions, /function QBPhone\.Sessions\.ensure/, "bootstrap must keep the unlocked state of a live session");
+assert.match(sessions, /function KoraPhone\.Sessions\.ensure/, "bootstrap must keep the unlocked state of a live session");
 assert.match(phone, /Sessions\.ensure\(source, device\)/, "bootstrap must not reset an unlocked session");
 assert.match(phone, /security = \{ hasPin = true, locked = true \}/, "a locked bootstrap must not expose phone data");
 
@@ -48,13 +48,13 @@ assert.match(phone, /function Phone\.removePin[\s\S]*checkPin\(device, current\)
 assert.match(repo, /pin_hash = NULL/, "removing a PIN must clear the hash");
 
 // The phone re-locks when it closes.
-assert.match(clientMain, /qbphone:server:phone:closed/, "closing the phone must notify the server");
-assert.match(serverMain, /RegisterNetEvent\('qbphone:server:phone:closed'/, "server must handle the close event");
+assert.match(clientMain, /kora_phone:server:phone:closed/, "closing the phone must notify the server");
+assert.match(serverMain, /RegisterNetEvent\('kora_phone:server:phone:closed'/, "server must handle the close event");
 assert.match(serverMain, /consume\(requestSource, 'mutation'\)/, "the close event must be rate limited");
 
 // Routes are wired end to end: UI -> NUI callback -> server callback.
 for (const [route, server] of [["security:unlock", "unlockPhone"], ["security:lock", "lockPhone"], ["security:setPin", "setPhonePin"], ["security:removePin", "removePhonePin"]]) {
-  assert.match(nui, new RegExp(`\\['${route}'\\] = 'qbphone:server:${server}'`), `${route} must be mapped in client/nui.lua`);
+  assert.match(nui, new RegExp(`\\['${route}'\\] = 'kora_phone:server:${server}'`), `${route} must be mapped in client/nui.lua`);
   assert.match(callbacks, new RegExp(`register(?:Callback)?\\('${server}'`), `${server} must be registered as a server callback`);
   assert.match(api, new RegExp(`'${route}'`), `${route} must be called by the web api layer`);
 }

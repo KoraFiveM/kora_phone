@@ -1,6 +1,6 @@
-QBPhone.Services = QBPhone.Services or {}
+KoraPhone.Services = KoraPhone.Services or {}
 local BankingService = {}
-QBPhone.Services.Banking = BankingService
+KoraPhone.Services.Banking = BankingService
 
 local function unavailable(message)
     return PhoneError(PhoneConstants.Errors.CONFLICT, message or 'Banking is unavailable')
@@ -18,10 +18,10 @@ local function publicTransaction(transaction)
 end
 
 function BankingService.balance(source)
-    local device, err = QBPhone.Permissions.requireDevice(source)
+    local device, err = KoraPhone.Permissions.requireDevice(source)
     if not device then return err end
-    local player = QBPhone.GetPlayer(source)
-    local balance = QBPhone.Integrations.Banking.getBalance(player)
+    local player = KoraPhone.GetPlayer(source)
+    local balance = KoraPhone.Integrations.Banking.getBalance(player)
     if balance == nil then return unavailable() end
     -- 'account' is the QBCore money type ("bank"); the holder and account number are what a person recognises.
     local pd = player
@@ -30,22 +30,22 @@ function BankingService.balance(source)
 end
 
 function BankingService.history(source, payload)
-    local device, err = QBPhone.Permissions.requireDevice(source)
+    local device, err = KoraPhone.Permissions.requireDevice(source)
     if not device then return err end
-    if not QBPhone.Integrations.Banking.isEnabled() then return unavailable() end
+    if not KoraPhone.Integrations.Banking.isEnabled() then return unavailable() end
     local page, validationError = PhoneValidation.page(payload)
     if not page then return PhoneError(PhoneConstants.Errors.INVALID_INPUT, validationError) end
-    local items, nextCursor = QBPhone.Repositories.Transactions.listForDevice(device.id, page)
+    local items, nextCursor = KoraPhone.Repositories.Transactions.listForDevice(device.id, page)
     return PhoneResult({ items = items, nextCursor = nextCursor })
 end
 
 function BankingService.transfer(source, payload)
-    local senderDevice, permissionError = QBPhone.Permissions.requireDevice(source)
+    local senderDevice, permissionError = KoraPhone.Permissions.requireDevice(source)
     if not senderDevice then return permissionError end
     if type(payload) ~= 'table' then
         return PhoneError(PhoneConstants.Errors.INVALID_INPUT, 'payload must be an object')
     end
-    if not QBPhone.Integrations.Banking.canTransfer() then
+    if not KoraPhone.Integrations.Banking.canTransfer() then
         return unavailable('Transfers are disabled because the configured banking API cannot provide atomic transfers')
     end
 
@@ -56,14 +56,14 @@ function BankingService.transfer(source, payload)
     local requestId, requestError = PhoneValidation.string(payload.clientRequestId, 'clientRequestId', 8, 64)
     if not requestId then return PhoneError(PhoneConstants.Errors.INVALID_INPUT, requestError) end
 
-    local senderCitizenId = QBPhone.GetCitizenId(source)
-    local recipientDevice = QBPhone.Repositories.Phones.findByNumber(recipientNumber)
+    local senderCitizenId = KoraPhone.GetCitizenId(source)
+    local recipientDevice = KoraPhone.Repositories.Phones.findByNumber(recipientNumber)
     if not recipientDevice then return PhoneError(PhoneConstants.Errors.NOT_FOUND, 'Recipient was not found') end
     if recipientDevice.ownerCitizenId == senderCitizenId then
         return PhoneError(PhoneConstants.Errors.INVALID_INPUT, 'Cannot transfer to your own phone')
     end
 
-    local claimed, transaction = QBPhone.Repositories.Transactions.claim(
+    local claimed, transaction = KoraPhone.Repositories.Transactions.claim(
         senderDevice.id, recipientDevice.id, senderCitizenId, recipientDevice.ownerCitizenId, amount, requestId
     )
     if not transaction then return PhoneError(PhoneConstants.Errors.INTERNAL, 'Unable to create transfer') end
@@ -75,34 +75,34 @@ function BankingService.transfer(source, payload)
         return PhoneError(PhoneConstants.Errors.CONFLICT, 'Transfer request has already been processed', { status = transaction.status })
     end
 
-    local sender = QBPhone.GetPlayer(source)
-    local recipient = QBPhone.Integrations.Banking.getOnlinePlayerByCitizenId(recipientDevice.ownerCitizenId)
+    local sender = KoraPhone.GetPlayer(source)
+    local recipient = KoraPhone.Integrations.Banking.getOnlinePlayerByCitizenId(recipientDevice.ownerCitizenId)
     if not recipient then
-        transaction = QBPhone.Repositories.Transactions.finish(transaction.id, 'rejected', 'RECIPIENT_OFFLINE')
+        transaction = KoraPhone.Repositories.Transactions.finish(transaction.id, 'rejected', 'RECIPIENT_OFFLINE')
         return unavailable('Recipient must be online for a safe transfer')
     end
-    if (QBPhone.Integrations.Banking.getBalance(sender) or 0) < amount then
-        transaction = QBPhone.Repositories.Transactions.finish(transaction.id, 'rejected', 'INSUFFICIENT_FUNDS')
+    if (KoraPhone.Integrations.Banking.getBalance(sender) or 0) < amount then
+        transaction = KoraPhone.Repositories.Transactions.finish(transaction.id, 'rejected', 'INSUFFICIENT_FUNDS')
         return PhoneError(PhoneConstants.Errors.CONFLICT, 'Insufficient funds')
     end
 
-    local reason = ('qbphone transfer %s'):format(transaction.id)
-    if not QBPhone.Integrations.Banking.debit(sender, amount, reason) then
-        QBPhone.Repositories.Transactions.finish(transaction.id, 'rejected', 'DEBIT_FAILED')
+    local reason = ('kora_phone transfer %s'):format(transaction.id)
+    if not KoraPhone.Integrations.Banking.debit(sender, amount, reason) then
+        KoraPhone.Repositories.Transactions.finish(transaction.id, 'rejected', 'DEBIT_FAILED')
         return unavailable('Transfer debit failed')
     end
-    if not QBPhone.Integrations.Banking.credit(recipient, amount, reason) then
-        local rolledBack = QBPhone.Integrations.Banking.credit(sender, amount, reason .. ' rollback')
+    if not KoraPhone.Integrations.Banking.credit(recipient, amount, reason) then
+        local rolledBack = KoraPhone.Integrations.Banking.credit(sender, amount, reason .. ' rollback')
         local status = rolledBack and 'rolled_back' or 'manual_review'
         local code = rolledBack and 'CREDIT_FAILED' or 'ROLLBACK_FAILED'
-        QBPhone.Repositories.Transactions.finish(transaction.id, status, code)
-        print(('[qbphone] transfer %s failed credit; status=%s'):format(transaction.id, status))
+        KoraPhone.Repositories.Transactions.finish(transaction.id, status, code)
+        print(('[kora_phone] transfer %s failed credit; status=%s'):format(transaction.id, status))
         return unavailable(rolledBack and 'Recipient credit failed; sender was refunded' or 'Transfer requires administrator review')
     end
 
-    transaction = QBPhone.Repositories.Transactions.finish(transaction.id, 'completed', nil)
+    transaction = KoraPhone.Repositories.Transactions.finish(transaction.id, 'completed', nil)
     return PhoneResult({
         transaction = publicTransaction(transaction),
-        balance = QBPhone.Integrations.Banking.getBalance(sender)
+        balance = KoraPhone.Integrations.Banking.getBalance(sender)
     })
 end

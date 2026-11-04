@@ -1,87 +1,87 @@
-QBPhone = QBPhone or {}
+KoraPhone = KoraPhone or {}
 
 -- kora_lib's NUI helpers run in kora_lib's resource VM. This phone owns a different
 -- browser frame, so its messages and callback routes must use this resource's natives.
-function QBPhone.SendNui(action, data)
+function KoraPhone.SendNui(action, data)
     SendNUIMessage({ action = action, data = data })
 end
 
 local callbacks = {
-    ['legacy:mailList'] = 'qbphone:server:legacy:getMail',
-    ['legacy:mailRead'] = 'qbphone:server:legacy:readMail',
-    ['legacy:mailDelete'] = 'qbphone:server:legacy:deleteMail',
-    ['legacy:activity'] = 'qbphone:server:legacy:getActivity',
-    ['handset:action'] = 'qbphone:server:handsetAction',
-    ['calls:videoControl'] = 'qbphone:server:calls:videoControl',
-    ['bootstrap'] = 'qbphone:server:getBootstrap',
-    ['settings:save'] = 'qbphone:server:saveSettings',
-    ['security:unlock'] = 'qbphone:server:unlockPhone',
-    ['security:lock'] = 'qbphone:server:lockPhone',
-    ['security:setPin'] = 'qbphone:server:setPhonePin',
-    ['security:removePin'] = 'qbphone:server:removePhonePin',
-    ['contacts:create'] = 'qbphone:server:saveContact',
-    ['contacts:update'] = 'qbphone:server:saveContact',
-    ['contacts:delete'] = 'qbphone:server:deleteContact',
-    ['contacts:list'] = 'qbphone:server:getContacts',
-    ['messages:getConversations'] = 'qbphone:server:getConversations',
-    ['messages:startDirect'] = 'qbphone:server:startDirectConversation',
-    ['messages:markRead'] = 'qbphone:server:markConversationRead',
-    ['messages:deleteForSelf'] = 'qbphone:server:deleteMessageForSelf',
-    ['messages:getPage'] = 'qbphone:server:getMessages',
-    ['messages:send'] = 'qbphone:server:sendMessage',
-    ['calls:start'] = 'qbphone:server:calls:start',
-    ['calls:accept'] = 'qbphone:server:calls:accept',
-    ['calls:reject'] = 'qbphone:server:calls:reject',
-    ['calls:hangup'] = 'qbphone:server:calls:hangup',
-    ['calls:history'] = 'qbphone:server:calls:history',
-    ['calls:signal'] = 'qbphone:server:calls:signal',
-    ['gallery:list'] = 'qbphone:server:getGallery',
-    ['media:request'] = 'qbphone:server:requestMediaUpload',
-    ['media:complete'] = 'qbphone:server:completeMediaUpload',
-    ['gallery:delete'] = 'qbphone:server:deleteMedia',
-    ['bank:getData'] = 'qbphone:server:getBankBalance',
-    ['bank:getTransactions'] = 'qbphone:server:getBankHistory',
-    ['bank:transfer'] = 'qbphone:server:transferBankMoney',
-    ['messages:createGroup'] = 'qbphone:server:createGroup',
-    ['messages:leaveGroup'] = 'qbphone:server:leaveGroup',
-    ['messages:addMember'] = 'qbphone:server:addGroupMember',
-    ['blocks:list'] = 'qbphone:server:getBlocked',
-    ['blocks:set'] = 'qbphone:server:setBlocked',
-    ['mail:list'] = 'qbphone:server:getMail',
-    ['mail:send'] = 'qbphone:server:sendMail',
-    ['mail:read'] = 'qbphone:server:readMail',
-    ['mail:delete'] = 'qbphone:server:deleteMail',
-    ['property:list'] = 'qbphone:server:getProperties',
-    ['items:save'] = 'qbphone:server:saveItem',
-    ['items:remove'] = 'qbphone:server:removeItem',
-    ['garage:list'] = 'qbphone:server:getVehicles',
-    ['wallet:get'] = 'qbphone:server:getWallet',
-    ['wallet:show'] = 'qbphone:server:showWalletId',
-    ['jobs:getData'] = 'qbphone:server:getJob',
-    ['jobs:setDuty'] = 'qbphone:server:setJobDuty',
-    ['jobs:runAction'] = 'qbphone:server:runJobAction',
-    ['social:createAccount'] = 'qbphone:server:social:createAccount',
-    ['social:getFeed'] = 'qbphone:server:social:getFeed',
-    ['social:getProfile'] = 'qbphone:server:social:getProfile',
-    ['social:createPost'] = 'qbphone:server:social:createPost',
-    ['social:deletePost'] = 'qbphone:server:social:deletePost',
-    ['social:toggleLike'] = 'qbphone:server:social:toggleLike',
-    ['social:follow'] = 'qbphone:server:social:follow',
-    ['social:unfollow'] = 'qbphone:server:social:unfollow',
-    ['social:createComment'] = 'qbphone:server:social:createComment',
-    ['social:deleteComment'] = 'qbphone:server:social:deleteComment',
-    ['social:getComments'] = 'qbphone:server:social:getComments',
-    ['social:block'] = 'qbphone:server:social:block',
-    ['social:report'] = 'qbphone:server:social:report',
-    ['market:getListings'] = 'qbphone:server:market:getListings',
-    ['market:getListing'] = 'qbphone:server:market:getListing',
-    ['market:createListing'] = 'qbphone:server:market:createListing',
-    ['market:updateListing'] = 'qbphone:server:market:updateListing',
-    ['market:removeListing'] = 'qbphone:server:market:removeListing',
-    ['market:markSold'] = 'qbphone:server:market:markSold',
-    ['market:contactSeller'] = 'qbphone:server:market:contactSeller',
-    ['moderation:getQueue'] = 'qbphone:server:moderation:getQueue',
-    ['moderation:resolve'] = 'qbphone:server:moderation:resolve',
+    ['legacy:mailList'] = 'kora_phone:server:legacy:getMail',
+    ['legacy:mailRead'] = 'kora_phone:server:legacy:readMail',
+    ['legacy:mailDelete'] = 'kora_phone:server:legacy:deleteMail',
+    ['legacy:activity'] = 'kora_phone:server:legacy:getActivity',
+    ['handset:action'] = 'kora_phone:server:handsetAction',
+    ['calls:videoControl'] = 'kora_phone:server:calls:videoControl',
+    ['bootstrap'] = 'kora_phone:server:getBootstrap',
+    ['settings:save'] = 'kora_phone:server:saveSettings',
+    ['security:unlock'] = 'kora_phone:server:unlockPhone',
+    ['security:lock'] = 'kora_phone:server:lockPhone',
+    ['security:setPin'] = 'kora_phone:server:setPhonePin',
+    ['security:removePin'] = 'kora_phone:server:removePhonePin',
+    ['contacts:create'] = 'kora_phone:server:saveContact',
+    ['contacts:update'] = 'kora_phone:server:saveContact',
+    ['contacts:delete'] = 'kora_phone:server:deleteContact',
+    ['contacts:list'] = 'kora_phone:server:getContacts',
+    ['messages:getConversations'] = 'kora_phone:server:getConversations',
+    ['messages:startDirect'] = 'kora_phone:server:startDirectConversation',
+    ['messages:markRead'] = 'kora_phone:server:markConversationRead',
+    ['messages:deleteForSelf'] = 'kora_phone:server:deleteMessageForSelf',
+    ['messages:getPage'] = 'kora_phone:server:getMessages',
+    ['messages:send'] = 'kora_phone:server:sendMessage',
+    ['calls:start'] = 'kora_phone:server:calls:start',
+    ['calls:accept'] = 'kora_phone:server:calls:accept',
+    ['calls:reject'] = 'kora_phone:server:calls:reject',
+    ['calls:hangup'] = 'kora_phone:server:calls:hangup',
+    ['calls:history'] = 'kora_phone:server:calls:history',
+    ['calls:signal'] = 'kora_phone:server:calls:signal',
+    ['gallery:list'] = 'kora_phone:server:getGallery',
+    ['media:request'] = 'kora_phone:server:requestMediaUpload',
+    ['media:complete'] = 'kora_phone:server:completeMediaUpload',
+    ['gallery:delete'] = 'kora_phone:server:deleteMedia',
+    ['bank:getData'] = 'kora_phone:server:getBankBalance',
+    ['bank:getTransactions'] = 'kora_phone:server:getBankHistory',
+    ['bank:transfer'] = 'kora_phone:server:transferBankMoney',
+    ['messages:createGroup'] = 'kora_phone:server:createGroup',
+    ['messages:leaveGroup'] = 'kora_phone:server:leaveGroup',
+    ['messages:addMember'] = 'kora_phone:server:addGroupMember',
+    ['blocks:list'] = 'kora_phone:server:getBlocked',
+    ['blocks:set'] = 'kora_phone:server:setBlocked',
+    ['mail:list'] = 'kora_phone:server:getMail',
+    ['mail:send'] = 'kora_phone:server:sendMail',
+    ['mail:read'] = 'kora_phone:server:readMail',
+    ['mail:delete'] = 'kora_phone:server:deleteMail',
+    ['property:list'] = 'kora_phone:server:getProperties',
+    ['items:save'] = 'kora_phone:server:saveItem',
+    ['items:remove'] = 'kora_phone:server:removeItem',
+    ['garage:list'] = 'kora_phone:server:getVehicles',
+    ['wallet:get'] = 'kora_phone:server:getWallet',
+    ['wallet:show'] = 'kora_phone:server:showWalletId',
+    ['jobs:getData'] = 'kora_phone:server:getJob',
+    ['jobs:setDuty'] = 'kora_phone:server:setJobDuty',
+    ['jobs:runAction'] = 'kora_phone:server:runJobAction',
+    ['social:createAccount'] = 'kora_phone:server:social:createAccount',
+    ['social:getFeed'] = 'kora_phone:server:social:getFeed',
+    ['social:getProfile'] = 'kora_phone:server:social:getProfile',
+    ['social:createPost'] = 'kora_phone:server:social:createPost',
+    ['social:deletePost'] = 'kora_phone:server:social:deletePost',
+    ['social:toggleLike'] = 'kora_phone:server:social:toggleLike',
+    ['social:follow'] = 'kora_phone:server:social:follow',
+    ['social:unfollow'] = 'kora_phone:server:social:unfollow',
+    ['social:createComment'] = 'kora_phone:server:social:createComment',
+    ['social:deleteComment'] = 'kora_phone:server:social:deleteComment',
+    ['social:getComments'] = 'kora_phone:server:social:getComments',
+    ['social:block'] = 'kora_phone:server:social:block',
+    ['social:report'] = 'kora_phone:server:social:report',
+    ['market:getListings'] = 'kora_phone:server:market:getListings',
+    ['market:getListing'] = 'kora_phone:server:market:getListing',
+    ['market:createListing'] = 'kora_phone:server:market:createListing',
+    ['market:updateListing'] = 'kora_phone:server:market:updateListing',
+    ['market:removeListing'] = 'kora_phone:server:market:removeListing',
+    ['market:markSold'] = 'kora_phone:server:market:markSold',
+    ['market:contactSeller'] = 'kora_phone:server:market:contactSeller',
+    ['moderation:getQueue'] = 'kora_phone:server:moderation:getQueue',
+    ['moderation:resolve'] = 'kora_phone:server:moderation:resolve',
 }
 
 local function safeReply(cb, result)
@@ -101,14 +101,14 @@ end
 
 for nuiName, serverName in pairs(callbacks) do
     RegisterNUICallback(nuiName, function(data, cb)
-        QBPhone.ServerCallback(serverName, type(data) == 'table' and data or {}, function(result)
+        KoraPhone.ServerCallback(serverName, type(data) == 'table' and data or {}, function(result)
             safeReply(cb, result)
         end)
     end)
 end
 
 RegisterNUICallback('phone:close', function(data, cb)
-    QBPhone.Close(false)
+    KoraPhone.Close(false)
     -- The UI reports why it could not open (for example no phone item) so the
     -- player gets feedback instead of an invisible phone that holds focus.
     if type(data) == 'table' and type(data.error) == 'string' and data.error ~= '' then
@@ -118,8 +118,8 @@ RegisterNUICallback('phone:close', function(data, cb)
 end)
 
 RegisterNUICallback('phone:ready', function(_, cb)
-    QBPhone.State.ready = true
-    cb({ ok = true, data = QBPhone.State.Public() })
+    KoraPhone.State.ready = true
+    cb({ ok = true, data = KoraPhone.State.Public() })
 end)
 
 RegisterNUICallback('route:changed', function(_, cb)
@@ -127,35 +127,35 @@ RegisterNUICallback('route:changed', function(_, cb)
 end)
 
 RegisterNUICallback('camera:open', function(data, cb)
-    local ok, errorCode = QBPhone.Camera.Open(data)
-    cb({ ok = ok == true, error = errorCode, zoom = ok == true and QBPhone.Camera.ZoomEnabled() or nil })
+    local ok, errorCode = KoraPhone.Camera.Open(data)
+    cb({ ok = ok == true, error = errorCode, zoom = ok == true and KoraPhone.Camera.ZoomEnabled() or nil })
 end)
 
 -- The phone cursor owns the mouse wheel while it is up, so the Camera app forwards wheel steps here.
 RegisterNUICallback('camera:zoom', function(data, cb)
-    cb({ ok = QBPhone.Camera.Zoom(type(data) == 'table' and tonumber(data.dir) or nil) })
+    cb({ ok = KoraPhone.Camera.Zoom(type(data) == 'table' and tonumber(data.dir) or nil) })
 end)
 
 RegisterNUICallback('camera:facing', function(data, cb)
-    cb({ ok = QBPhone.Camera.SetFacing(type(data) == 'table' and data.front) })
+    cb({ ok = KoraPhone.Camera.SetFacing(type(data) == 'table' and data.front) })
 end)
 
 RegisterNUICallback('camera:close', function(_, cb)
-    QBPhone.Camera.Close()
+    KoraPhone.Camera.Close()
     cb({ ok = true })
 end)
 
 RegisterNUICallback('camera:capture', function(_, cb)
-    QBPhone.Camera.Capture(function(result) safeReply(cb, result) end)
+    KoraPhone.Camera.Capture(function(result) safeReply(cb, result) end)
 end)
 
 RegisterNUICallback('customList', function(_, cb)
-    cb(QBPhone.CustomApps.List())
+    cb(KoraPhone.CustomApps.List())
 end)
 
 RegisterNUICallback('customLifecycle', function(data, cb)
     if type(data) == 'table' and type(data.app) == 'string' and type(data.event) == 'string' then
-        QBPhone.CustomApps.Fire(data.app, data.event)
+        KoraPhone.CustomApps.Fire(data.app, data.event)
     end
     cb({ ok = true })
 end)
@@ -184,8 +184,8 @@ end)
 -- The UI asks for a game notification when something arrives (a text, mail, a missed call) and the phone is closed.
 RegisterNUICallback('notify', function(data, cb)
     data = type(data) == 'table' and data or {}
-    if type(data.title) == 'string' and not QBPhone.State.open then
-        QBPhone.Notifications.Native(data.title:sub(1, 60), type(data.body) == 'string' and data.body:sub(1, 120) or '', data.urgent == true)
+    if type(data.title) == 'string' and not KoraPhone.State.open then
+        KoraPhone.Notifications.Native(data.title:sub(1, 60), type(data.body) == 'string' and data.body:sub(1, 120) or '', data.urgent == true)
     end
     cb({ ok = true })
 end)
@@ -203,7 +203,7 @@ end)
 
 -- An alarm went off in the UI. With the phone closed the player still needs to notice it.
 RegisterNUICallback('alarm', function(data, cb)
-    if not QBPhone.State.open then
+    if not KoraPhone.State.open then
         local label = type(data) == 'table' and type(data.label) == 'string' and data.label:sub(1, 60) or ''
         Kora.notify.send({ title = 'Alarm', message = label ~= '' and label or 'Untitled', type = 'info', duration = 8000 })
         PlaySoundFrontend(-1, 'Beep_Green', 'DLC_HEIST_HACKING_SNAKE_SOUNDS', true)
@@ -213,18 +213,18 @@ end)
 
 -- Do Not Disturb: the UI owns the setting and schedule and tells the client whether it is quiet now.
 RegisterNUICallback('quiet', function(data, cb)
-    QBPhone.State.quiet = type(data) == 'table' and data.quiet == true
+    KoraPhone.State.quiet = type(data) == 'table' and data.quiet == true
     cb({ ok = true })
 end)
 
 RegisterNUICallback('calls:setMuted', function(data, cb)
-    cb({ ok = QBPhone.Voice.SetMuted(type(data) == 'table' and data.muted == true) })
+    cb({ ok = KoraPhone.Voice.SetMuted(type(data) == 'table' and data.muted == true) })
 end)
 
 RegisterNUICallback('calls:setSpeaker', function(data, cb)
-    cb({ ok = QBPhone.Voice.SetSpeaker(type(data) == 'table' and data.speaker == true) })
+    cb({ ok = KoraPhone.Voice.SetSpeaker(type(data) == 'table' and data.speaker == true) })
 end)
 
 RegisterNUICallback('map:blips', function(_, cb)
-    cb({ ok = true, data = QBPhone.Map.Blips() })
+    cb({ ok = true, data = KoraPhone.Map.Blips() })
 end)

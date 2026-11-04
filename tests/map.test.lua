@@ -28,7 +28,7 @@ local placed, hudState, hudCalls, hudResult, radarHidden, radarSet, bigmap, aspe
 local function setup(state, result)
     placed, hudCalls, radarSet, bigmap, aspect, threads = {}, 0, nil, {}, 16 / 9, {}
     hudState, hudResult, radarHidden = state, result, false
-    _G.QBPhone = nil
+    _G.KoraPhone = nil
     _G.SetMinimapComponentPosition = function(name, h, v, x, y, w, hh) placed[#placed + 1] = { name = name, v = v, x = x, y = y, w = w, h = hh } end
     _G.GetAspectRatio = function() return aspect end
     _G.SetBigmapActive = function(on) bigmap[#bigmap + 1] = on end
@@ -62,9 +62,9 @@ local function byName()
 end
 
 local function showThenHide()
-    QBPhone.Map.Show(0.1, 0.2, 0.3, 0.4)
+    KoraPhone.Map.Show(0.1, 0.2, 0.3, 0.4)
     placed = {}
-    QBPhone.Map.Hide()
+    KoraPhone.Map.Hide()
 end
 
 test("closing the map asks kora_hud to restore its layout", function()
@@ -77,7 +77,7 @@ end)
 
 test("Show still positions all three components itself", function()
     setup("started", true)
-    QBPhone.Map.Show(0.1, 0.2, 0.3, 0.4)
+    KoraPhone.Map.Show(0.1, 0.2, 0.3, 0.4)
     equal(#placed, 3)
     equal(hudCalls, 0)
 end)
@@ -150,7 +150,7 @@ end)
 
 test("Show never touches the bigmap", function()
     setup("missing", true)
-    QBPhone.Map.Show(0.1, 0.2, 0.3, 0.4)
+    KoraPhone.Map.Show(0.1, 0.2, 0.3, 0.4)
     flush()
     equal(#bigmap, 0)
 end)

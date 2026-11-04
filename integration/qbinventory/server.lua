@@ -2992,7 +2992,7 @@ local function phoneItemTransaction(src, request)
     local lockKeys = { playerKey(src) }
     if request.shopId ~= nil then
         if op ~= 'resell' or type(request.shopId) ~= 'string' or #request.shopId > 128
-            or request.shopId:sub(1,8) ~= 'qbphone:' or type(request.salePrice) ~= 'number'
+            or request.shopId:sub(1,8) ~= 'kora_phone:' or type(request.salePrice) ~= 'number'
             or request.salePrice < 0 or request.salePrice > 100000000 or request.salePrice % 1 ~= 0 then
             return false, 'invalid phone resale shop'
         end
@@ -3107,12 +3107,12 @@ local function phoneItemTransaction(src, request)
         local beforeRevision = revision(playerKey(src))
         local beforeShopRevision = saleShopKey and revision(saleShopKey)
         if moneyAmount and moneyAmount > 0 then
-            local paid, err = exports.kora_core[moneyAction](exports.kora_core, src, 'bank', moneyAmount, 'qbphone-' .. op, true)
+            local paid, err = exports.kora_core[moneyAction](exports.kora_core, src, 'bank', moneyAmount, 'kora_phone-' .. op, true)
             if not paid then return false, err or 'bank service unavailable' end
         end
         local function refund()
             if moneyAmount and moneyAmount > 0 then
-                local refunded = exports.kora_core[refundAction](exports.kora_core, src, 'bank', moneyAmount, 'qbphone-service-rollback', true)
+                local refunded = exports.kora_core[refundAction](exports.kora_core, src, 'bank', moneyAmount, 'kora_phone-service-rollback', true)
                 if not refunded then print('^1[qbinventory]^7 phone bank compensation failed for player ' .. src) end
                 return refunded
             end

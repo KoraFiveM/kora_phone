@@ -61,7 +61,7 @@ end
 
 local function host()
     local state = { pending = {}, rows = {}, events = {}, timers = {}, callbacks = {}, handlers = {}, voice = {}, pause = nil }
-    QBPhone, MySQL = {}, nil
+    KoraPhone, MySQL = {}, nil
     dofile(root .. '/config/shared.lua')
     dofile(root .. '/config/server.lua')
     dofile(root .. '/shared/constants.lua')
@@ -153,10 +153,10 @@ local function host()
         'server/sessions.lua', 'server/integrations/voice.lua', 'server/services/calling.lua' }) do dofile(root .. '/' .. file) end
     local file = assert(io.open(root .. '/server/callbacks.lua')); local callbackSource = file:read('*a'); file:close()
     -- Use the real protected dispatcher, without registering unrelated phone services.
-    local boundary = assert(callbackSource:find("QBPhone.registerCallback('getBootstrap'", 1, true))
+    local boundary = assert(callbackSource:find("KoraPhone.registerCallback('getBootstrap'", 1, true))
     assert(load(callbackSource:sub(1, boundary - 1), '@server/callbacks.lua'))()
     dofile(root .. '/server/modules/call_callbacks.lua')
-    for i = 1, 4 do QBPhone.Sessions.open(i, devices['character-' .. i]) end
+    for i = 1, 4 do KoraPhone.Sessions.open(i, devices['character-' .. i]) end
     local mainFile = assert(io.open(root .. '/server/main.lua')); local mainSource = mainFile:read('*a'); mainFile:close()
     local unloadStart = assert(mainSource:find("AddEventHandler('QBCore:Server:OnPlayerUnload'", 1, true))
     local unloadEnd = assert(mainSource:find('\nend)', unloadStart, true))
@@ -175,13 +175,13 @@ local function host()
     function state.reopen(src, id)
         local device = devices['character-' .. id]
         players[src] = { PlayerData = { source = src, citizenid = device.ownerCitizenId }, Functions = { GetItemByName = function() return { name = 'phone' } end } }
-        QBPhone.Sessions.open(src, device)
+        KoraPhone.Sessions.open(src, device)
     end
-    state.calling = QBPhone.Services.Calling
+    state.calling = KoraPhone.Services.Calling
     function state.request(name, source, payload)
         local response
         local thread = coroutine.create(function()
-            state.callbacks['qbphone:server:calls:' .. name](source, function(...) response = table.pack(...) end, payload)
+            state.callbacks['kora_phone:server:calls:' .. name](source, function(...) response = table.pack(...) end, payload)
         end)
         local ok, err = coroutine.resume(thread); assert(ok, err)
         return { thread = thread, result = function() return response and response[1] end, arity = function() return response and response.n end }
@@ -300,9 +300,9 @@ end
 for _, participant in ipairs({ 1, 2 }) do
     local h = host(); h.pause = 'create'
     local request = h.request('start', 1, { to = '5550000002' })
-    local old = QBPhone.Sessions.bySource[participant]
+    local old = KoraPhone.Sessions.bySource[participant]
     h.reopen(participant, participant) -- Same character, different local session record.
-    equal(QBPhone.Sessions.bySource[participant] == old, false)
+    equal(KoraPhone.Sessions.bySource[participant] == old, false)
     h.complete(request)
     conflict(request.result(), 'a replacement participant session retires the old start')
     equal(count(h.calling.activeById), 0)
@@ -321,10 +321,10 @@ for _, participant in ipairs({ 1, 2 }) do
     equal(#h.events, 0)
 end
 local sessionless = host()
-QBPhone.Sessions.close(1)
+KoraPhone.Sessions.close(1)
 equal(sessionless.request('start', 1, { to = '5550000002' }).result().ok, true, 'existing start API accepts a loaded caller without a phone session')
 local sessionlessRetired = host()
-QBPhone.Sessions.close(1); sessionlessRetired.pause = 'create'
+KoraPhone.Sessions.close(1); sessionlessRetired.pause = 'create'
 local oldStart = sessionlessRetired.request('start', 1, { to = '5550000002' })
 sessionlessRetired.retire(1); sessionlessRetired.complete(oldStart)
 conflict(oldStart.result(), 'current-character check still protects an initially sessionless caller')

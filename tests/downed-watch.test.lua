@@ -22,7 +22,7 @@ local function setup()
     threads, closes = {}, 0
     flags = { dead = false, metadata = {} }
     _G.Config = { Client = { DisableWhileDead = true, UiBlockBag = "koraUiBlocked", Command = "phone", Keybind = "M" } }
-    _G.QBPhone = {
+    _G.KoraPhone = {
         State = { open = false, playerLoaded = true, generation = 0, Public = function() return {} end },
         Animations = { Start = function() end, Stop = function() end },
         Camera = { Cleanup = function() end },
@@ -64,13 +64,13 @@ end)
 test("closes the phone when the player dies while it is open, then the watcher exits", function()
     setup()
     local base = live()
-    assert(QBPhone.Open())
+    assert(KoraPhone.Open())
     equal(live(), base + 1)
     tick()
-    equal(QBPhone.State.open, true)
+    equal(KoraPhone.State.open, true)
     flags.dead = true
     tick()
-    equal(QBPhone.State.open, false)
+    equal(KoraPhone.State.open, false)
     equal(closes, 1)
     tick()
     equal(live(), base)
@@ -78,20 +78,20 @@ end)
 
 test("last-stand metadata (no cache key) still closes the phone", function()
     setup()
-    assert(QBPhone.Open())
+    assert(KoraPhone.Open())
     flags.metadata = { inlaststand = true }
     tick()
-    equal(QBPhone.State.open, false)
+    equal(KoraPhone.State.open, false)
 end)
 
 test("reopening never starts a second watcher", function()
     setup()
     local base = live()
-    assert(QBPhone.Open())
-    QBPhone.Close(false)
-    assert(QBPhone.Open())
+    assert(KoraPhone.Open())
+    KoraPhone.Close(false)
+    assert(KoraPhone.Open())
     equal(live(), base + 1)
-    QBPhone.Close(false)
+    KoraPhone.Close(false)
     tick()
     equal(live(), base)
 end)
@@ -100,21 +100,21 @@ test("a blocked phone does not open, and opens again once the block clears", fun
     setup()
     equal(flags.stateKey, "koraUiBlocked")
     LocalPlayer.state.koraUiBlocked = true
-    equal(QBPhone.Open(), false)
-    equal(QBPhone.State.open, false)
+    equal(KoraPhone.Open(), false)
+    equal(KoraPhone.State.open, false)
     LocalPlayer.state.koraUiBlocked = nil
-    equal(QBPhone.Open(), true)
+    equal(KoraPhone.Open(), true)
 end)
 
 test("the bag turning true closes an open phone; other players and false values do not", function()
     setup()
-    assert(QBPhone.Open())
+    assert(KoraPhone.Open())
     flags.stateHandler({ value = true, bagName = "player:9" })
-    equal(QBPhone.State.open, true)
+    equal(KoraPhone.State.open, true)
     flags.stateHandler({ value = false, bagName = "player:7" })
-    equal(QBPhone.State.open, true)
+    equal(KoraPhone.State.open, true)
     flags.stateHandler({ value = true, bagName = "player:7" })
-    equal(QBPhone.State.open, false)
+    equal(KoraPhone.State.open, false)
     equal(closes, 1)
 end)
 
@@ -123,7 +123,7 @@ test("UiBlockBag = false turns the block off", function()
     Config.Client.UiBlockBag = false
     dofile(root .. "/client/main.lua")
     LocalPlayer.state.koraUiBlocked = true
-    equal(QBPhone.Open(), true)
+    equal(KoraPhone.Open(), true)
 end)
 
 print(("downed-watch: %d passed, %d failed"):format(passed, failed))

@@ -1,13 +1,13 @@
 -- Handsets own local profiles; SIMs route numbers; cloud snapshots never grant number ownership.
-QBPhone.Handsets = { selected={}, busy={}, wifi={}, ready=false }
-local H = QBPhone.Handsets
+KoraPhone.Handsets = { selected={}, busy={}, wifi={}, ready=false }
+local H = KoraPhone.Handsets
 local function random() return exports[GetCurrentResourceName()]:randomHex(16) end
 local function fail(message) return PhoneError(PhoneConstants.Errors.FORBIDDEN, message) end
 local function row(sql, params) return MySQL.single.await(sql, params or {}) end
 local function query(sql, params) return MySQL.query.await(sql, params or {}) or {} end
 local function update(sql, params) return MySQL.update.await(sql, params or {}) end
-local function cid(src) return QBPhone.GetCitizenId(src) end
-local function inventory(src) local p=QBPhone.GetPlayer(src); return p and p.items or {} end
+local function cid(src) return KoraPhone.GetCitizenId(src) end
+local function inventory(src) local p=KoraPhone.GetPlayer(src); return p and p.items or {} end
 local function sentinel(id) return '@' .. id:sub(1,20) end
 local function phoneRow(id)
     local device=row([[SELECT d.id,d.owner_citizenid AS ownerCitizenId,d.phone_number AS phoneNumber,
@@ -27,15 +27,15 @@ local function inv(src,request)
     return exports.kora_inventory:PhoneItemTransaction(src,request)
 end
 function H.revoke(src,reason)
-    local session=QBPhone.Sessions.bySource[src]
+    local session=KoraPhone.Sessions.bySource[src]
     local deviceId=session and session.deviceId
-    local callId=deviceId and QBPhone.Services.Calling.callByDevice and QBPhone.Services.Calling.callByDevice[deviceId]
-    QBPhone.Sessions.close(src)
+    local callId=deviceId and KoraPhone.Services.Calling.callByDevice and KoraPhone.Services.Calling.callByDevice[deviceId]
+    KoraPhone.Sessions.close(src)
     H.selected[src]=nil; H.wifi[src]=nil
-    if QBPhone.Integrations and QBPhone.Integrations.Voice then QBPhone.Integrations.Voice.leave(src) end
-    TriggerClientEvent('qbphone:client:sessionRevoked',src)
+    if KoraPhone.Integrations and KoraPhone.Integrations.Voice then KoraPhone.Integrations.Voice.leave(src) end
+    TriggerClientEvent('kora_phone:client:sessionRevoked',src)
     -- Item observers run inside inventory commits; retire SQL call state outside that lock.
-    if callId then SetTimeout(0,function() QBPhone.Services.Calling.disconnectDevice(deviceId,reason or 'handset_changed',callId) end) end
+    if callId then SetTimeout(0,function() KoraPhone.Services.Calling.disconnectDevice(deviceId,reason or 'handset_changed',callId) end) end
 end
 local function syncSim(src,item,device)
     -- Inventory metadata is the insertion authority. SQL is rebuilt on every use after a crash.
@@ -55,8 +55,8 @@ local function syncSim(src,item,device)
         }
         if sim then statements[#statements+1]={query='UPDATE phone_sims SET handset_id=? WHERE id=?',values={device.handsetId,sim.id}} end
         if not MySQL.transaction.await(statements) then return nil end
-        local session=QBPhone.Sessions.bySource[src]
-        if session then QBPhone.Services.Calling.disconnect(src,'sim_changed'); QBPhone.Sessions.close(src) end
+        local session=KoraPhone.Sessions.bySource[src]
+        if session then KoraPhone.Services.Calling.disconnect(src,'sim_changed'); KoraPhone.Sessions.close(src) end
     end
     device.phoneNumber=number; device.sim=sim; device.cellular=sim~=nil and sim.status=='active'
     return device
@@ -135,7 +135,7 @@ function H.current(src,provision)
     H.resolving[src]=true
     local ok,value=xpcall(function() return currentImpl(src,provision) end,debug.traceback)
     H.resolving[src]=nil
-    if not ok then print('[qbphone] handset resolution failed: '..tostring(value)); return nil end
+    if not ok then print('[kora_phone] handset resolution failed: '..tostring(value)); return nil end
     if value and (cid(src)~=expectedCharacter or H.selected[src]~=value.handsetId or not itemFor(src,value.handsetId)) then
         H.revoke(src,'possession_lost'); return nil
     end
@@ -146,7 +146,7 @@ function H.stillHeld(src,device)
     return device and cid(src)==device.holderCitizenId and H.selected[src]==device.handsetId and itemFor(src,device.handsetId)~=nil
 end
 function H.require(src,locked)
-    local player=QBPhone.GetPlayer(src)
+    local player=KoraPhone.GetPlayer(src)
     local metadata=player and player.metadata or {}
     if metadata.isdead or metadata.inlaststand then
         if H.selected[src] then H.revoke(src,'player_dead') end
@@ -154,7 +154,7 @@ function H.require(src,locked)
     end
     local device=H.current(src,true)
     if not device then return nil,fail('Select a valid handset in your inventory') end
-    local session=QBPhone.Sessions.ensure(src,device)
+    local session=KoraPhone.Sessions.ensure(src,device)
     if not locked and (device.hasPin==1 or device.hasPin==true) and not session.unlocked then return nil,fail('Phone is locked') end
     return device
 end
@@ -168,7 +168,7 @@ local function shop(src,id,employee)
     local s=type(id)=='string' and Config.PhoneServices.shops[id]
     if not s or not near(src,s.coords,s.distance,s.bucket) then return nil end
     if employee and s.job then
-        local p=QBPhone.GetPlayer(src); local j=p and p.job
+        local p=KoraPhone.GetPlayer(src); local j=p and p.job
         if not j or j.name~=s.job or not j.onduty or (j.grade and j.grade.level or 0)<(s.grade or 0) then return nil end
     end
     return s
@@ -243,7 +243,7 @@ function H.accountLock(id,handler)
     H.accountLocks[id]=true
     local ok,result=xpcall(handler,debug.traceback)
     H.accountLocks[id]=nil
-    if not ok then print('[qbphone] cloud operation failed: '..tostring(result)); return fail('Cloud operation failed') end
+    if not ok then print('[kora_phone] cloud operation failed: '..tostring(result)); return fail('Cloud operation failed') end
     return result
 end
 local backupImpl=H.backup
@@ -275,8 +275,8 @@ local function restore(src,d,account)
     add('UPDATE phone_handsets SET account_id=?,cloud_revision=?,is_reset=0 WHERE id=?',{account.id,account.revision,d.handsetId})
     if not H.stillHeld(src,d) then return fail('Handset is no longer held') end
     if not MySQL.transaction.await(statements) then return fail('Cloud restore failed; try again') end
-    TriggerClientEvent('qbphone:client:contentCleared',src)
-    QBPhone.Sessions.close(src)
+    TriggerClientEvent('kora_phone:client:contentCleared',src)
+    KoraPhone.Sessions.close(src)
     return PhoneResult({restored=true})
 end
 -- The inventory gateway moves the SIM item in the same commit as the handset metadata. This confirms
@@ -333,10 +333,10 @@ function H.action(src,p)
             wifi=H.wifi[src],online=H.online(src,d),phones=phones,sims=sims,hotspots=hotspots,shops=shops,simSwap=Config.SimSwap})
     elseif op=='faceUnlock' then
         if d.faceCitizenId~=cid(src) or not d.pinKdf and not (d.hasPin==1 or d.hasPin==true) then return fail('Face ID did not recognise you') end
-        local state=QBPhone.Repositories.Phones.pinState(d.id)
+        local state=KoraPhone.Repositories.Phones.pinState(d.id)
         if state and (tonumber(state.lockedUntil) or 0)>os.time() then return fail('Unlock is temporarily locked') end
         if not H.stillHeld(src,d) then return fail('Handset is no longer held') end
-        QBPhone.Sessions.ensure(src,d).unlocked=true; return PhoneResult({unlocked=true})
+        KoraPhone.Sessions.ensure(src,d).unlocked=true; return PhoneResult({unlocked=true})
     elseif op=='faceEnroll' then
         if not (d.hasPin==1 or d.hasPin==true) then return fail('Set a backup PIN first') end
         update('UPDATE phone_handsets SET face_citizenid=? WHERE id=?',{cid(src),d.handsetId}); return PhoneResult(true)
@@ -374,7 +374,7 @@ function H.action(src,p)
             end
             request.simSlot=item.slot; request.simId=sim.id
         end
-        QBPhone.Services.Calling.disconnect(src,'sim_changed')
+        KoraPhone.Services.Calling.disconnect(src,'sim_changed')
         local returnedInfo=op=='removeSim' and handset.info.phoneSimInfo or nil
         local ok,reason=inv(src,request)
         if not ok then return fail(tostring(reason)) end
@@ -382,7 +382,7 @@ function H.action(src,p)
             local settled,problem=H.settleSimItem(src,op,request,returnedInfo)
             if not settled then return fail(problem) end
         end
-        H.current(src,false); QBPhone.Sessions.close(src); return PhoneResult(true)
+        H.current(src,false); KoraPhone.Sessions.close(src); return PhoneResult(true)
     elseif op=='registerCloud' then
         if d.accountId then return fail('An account is already signed in') end
         if not H.online(src,d) then return fail('An internet connection is required') end
@@ -419,22 +419,22 @@ function H.locked(src,handler,payload)
     H.busy[src]=true
     local ok,result=xpcall(function() return handler(src,payload) end,debug.traceback)
     H.busy[src]=nil
-    if not ok then print('[qbphone] handset operation failed: '..tostring(result)); return fail('Phone operation failed') end
+    if not ok then print('[kora_phone] handset operation failed: '..tostring(result)); return fail('Phone operation failed') end
     return result
 end
 
 -- Existing services continue using device IDs, now resolved from the held handset.
-QBPhone.Permissions.requireDevice=H.require
-QBPhone.Services.Phone.getOrCreate=function(citizenId)
+KoraPhone.Permissions.requireDevice=H.require
+KoraPhone.Services.Phone.getOrCreate=function(citizenId)
     for _,src in ipairs(GetPlayers()) do if cid(tonumber(src))==citizenId then return H.current(tonumber(src),true) end end
 end
-QBPhone.Repositories.Phones.findByNumber=function(number)
+KoraPhone.Repositories.Phones.findByNumber=function(number)
     return row([[SELECT d.id,d.owner_citizenid AS ownerCitizenId,s.phone_number AS phoneNumber,1 AS isActive
         FROM phone_sims s JOIN phone_handsets h ON h.id=s.handset_id JOIN phone_devices d ON d.id=h.device_id
         WHERE s.phone_number=? AND s.status='active' LIMIT 1]],{number})
 end
-local baseBootstrap=QBPhone.Services.Phone.bootstrap
-QBPhone.Services.Phone.bootstrap=function(src)
+local baseBootstrap=KoraPhone.Services.Phone.bootstrap
+KoraPhone.Services.Phone.bootstrap=function(src)
     local d=H.current(src,true); if not d then return fail('No handset available') end
     local result=baseBootstrap(src)
     if result.ok then
@@ -452,25 +452,25 @@ QBPhone.Services.Phone.bootstrap=function(src)
     end
     return result
 end
-local oldPinMatches=QBPhone.Repositories.Phones.pinMatches
-QBPhone.Repositories.Phones.pinMatches=function(id,pepper,pin)
+local oldPinMatches=KoraPhone.Repositories.Phones.pinMatches
+KoraPhone.Repositories.Phones.pinMatches=function(id,pepper,pin)
     local h=row('SELECT pin_kdf FROM phone_handsets WHERE device_id=?',{id})
     if h and h.pin_kdf then return exports[GetCurrentResourceName()]:pinVerify(pin,h.pin_kdf) end
     return oldPinMatches(id,pepper,pin)
 end
-QBPhone.Repositories.Phones.setPin=function(id,_,_,pin)
+KoraPhone.Repositories.Phones.setPin=function(id,_,_,pin)
     local hash=exports[GetCurrentResourceName()]:pinHash(pin)
     return MySQL.transaction.await({
         {query='UPDATE phone_handsets SET pin_kdf=?,is_reset=0 WHERE device_id=?',values={hash,id}},
         {query='UPDATE phone_devices SET pin_hash=NULL,pin_salt=NULL,pin_failed_attempts=0,pin_locked_until=NULL WHERE id=?',values={id}}
     })
 end
-local oldState=QBPhone.Repositories.Phones.pinState
-QBPhone.Repositories.Phones.pinState=function(id)
+local oldState=KoraPhone.Repositories.Phones.pinState
+KoraPhone.Repositories.Phones.pinState=function(id)
     local s=oldState(id); local h=row('SELECT pin_kdf FROM phone_handsets WHERE device_id=?',{id})
     if s and h and h.pin_kdf then s.hasPin=1 end; return s
 end
-QBPhone.Repositories.Phones.clearPin=function(id)
+KoraPhone.Repositories.Phones.clearPin=function(id)
     return MySQL.transaction.await({
         {query='UPDATE phone_handsets SET pin_kdf=NULL,face_citizenid=NULL WHERE device_id=?',values={id}},
         {query='UPDATE phone_devices SET pin_hash=NULL,pin_salt=NULL,pin_failed_attempts=0,pin_locked_until=NULL WHERE id=?',values={id}}
@@ -478,18 +478,18 @@ QBPhone.Repositories.Phones.clearPin=function(id)
 end
 function H.start()
     local gateway=pcall(function() exports.kora_inventory:PhoneItemTransaction(0,{op='probe'}) end)
-    if not gateway then error('Install the qbinventory PhoneItemTransaction companion before starting qbphone') end
+    if not gateway then error('Install the qbinventory PhoneItemTransaction companion before starting kora_phone') end
     for name,model in pairs(Config.Handsets) do
         exports.kora_core:registerShared('items',name,{name=name,label=({standard='Orchard One',flip='Circuit Flip',fold='Atlas Fold'})[model],weight=250,type='item',image='phone.png',unique=true,useable=true,shouldClose=true,description='Personal handset'})
         exports.kora_core:createUseable(name,function(src,item)
             H.locked(src,H.action,{op='select',slot=item.slot})
-            TriggerClientEvent('qbphone:client:useHandset',src)
+            TriggerClientEvent('kora_phone:client:useHandset',src)
         end)
     end
     exports.kora_core:registerShared('items',Config.SimItem,{name=Config.SimItem,label='Mobile SIM',weight=1,type='item',image='phone.png',unique=true,useable=false,description='Removable mobile subscription'})
     for id,s in pairs(Config.PhoneServices.shops) do
         local items={}; for name,price in pairs(s.prices) do items[#items+1]={name=name,price=price,amount=100,info={},type='item',slot=#items+1} end
-        exports.kora_inventory:RegisterShop('qbphone:'..id,{label=s.label,items=items,slots=64,coords=s.coords,distance=s.distance,currency='bank',
+        exports.kora_inventory:RegisterShop('kora_phone:'..id,{label=s.label,items=items,slots=64,coords=s.coords,distance=s.distance,currency='bank',
             access=function(src) return H.shopStockAccess(src,id) end})
     end
     H.subscription=exports.kora_core:onChange({'items'},function(src)
@@ -497,11 +497,11 @@ function H.start()
         if id and not itemFor(src,id) then H.revoke(src,'possession_lost') end
     end)
     H.deathSubscription=exports.kora_core:onChange({'metadata'},function(src)
-        local p=QBPhone.GetPlayer(src); local m=p and p.metadata or {}
+        local p=KoraPhone.GetPlayer(src); local m=p and p.metadata or {}
         if H.selected[src] and (m.isdead or m.inlaststand) then H.revoke(src,'player_dead') end
     end)
     H.ready=true
-    TriggerClientEvent('qbphone:client:ready',-1)
+    TriggerClientEvent('kora_phone:client:ready',-1)
 end
 AddEventHandler('playerDropped',function() H.selected[source]=nil; H.wifi[source]=nil end)
 AddEventHandler('onResourceStop',function(resource)

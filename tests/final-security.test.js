@@ -17,7 +17,7 @@ assert.ok(manifest.indexOf("server/permissions.lua") < manifest.indexOf("server/
 
 const sessions = read("server/sessions.lua");
 assert.match(sessions, /session\.citizenId ~= citizenId/, "online session must remain character-bound");
-assert.match(sessions, /not QBPhone\.HasPhone\(source\)/, "online session must revalidate phone possession");
+assert.match(sessions, /not KoraPhone\.HasPhone\(source\)/, "online session must revalidate phone possession");
 
 const web = read("web/src/api.ts");
 assert.match(web, /captureDone:'camera:close'/, "camera capture must restore phone visibility");

@@ -1,6 +1,6 @@
-QBPhone.Repositories = QBPhone.Repositories or {}
+KoraPhone.Repositories = KoraPhone.Repositories or {}
 local Media = {}
-QBPhone.Repositories.Media = Media
+KoraPhone.Repositories.Media = Media
 
 local SELECT_COLUMNS = [[
     id, owner_device_id AS ownerDeviceId, storage_provider AS storageProvider,
@@ -69,4 +69,3 @@ function Media.expiredDeleted(retentionHours, limit)
         ORDER BY deleted_at ASC LIMIT ?
     ]=]):format(SELECT_COLUMNS), { retentionHours, limit }) or {}
 end
-

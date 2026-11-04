@@ -1,8 +1,8 @@
-QBPhone = QBPhone or {}
-QBPhone.Integrations = QBPhone.Integrations or {}
+KoraPhone = KoraPhone or {}
+KoraPhone.Integrations = KoraPhone.Integrations or {}
 
 local Banking = {}
-QBPhone.Integrations.Banking = Banking
+KoraPhone.Integrations.Banking = Banking
 
 -- QBCore's in-memory player money API cannot participate in the SQL audit
 -- transaction. Transfers therefore stay disabled unless the operator opts in

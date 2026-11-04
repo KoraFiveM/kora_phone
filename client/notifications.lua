@@ -1,4 +1,4 @@
-QBPhone = QBPhone or {}
+KoraPhone = KoraPhone or {}
 local Notifications = {}
 
 local function valid(notification)
@@ -11,7 +11,7 @@ end
 -- The on-screen note and tone for something that arrives while the phone is closed. Do Not Disturb silences
 -- it unless it's urgent. (The UI hides with the phone, so this is the only way a closed phone gets noticed.)
 function Notifications.Native(title, body, urgent)
-    if QBPhone.State.quiet and not urgent then return false end
+    if KoraPhone.State.quiet and not urgent then return false end
     Kora.notify.send({ title = title, message = body, type = urgent and 'error' or 'info', duration = 4500 })
     if Config.Client.NotificationSound ~= false then
         PlaySoundFrontend(-1, 'Text_Arrive_Tone', 'Phone_SoundSet_Default', true)
@@ -21,20 +21,20 @@ end
 
 function Notifications.Push(notification)
     if not valid(notification) then return false end
-    QBPhone.SendNui('notification:push', notification)
+    KoraPhone.SendNui('notification:push', notification)
     -- Do Not Disturb silences the on-screen native alert; urgent ones (a shown ID) still get through.
-    if not QBPhone.State.open and notification.native ~= false then
+    if not KoraPhone.State.open and notification.native ~= false then
         Notifications.Native(notification.title, tostring(notification.message or ''), notification.urgent == true)
     end
     return true
 end
 
-RegisterNetEvent('qbphone:client:notification', function(notification)
+RegisterNetEvent('kora_phone:client:notification', function(notification)
     Notifications.Push(notification)
 end)
 
 -- Someone nearby showed you their ID from their Wallet. The server builds the card.
-RegisterNetEvent('qbphone:client:wallet:shown', function(card)
+RegisterNetEvent('kora_phone:client:wallet:shown', function(card)
     if type(card) ~= 'table' or type(card.name) ~= 'string' or type(card.licences) ~= 'table' then return end
     local parts = {}
     for _, licence in ipairs(card.licences) do
@@ -46,29 +46,45 @@ RegisterNetEvent('qbphone:client:wallet:shown', function(card)
     Notifications.Push({ title = card.name:sub(1, 45) .. ' showed you their ID', body = body, message = body, app = 'banking', urgent = true })
 end)
 
--- Solo testing: set Config.Debug = true in config/shared.lua, restart the resource, then
--- use /phonetest [message|sms|wallet|system|long]. Off by default, never registered in production.
-if Config.Debug then
+RegisterCommand('testnotify', function(_, args)
+    local kind = args[1]
     local samples = {
-        message = { title = 'Jules Chen', body = 'Are you still on for Pillbox tonight?', app = 'messages' },
-        wallet = { title = 'Wallet', body = 'You received $2,500 from Maya.', app = 'banking' },
-        system = { title = 'System', body = 'Unknown app id: tapping should land on home.', app = 'system' },
-        long = { title = 'A very long notification title that keeps going', body = string.rep('Long body text. ', 12), app = 'messages' },
+        { title = 'Jules Chen', body = 'Are you still on for Pillbox tonight?', app = 'messages' },
+        { title = 'Missed call', body = '555-0109', app = 'phone' },
+        { title = 'Wallet', body = 'You received $2,500 from Maya.', app = 'banking' },
+        { title = 'New Mail', body = 'Your vehicle registration is ready.', app = 'mail' },
+        { title = 'Pulse', body = 'Kai posted a new update.', app = 'social' },
+        { title = 'Market', body = 'Your listing got a reply.', app = 'classifieds' },
+        { title = 'Maps', body = 'Waypoint set to Pillbox Medical.', app = 'gps' },
+        { title = 'Weather', body = 'Clear skies over Los Santos.', app = 'weather' },
+        { title = 'Flash', body = 'Someone liked your clip.', app = 'flash' },
+        { title = 'Clock', body = 'Alarm: Wake up.', app = 'clock' },
+        { title = 'System', body = 'Phone connected.', app = 'system' },
     }
-    RegisterCommand('phonetest', function(_, args)
-        local kind = args[1] or 'message'
-        if kind == 'sms' then
-            -- Exercises the same event the server sends for a real incoming text.
-            TriggerEvent('qbphone:client:messages:new', { id = 0, conversationId = 0, senderNumber = '5550109999', body = 'Test text from /phonetest', isMine = 0 })
-            return
+    if kind == 'sms' then
+        TriggerEvent('kora_phone:client:messages:new', { id = 0, conversationId = 0, senderNumber = '5550109999', body = 'Test text from /testnotify', isMine = 0 })
+        return
+    end
+    if kind == 'all' then
+        for i, sample in ipairs(samples) do
+            SetTimeout((i - 1) * 800, function()
+                Notifications.Push({ title = sample.title, body = sample.body, message = sample.body, app = sample.app })
+            end)
         end
-        local sample = samples[kind]
-        if not sample then
-            print('[qbphone] /phonetest kinds: message, sms, wallet, system, long')
-            return
+        return
+    end
+    if kind then
+        for _, sample in ipairs(samples) do
+            if sample.app == kind then
+                Notifications.Push({ title = sample.title, body = sample.body, message = sample.body, app = sample.app })
+                return
+            end
         end
-        Notifications.Push({ title = sample.title, body = sample.body, message = sample.body, app = sample.app, native = false })
-    end, false)
-end
+        print('[kora_phone] /testnotify: unknown app "' .. kind .. '"')
+        return
+    end
+    Notifications.Push({ title = samples[1].title, body = samples[1].body, message = samples[1].body, app = samples[1].app })
+    print('[kora_phone] /testnotify [all|sms|messages|phone|banking|mail|social|classifieds|gps|weather|flash|clock|system]')
+end, false)
 
-QBPhone.Notifications = Notifications
+KoraPhone.Notifications = Notifications

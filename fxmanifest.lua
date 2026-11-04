@@ -5,7 +5,7 @@ name 'kora_phone'
 -- Keep the legacy resource name resolvable for exports['qbphone-stevie'] callers.
 provide 'qbphone-stevie'
 author 'Kora Team'
-description 'Server-authoritative QBCore phone'
+description 'Server-authoritative Kora phone'
 version '0.2.0'
 
 lua54 'yes'

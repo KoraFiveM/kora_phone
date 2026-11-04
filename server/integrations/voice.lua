@@ -1,8 +1,8 @@
-QBPhone = QBPhone or {}
-QBPhone.Integrations = QBPhone.Integrations or {}
+KoraPhone = KoraPhone or {}
+KoraPhone.Integrations = KoraPhone.Integrations or {}
 
 local Voice = {}
-QBPhone.Integrations.Voice = Voice
+KoraPhone.Integrations.Voice = Voice
 
 local function invoke(name, source, channel)
     local ok, result = pcall(function()

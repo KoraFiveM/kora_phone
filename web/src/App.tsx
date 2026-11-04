@@ -3,7 +3,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { CSSProperties, ComponentType, PointerEvent as ReactPointerEvent } from 'react';
 import { AlarmClock, Aperture, ArrowDown, ArrowRight, ArrowUpRight, BatteryFull, Bell, Calculator, Camera, Car, Check, ChevronLeft, CloudSun, ContactRound, CreditCard, Fingerprint, House, Image, LockKeyhole, Mail, MapPin, MessageCircle, Moon, Music, Mic, MicOff, Pause, Play, Phone, PhoneIncoming, PhoneOff, Power, Radio, Settings as SettingsIcon, ShieldAlert, ShieldCheck, Signal, Smartphone, SlidersHorizontal, StickyNote, Store as StoreIcon, Sun, Tag, Video, VideoOff, SwitchCamera, Wifi, X } from 'lucide-react';
 import { LONG_PRESS_MS, MOVE_TOLERANCE, mergeOrder, moveItem } from './homeReorder';
-import { adaptBootstrap, adaptLiveCall, api, isPreview, launchApps, nui, sendSignal } from './api';
+import { adaptBootstrap, adaptLiveCall, api, demoModel, isDemo, isEmbed, isPreview, launchApps, nui, sendSignal } from './api';
 import { previewBootstrap, previewIncoming, resetPreview } from './mock';
 import { normalizeData } from './types';
 import type { Alarm, AppId, Bootstrap, Call, Conversation, DeviceData, Notification } from './types';
@@ -121,6 +121,8 @@ export default function App() {
   const [coverPlaying, setCoverPlaying] = useState(false);
   const [foldInbox, setFoldInbox] = useState<Conversation[]>([]);
   const [foldInboxMore,setFoldInboxMore]=useState(false);
+  const [peek, setPeek] = useState<{ title: string; body: string } | undefined>();
+  const peekTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
   const coverCanvas = useRef<HTMLCanvasElement>(null);
   const coverAudio = useRef<HTMLAudioElement | undefined>(undefined);
   const model = device?.model || 'standard';
@@ -366,6 +368,11 @@ export default function App() {
       else if (type === 'mail:new' && message.data) {
         if(message.data.deviceId && notificationDevice.current && String(message.data.deviceId)!==notificationDevice.current) return;
         const sender = String(message.data.sender || 'New mail'); push({ deviceId:message.data.deviceId, title: sender, body: String(message.data.subject || 'New mail'), app: 'mail' }); closedAlert(sender, String(message.data.subject || 'New mail')); }
+      else if (type === 'phone:peek' && message.data && !shownRef.current) {
+        clearTimeout(peekTimer.current);
+        setPeek({ title: String(message.data.title || 'Message'), body: String(message.data.body || '') });
+        peekTimer.current = setTimeout(() => setPeek(undefined), 3500);
+      }
       else if (type === 'notification' || type === 'notification:push') push(message.data || {});
     };
     // With the phone closed nothing on screen can show a notification, so ask the game for one (silenced by Do Not Disturb).
@@ -459,7 +466,7 @@ export default function App() {
       for (let attempt = 0; attempt < 20 && !cancelled; attempt++) {
         try { await nui('phone:ready'); return; } catch (error) { lastError = error; await new Promise(resolve => setTimeout(resolve, 500)); }
       }
-      if (!cancelled) console.error('[qbphone] UI handshake failed after multiple attempts', lastError);
+      if (!cancelled) console.error('[kora_phone] UI handshake failed after multiple attempts', lastError);
     })();
     return () => { cancelled = true; };
   }, []);
@@ -532,7 +539,7 @@ export default function App() {
   const visiblePage = Math.min(homePage, pageCount - 1);
   const phoneHeight = flip ? 820 : 780;
   const phoneWidth = fold && !folded ? 690 : 370;
-  const scale = Math.min(data.settings.scale, (viewport.height - (isPreview ? (viewport.width > 760 ? 180 : 150) : 40)) / phoneHeight, (viewport.width - 28) / phoneWidth);
+  const scale = isEmbed ? Math.min(viewport.width / phoneWidth, viewport.height / phoneHeight) : Math.min(data.settings.scale, (viewport.height - (isDemo ? 64 : isPreview ? (viewport.width > 760 ? 180 : 150) : 40)) / phoneHeight, (viewport.width - (isDemo ? 20 : 28)) / phoneWidth);
   useEffect(() => {
     if (isPreview) return;
     const width = phoneWidth * scale;
@@ -611,8 +618,10 @@ export default function App() {
     stopVideo(); setFolded(nextModel === 'fold'); setCoverCamera(false);
     setDevice(current => current ? { ...current, model: nextModel, data: { ...normalizeData(current.data), settings: { ...normalizeData(current.data).settings, phoneStyle:nextModel, name: nextModel === 'standard' ? 'Orchard One' : nextModel === 'flip' ? 'Circuit Flip' : 'Atlas Fold' } } } : current);
   },[stopVideo]);
-  return <div className={isPreview ? 'preview' : 'game'} onPointerDown={enableAudio}>
-    {isPreview && <><header className="preview-header"><a className="brand" href="#" onClick={e => { e.preventDefault(); navigate('home'); }}>THREE <span>( PHONE )</span></a><span className="preview-build"><i />THREE HANDSETS <span>/</span> 002</span></header><aside className="preview-intro"><p className="eyebrow"><span className="red-dot" />LESS NOISE. MORE LIFE.</p><h1>Your city.<br />Your people.<br /><span>Your phone.</span></h1><p className="intro-description">Everything you need to feel connected.<br />Nothing to get in the way.</p><div className="intro-rule" /><div className="preview-features"><div><span>01</span><p>Made for the moments<br />between the missions.</p></div><div><span>02</span><p>One device. Your number.<br />A whole city within reach.</p></div></div><div className="preview-handsets" aria-label="Preview handset model">{(['standard', 'flip', 'fold'] as const).map(value => <button key={value} aria-pressed={model === value} onClick={() => choosePreviewModel(value)}>{value === 'standard' ? 'Orchard One' : value === 'flip' ? 'Circuit Flip' : 'Atlas Fold'}</button>)}</div><div className="preview-controls"><button onClick={() => { if (!shown) apply(previewBootstrap()); else void lock(); }}><LockKeyhole size={15} />{shown ? 'Lock phone' : 'Open phone'}</button><button onClick={() => { if (!shown) apply(previewBootstrap()); previewIncoming(); }}><PhoneIncoming size={15} />Try a call</button><button onClick={resetPreview} aria-label="Reset preview data"><SlidersHorizontal size={15} />Reset</button></div><p className="demo-caption">INTERACTIVE PREVIEW / SAMPLE DATA</p></aside><footer className="preview-footer"><span>DESIGNED TO GET OUT OF YOUR WAY.</span><span>LOS SANTOS <ArrowUpRight size={13} /></span></footer></>}
+  useEffect(() => { if (isDemo) { choosePreviewModel(isEmbed ? 'fold' : demoModel); setFolded(false); } }, [choosePreviewModel]);
+  return <div className={isDemo ? (isEmbed ? 'demo embed' : 'demo') : isPreview ? 'preview' : 'game'} onPointerDown={enableAudio}>
+    {isDemo && !isEmbed && <div className="preview-handsets" aria-label="Preview handset model">{(['standard', 'flip', 'fold'] as const).map(value => <button key={value} aria-pressed={model === value} onClick={() => choosePreviewModel(value)}>{value === 'standard' ? 'Orchard One' : value === 'flip' ? 'Circuit Flip' : 'Atlas Fold'}</button>)}</div>}
+    {isPreview && !isDemo && <><header className="preview-header"><a className="brand" href="#" onClick={e => { e.preventDefault(); navigate('home'); }}>THREE <span>( PHONE )</span></a><span className="preview-build"><i />THREE HANDSETS <span>/</span> 002</span></header><aside className="preview-intro"><p className="eyebrow"><span className="red-dot" />LESS NOISE. MORE LIFE.</p><h1>Your city.<br />Your people.<br /><span>Your phone.</span></h1><p className="intro-description">Everything you need to feel connected.<br />Nothing to get in the way.</p><div className="intro-rule" /><div className="preview-features"><div><span>01</span><p>Made for the moments<br />between the missions.</p></div><div><span>02</span><p>One device. Your number.<br />A whole city within reach.</p></div></div><div className="preview-handsets" aria-label="Preview handset model">{(['standard', 'flip', 'fold'] as const).map(value => <button key={value} aria-pressed={model === value} onClick={() => choosePreviewModel(value)}>{value === 'standard' ? 'Orchard One' : value === 'flip' ? 'Circuit Flip' : 'Atlas Fold'}</button>)}</div><div className="preview-controls"><button onClick={() => { if (!shown) apply(previewBootstrap()); else void lock(); }}><LockKeyhole size={15} />{shown ? 'Lock phone' : 'Open phone'}</button><button onClick={() => { if (!shown) apply(previewBootstrap()); previewIncoming(); }}><PhoneIncoming size={15} />Try a call</button><button onClick={resetPreview} aria-label="Reset preview data"><SlidersHorizontal size={15} />Reset</button></div><p className="demo-caption">INTERACTIVE PREVIEW / SAMPLE DATA</p></aside><footer className="preview-footer"><span>DESIGNED TO GET OUT OF YOUR WAY.</span><span>LOS SANTOS <ArrowUpRight size={13} /></span></footer></>}
     {(serviceRequest || serviceResult) && <div ref={serviceDialog} className="phone-service-consent" role="alertdialog" aria-modal="true" aria-label={serviceRequest ? 'Approve mobile service' : 'Mobile service result'}><div><ShieldCheck size={28} /><h2>{serviceRequest ? serviceRequest.label : 'Mobile service'}</h2>{serviceRequest ? <><p>A technician wants to perform <strong>{({buy:'a purchase',replaceSim:'a SIM replacement',recoverCloud:'cloud account recovery',resell:'handset resale',insertSim:'SIM insertion',removeSim:'SIM removal'} as Record<string,string>)[serviceRequest.operation] || serviceRequest.operation}</strong> for your character. The configured fee or resale payout applies.</p><div className="hs-actions"><button className="hs-button" autoFocus disabled={busy} onClick={() => void run(async () => { const id = serviceRequest.id; await nui('handset:action', { op: 'consent', id, accept: false }); setServiceRequest(undefined); if (!shown && !serviceOpen) void nui('close'); })}>Decline</button><button className="hs-button hs-primary" disabled={busy} onClick={() => void run(async () => { const id = serviceRequest.id; const reply = await nui<{ok:boolean;error?:string|{message?:string}}>('handset:action', { op: 'consent', id, accept: true }); if (!reply.ok) throw new Error(typeof reply.error === 'string' ? reply.error : reply.error?.message || 'Service could not complete'); setServiceRequest(undefined); })}>Accept service</button></div></> : <><p>{serviceResult?.message}</p>{serviceResult?.recoveryCode && <><p>Save these details now. Your old recovery code no longer works.</p><label>Cloud account<code tabIndex={0}>{serviceResult.accountId}</code></label><label>Recovery code<code tabIndex={0}>{serviceResult.recoveryCode}</code></label></>}<button className="hs-button hs-primary" onClick={() => { setServiceResult(undefined); if (!shown && !serviceOpen) void nui('close'); }}>Done</button></>}</div></div>}
     {serviceOpen && <div className="phone-service-overlay" role="dialog" aria-modal="true" aria-label="Mobile shop services"><header><span>MOBILE SERVICES</span><button className="icon-button" onClick={close} aria-label="Close mobile services"><X size={20} /></button></header><main><HandsetPanel onReload={() => undefined} /></main></div>}
     <div ref={phoneStage} className="phone-stage" style={!isPreview && phonePosition ? { left: phonePosition.x, top: phonePosition.y, right: 'auto', bottom: 'auto' } : undefined}>
@@ -652,7 +661,8 @@ export default function App() {
         </>}
         {fold && <><div className="fold-spine" aria-hidden="true" /><button className="fold-control" disabled={busy} aria-label={folded ? 'Open fold into tablet' : 'Fold to outer screen'} onClick={() => setFolded(value => !value)}>{folded ? 'EXPAND' : 'FOLD'}</button></>}
       </div></div>}
-      {isPreview && shown && <div className="phone-caption"><span><i /> CONNECTED TO YOUR WORLD</span><span>{brand} / {model.toUpperCase()}</span></div>}
+      {isPreview && !isDemo && shown && <div className="phone-caption"><span><i /> CONNECTED TO YOUR WORLD</span><span>{brand} / {model.toUpperCase()}</span></div>}
     </div>
+    {peek && !shown && <div className="phone-peek" onAnimationEnd={e => { if (e.animationName === 'peekOut') setPeek(undefined); }}><div className="peek-card"><MessageCircle size={18} /><div><strong>{peek.title}</strong><small>{peek.body}</small></div></div></div>}
   </div>;
 }

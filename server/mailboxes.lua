@@ -1,5 +1,5 @@
 -- Delivery copies are owned by a handset, not by whoever later acquires its number.
-local M=QBPhone.Services.Messaging
+local M=KoraPhone.Services.Messaging
 local function fail(text) return PhoneError(PhoneConstants.Errors.INVALID_INPUT,text) end
 local function thread(device,id)
     return MySQL.single.await('SELECT * FROM phone_threads WHERE id=? AND device_id=?',{tonumber(id) or 0,device.id})
@@ -22,14 +22,14 @@ local function message(id,device,t)
     return m
 end
 function M.startDirect(src,p)
-    local d,e=QBPhone.Permissions.requireDevice(src); if not d then return e end
+    local d,e=KoraPhone.Permissions.requireDevice(src); if not d then return e end
     local number,err=PhoneValidation.phoneNumber(p.to); if not number then return fail(err) end
     if not d.cellular then return fail('Insert an active SIM to start a conversation') end
     if number==d.phoneNumber then return fail('Cannot message your own number') end
     return PhoneResult(conversation(ensure(d,number)))
 end
 function M.listConversations(src,p)
-    local d,e=QBPhone.Permissions.requireDevice(src); if not d then return e end
+    local d,e=KoraPhone.Permissions.requireDevice(src); if not d then return e end
     local page,validationError=PhoneValidation.page(p)
     if not page then return fail(validationError) end
     local cursorId
@@ -64,7 +64,7 @@ function M.listConversations(src,p)
     return PhoneResult({items=results,nextCursor=last and last.sortId,nextCursorId=last and last.id})
 end
 function M.list(src,p)
-    local d,e=QBPhone.Permissions.requireDevice(src); if not d then return e end
+    local d,e=KoraPhone.Permissions.requireDevice(src); if not d then return e end
     local t=thread(d,p.conversationId); if not t then return fail('Conversation not found') end
     local limit=math.min(100,math.max(1,tonumber(p.limit) or 50))
     local items=MySQL.query.await([[SELECT b.id,b.body,b.is_outgoing,b.media_id AS mediaId,b.sender_number AS senderNumber,
@@ -79,20 +79,20 @@ function M.list(src,p)
     return PhoneResult({items=items,nextCursor=#items==limit and items[#items].id or nil})
 end
 function M.send(src,p)
-    local d,e=QBPhone.Permissions.requireDevice(src); if not d then return e end
+    local d,e=KoraPhone.Permissions.requireDevice(src); if not d then return e end
     if not d.cellular then return fail('An active SIM is required to send texts') end
     local contract,err=PhoneContracts.message(p); if not contract then return fail(err) end
     local t=contract.conversationId and thread(d,contract.conversationId)
     local number=t and t.peer_number or contract.to
     number=PhoneValidation.phoneNumber(number)
     if not number then return fail('Archived group history is read-only') end
-    local recipient=QBPhone.Repositories.Phones.findByNumber(number)
+    local recipient=KoraPhone.Repositories.Phones.findByNumber(number)
     if not recipient or number==d.phoneNumber then return fail('That number is unavailable') end
-    if QBPhone.Repositories.Blocks.isEitherBlocked(d.id,recipient.id) then return fail('Messaging is unavailable for this contact') end
+    if KoraPhone.Repositories.Blocks.isEitherBlocked(d.id,recipient.id) then return fail('Messaging is unavailable for this contact') end
     t=t or ensure(d,number)
     local other=ensure(recipient,d.phoneNumber)
     local mediaId=tonumber(contract.mediaId) or 0
-    if mediaId~=0 and not QBPhone.Repositories.Media.findOwned(d.id,mediaId) then return fail('Media not found') end
+    if mediaId~=0 and not KoraPhone.Repositories.Media.findOwned(d.id,mediaId) then return fail('Media not found') end
     local key=tostring(contract.clientRequestId)
     local existing=MySQL.single.await('SELECT * FROM phone_mailboxes WHERE device_id=? AND request_id=?',{d.id,key})
     if existing then
@@ -105,24 +105,24 @@ function M.send(src,p)
     })
     if not ok then return fail('Message could not be delivered') end
     local sent=MySQL.scalar.await('SELECT id FROM phone_mailboxes WHERE device_id=? AND request_id=?',{d.id,key})
-    local target=QBPhone.Sessions.sourceByNumber(number)
+    local target=KoraPhone.Sessions.sourceByNumber(number)
     if target then
         local incoming=MySQL.scalar.await('SELECT id FROM phone_mailboxes WHERE device_id=? AND request_id=?',{recipient.id,'recv:'..d.id..':'..key})
         local delivered=message(incoming,recipient,other)
         delivered.deviceId=tostring(recipient.id)
-        TriggerClientEvent('qbphone:client:messages:new',target,delivered)
-        SetTimeout(1500,function() if QBPhone.Handsets.selected[target] then QBPhone.Handsets.locked(target,QBPhone.Handsets.backup,{}) end end)
+        TriggerClientEvent('kora_phone:client:messages:new',target,delivered)
+        SetTimeout(1500,function() if KoraPhone.Handsets.selected[target] then KoraPhone.Handsets.locked(target,KoraPhone.Handsets.backup,{}) end end)
     end
     return PhoneResult(message(sent,d,t))
 end
 function M.markRead(src,p)
-    local d,e=QBPhone.Permissions.requireDevice(src); if not d then return e end
+    local d,e=KoraPhone.Permissions.requireDevice(src); if not d then return e end
     local t=thread(d,p.conversationId); if not t then return fail('Conversation not found') end
     MySQL.update.await('UPDATE phone_mailboxes SET is_read=1 WHERE device_id=? AND peer_number=?',{d.id,t.peer_number})
     return PhoneResult(true)
 end
 function M.deleteForSelf(src,p)
-    local d,e=QBPhone.Permissions.requireDevice(src); if not d then return e end
+    local d,e=KoraPhone.Permissions.requireDevice(src); if not d then return e end
     MySQL.update.await('DELETE FROM phone_mailboxes WHERE device_id=? AND id=?',{d.id,tonumber(p.messageId) or 0})
     return PhoneResult(true)
 end
@@ -130,7 +130,7 @@ end
 local function groupDeferred() return fail('New group chats are not available in this release') end
 M.createGroup=groupDeferred; M.addMember=groupDeferred; M.leaveGroup=groupDeferred
 
-local Media=QBPhone.Repositories.Media
+local Media=KoraPhone.Repositories.Media
 local columns=[[m.id,m.owner_device_id AS ownerDeviceId,m.storage_provider AS storageProvider,m.storage_key AS storageKey,
     m.public_url AS publicUrl,m.mime_type AS mimeType,m.byte_size AS byteSize,m.width,m.height,UNIX_TIMESTAMP(m.created_at) AS createdAt]]
 function Media.findOwned(deviceId,mediaId)

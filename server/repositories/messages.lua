@@ -1,6 +1,6 @@
-QBPhone.Repositories = QBPhone.Repositories or {}
+KoraPhone.Repositories = KoraPhone.Repositories or {}
 local Messages = {}
-QBPhone.Repositories.Messages = Messages
+KoraPhone.Repositories.Messages = Messages
 
 local function directKey(a, b)
     return ('%s:%s'):format(math.min(a, b), math.max(a, b))

@@ -1,6 +1,6 @@
-QBPhone = QBPhone or {}
+KoraPhone = KoraPhone or {}
 local Storage = {}
-QBPhone.Storage = Storage
+KoraPhone.Storage = Storage
 
 local defaults = {
     Provider = 'disabled', TokenTtlSeconds = 120, MaxBytes = 8 * 1024 * 1024,
@@ -137,7 +137,7 @@ function Storage.begin(ticket, callback)
             local ok, decoded = pcall(json.decode, body or '')
             local url = ok and type(decoded) == 'table' and type(decoded.data) == 'table' and decoded.data.presignedUrl
             if status < 200 or status >= 300 or type(url) ~= 'string' then
-                print(('[qbphone] Fivemanage would not issue an upload URL (HTTP %s). Check the kora_fivemanage_token convar.'):format(tostring(status)))
+                print(('[kora_phone] Fivemanage would not issue an upload URL (HTTP %s). Check the kora_fivemanage_token convar.'):format(tostring(status)))
                 return callback(false, nil, 'PROVIDER_BEGIN_FAILED')
             end
             if not hostAllowed(url, fm.UploadHosts) then return callback(false, nil, 'UPLOAD_HOST_DENIED') end
@@ -232,14 +232,14 @@ function Storage.completeFivemanage(ticket, receipt, callback)
         if status < 200 or status >= 300 or not file or tostring(file.id) ~= receipt then return callback(false, nil, 'UPLOAD_NOT_VERIFIED') end
         local size = tonumber(file.size)
         if not size or size < 1 or size > ticket.byteSize then
-            print(('[qbphone] Upload size mismatch: provider=%s, maximum=%s'):format(tostring(size), tostring(ticket.byteSize)))
+            print(('[kora_phone] Upload size mismatch: provider=%s, maximum=%s'):format(tostring(size), tostring(ticket.byteSize)))
             return callback(false, nil, 'UPLOAD_MISMATCH')
         end
         -- Providers may report a media category, MIME type, or bare extension.
         local kind = tostring(file.type or ''):lower()
         local major, minor = ticket.mimeType:match('^(%a+)/(.+)$')
         if kind ~= '' and not (kind == major or kind:find('^' .. major .. '/') or kind == minor or (minor == 'jpeg' and kind == 'jpg')) then
-            print(('[qbphone] Upload type mismatch: provider=%s, expected=%s'):format(kind, ticket.mimeType))
+            print(('[kora_phone] Upload type mismatch: provider=%s, expected=%s'):format(kind, ticket.mimeType))
             return callback(false, nil, 'UPLOAD_MISMATCH')
         end
         local hosts = mergedHosts(fm.PublicHosts, c.AllowedPublicHosts)
@@ -247,10 +247,10 @@ function Storage.completeFivemanage(ticket, receipt, callback)
         if not url then return callback(false, nil, 'PUBLIC_HOST_DENIED') end
         local metadata = file.metadata
         if type(metadata) == 'string' then local parsed, value = pcall(json.decode, metadata); metadata = parsed and value or nil end
-        local tag = type(metadata) == 'table' and metadata.qbphoneTicket or nil
+        local tag = type(metadata) == 'table' and metadata.koraPhoneTicket or nil
         if tag ~= nil and tag ~= ticket.providerData.tag then return callback(false, nil, 'UPLOAD_NOT_BOUND') end
         if tag == nil and fm.RequireTag == true then
-            print('[qbphone] An upload arrived without its ticket tag. Fivemanage may not return metadata; set Config.Server.Media.Fivemanage.RequireTag = false if this is expected.')
+            print('[kora_phone] An upload arrived without its ticket tag. Fivemanage may not return metadata; set Config.Server.Media.Fivemanage.RequireTag = false if this is expected.')
             return callback(false, nil, 'UPLOAD_NOT_BOUND')
         end
         callback(true, { storageProvider = 'fivemanage', storageKey = receipt, publicUrl = url, mimeType = ticket.mimeType, byteSize = size })

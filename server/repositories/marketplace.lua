@@ -1,6 +1,6 @@
-QBPhone.Repositories = QBPhone.Repositories or {}
+KoraPhone.Repositories = KoraPhone.Repositories or {}
 local Market = {}
-QBPhone.Repositories.Marketplace = Market
+KoraPhone.Repositories.Marketplace = Market
 
 local selectListing = [[SELECT l.id, l.owner_device_id AS ownerDeviceId, l.title, l.description,
     l.category, l.price, l.status, UNIX_TIMESTAMP(l.created_at) AS createdAt,

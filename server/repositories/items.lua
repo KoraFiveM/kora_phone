@@ -1,6 +1,6 @@
-QBPhone.Repositories = QBPhone.Repositories or {}
+KoraPhone.Repositories = KoraPhone.Repositories or {}
 local Items = {}
-QBPhone.Repositories.Items = Items
+KoraPhone.Repositories.Items = Items
 
 function Items.list(deviceId)
     return MySQL.query.await('SELECT kind, item_key AS itemKey, payload FROM phone_items WHERE device_id = ? ORDER BY updated_at DESC', { deviceId }) or {}

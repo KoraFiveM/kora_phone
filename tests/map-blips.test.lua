@@ -1,5 +1,5 @@
 -- Run with lua tests/map-blips.test.lua (or a Lua 5.4 embedding).
-QBPhone = nil
+KoraPhone = nil
 dofile('client/map.lua')
 local blips, cursors = {}, {}
 PlayerPedId = function() return 99 end
@@ -30,17 +30,17 @@ blips = {
     [11] = {sprite=1023,display=3}, [12] = {sprite=280,display=5},
     [99] = {sprite=1}
 }
-local found = QBPhone.Map.Blips()
+local found = KoraPhone.Map.Blips()
 assert(#found == 4, 'only visible, valid blips, including map/minimap-only')
 assert(found[1].id == 1 and found[2].id == 2 and found[3].id == 12 and found[4].id == 11)
 assert(found[2].colour == '#5db6e5' and found[2].label == 'Job Street')
 blips[2].x = 500
-assert(QBPhone.Map.Blips()[2].x == 500, 'moving blips refresh')
+assert(KoraPhone.Map.Blips()[2].x == 500, 'moving blips refresh')
 blips[2] = nil
-assert(#QBPhone.Map.Blips() == 3, 'removed blips disappear')
+assert(#KoraPhone.Map.Blips() == 3, 'removed blips disappear')
 blips = {}
-assert(#QBPhone.Map.Blips() == 0, 'resource cleanup leaves no stale markers')
+assert(#KoraPhone.Map.Blips() == 0, 'resource cleanup leaves no stale markers')
 blips[1] = {sprite=280}
 GetNextBlipInfoId = function() return 1 end
-assert(#QBPhone.Map.Blips() == 1, 'repeated native handle cannot loop forever')
+assert(#KoraPhone.Map.Blips() == 1, 'repeated native handle cannot loop forever')
 print('map-blips: all checks passed')

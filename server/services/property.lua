@@ -1,6 +1,6 @@
-QBPhone.Services = QBPhone.Services or {}
+KoraPhone.Services = KoraPhone.Services or {}
 local Property = {}
-QBPhone.Services.Property = Property
+KoraPhone.Services.Property = Property
 
 local available
 
@@ -42,7 +42,7 @@ local function point(raw)
 end
 
 function Property.list(source)
-    local device, err = QBPhone.Permissions.requireDevice(source)
+    local device, err = KoraPhone.Permissions.requireDevice(source)
     if not device then return err end
     if not Property.available() then return PhoneError(PhoneConstants.Errors.CONFLICT, 'Property is not available') end
     local cfg = Config.Server.Property

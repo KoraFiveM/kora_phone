@@ -1,10 +1,10 @@
-QBPhone.Services = QBPhone.Services or {}
+KoraPhone.Services = KoraPhone.Services or {}
 local Calling = {
     activeById = {},
     callByDevice = {},
     nextVoiceChannel = 31000,
 }
-QBPhone.Services.Calling = Calling
+KoraPhone.Services.Calling = Calling
 
 local terminal = { ended = true, rejected = true, missed = true, cancelled = true }
 local config = Config.Calls or {}
@@ -27,7 +27,7 @@ local function publicCall(call, viewerDeviceId)
 end
 
 local function sourceForDevice(deviceId)
-    for source, session in pairs(QBPhone.Sessions.bySource) do
+    for source, session in pairs(KoraPhone.Sessions.bySource) do
         if session.deviceId == deviceId then return source end
     end
 end
@@ -73,14 +73,14 @@ end
 local function finish(call, finalStatus, reason)
     if not call or terminal[call.status] then return false end
     local prior = call.status
-    if not QBPhone.Repositories.Calls.transition(call.id, { prior }, finalStatus, reason) then return false end
+    if not KoraPhone.Repositories.Calls.transition(call.id, { prior }, finalStatus, reason) then return false end
     if prior == 'active' then
-        QBPhone.Integrations.Voice.leave(sourceForDevice(call.callerDeviceId), call.voiceChannel)
-        QBPhone.Integrations.Voice.leave(sourceForDevice(call.calleeDeviceId), call.voiceChannel)
+        KoraPhone.Integrations.Voice.leave(sourceForDevice(call.callerDeviceId), call.voiceChannel)
+        KoraPhone.Integrations.Voice.leave(sourceForDevice(call.calleeDeviceId), call.voiceChannel)
     end
     call.status = finalStatus
     call.endedReason = reason
-    notify(call, 'qbphone:client:calls:ended', {
+    notify(call, 'kora_phone:client:calls:ended', {
         id = call.id, status = finalStatus, reason = reason,
     })
     clear(call)
@@ -92,7 +92,7 @@ local function participant(call, deviceId)
 end
 
 local function activeOwnedCall(source, payload)
-    local device, err = QBPhone.Permissions.requireDevice(source, true)
+    local device, err = KoraPhone.Permissions.requireDevice(source, true)
     if not device then return nil, nil, err end
     if type(payload) ~= 'table' or type(payload.id) ~= 'string' or #payload.id < 32 or #payload.id > 40 then
         return nil, nil, PhoneError(PhoneConstants.Errors.INVALID_INPUT, 'Call id is invalid')
@@ -105,17 +105,17 @@ local function activeOwnedCall(source, payload)
 end
 
 local function isCurrentCharacter(source, citizenId, session)
-    return QBPhone.GetCitizenId(source) == citizenId
-        and (not session or QBPhone.Sessions.bySource[source] == session)
+    return KoraPhone.GetCitizenId(source) == citizenId
+        and (not session or KoraPhone.Sessions.bySource[source] == session)
 end
 
 function Calling.start(source, payload)
-    local device,deviceError=QBPhone.Permissions.requireDevice(source)
+    local device,deviceError=KoraPhone.Permissions.requireDevice(source)
     if not device then return deviceError end
     if not device.cellular then return PhoneError(PhoneConstants.Errors.FORBIDDEN,'An active SIM is required for calls') end
-    local callerSession = QBPhone.Sessions.bySource[source]
-    local callerCitizenId = QBPhone.GetCitizenId(source)
-    local caller, err = QBPhone.Permissions.requireDevice(source)
+    local callerSession = KoraPhone.Sessions.bySource[source]
+    local callerCitizenId = KoraPhone.GetCitizenId(source)
+    local caller, err = KoraPhone.Permissions.requireDevice(source)
     if not caller then return err end
     local number, validationError = PhoneValidation.phoneNumber(type(payload) == 'table' and payload.to)
     if not number then return PhoneError(PhoneConstants.Errors.INVALID_INPUT, validationError) end
@@ -126,12 +126,12 @@ function Calling.start(source, payload)
         return PhoneError(PhoneConstants.Errors.CONFLICT, 'Call participant is unavailable')
     end
 
-    local callee = QBPhone.Repositories.Phones.findByNumber(number)
+    local callee = KoraPhone.Repositories.Phones.findByNumber(number)
     if not callee then return PhoneError(PhoneConstants.Errors.NOT_FOUND, 'Number was not found') end
     if not isCurrentCharacter(source, callerCitizenId, callerSession) then
         return PhoneError(PhoneConstants.Errors.CONFLICT, 'Call participant is unavailable')
     end
-    if QBPhone.Repositories.Blocks.isEitherBlocked(caller.id, callee.id) then
+    if KoraPhone.Repositories.Blocks.isEitherBlocked(caller.id, callee.id) then
         return PhoneError(PhoneConstants.Errors.NOT_FOUND, 'Number was not found')
     end
     if not isCurrentCharacter(source, callerCitizenId, callerSession) then
@@ -139,9 +139,9 @@ function Calling.start(source, payload)
     end
     if Calling.callByDevice[caller.id] then return PhoneError(PhoneConstants.Errors.CONFLICT, 'Already in a call') end
     if Calling.callByDevice[callee.id] then return PhoneError(PhoneConstants.Errors.CONFLICT, 'Number is busy') end
-    local calleeSource = QBPhone.Sessions.sourceByNumber(number)
+    local calleeSource = KoraPhone.Sessions.sourceByNumber(number)
     if not calleeSource then return PhoneError(PhoneConstants.Errors.NOT_FOUND, 'Number is unavailable') end
-    local calleeSession = QBPhone.Sessions.bySource[calleeSource]
+    local calleeSession = KoraPhone.Sessions.bySource[calleeSource]
     local voiceChannel = allocateChannel()
     if not voiceChannel then return PhoneError(PhoneConstants.Errors.INTERNAL, 'No call channel is available') end
 
@@ -153,7 +153,7 @@ function Calling.start(source, payload)
     -- Keep both devices busy while the database insert yields.
     Calling.callByDevice[caller.id] = call.id
     Calling.callByDevice[callee.id] = call.id
-    local ok, created = pcall(QBPhone.Repositories.Calls.create, call)
+    local ok, created = pcall(KoraPhone.Repositories.Calls.create, call)
     if not ok or not created then
         clear(call)
         if not ok then error(created, 0) end
@@ -162,12 +162,12 @@ function Calling.start(source, payload)
     if not isCurrentCharacter(source, callerCitizenId, callerSession)
         or not isCurrentCharacter(calleeSource, calleeSession.citizenId, calleeSession) then
         clear(call)
-        QBPhone.Repositories.Calls.transition(call.id, { 'ringing' }, 'cancelled', 'participant_unavailable')
+        KoraPhone.Repositories.Calls.transition(call.id, { 'ringing' }, 'cancelled', 'participant_unavailable')
         return PhoneError(PhoneConstants.Errors.CONFLICT, 'Call participant is unavailable')
     end
     Calling.activeById[call.id] = call
-    TriggerClientEvent('qbphone:client:calls:outgoing', source, publicCall(call, caller.id))
-    TriggerClientEvent('qbphone:client:calls:incoming', calleeSource, publicCall(call, callee.id))
+    TriggerClientEvent('kora_phone:client:calls:outgoing', source, publicCall(call, caller.id))
+    TriggerClientEvent('kora_phone:client:calls:incoming', calleeSource, publicCall(call, callee.id))
 
     SetTimeout(ringTimeoutMs, function()
         local current = Calling.activeById[call.id]
@@ -182,7 +182,7 @@ function Calling.accept(source, payload)
     if device.id ~= call.calleeDeviceId or call.status ~= 'ringing' then
         return PhoneError(PhoneConstants.Errors.CONFLICT, 'Call cannot be accepted')
     end
-    if not QBPhone.Repositories.Calls.transition(call.id, { 'ringing' }, 'active') then
+    if not KoraPhone.Repositories.Calls.transition(call.id, { 'ringing' }, 'active') then
         return PhoneError(PhoneConstants.Errors.CONFLICT, 'Call state changed')
     end
     call.status = 'active'
@@ -192,12 +192,12 @@ function Calling.accept(source, payload)
         finish(call, 'cancelled', 'participant_unavailable')
         return PhoneError(PhoneConstants.Errors.CONFLICT, 'Call participant is unavailable')
     end
-    if not QBPhone.Integrations.Voice.join(callerSource, calleeSource, call.voiceChannel) then
+    if not KoraPhone.Integrations.Voice.join(callerSource, calleeSource, call.voiceChannel) then
         finish(call, 'ended', 'voice_unavailable')
         return PhoneError(PhoneConstants.Errors.CONFLICT, 'Voice service is unavailable')
     end
     call.answeredAt = os.time()
-    notify(call, 'qbphone:client:calls:accepted')
+    notify(call, 'kora_phone:client:calls:accepted')
     return PhoneResult(publicCall(call, device.id))
 end
 
@@ -220,7 +220,7 @@ function Calling.hangup(source, payload)
 end
 
 function Calling.history(source, payload)
-    local device, err = QBPhone.Permissions.requireDevice(source)
+    local device, err = KoraPhone.Permissions.requireDevice(source)
     if not device then return err end
     payload = type(payload) == 'table' and payload or {}
     local limit, validationError = PhoneValidation.integer(
@@ -231,7 +231,7 @@ function Calling.history(source, payload)
     if cursor ~= nil and (type(cursor) ~= 'string' or not cursor:match('^[0-9a-fA-F%-]+$') or #cursor ~= 36) then
         return PhoneError(PhoneConstants.Errors.INVALID_INPUT, 'cursor is invalid')
     end
-    local rows = QBPhone.Repositories.Calls.listForDevice(device.id, limit, cursor)
+    local rows = KoraPhone.Repositories.Calls.listForDevice(device.id, limit, cursor)
     return PhoneResult({ items = rows, nextCursor = #rows == limit and rows[#rows].id or nil })
 end
 
@@ -250,7 +250,7 @@ function Calling.videoSignal(source, payload)
     local targetDeviceId = device.id == call.callerDeviceId and call.calleeDeviceId or call.callerDeviceId
     local targetSource = sourceForDevice(targetDeviceId)
     if not targetSource then return PhoneError(PhoneConstants.Errors.NOT_FOUND, 'The other participant is unavailable') end
-    TriggerClientEvent('qbphone:client:calls:signal', targetSource, { id=call.id,epoch=call.video.epoch,kind = signal.kind, sdp = signal.sdp, candidate = signal.candidate })
+    TriggerClientEvent('kora_phone:client:calls:signal', targetSource, { id=call.id,epoch=call.video.epoch,kind = signal.kind, sdp = signal.sdp, candidate = signal.candidate })
     return PhoneResult(true)
 end
 
@@ -267,38 +267,38 @@ function Calling.videoControl(source,payload)
         if call.video and not call.video.accepted and call.video.expires<os.time() then call.video=nil end
         if call.video then return PhoneError(PhoneConstants.Errors.CONFLICT,'A video request is already active') end
         call.video={requester=device.id,expires=os.time()+30,epoch=exports[GetCurrentResourceName()]:randomHex(16)}
-        TriggerClientEvent('qbphone:client:calls:videoControl',target,{id=call.id,action='request',epoch=call.video.epoch})
-        TriggerClientEvent('qbphone:client:calls:videoControl',source,{id=call.id,action='pending',epoch=call.video.epoch})
+        TriggerClientEvent('kora_phone:client:calls:videoControl',target,{id=call.id,action='request',epoch=call.video.epoch})
+        TriggerClientEvent('kora_phone:client:calls:videoControl',source,{id=call.id,action='pending',epoch=call.video.epoch})
         local epoch=call.video.epoch
         SetTimeout(30000,function()
             if call.video and call.video.epoch==epoch and not call.video.accepted then
-                call.video=nil; notify(call,'qbphone:client:calls:videoControl',{id=call.id,action='stop'})
+                call.video=nil; notify(call,'kora_phone:client:calls:videoControl',{id=call.id,action='stop'})
             end
         end)
     elseif action=='accept' then
         local v=call.video
         if not v or payload.epoch~=v.epoch or v.accepted or v.requester==device.id or v.expires<os.time() then return PhoneError(PhoneConstants.Errors.FORBIDDEN,'Video request expired') end
         v.accepted=true
-        notify(call,'qbphone:client:calls:videoControl',{id=call.id,action='accept',epoch=v.epoch})
+        notify(call,'kora_phone:client:calls:videoControl',{id=call.id,action='accept',epoch=v.epoch})
     elseif action=='decline' or action=='stop' then
         if call.video and payload.epoch~=call.video.epoch then return PhoneError(PhoneConstants.Errors.FORBIDDEN,'Video session changed') end
         call.video=nil
-        notify(call,'qbphone:client:calls:videoControl',{id=call.id,action='stop'})
+        notify(call,'kora_phone:client:calls:videoControl',{id=call.id,action='stop'})
     elseif action=='mute' and type(payload.muted)=='boolean' then
-        TriggerClientEvent('qbphone:client:calls:remoteMute',target,{id=call.id,source=source,muted=payload.muted})
+        TriggerClientEvent('kora_phone:client:calls:remoteMute',target,{id=call.id,source=source,muted=payload.muted})
     else return PhoneError(PhoneConstants.Errors.INVALID_INPUT,'Invalid call control') end
     return PhoneResult(true)
 end
 
 function Calling.voiceFailure(source, callId)
-    local session = QBPhone.Sessions.bySource[source]
+    local session = KoraPhone.Sessions.bySource[source]
     local call = type(callId) == 'string' and Calling.activeById[callId] or nil
     if not session or not participant(call, session.deviceId) or call.status ~= 'active' then return end
     finish(call, 'ended', 'voice_unavailable')
 end
 
 function Calling.disconnect(source, reason)
-    local session = QBPhone.Sessions.bySource[source]
+    local session = KoraPhone.Sessions.bySource[source]
     if not session then return end
     local callId = Calling.callByDevice[session.deviceId]
     local call = callId and Calling.activeById[callId]
@@ -319,7 +319,7 @@ function Calling.shutdown(reason)
         local call = Calling.activeById[id]
         if call then finish(call, call.status == 'ringing' and 'cancelled' or 'ended', reason or 'resource_restart') end
     end
-    if Calling.ready then QBPhone.Repositories.Calls.endUnfinished(reason or 'resource_restart') end
+    if Calling.ready then KoraPhone.Repositories.Calls.endUnfinished(reason or 'resource_restart') end
 end
 
 AddEventHandler('playerDropped', function()
@@ -332,7 +332,7 @@ end)
 
 -- Schema setup owns recovery; a fixed delay can run before the calls table exists.
 function Calling.initialize()
-    local recovered=QBPhone.Repositories.Calls.endUnfinished('resource_restart')
+    local recovered=KoraPhone.Repositories.Calls.endUnfinished('resource_restart')
     if recovered==nil or recovered==false then error('Call recovery did not finish') end
     Calling.ready=true
 end

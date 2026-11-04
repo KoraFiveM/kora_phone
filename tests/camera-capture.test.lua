@@ -8,17 +8,17 @@ exports = { ['screenshot-basic'] = { requestScreenshotUpload = function(_, _, _,
     upload = callback
 end } }
 json = { decode = function() return { receipt = 'receipt' } end }
-QBPhone = { State = { cameraMode = true }, ServerCallback = function(name, _, callback)
+KoraPhone = { State = { cameraMode = true }, ServerCallback = function(name, _, callback)
     request = { name = name, callback = callback }
 end }
 function AddEventHandler() end
 function GetCurrentResourceName() return "kora_phone" end
 dofile('client/camera.lua')
-QBPhone.Camera.Close = function() closes = closes + 1; QBPhone.State.cameraMode = false end
+KoraPhone.Camera.Close = function() closes = closes + 1; KoraPhone.State.cameraMode = false end
 local function start()
     timer, upload, request, replies, closes, throws = nil, nil, nil, {}, 0, false
-    QBPhone.State.cameraMode = true
-    QBPhone.Camera.Capture(function(result) replies[#replies + 1] = result end)
+    KoraPhone.State.cameraMode = true
+    KoraPhone.Camera.Capture(function(result) replies[#replies + 1] = result end)
 end
 local function beginUpload()
     request.callback({ ok = true, data = { upload = {
@@ -35,7 +35,7 @@ beginUpload()
 timer()
 upload('{}')
 assert(#replies == 1 and closes == 1)
-assert(request.name == 'qbphone:server:requestMediaUpload', 'late uploads must not be completed')
+assert(request.name == 'kora_phone:server:requestMediaUpload', 'late uploads must not be completed')
 start()
 throws = true
 beginUpload()
@@ -45,7 +45,7 @@ assert(#replies == 1 and closes == 1)
 start()
 beginUpload()
 upload('{}')
-assert(request.name == 'qbphone:server:completeMediaUpload')
+assert(request.name == 'kora_phone:server:completeMediaUpload')
 request.callback({ ok = true, data = { id = 7 } })
 timer()
 assert(#replies == 1 and replies[1].ok and closes == 0)

@@ -17,7 +17,7 @@ assert.equal(new Set(tables).size, tables.length, "a table is declared twice");
 for (const table of ["phone_devices", "phone_messages", "phone_calls", "phone_economy_audit", "phone_sims", "phone_handsets", "phone_legacy_mail", "phone_legacy_transactions"]) {
   assert.ok(tables.includes(table), `schema must declare ${table}`);
 }
-assert.match(schema, /^QBPhoneSchema = \{/m, "schema must expose the QBPhoneSchema global");
+assert.match(schema, /^KoraPhoneSchema = \{/m, "schema must expose the KoraPhoneSchema global");
 assert.match(schema, /chk_phone_economy_positive_amount/, "the positive amount check must stay declared");
 assert.match(schema, /generated = \{ expr = /, "phone_sims.active_number must stay a generated column");
 assert.match(schema, /name = 'message_type'[^\n]*'video'[^\n]*modify = true/, "message_type must be widened with modify");
@@ -28,9 +28,9 @@ assert.doesNotMatch(manifest, /^migration\s+'/m, "no .sql migrations may be list
 assert.equal(fs.existsSync(path.join(root, "migrations")), false, "the migrations/ .sql files are replaced by the schema");
 
 const main = fs.readFileSync(path.join(root, "server/main.lua"), "utf8");
-assert.match(main, /QBPhone\.SchemaSetup\.run\(\)/, "the resource must set up the database at start");
+assert.match(main, /KoraPhone\.SchemaSetup\.run\(\)/, "the resource must set up the database at start");
 assert.match(main, /Database setup failed, stopping resource/, "a failed setup must stop the resource, not run on a half-built schema");
-assert.match(fs.readFileSync(path.join(root, "server/integrations/schema_setup.lua"), "utf8"), /Kora\.sql\.ensureTables, QBPhoneSchema/, "the runner must call ensureTables");
+assert.match(fs.readFileSync(path.join(root, "server/integrations/schema_setup.lua"), "utf8"), /Kora\.sql\.ensureTables, KoraPhoneSchema/, "the runner must call ensureTables");
 assert.doesNotMatch(fs.readFileSync(path.join(root, "config/server.lua"), "utf8"), /AutoMigrate/, "no AutoMigrate flag");
 const handsets = fs.readFileSync(path.join(root, "server/handsets.lua"), "utf8");
 assert.doesNotMatch(main + handsets, /H\.migrate|MigrationReport|LegacyMail\.import/, "boot must not run any legacy conversion");

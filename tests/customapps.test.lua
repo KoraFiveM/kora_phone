@@ -40,14 +40,14 @@ local function loadCustomApps()
         return { job = job }
     end } }, { __call = function(_, name, fn) exportsTable[name] = fn end })
     _G.AddEventHandler = function(event, fn) handlers[event] = fn end
-    _G.QBPhone = {
+    _G.KoraPhone = {
         Notifications = { Native = function(title, body, urgent) natives[#natives + 1] = { title = title, body = body, urgent = urgent }; return true end },
     }
     dofile(root .. "/client/customapps.lua")
 end
 
 local function findApp(identifier)
-    for _, app in ipairs(QBPhone.CustomApps.List()) do
+    for _, app in ipairs(KoraPhone.CustomApps.List()) do
         if app.identifier == identifier then return app end
     end
 end

@@ -24,7 +24,7 @@ local function setup(config)
     pedListeners, pedReads = {}, 0
     flags = { dead = false, cuffed = false, ragdoll = false, swimming = false, vehicle = false }
     ent = {}
-    _G.QBPhone = { State = { activeCall = nil } }
+    _G.KoraPhone = { State = { activeCall = nil } }
     _G.Config = { Animation = config }
     _G.joaat = nil
     _G.Wait = function() coroutine.yield() end
@@ -66,19 +66,19 @@ local function livingProps() local n = 0; for _, p in ipairs(props) do if ent[p.
 
 test("start holds the phone prop and plays the text pose", function()
     setup({ enabled = true, model = "prop_npc_phone_02", bone = 28422, offset = { x = 0.1, y = 0, z = 0 }, rotation = { x = 0, y = 0, z = 0 } })
-    equal(QBPhone.Animations.Start(), true)
+    equal(KoraPhone.Animations.Start(), true)
     equal(played[1].dict, "cellphone@")
     equal(played[1].clip, "cellphone_text_read_base")
     equal(played[1].flag, 50)
     equal(props[1].hash, "prop_npc_phone_02")
     equal(props[1].bone, 28422)
     equal(props[1].ox, 0.1)
-    equal(QBPhone.State.phoneObject, props[1].id)
+    equal(KoraPhone.State.phoneObject, props[1].id)
 end)
 
 test("the watcher follows the mirrored ped instead of calling the cache export every tick", function()
     setup({})
-    QBPhone.Animations.Start()
+    KoraPhone.Animations.Start()
     equal(pedReads, 1)
     tick(); tick(); tick()
     equal(pedReads, 1)
@@ -93,11 +93,11 @@ end)
 
 test("stop removes the prop and the pose, and the watcher ends", function()
     setup({})
-    QBPhone.Animations.Start()
-    QBPhone.Animations.Stop()
+    KoraPhone.Animations.Start()
+    KoraPhone.Animations.Stop()
     equal(livingProps(), 0)
     equal(stopped, 1)
-    equal(QBPhone.State.phoneObject, nil)
+    equal(KoraPhone.State.phoneObject, nil)
     tick()
     equal(coroutine.status(threads[1]), "dead")
 end)
@@ -105,33 +105,33 @@ end)
 test("the in-vehicle pose is used when seated", function()
     setup({})
     flags.vehicle = true
-    QBPhone.Animations.Start()
+    KoraPhone.Animations.Start()
     equal(played[1].dict, "anim@cellphone@in_car@ps")
 end)
 
 test("an active call switches to the call pose without a second prop", function()
     setup({})
-    QBPhone.Animations.Start()
-    QBPhone.State.activeCall = { id = "x", status = "active" }
+    KoraPhone.Animations.Start()
+    KoraPhone.State.activeCall = { id = "x", status = "active" }
     tick()
     equal(played[2].clip, "cellphone_call_listen_base")
     equal(#props, 1)
-    QBPhone.State.activeCall = nil
+    KoraPhone.State.activeCall = nil
     tick()
     equal(played[3].clip, "cellphone_text_read_base")
 end)
 
 test("an incoming ringing call keeps the text pose", function()
     setup({})
-    QBPhone.Animations.Start()
-    QBPhone.State.activeCall = { id = "x", status = "ringing", direction = "incoming" }
+    KoraPhone.Animations.Start()
+    KoraPhone.State.activeCall = { id = "x", status = "ringing", direction = "incoming" }
     tick()
     equal(#played, 1)
 end)
 
 test("ragdoll removes the prop and it returns afterwards", function()
     setup({})
-    QBPhone.Animations.Start()
+    KoraPhone.Animations.Start()
     flags.ragdoll = true; tick()
     equal(livingProps(), 0)
     flags.ragdoll = false; tick()
@@ -140,47 +140,47 @@ end)
 
 test("swimming removes the prop, unless cancelOnWater is off", function()
     setup({})
-    QBPhone.Animations.Start()
+    KoraPhone.Animations.Start()
     flags.swimming = true; tick()
     equal(livingProps(), 0)
     setup({ cancelOnWater = false })
-    QBPhone.Animations.Start()
+    KoraPhone.Animations.Start()
     flags.swimming = true; tick()
     equal(livingProps(), 1)
 end)
 
 test("death and cuffs remove the prop; starting while dead plays nothing", function()
     setup({})
-    QBPhone.Animations.Start()
+    KoraPhone.Animations.Start()
     flags.dead = true; tick()
     equal(livingProps(), 0)
     setup({})
     flags.cuffed = true
-    equal(QBPhone.Animations.Start(), false)
+    equal(KoraPhone.Animations.Start(), false)
     equal(#played, 0)
     equal(#props, 0)
     setup({})
     flags.dead = true
-    equal(QBPhone.Animations.Start(), false)
+    equal(KoraPhone.Animations.Start(), false)
     equal(#played, 0)
 end)
 
 test("Config.Animation.enabled = false does nothing", function()
     setup({ enabled = false })
-    equal(QBPhone.Animations.Start(), false)
+    equal(KoraPhone.Animations.Start(), false)
     equal(#played, 0)
     equal(#props, 0)
 end)
 
 test("a missing Config.Animation falls back to the defaults", function()
     setup(nil)
-    equal(QBPhone.Animations.Start(), true)
+    equal(KoraPhone.Animations.Start(), true)
     equal(props[1].hash, "prop_npc_phone_02")
 end)
 
 test("resource stop cleans up", function()
     setup({})
-    QBPhone.Animations.Start()
+    KoraPhone.Animations.Start()
     handlers.onClientResourceStop("some_other_resource")
     equal(livingProps(), 1)
     handlers.onClientResourceStop("kora_phone-stevie")

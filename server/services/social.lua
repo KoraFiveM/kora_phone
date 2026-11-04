@@ -1,6 +1,6 @@
-QBPhone.Services = QBPhone.Services or {}
+KoraPhone.Services = KoraPhone.Services or {}
 local Social = {}
-QBPhone.Services.Social = Social
+KoraPhone.Services.Social = Social
 
 local function invalid(message) return PhoneError(PhoneConstants.Errors.INVALID_INPUT, message) end
 
@@ -16,9 +16,9 @@ local function page(payload)
 end
 
 local function ownProfile(source, createRequired)
-    local device, err = QBPhone.Permissions.requireDevice(source)
+    local device, err = KoraPhone.Permissions.requireDevice(source)
     if not device then return nil, nil, err end
-    local profile = QBPhone.Repositories.Social.profileByDevice(device.id)
+    local profile = KoraPhone.Repositories.Social.profileByDevice(device.id)
     if createRequired and not profile then
         return nil, nil, PhoneError(PhoneConstants.Errors.NOT_FOUND, 'Create a social profile first')
     end
@@ -47,7 +47,7 @@ function Social.createAccount(source, payload)
     if not displayName then return invalid(validationError) end
     local bio; bio, validationError = PhoneValidation.string(payload.bio or '', 'bio', 0, 280, true)
     if not bio then return invalid(validationError) end
-    local ok, created = pcall(QBPhone.Repositories.Social.createProfile, device.id, handle, displayName, bio, payload.isPrivate == true)
+    local ok, created = pcall(KoraPhone.Repositories.Social.createProfile, device.id, handle, displayName, bio, payload.isPrivate == true)
     if not ok or not created then return PhoneError(PhoneConstants.Errors.CONFLICT, 'Handle is unavailable') end
     return PhoneResult(created)
 end
@@ -57,7 +57,7 @@ function Social.getFeed(source, payload)
     if not device then return err end
     local pagination, pageError = page(payload)
     if not pagination then return pageError end
-    local rows = QBPhone.Repositories.Social.feed(device.id, profile.id, pagination.limit, pagination.cursor)
+    local rows = KoraPhone.Repositories.Social.feed(device.id, profile.id, pagination.limit, pagination.cursor)
     return PhoneResult({ items = rows, nextCursor = #rows == pagination.limit and rows[#rows].id or nil })
 end
 
@@ -66,8 +66,8 @@ function Social.getProfile(source, payload)
     if not device then return err end
     local id, validationError = PhoneValidation.integer(type(payload) == 'table' and payload.id, 'id', 1)
     if not id then return invalid(validationError) end
-    local profile = QBPhone.Repositories.Social.profileById(id)
-    if not profile or profile.isSuspended == 1 or QBPhone.Repositories.Blocks.isEitherBlocked(device.id, profile.deviceId) then
+    local profile = KoraPhone.Repositories.Social.profileById(id)
+    if not profile or profile.isSuspended == 1 or KoraPhone.Repositories.Blocks.isEitherBlocked(device.id, profile.deviceId) then
         return PhoneError(PhoneConstants.Errors.NOT_FOUND, 'Profile was not found')
     end
     profile.deviceId = nil
@@ -83,13 +83,13 @@ function Social.createPost(source, payload)
     if payload.mediaId ~= nil then
         mediaId, validationError = PhoneValidation.integer(payload.mediaId, 'mediaId', 1)
         if not mediaId then return invalid(validationError) end
-        if not QBPhone.Repositories.Media.findOwned(device.id, mediaId) then return invalid('That media was not found') end
+        if not KoraPhone.Repositories.Media.findOwned(device.id, mediaId) then return invalid('That media was not found') end
     end
     local body; body, validationError = PhoneValidation.string(payload.body == nil and '' or payload.body, 'body', mediaId and 0 or 1, 5000, mediaId ~= nil)
     if not body then return invalid(validationError) end
     local idempotency; idempotency, validationError = requestId(payload)
     if not idempotency then return invalid(validationError) end
-    local post, replayed = QBPhone.Repositories.Social.insertPost(profile.id, body, idempotency, mediaId)
+    local post, replayed = KoraPhone.Repositories.Social.insertPost(profile.id, body, idempotency, mediaId)
     if not post then return PhoneError(PhoneConstants.Errors.INTERNAL, 'Unable to create post') end
     post.replayed = replayed
     return PhoneResult(post)
@@ -102,9 +102,9 @@ function Social.deletePost(source, payload)
     if not profile then return err end
     local id, validationError = PhoneValidation.integer(type(payload) == 'table' and payload.id, 'id', 1)
     if not id then return invalid(validationError) end
-    local removed = QBPhone.Repositories.Social.deletePost(profile.id, id)
-    if not removed and QBPhone.Services.Moderation.isModerator(source) then
-        removed = QBPhone.Repositories.Social.hidePostByModerator(id)
+    local removed = KoraPhone.Repositories.Social.deletePost(profile.id, id)
+    if not removed and KoraPhone.Services.Moderation.isModerator(source) then
+        removed = KoraPhone.Repositories.Social.hidePostByModerator(id)
     end
     if not removed then return PhoneError(PhoneConstants.Errors.NOT_FOUND, 'Post was not found') end
     return PhoneResult({ id = id })
@@ -115,9 +115,9 @@ function Social.deleteComment(source, payload)
     if not profile then return err end
     local id, validationError = PhoneValidation.integer(type(payload) == 'table' and payload.id, 'id', 1)
     if not id then return invalid(validationError) end
-    local removed = QBPhone.Repositories.Social.deleteComment(profile.id, id)
-    if not removed and QBPhone.Services.Moderation.isModerator(source) then
-        removed = QBPhone.Repositories.Social.hideCommentByModerator(id)
+    local removed = KoraPhone.Repositories.Social.deleteComment(profile.id, id)
+    if not removed and KoraPhone.Services.Moderation.isModerator(source) then
+        removed = KoraPhone.Repositories.Social.hideCommentByModerator(id)
     end
     if not removed then return PhoneError(PhoneConstants.Errors.NOT_FOUND, 'Comment was not found') end
     return PhoneResult({ id = id })
@@ -128,12 +128,12 @@ local function interactivePost(source, payload)
     if not device then return nil, nil, nil, err end
     local postId, validationError = PhoneValidation.integer(type(payload) == 'table' and payload.postId, 'postId', 1)
     if not postId then return nil, nil, nil, invalid(validationError) end
-    local post = QBPhone.Repositories.Social.postInternal(postId)
-    if not post or post.deletedAt or QBPhone.Repositories.Blocks.isEitherBlocked(device.id, post.authorDeviceId) then
+    local post = KoraPhone.Repositories.Social.postInternal(postId)
+    if not post or post.deletedAt or KoraPhone.Repositories.Blocks.isEitherBlocked(device.id, post.authorDeviceId) then
         return nil, nil, nil, PhoneError(PhoneConstants.Errors.NOT_FOUND, 'Post was not found')
     end
     if post.authorIsPrivate == 1 and post.authorProfileId ~= profile.id
-        and not QBPhone.Repositories.Social.isFollowing(profile.id, post.authorProfileId) then
+        and not KoraPhone.Repositories.Social.isFollowing(profile.id, post.authorProfileId) then
         return nil, nil, nil, PhoneError(PhoneConstants.Errors.NOT_FOUND, 'Post was not found')
     end
     return device, profile, post
@@ -143,7 +143,7 @@ function Social.toggleLike(source, payload)
     local _, profile, post, err = interactivePost(source, payload)
     if not profile then return err end
     local liked = type(payload) == 'table' and payload.liked == true
-    local count = QBPhone.Repositories.Social.setLike(profile.id, post.id, liked)
+    local count = KoraPhone.Repositories.Social.setLike(profile.id, post.id, liked)
     return PhoneResult({ postId = post.id, liked = liked, likeCount = count })
 end
 
@@ -153,8 +153,8 @@ function Social.follow(source, payload, following)
     local targetId, validationError = PhoneValidation.integer(type(payload) == 'table' and payload.profileId, 'profileId', 1)
     if not targetId then return invalid(validationError) end
     if targetId == profile.id then return invalid('Cannot follow yourself') end
-    local target = QBPhone.Repositories.Social.profileById(targetId)
-    if not target or target.isSuspended == 1 or QBPhone.Repositories.Blocks.isEitherBlocked(device.id, target.deviceId) then
+    local target = KoraPhone.Repositories.Social.profileById(targetId)
+    if not target or target.isSuspended == 1 or KoraPhone.Repositories.Blocks.isEitherBlocked(device.id, target.deviceId) then
         return PhoneError(PhoneConstants.Errors.NOT_FOUND, 'Profile was not found')
     end
     if following and target.isPrivate == 1 then
@@ -163,7 +163,7 @@ function Social.follow(source, payload, following)
         -- accepted data model and are intentionally deferred.
         return PhoneError(PhoneConstants.Errors.CONFLICT, 'This profile is private')
     end
-    QBPhone.Repositories.Social.setFollow(profile.id, targetId, following)
+    KoraPhone.Repositories.Social.setFollow(profile.id, targetId, following)
     return PhoneResult({ profileId = targetId, following = following })
 end
 
@@ -174,7 +174,7 @@ function Social.createComment(source, payload)
     if not body then return invalid(validationError) end
     local idempotency; idempotency, validationError = requestId(payload)
     if not idempotency then return invalid(validationError) end
-    local comment = QBPhone.Repositories.Social.insertComment(post.id, profile.id, body, idempotency)
+    local comment = KoraPhone.Repositories.Social.insertComment(post.id, profile.id, body, idempotency)
     return comment and PhoneResult(comment) or PhoneError(PhoneConstants.Errors.INTERNAL, 'Unable to create comment')
 end
 
@@ -183,17 +183,17 @@ function Social.getComments(source, payload)
     if not device then return err end
     local postId, validationError = PhoneValidation.integer(type(payload) == 'table' and payload.postId, 'postId', 1)
     if not postId then return invalid(validationError) end
-    local post = QBPhone.Repositories.Social.postInternal(postId)
-    if not post or post.deletedAt or QBPhone.Repositories.Blocks.isEitherBlocked(device.id, post.authorDeviceId) then
+    local post = KoraPhone.Repositories.Social.postInternal(postId)
+    if not post or post.deletedAt or KoraPhone.Repositories.Blocks.isEitherBlocked(device.id, post.authorDeviceId) then
         return PhoneError(PhoneConstants.Errors.NOT_FOUND, 'Post was not found')
     end
     if post.authorIsPrivate == 1 and (not profile or post.authorProfileId ~= profile.id)
-        and not QBPhone.Repositories.Social.isFollowing(profile and profile.id, post.authorProfileId) then
+        and not KoraPhone.Repositories.Social.isFollowing(profile and profile.id, post.authorProfileId) then
         return PhoneError(PhoneConstants.Errors.NOT_FOUND, 'Post was not found')
     end
     local pagination, pageError = page(payload)
     if not pagination then return pageError end
-    local rows = QBPhone.Repositories.Social.comments(postId, device.id, pagination.limit, pagination.cursor)
+    local rows = KoraPhone.Repositories.Social.comments(postId, device.id, pagination.limit, pagination.cursor)
     return PhoneResult({ items = rows, nextCursor = #rows == pagination.limit and rows[#rows].id or nil })
 end
 
@@ -202,11 +202,11 @@ function Social.setBlock(source, payload)
     if not device then return err end
     local targetId, validationError = PhoneValidation.integer(type(payload) == 'table' and payload.profileId, 'profileId', 1)
     if not targetId then return invalid(validationError) end
-    local target = QBPhone.Repositories.Social.profileById(targetId)
+    local target = KoraPhone.Repositories.Social.profileById(targetId)
     if not target then return PhoneError(PhoneConstants.Errors.NOT_FOUND, 'Profile was not found') end
     if target.deviceId == device.id then return invalid('Cannot block yourself') end
     local blocked = type(payload) == 'table' and payload.blocked == true
-    QBPhone.Repositories.Blocks.set(device.id, target.deviceId, blocked)
-    if blocked and profile then QBPhone.Repositories.Social.removeFollowsBetween(profile.id, target.id) end
+    KoraPhone.Repositories.Blocks.set(device.id, target.deviceId, blocked)
+    if blocked and profile then KoraPhone.Repositories.Social.removeFollowsBetween(profile.id, target.id) end
     return PhoneResult({ profileId = targetId, blocked = blocked })
 end

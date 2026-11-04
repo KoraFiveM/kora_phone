@@ -1,4 +1,4 @@
-QBPhone = QBPhone or {}
+KoraPhone = KoraPhone or {}
 local Video = { active = false, camera = nil, front = true, previousRadar = true }
 
 local function updateCamera()
@@ -35,7 +35,7 @@ end
 
 -- The per-frame loop only exists while a video call camera (or cover) is active; it is started from the two places
 -- that set Video.active and ends itself once Video.Cleanup() clears it. The death check stays per frame (a native),
--- the QBPhone.Unavailable() check (cache + player-data exports) runs every 250 ms.
+-- the KoraPhone.Unavailable() check (cache + player-data exports) runs every 250 ms.
 local watching = false
 local function watchVideo()
     if watching then return end
@@ -43,17 +43,17 @@ local function watchVideo()
     CreateThread(function()
         local nextUnavailableCheck = 0
         while Video.active do
-            local call = QBPhone.State and QBPhone.State.activeCall
+            local call = KoraPhone.State and KoraPhone.State.activeCall
             local now = GetGameTimer()
             local unavailable = false
-            if QBPhone.Unavailable and now >= nextUnavailableCheck then
+            if KoraPhone.Unavailable and now >= nextUnavailableCheck then
                 nextUnavailableCheck = now + 250
-                unavailable = QBPhone.Unavailable()
+                unavailable = KoraPhone.Unavailable()
             end
-            if not QBPhone.State or not QBPhone.State.open or (not Video.cover and (not call or call.status ~= 'active'))
+            if not KoraPhone.State or not KoraPhone.State.open or (not Video.cover and (not call or call.status ~= 'active'))
                 or IsEntityDead(PlayerPedId()) or unavailable then
                 Video.Cleanup()
-                QBPhone.SendNui('video:stopped', { reason = 'Camera session ended' })
+                KoraPhone.SendNui('video:stopped', { reason = 'Camera session ended' })
             else
                 updateCamera()
                 HideHudAndRadarThisFrame()
@@ -72,16 +72,16 @@ RegisterNUICallback('camera:videoStart', function(data, cb)
         cb({ ok = false, error = 'Invalid camera session' })
         return
     end
-    local call = QBPhone.State and QBPhone.State.activeCall
-    if not QBPhone.State or not QBPhone.State.open or not call or call.status ~= 'active' then
+    local call = KoraPhone.State and KoraPhone.State.activeCall
+    if not KoraPhone.State or not KoraPhone.State.open or not call or call.status ~= 'active' then
         cb({ ok = false, error = 'An active call is required' })
         return
     end
-    if IsEntityDead(PlayerPedId()) or (QBPhone.Unavailable and QBPhone.Unavailable()) then
+    if IsEntityDead(PlayerPedId()) or (KoraPhone.Unavailable and KoraPhone.Unavailable()) then
         cb({ ok = false, error = 'PLAYER_DEAD' })
         return
     end
-    if QBPhone.State.cameraMode then
+    if KoraPhone.State.cameraMode then
         cb({ ok = false, error = 'Close the camera app before starting video' })
         return
     end
@@ -126,7 +126,7 @@ RegisterNUICallback('camera:coverStart',function(data,cb)
         if Video.cover then Video.Cleanup(); Video.cover=false end
         return cb({ok=true})
     end
-    if not QBPhone.State.open or QBPhone.Unavailable() or QBPhone.State.cameraMode or Video.active then
+    if not KoraPhone.State.open or KoraPhone.Unavailable() or KoraPhone.State.cameraMode or Video.active then
         return cb({ok=false,error='Close the other camera first'})
     end
     Video.previousRadar=not IsRadarHidden(); Video.front=true; Video.cover=true
@@ -137,11 +137,11 @@ RegisterNUICallback('camera:coverStart',function(data,cb)
     cb({ok=true})
 end)
 
-RegisterNetEvent('qbphone:client:calls:ended', function() Video.Cleanup() end)
-RegisterNetEvent('qbphone:client:reset', function() Video.Cleanup() end)
+RegisterNetEvent('kora_phone:client:calls:ended', function() Video.Cleanup() end)
+RegisterNetEvent('kora_phone:client:reset', function() Video.Cleanup() end)
 RegisterNetEvent('QBCore:Client:OnPlayerUnload', function() Video.Cleanup() end)
 AddEventHandler('onClientResourceStop', function(resource)
     if resource == GetCurrentResourceName() then Video.Cleanup() end
 end)
 
-QBPhone.Video = Video
+KoraPhone.Video = Video
