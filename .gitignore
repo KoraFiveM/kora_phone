@@ -4,7 +4,7 @@ node_modules/
 .claude/
 .DS_Store
 Thumbs.db
-web/dist/
+web/dist/node_modules/
 .playwright-cli/
 test-results/
 
