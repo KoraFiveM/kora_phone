@@ -2,6 +2,7 @@ Config.Client = {
     Command = 'phone',
     Keybind = 'M',
     DisableWhileDead = true,
+    NoPhoneNoticeWhileDown = true, -- downed without a phone item: say "You don't have a phone" instead of "cannot use your phone right now"
     NotificationSound = true, -- the game's own text-message tone when the phone is closed
     -- Player state bag that keeps the phone shut while it is true. Another resource sets it while its own camera or
     -- editor is up (kora_emotemenu's Emote Maker freecam does); the phone then refuses to open (key, item, export,

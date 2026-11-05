@@ -7,10 +7,16 @@ function KoraPhone.ServerCallback(name, payload, done)
     pendingCallbacks = pendingCallbacks + 1
     local generation = KoraPhone.State.generation
     CreateThread(function()
-        local result = Kora.callback.trigger(name, payload or {})
+        -- Kora.callback.trigger raises on rejection (timeout, token mismatch, disconnect) rather than
+        -- returning an error value; without pcall that kills this thread before done() runs, leaving the
+        -- NUI promise that opened the phone unresolved and the UI stuck with focus forever.
+        local ok, result = pcall(Kora.callback.trigger, name, payload or {})
         pendingCallbacks = math.max(0, pendingCallbacks - 1)
         if generation ~= KoraPhone.State.generation then
             return done({ ok = false, error = 'SESSION_CHANGED' })
+        end
+        if not ok then
+            return done({ ok = false, error = tostring(result) })
         end
         done(result or { ok = false, error = 'EMPTY_SERVER_RESPONSE' })
     end)
@@ -163,7 +169,12 @@ local function togglePhone()
     if KoraPhone.State.open then
         KoraPhone.Close(false)
     elseif not KoraPhone.Open() and KoraPhone.Unavailable() then
-        Kora.notify.send({ title = 'Phone', message = 'You cannot use your phone right now', type = 'error', duration = 3000 })
+        local message = 'You cannot use your phone right now'
+        if Config.Client.NoPhoneNoticeWhileDown then
+            local ok, result = pcall(Kora.callback.trigger, 'kora_phone:server:hasPhone', {})
+            if ok and result == false then message = "You don't have a phone" end
+        end
+        Kora.notify.send({ title = 'Phone', message = message, type = 'error', duration = 3000 })
     end
 end
 

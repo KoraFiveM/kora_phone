@@ -57,14 +57,20 @@ end)
 local mutedPeer
 local function clearRemoteMute()
     if mutedPeer then
-        if GetResourceState('pma-voice')=='started' and exports['pma-voice']:isPlayerMuted(mutedPeer) then exports['pma-voice']:toggleMutePlayer(mutedPeer) end
+        if GetResourceState('pma-voice')=='started' then
+            local ok,muted=pcall(function() return exports['pma-voice']:isPlayerMuted(mutedPeer) end)
+            if ok and muted then exports['pma-voice']:toggleMutePlayer(mutedPeer) end
+        end
         mutedPeer=nil
     end
 end
 RegisterNetEvent('kora_phone:client:calls:remoteMute',function(data)
     if not KoraPhone.State.activeCall or type(data)~='table' or KoraPhone.State.activeCall.id~=data.id then return end
     if data.muted then
-        if not exports['pma-voice']:isPlayerMuted(data.source) then exports['pma-voice']:toggleMutePlayer(data.source); mutedPeer=data.source end
+        if GetResourceState('pma-voice')~='started' then return end
+        local ok,muted=pcall(function() return exports['pma-voice']:isPlayerMuted(data.source) end)
+        if not ok then return end
+        if not muted then exports['pma-voice']:toggleMutePlayer(data.source); mutedPeer=data.source end
     else clearRemoteMute() end
 end)
 

@@ -64,3 +64,7 @@ KoraPhone.registerCallback('getProperties', 'read', KoraPhone.Services.Property.
 KoraPhone.registerCallback('saveItem', 'mutation', KoraPhone.Services.Items.save)
 KoraPhone.registerCallback('removeItem', 'mutation', KoraPhone.Services.Items.remove)
 KoraPhone.registerCallback('getVehicles', 'read', KoraPhone.Services.Garage.list)
+-- Lets the client tell a downed player with no phone item apart from one who simply cannot use it right now.
+Kora.callback.register("kora_phone:server:hasPhone", function(source)
+    return KoraPhone.HasPhone(source) == true
+end)
