@@ -3,6 +3,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { CSSProperties, ComponentType, PointerEvent as ReactPointerEvent } from 'react';
 import { AlarmClock, Aperture, ArrowDown, ArrowRight, ArrowUpRight, BatteryFull, Bell, Calculator, Camera, Car, Check, ChevronLeft, CloudSun, ContactRound, CreditCard, Fingerprint, House, Image, LockKeyhole, Mail, MapPin, MessageCircle, Moon, Music, Mic, MicOff, Pause, Play, Phone, PhoneIncoming, PhoneOff, Power, Radio, Settings as SettingsIcon, ShieldAlert, ShieldCheck, Signal, Smartphone, SlidersHorizontal, StickyNote, Store as StoreIcon, Sun, Tag, Video, VideoOff, SwitchCamera, Wifi, X } from 'lucide-react';
 import { LONG_PRESS_MS, MOVE_TOLERANCE, mergeOrder, moveItem } from './homeReorder';
+import { isOptional } from './catalog';
 import { adaptBootstrap, adaptLiveCall, api, demoModel, isDemo, isEmbed, isPreview, launchApps, nui, sendSignal } from './api';
 import { previewBootstrap, previewIncoming, resetPreview } from './mock';
 import { normalizeData } from './types';
@@ -40,6 +41,7 @@ import { ClockScreen, MusicScreen, alarmTone } from './Media';
 
 type Icon = ComponentType<{ size?: number; strokeWidth?: number; className?: string }>;
 const apps: { id: AppId; label: string; icon: Icon; subtitle: string }[] = [
+  { id: 'store', label: 'App Store', icon: StoreIcon, subtitle: 'A little more you.' },
   { id: 'banking', label: 'Wallet', icon: CreditCard, subtitle: 'A little peace of mind.' },
   { id: 'social', label: 'Pulse', icon: Radio, subtitle: 'The city, in conversation.' },
   { id: 'gallery', label: 'Gallery', icon: Image, subtitle: 'The moments you keep.' },
@@ -60,7 +62,6 @@ const apps: { id: AppId; label: string; icon: Icon; subtitle: string }[] = [
   { id: 'contacts', label: 'Contacts', icon: ContactRound, subtitle: 'Good people. One place.' },
   { id: 'camera', label: 'Camera', icon: Camera, subtitle: 'See something. Keep it.' },
   { id: 'settings', label: 'Settings', icon: SettingsIcon, subtitle: 'Unmistakably yours.' },
-  { id: 'store', label: 'App Store', icon: StoreIcon, subtitle: 'A little more you.' },
   { id: 'moderation', label: 'Moderation', icon: ShieldAlert, subtitle: 'Keep the city civil.' },
 ];
 const iconOf = (id: AppId) => apps.find(app => app.id === id)!;
@@ -82,9 +83,11 @@ function HeadsUp({ alert, locked, onOpen, onDismiss }: { alert: Notification; lo
 function storedNotifications(): { a: Notification[]; e: Notification[] } {
   try { const v = JSON.parse(recall('notifications') ?? 'null'); return { a: Array.isArray(v?.a) ? v.a : [], e: Array.isArray(v?.e) ? v.e : [] }; } catch { return { a: [], e: [] }; }
 }
+const canLaunch = (id: AppId, value?: Bootstrap) =>
+  launchApps.has(id) && value?.capabilities[id] !== false && (!isOptional(id) || value?.data?.installedApps?.includes(id) === true);
 const lastApp = (value?: Bootstrap): AppId => {
   const id = recall('app') as AppId;
-  if (!apps.some(item => item.id === id) || !launchApps.has(id) || value?.capabilities[id] === false) return 'home';
+  if (!apps.some(item => item.id === id) || !canLaunch(id, value)) return 'home';
   return id;
 };
 function AppIcon({ id, onClick, dock = false, badge = 0, editing = false, dragging = false, over = false, onPointerDown }: {
@@ -231,7 +234,7 @@ export default function App() {
   useEffect(() => { if (device) contactNames.current = new Map(data.contacts.map(c => [c.number, c.name])); }, [device, data.contacts]);
   useEffect(() => { remember('app', app); }, [app]);
   const time = date.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
-  const navigate = useCallback((requested: AppId, destination = '') => { const id: AppId = launchApps.has(requested) && (requested === 'home' || apps.some(item => item.id === requested)) ? requested : 'home'; setApp(id); setTarget(destination); setShowNotifications(false); setHomePage(0); setEditing(false); setDragId(null); setOverId(null); }, []);
+  const navigate = useCallback((requested: AppId, destination = '') => { const id: AppId = (requested === 'custom' && destination && device?.capabilities.store !== false) || canLaunch(requested, device) ? requested : 'home'; setApp(id); setTarget(destination); setShowNotifications(false); setHomePage(0); setEditing(false); setDragId(null); setOverId(null); }, [device]);
   const notify = useCallback((message: string) => setToast(message), []);
   const markRead = useCallback((items: Notification[]) => { setNotifications(list => list.filter(n => !items.some(item => item === n || (item.app === n.app && item.title === n.title)))); setEarlier(list => [...items, ...list].slice(0, 30)); }, []);
   // Being in an app means you've seen its notifications.
@@ -471,8 +474,8 @@ export default function App() {
     return () => { cancelled = true; };
   }, []);
   const enableAudio = () => { audio.current ??= new AudioContext(); void audio.current.resume(); };
-  const available = (id: AppId) => launchApps.has(id) && device?.capabilities[id] !== false;
-  const gridEligible = (item: { id: AppId }) => item.id !== 'store' && item.id !== 'phone' && item.id !== 'messages' && item.id !== 'contacts' && item.id !== 'camera' && item.id !== 'settings';
+  const available = (id: AppId) => canLaunch(id, device);
+  const gridEligible = (item: { id: AppId }) => item.id !== 'phone' && item.id !== 'messages' && item.id !== 'contacts' && item.id !== 'camera' && item.id !== 'settings';
   const gridBase = apps.filter(gridEligible).filter(item => available(item.id));
   const gridIds = mergeOrder(data.settings.appOrder, gridBase.map(item => item.id));
   const homeApps = gridIds.map(id => iconOf(id));

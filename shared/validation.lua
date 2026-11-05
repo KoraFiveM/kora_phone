@@ -168,7 +168,7 @@ function PhoneValidation.settings(payload)
         if type(payload.installedApps) ~= 'table' or #payload.installedApps>20 then return nil,'Invalid installed apps' end
         out.installedApps={}
         for _,id in ipairs(payload.installedApps) do
-            if not Config.LaunchApps or not Config.LaunchApps[id] then return nil,'App is unavailable' end
+            if not OPTIONAL_APPS[id] or not Config.LaunchApps or not Config.LaunchApps[id] then return nil,'App is unavailable' end
             out.installedApps[#out.installedApps+1]=id
         end
     end

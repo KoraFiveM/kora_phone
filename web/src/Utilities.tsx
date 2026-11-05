@@ -2,6 +2,8 @@ import { useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { Camera, Car, CloudSun, Home, MapPin, Maximize2, Navigation, Plus, Save, ShieldCheck, StickyNote, Sun, Trash2, X } from 'lucide-react';
 import { api, isPreview, requestId } from './api';
+import blipSprites from './blipSprites.json';
+import { isHostMessage } from './nuiEvents';
 import { PhotoImage } from './Images';
 import type { Photo } from './types';
 import { asList } from './types';
@@ -47,6 +49,10 @@ export const worldToMap = (x: number, y: number) => ({ u: (x - MAP_BOUNDS.left) 
 export const mapToWorld = (u: number, v: number) => ({ x: MAP_BOUNDS.left + u * (MAP_BOUNDS.right - MAP_BOUNDS.left), y: MAP_BOUNDS.top - v * (MAP_BOUNDS.top - MAP_BOUNDS.bottom) });
 const clamp = (n: number, lo: number, hi: number) => Math.min(hi, Math.max(lo, n));
 
+// Sprite IDs and artwork from the Cfx.re blip catalog.
+const spriteNames: Readonly<Partial<Record<number, string>>> = blipSprites;
+const blipType = (sprite: number) => spriteNames[sprite]?.replace(/^radar_/, '').replace(/_/g, ' ').replace(/^./, letter => letter.toUpperCase());
+
 // Drag to pan, scroll or +/- to zoom, tap to drop a waypoint. The image is sized to the box width at zoom 1.
 function LiveMap({ onPick }: { onPick: (x: number, y: number) => void }) {
   const box = useRef<HTMLDivElement>(null);
@@ -56,6 +62,9 @@ function LiveMap({ onPick }: { onPick: (x: number, y: number) => void }) {
   // Mirrors the game's own waypoint, so it survives leaving the app and shows ones set from the pause map.
   const [pin, setPin] = useState<{ x: number; y: number }>();
   const [blips, setBlips] = useState<MapBlip[]>([]);
+  const [selectedId, setSelectedId] = useState<number>();
+  const selected = blips.find(blip => blip.id === selectedId);
+  const address = selected && [...new Set([blipType(selected.sprite), selected.street, selected.zone])].filter(part => part && part !== selected.label).join(' · ');
   const [missing, setMissing] = useState(false);
   const fit = (x: number, y: number, z: number) => {
     const el = box.current; if (!el) return { x, y, z };
@@ -67,20 +76,28 @@ function LiveMap({ onPick }: { onPick: (x: number, y: number) => void }) {
   useEffect(() => {
     let stopped = false;
     let pending = false;
-    const pollBlips = async () => {
-      if (pending) return;
+    let dirty = false;
+    const refreshBlips = async () => {
+      if (pending) { dirty = true; return; }
+      dirty = false;
       pending = true;
       try { const next = await api('mapBlips', {}); if (!stopped) setBlips(asList<MapBlip>(next)); }
       catch { if (!stopped) setBlips([]); }
-      finally { pending = false; }
+      finally {
+        pending = false;
+        if (dirty && !stopped) void refreshBlips();
+      }
     };
-    void pollBlips();
-    const blipTimer = window.setInterval(pollBlips, 1000);
+    const onMessage = (event: MessageEvent) => {
+      if (isHostMessage(event.source, window, window.parent) && event.data?.type === 'mapBlipsChanged') void refreshBlips();
+    };
+    window.addEventListener('message', onMessage);
+    void refreshBlips();
     let first = true;
     const poll = () => api('myLocation', {}).then(at => { setMe(at); if (!isPreview) setPin(at.waypoint); if (first) { first = false; center(at, 6); } }).catch(() => {});
     void poll();
     const timer = window.setInterval(poll, 1000);
-    return () => { stopped = true; window.clearInterval(timer); window.clearInterval(blipTimer); };
+    return () => { stopped = true; window.clearInterval(timer); window.removeEventListener('message', onMessage); };
   }, []);
   // The phone is CSS-scaled, so screen px are converted back to the map box's own px.
   const ratio = () => box.current!.getBoundingClientRect().width / box.current!.clientWidth || 1;
@@ -94,12 +111,12 @@ function LiveMap({ onPick }: { onPick: (x: number, y: number) => void }) {
   }, []);
   const marker = (at: { x: number; y: number; heading?: number }, className: string, label: string) => { const { u, v } = worldToMap(at.x, at.y); return <span className={className} aria-label={label} style={{ left: `${u * 100}%`, top: `${v * 100}%`, ['--h' as string]: `${-(at.heading ?? 0)}deg` }} />; };
   return <div ref={box} className="map-graphic" role="application" aria-label="Map. Drag to move, scroll to zoom, tap to set a waypoint."
-    onPointerDown={e => { e.currentTarget.setPointerCapture(e.pointerId); drag.current = { sx: e.clientX, sy: e.clientY, vx: view.x, vy: view.y, moved: false }; }}
+    onPointerDown={e => { if ((e.target as HTMLElement).closest('button')) return; e.currentTarget.setPointerCapture(e.pointerId); drag.current = { sx: e.clientX, sy: e.clientY, vx: view.x, vy: view.y, moved: false }; }}
     onPointerMove={e => { const d = drag.current; if (!d) return; const k = ratio(), dx = (e.clientX - d.sx) / k, dy = (e.clientY - d.sy) / k; if (Math.abs(dx) + Math.abs(dy) > 5) d.moved = true; if (d.moved) setView(v => fit(d.vx + dx, d.vy + dy, v.z)); }}
-    onPointerUp={e => { const d = drag.current; drag.current = undefined; if (!d || d.moved || !box.current) return; const { cx, cy } = local(e); const size = box.current.clientWidth * view.z; const at = mapToWorld((cx - view.x) / size, (cy - view.y) / size); const x = Math.round(at.x), y = Math.round(at.y); setPin({ x, y }); onPick(x, y); }}>
+    onPointerUp={e => { const d = drag.current; drag.current = undefined; if (!d || d.moved || !box.current) return; const { cx, cy } = local(e); const size = box.current.clientWidth * view.z; const at = mapToWorld((cx - view.x) / size, (cy - view.y) / size); const x = Math.round(at.x), y = Math.round(at.y); setSelectedId(undefined); setPin({ x, y }); onPick(x, y); }}>
     <div className="map-layer" style={{ transform: `translate(${view.x}px, ${view.y}px) scale(${view.z})`, ['--z' as string]: view.z }}>
       <img src="./map.jpg" alt="" draggable={false} onError={() => setMissing(true)} />
-      {blips.map(blip => { const { u, v } = worldToMap(blip.x, blip.y); return <button key={blip.id} type="button" className="map-blip" title={blip.label} aria-label={`Set waypoint: ${blip.label}`} style={{ left: `${u * 100}%`, top: `${v * 100}%`, background: blip.colour }} onPointerDown={e => e.stopPropagation()} onPointerUp={e => e.stopPropagation()} onClick={() => { setPin(blip); onPick(blip.x, blip.y); }}><MapPin size={13} /></button>; })}
+      {blips.map(blip => { const { u, v } = worldToMap(blip.x, blip.y); const sprite = spriteNames[blip.sprite]; return <button key={blip.id} type="button" className="map-blip" title={blip.label} aria-label={blip.label} aria-pressed={selectedId === blip.id} style={{ left: `${u * 100}%`, top: `${v * 100}%`, color: blip.colour }} draggable={false} onDragStart={e => e.preventDefault()} onPointerDown={e => { e.stopPropagation(); if (e.button === 0) setSelectedId(blip.id); }} onPointerUp={e => e.stopPropagation()} onClick={() => setSelectedId(blip.id)}>{sprite && <img draggable={false} key={sprite} src={`https://docs-backend.fivem.net/blips/${sprite}.png`} alt="" loading="lazy" onError={e => { e.currentTarget.hidden = true; }} />}</button>; })}
       {pin && marker(pin, 'map-pin', 'Waypoint')}
       {me && marker(me, 'map-me', 'You are here')}
     </div>
@@ -109,6 +126,11 @@ function LiveMap({ onPick }: { onPick: (x: number, y: number) => void }) {
       <button className="icon-button" aria-label="Zoom out" onClick={() => zoomAt(1 / 1.5, box.current!.clientWidth / 2, box.current!.clientHeight / 2)}>−</button>
       <button className="icon-button" aria-label="Center on me" disabled={!me} onClick={() => me && center(me, Math.max(view.z, 6))}><Navigation size={16} /></button>
     </div>
+    {selected && <div className="map-place" aria-live="polite" onPointerDown={e => e.stopPropagation()} onPointerUp={e => e.stopPropagation()}>
+      <div><strong>{selected.label}</strong><small>{address || `${selected.x.toFixed(0)}, ${selected.y.toFixed(0)}`}</small></div>
+      <button className="icon-button" aria-label={`Set waypoint to ${selected.label}`} onClick={() => { setPin(selected); onPick(selected.x, selected.y); }}><Navigation size={17} /></button>
+      <button className="icon-button" aria-label="Close blip details" onClick={() => setSelectedId(undefined)}><X size={16} /></button>
+    </div>}
   </div>;
 }
 

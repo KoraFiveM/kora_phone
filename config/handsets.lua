@@ -8,7 +8,8 @@ Config.SimSwap = 'both' -- player | shop | both
 -- same item with its number. The inventory gateway does this; the phone re-checks it. Set false to skip the re-check.
 Config.ConsumeSimOnInstall = true
 Config.LaunchApps = { phone=true, contacts=true, messages=true, camera=true, gallery=true, gps=true,
-    settings=true, mail=true, notes=true, calculator=true, clock=true, weather=true, music=true }
+    settings=true, mail=true, notes=true, calculator=true, clock=true, weather=true, music=true, store=true,
+    banking=true, social=true, classifieds=true, services=true, property=true, vehicles=true, flash=true, moderation=true }
 Config.PhoneServices = {
     -- Replace coordinates and business job names for your server. Place each shop where no other interaction
     -- (bank teller/ATM, inventory shop, job point) sits within a few metres, or both prompts open together.

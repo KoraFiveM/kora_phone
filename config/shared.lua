@@ -44,13 +44,13 @@ Config.AppStore = true
 -- so an app set to true here may still show "Unavailable on this server" in the Store if those
 -- requirements aren't met.
 Config.Apps = {
-    banking     = false,
-    social      = false,
-    classifieds = false,
-    services    = false,
-    property    = false,
-    vehicles    = false,
-    flash       = false,
+    banking     = true,
+    social      = true,
+    classifieds = true,
+    services    = true,
+    property    = true,
+    vehicles    = true,
+    flash       = true,
     moderation  = false,
     gps         = true,
     notes       = true,

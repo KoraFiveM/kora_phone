@@ -3,7 +3,7 @@ import { normalizeData } from './types';
 import { isDemo, mockRequest } from './mock';
 import { recall, remember } from './lastScreen';
 import { photoBody, videoBody } from './chatTokens';
-import { starterApps } from './catalog';
+import { isOptional, starterApps } from './catalog';
 declare global { interface Window { GetParentResourceName?: () => string } }
 export const launchApps=new Set(['home','phone','contacts','messages','camera','gallery','gps','settings','notes','calculator','clock','weather','music','mail','store','banking','social','classifieds','services','property','vehicles','flash','moderation']);
 // mock.ts owns isDemo (import cycle)
@@ -73,15 +73,21 @@ const adaptConversation=(c:any):Conversation=>({...c,kind:c.type==='group'?'grou
 function adaptCall(v:any):Call{return{id:String(v.id),status:v.status==='rejected'?'declined':v.status,number:String(v.remoteNumber||''),direction:v.direction||'outgoing',deviceId:'kora_phone'} as Call}
 export const adaptLiveCall = adaptCall;
 let queue:Promise<void>=Promise.resolve();
-// The server keeps no per-phone app list yet, so installs are remembered in this NUI's storage.
-let installed:string[]|undefined=(()=>{try{const v=JSON.parse(recall('installed')??'null');return Array.isArray(v)?v.filter((x:unknown):x is string=>typeof x==='string'):undefined}catch{return undefined}})();
-// Same story for custom/addon apps registered by other resources: which ones this player has installed.
+// Custom add-on apps keep their install preferences in NUI storage.
 let customAppsInstalled:Record<string,boolean>=(()=>{try{const v=JSON.parse(recall('customApps')??'null');return v&&typeof v==='object'?v:{}}catch{return{}}})();
-export function api<K extends keyof Api>(action:K,payload:Api[K][0],id=requestId()):Promise<Api[K][1]>{if(isPreview)return mockRequest(action,payload,id);if(action==='uploadMedia')return uploadMedia(payload as any) as Promise<Api[K][1]>;const bound=action==='settings'?{...payload,expectedDeviceId:(payload as any).expectedDeviceId??activeDeviceId}:payload;const result=queue.then(()=>execute(action,bound as any,id));queue=result.then(()=>undefined,()=>undefined);return result as Promise<Api[K][1]>}
+export function api<K extends keyof Api>(action:K,payload:Api[K][0],id=requestId()):Promise<Api[K][1]>{if(isPreview)return mockRequest(action,payload,id);if(action==='uploadMedia')return uploadMedia(payload as any) as Promise<Api[K][1]>;const bound=action==='settings'||action==='installApp'?{...payload,expectedDeviceId:(payload as any).expectedDeviceId??activeDeviceId}:payload;const result=queue.then(()=>execute(action,bound as any,id));queue=result.then(()=>undefined,()=>undefined);return result as Promise<Api[K][1]>}
 async function execute(action:keyof Api,p:any,id:string):Promise<any>{switch(action){
   case'refresh':return reload();case'unlock':await server('security:unlock',{pin:p.pin});return reload();case'lock':await server('security:lock',{});return reload();
-  case'settings':{const {expectedDeviceId,...settings}=p;await server('settings:save',{...settings,expectedDeviceId});cached=normalizeData({...cached,settings});return cached;}
-  case'installApp':{const s=new Set(cached.installedApps||[]);p.installed?s.add(p.app):s.delete(p.app);installed=[...s] as string[];await server('settings:save',{...cached.settings,installedApps:installed});cached={...cached,installedApps:[...s] as any};return cached}
+  case'settings':{const {expectedDeviceId,...settings}=p;const saved=await server('settings:save',{...settings,installedApps:cached.installedApps,expectedDeviceId});cached=normalizeData({...cached,settings:saved});return cached;}
+  case'installApp':{
+    if(!isOptional(p.app)) throw new Error('This app is part of the phone');
+    if(p.expectedDeviceId!==activeDeviceId) throw new Error('Handset changed before these settings were saved');
+    const next=new Set(cached.installedApps);
+    if(p.installed) next.add(p.app); else next.delete(p.app);
+    const settings=await server('settings:save',{...cached.settings,installedApps:[...next],expectedDeviceId:p.expectedDeviceId});
+    cached=normalizeData({...cached,settings,installedApps:settings.installedApps});
+    return cached;
+  }
   case'contactSave':{const current=p.id?p:cached.contacts.find(c=>c.number===p.number) as any;if(p.remove)await server('contacts:delete',{id:current?.id});else await server(current?.id?'contacts:update':'contacts:create',{id:current?.id,displayName:p.name,phoneNumber:p.number,isFavorite:p.favorite===true,avatarMediaId:Number(cached.photos.find(x=>x.url===p.photo)?.id)||undefined});return(await reload()).data}
   case'history':{const page=await server<any>('calls:history',{limit:50});return(page.items||[]).map((x:any)=>({id:x.id,caller:x.callerNumber,recipient:x.calleeNumber,status:x.status,created_at:stamp(x.startedAt)})) as CallHistory[]}
   case'dial':return adaptCall(await server('calls:start',{to:p.number}));case'answer':return adaptCall(await server('calls:accept',{id:p.id}));case'hangup':await server(p.reject?'calls:reject':'calls:hangup',{id:p.id});return true;
@@ -129,8 +135,11 @@ async function execute(action:keyof Api,p:any,id:string):Promise<any>{switch(act
   case'createGroup':return server('messages:createGroup',{name:p.name,numbers:p.numbers});case'leaveGroup':await server('messages:leaveGroup',{conversationId:p.id});return true;
   case'customApp':{
     const map={...(cached.customApps||{})};
+    const list=await nui<{ identifier:string; defaultApp?:boolean }[]>('customList');
+    const app=Array.isArray(list)?list.find(item=>item.identifier===p.app):undefined;
+    if(!app) throw new Error('This app is unavailable');
     if('installed' in p) map[p.app]=p.installed===true;
-    else if(!map[p.app]) throw new Error('This app is not installed');
+    else if(!(map[p.app]??app.defaultApp)) throw new Error('This app is not installed');
     customAppsInstalled=map;remember('customApps',JSON.stringify(map));cached={...cached,customApps:map};return cached}
   case'pin':if(p.pin===''){await server('security:removePin',{currentPin:p.currentPin});return{hasPin:false}}await server('security:setPin',{pin:p.pin,currentPin:p.currentPin});return{hasPin:true};
   case'job':return server('jobs:getData');case'setDuty':return server('jobs:setDuty',{onDuty:p.onDuty});case'jobAction':return server('jobs:runAction',{action:p.action});

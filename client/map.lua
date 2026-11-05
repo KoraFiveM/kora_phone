@@ -70,31 +70,75 @@ function Map.Cleanup()
     if Map.active then Map.Hide() end
 end
 
--- Read existing client blips without changing their owning resource or route.
--- Sprite IDs currently fit below 1024; extend this bound for newer game builds.
+local registered = {}
+
+local function changed()
+    SendNUIMessage({ type = 'mapBlipsChanged' })
+end
+
+exports('RegisterMapBlip', function(handle, title)
+    local owner = GetInvokingResource()
+    if not owner or type(handle) ~= 'number' or math.tointeger(handle) == nil or not DoesBlipExist(handle) then return false end
+    if type(title) ~= 'string' or #title > 160 or not title:find('%S') then return false end
+    if registered[handle] and registered[handle].owner ~= owner then return false end
+    registered[handle] = { owner = owner, title = title }
+    changed()
+    return true
+end)
+
+exports('UnregisterMapBlip', function(handle)
+    local record = registered[handle]
+    if not record or record.owner ~= GetInvokingResource() then return false end
+    registered[handle] = nil
+    changed()
+    return true
+end)
+
+AddEventHandler('kora_lib:blips:changed', changed)
+AddEventHandler('onClientResourceStart', function(resource)
+    if resource == 'kora_lib' then changed() end
+end)
+
+AddEventHandler('onClientResourceStop', function(resource)
+    local removed = false
+    for handle, record in pairs(registered) do
+        if record.owner == resource then
+            registered[handle] = nil
+            removed = true
+        end
+    end
+    if removed or resource == 'kora_lib' then changed() end
+end)
+
 function Map.Blips()
-    local result, seen = {}, {}
-    local playerBlip = GetBlipFromEntity(PlayerPedId())
-    for sprite = 0, 1023 do
-        if sprite ~= 8 and sprite ~= 6 then
-            local blip = GetFirstBlipInfoId(sprite)
-            while DoesBlipExist(blip) and not seen[blip] do
-                seen[blip] = true
-                local display = GetBlipInfoIdDisplay(blip)
-                if blip ~= playerBlip and display >= 2 and display ~= 7 and GetBlipAlpha(blip) > 0 then
-                    local at = GetBlipInfoIdCoord(blip)
-                    if at.x == at.x and at.y == at.y and math.abs(at.x) <= 20000 and math.abs(at.y) <= 20000 then
-                        local r, g, b = GetHudColour(GetBlipHudColour(blip))
-                        -- GTA exposes no getter for names assigned with SetBlipName.
-                        local street = GetStreetNameFromHashKey((GetStreetNameAtCoord(at.x, at.y, at.z)))
-                        result[#result + 1] = {
-                            id = blip, x = at.x, y = at.y, sprite = sprite,
-                            label = street ~= '' and street or ('Map location ' .. sprite),
-                            colour = ('#%02x%02x%02x'):format(r, g, b)
-                        }
-                    end
-                end
-                blip = GetNextBlipInfoId(sprite)
+    local result, titles = {}, {}
+    if GetResourceState('kora_lib') == 'started' then
+        local ok, records = pcall(function() return Kora.blips.getRegistered() end)
+        if ok and type(records) == 'table' then
+            for _, record in ipairs(records) do
+                titles[record.handle] = record.label ~= '' and record.label or record.name
+            end
+        end
+    end
+    for handle, record in pairs(registered) do
+        if DoesBlipExist(handle) then titles[handle] = record.title
+        else registered[handle] = nil end
+    end
+    for handle, title in pairs(titles) do
+        if DoesBlipExist(handle) then
+            local display = GetBlipInfoIdDisplay(handle)
+            local at = GetBlipInfoIdCoord(handle)
+            if display >= 2 and display ~= 7 and GetBlipAlpha(handle) > 0
+                and math.abs(at.x) <= 20000 and math.abs(at.y) <= 20000 then
+                local r, g, b = GetHudColour(GetBlipHudColour(handle))
+                local street = GetStreetNameFromHashKey((GetStreetNameAtCoord(at.x, at.y, at.z)))
+                local zone = GetLabelText(GetNameOfZone(at.x, at.y, at.z))
+                result[#result + 1] = {
+                    id = handle, x = at.x, y = at.y, sprite = GetBlipSprite(handle),
+                    label = title, street = street ~= '' and street or nil,
+                    zone = zone ~= 'NULL' and zone or nil,
+                    colour = ('#%02x%02x%02x'):format(r, g, b)
+                }
             end
         end
     end
