@@ -6,7 +6,7 @@ name 'kora_phone'
 provide 'qbphone-stevie'
 author 'Kora Team'
 description 'Server-authoritative Kora phone'
-version '0.6.9'
+version '0.6.10'
 
 lua54 'yes'
 
