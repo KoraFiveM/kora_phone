@@ -45,6 +45,8 @@ KoraPhone.registerCallback('removePhonePin', 'pin', KoraPhone.Services.Phone.rem
 KoraPhone.registerCallback('getContacts', 'read', KoraPhone.Services.Contacts.list)
 KoraPhone.registerCallback('saveContact', 'mutation', KoraPhone.Services.Contacts.save)
 KoraPhone.registerCallback('deleteContact', 'mutation', KoraPhone.Services.Contacts.delete)
+KoraPhone.registerCallback('share:offer', 'shareNumber', KoraPhone.Services.Share.offer)
+KoraPhone.registerCallback('share:answer', 'mutation', KoraPhone.Services.Share.answer)
 KoraPhone.registerCallback('sendMessage', 'sendMessage', KoraPhone.Services.Messaging.send)
 KoraPhone.registerCallback('getMessages', 'read', KoraPhone.Services.Messaging.list)
 KoraPhone.registerCallback('getConversations', 'read', KoraPhone.Services.Messaging.listConversations)

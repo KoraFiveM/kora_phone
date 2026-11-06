@@ -13,6 +13,7 @@ Config.Server = {
         mediaUpload = { capacity = 4, refillPerSecond = 0.1 },
         jobMutation = { capacity = 8, refillPerSecond = 0.5 },
         pin = { capacity = 6, refillPerSecond = 0.1 },
+        shareNumber = { capacity = 3, refillPerSecond = 0.05 },
         ['community.read'] = { capacity = 25, refillPerSecond = 8 },
         ['community.profile'] = { capacity = 4, refillPerSecond = 0.25 },
         ['community.post'] = { capacity = 8, refillPerSecond = 0.5 },
@@ -55,7 +56,8 @@ Config.Server = {
         }
     },
     -- The Garage app lists the character's vehicles from QBCore's owned-vehicles table.
-    Garage = { Enabled = true, Table = 'player_vehicles' },
+    -- UseGarageLabels: show the kora_garages garage name instead of its raw id (needs kora_garages running).
+    Garage = { Enabled = true, Table = 'player_vehicles', UseGarageLabels = true },
     -- The Property app lists the character's homes from a housing script's tables. These are qb-houses' names;
     -- change them for another script. The app only appears if every table and column exists.
     Property = {

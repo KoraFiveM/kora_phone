@@ -1,16 +1,22 @@
 // Own only the recording tracks; the camera screen owns the renderer and canvas.
-export function recordGameClip(canvas: HTMLCanvasElement, seconds: number, maxBytes: number) {
-  if (typeof MediaRecorder === 'undefined' || !canvas.captureStream) throw new Error('Video recording is unavailable in this browser.');
-  const mimeType = ['video/webm;codecs=vp8', 'video/webm', 'video/mp4'].find(type => MediaRecorder.isTypeSupported(type));
-  if (!mimeType) throw new Error('This browser cannot record supported video clips.');
-  const stream = canvas.captureStream(20);
+// `audio` (optional) is the player's own microphone. Once passed in, its tracks belong to the recording and are
+// stopped with it. Without it the clip is silent, exactly as before.
+export function recordGameClip(canvas: HTMLCanvasElement, seconds: number, maxBytes: number, audio?: MediaStream) {
+  const stopAudio = () => audio?.getTracks().forEach(track => track.stop());
+  if (typeof MediaRecorder === 'undefined' || !canvas.captureStream) { stopAudio(); throw new Error('Video recording is unavailable in this browser.'); }
+  const withAudio = !!audio && audio.getAudioTracks().length > 0;
+  const types = withAudio ? ['video/webm;codecs=vp8,opus', 'video/webm', 'video/mp4'] : ['video/webm;codecs=vp8', 'video/webm', 'video/mp4'];
+  const mimeType = types.find(type => MediaRecorder.isTypeSupported(type));
+  if (!mimeType) { stopAudio(); throw new Error('This browser cannot record supported video clips.'); }
+  const video = canvas.captureStream(20);
+  const stream = withAudio && audio ? new MediaStream([...video.getVideoTracks(), ...audio.getAudioTracks()]) : video;
+  const release = () => { clearTimeout(timer); video.getTracks().forEach(track => track.stop()); stopAudio(); };
   let recorder: MediaRecorder;
-  try { recorder = new MediaRecorder(stream, { mimeType, videoBitsPerSecond: 1500000 }); }
-  catch (error) { stream.getTracks().forEach(track => track.stop()); throw error; }
+  try { recorder = new MediaRecorder(stream, withAudio ? { mimeType, videoBitsPerSecond: 1500000, audioBitsPerSecond: 64000 } : { mimeType, videoBitsPerSecond: 1500000 }); }
+  catch (error) { video.getTracks().forEach(track => track.stop()); stopAudio(); throw error; }
   let settled = false;
   let timer: ReturnType<typeof setTimeout>;
   let rejectResult: (error: Error) => void;
-  const release = () => { clearTimeout(timer); stream.getTracks().forEach(track => track.stop()); };
   const cancel = (message = 'Recording cancelled.') => {
     if (settled) return;
     settled = true;
@@ -40,4 +46,22 @@ export function recordGameClip(canvas: HTMLCanvasElement, seconds: number, maxBy
     } catch (error) { settled = true; release(); reject(error); }
   });
   return { result, stop: () => { if (!settled && recorder.state === 'recording') recorder.stop(); }, cancel };
+}
+
+// The player's own microphone through FiveM's browser (CEF). FiveM asks the player once and remembers the answer;
+// it always uses the Windows default input device. Resolves undefined when it is refused, missing or the player
+// does not answer within `timeoutMs`; a stream that arrives after the timeout is stopped at once.
+export function openMicrophone(timeoutMs = 15000): Promise<MediaStream | undefined> {
+  if (!navigator.mediaDevices?.getUserMedia) return Promise.resolve(undefined);
+  return new Promise(resolve => {
+    let done = false;
+    const timer = setTimeout(() => { done = true; resolve(undefined); }, timeoutMs);
+    navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true }, video: false })
+      .then(stream => {
+        if (done) { stream.getTracks().forEach(track => track.stop()); return; }
+        done = true; clearTimeout(timer);
+        resolve(stream.getAudioTracks().length ? stream : (stream.getTracks().forEach(track => track.stop()), undefined));
+      })
+      .catch(() => { if (!done) { done = true; clearTimeout(timer); resolve(undefined); } });
+  });
 }

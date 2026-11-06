@@ -221,6 +221,33 @@ function Camera.Cleanup()
     if KoraPhone.State.cameraMode or Camera.handle then finishMode() end
 end
 
+function Camera.MicSettings()
+    local mic = type(Config.Camera.micAudio) == 'table' and Config.Camera.micAudio or {}
+    return { enabled = mic.enabled == true, followVoice = mic.followVoice ~= false }
+end
+
+-- While a clip records, tell the UI when the player starts or stops talking (native voice state, the same one
+-- kora_voice and the HUD use). Polls every 100 ms only while recording with the camera open.
+function Camera.SetRecording(active)
+    Camera.recording = active == true and KoraPhone.State.cameraMode == true
+    if not Camera.recording or Camera.talkWatch then return Camera.recording end
+    Camera.talkWatch = true
+    CreateThread(function()
+        local last
+        while Camera.recording and KoraPhone.State.cameraMode do
+            local talking = NetworkIsPlayerTalking(PlayerId()) == true
+            if talking ~= last then
+                last = talking
+                KoraPhone.SendNui('camera:talking', { talking = talking })
+            end
+            Wait(100)
+        end
+        Camera.recording = false
+        Camera.talkWatch = false
+    end)
+    return true
+end
+
 local function lookHint()
     local _, key = lookSettings()
     BeginTextCommandDisplayHelp('STRING')

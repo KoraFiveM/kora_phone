@@ -82,7 +82,7 @@ Notes and limits:
 - Fivemanage's API has no delete call. Removing a photo or clip forgets it on the phone; the file stays in Fivemanage until your retention settings remove it.
 - `RequireTag = true` rejects any upload that does not carry its ticket tag. It works for uploads made from the phone itself (clips), but photos taken with `screenshot-basic` cannot carry the tag, so leave it `false` if you use the Camera app. If Fivemanage does not echo the metadata back, tag checks are skipped unless `RequireTag` is on.
 - Videos are hidden from the Gallery (they live in the posts and messages that use them) and count against `MaxVideosPerDay`, not the photo limit.
-- The webcam and microphone are the player's real ones, through the browser's recorder. There is no in-game camera capture for clips yet.
+- Flash and Pulse clips use the player's real webcam and microphone through the browser's recorder. Camera app clips record the game view plus, with `Config.Camera.micAudio`, the player's own microphone (see `docs/features.md`).
 
 ## Loading and schema
 

@@ -24,6 +24,8 @@ import { PhotoImage } from './Images';
 import { handsetIconStyle, handsetThemeTokens, resolveHandsetTheme } from './themes';
 import { SetupScreen } from './Setup';
 import { isHostMessage } from './nuiEvents';
+import { ShareRequestSheet, parseShareRequest } from './ShareRequest';
+import type { ShareRequest } from './ShareRequest';
 import { CustomAppScreen } from './CustomApps';
 import { recall, remember } from './lastScreen';
 import { isQuiet } from './quiet';
@@ -115,6 +117,7 @@ export default function App() {
   const [folded, setFolded] = useState(false);
   const [serviceOpen, setServiceOpen] = useState(false);
   const [serviceRequest, setServiceRequest] = useState<{id:string;label:string;operation:string}>();
+  const [shareRequest, setShareRequest] = useState<ShareRequest>();
   const [serviceResult, setServiceResult] = useState<{message:string;accountId?:string;recoveryCode?:string}>();
   const serviceDialog = useRef<HTMLDivElement>(null);
   const [videoRequest, setVideoRequest] = useState(false);
@@ -169,7 +172,10 @@ export default function App() {
   const [viewport, setViewport] = useState({ width: window.innerWidth, height: window.innerHeight });
   const [phonePosition, setPhonePosition] = useState<{ x: number; y: number } | null>(null);
   const phoneStage = useRef<HTMLDivElement>(null);
-  const phoneDrag = useRef<{ x: number; y: number; width: number; height: number } | null>(null);
+  // left/top: where the drag started; nextX/nextY: the latest clamped target;
+  // frame: the pending requestAnimationFrame. The stage follows the pointer
+  // through a CSS transform so React only re-renders on start and release.
+  const phoneDrag = useRef<{ x: number; y: number; width: number; height: number; left: number; top: number; nextX: number; nextY: number; frame: number } | null>(null);
   const audio = useRef<AudioContext | undefined>(undefined);
   const [videoOn, setVideoOn] = useState(false); const [remoteVideo, setRemoteVideo] = useState(false);
   const gameVideo = useRef<GameVideo | undefined>(undefined);
@@ -331,6 +337,7 @@ export default function App() {
         const problem = result.error;
         setServiceRequest(undefined); setServiceResult({ message: result.ok === false ? (typeof problem === 'string' ? problem : problem?.message || 'Service could not complete') : 'Mobile service completed.', accountId: details.accountId, recoveryCode: details.recoveryCode }); return;
       }
+      if (type === 'share:request') { const request = parseShareRequest(message.data); if (request) setShareRequest(request); return; }
       if (type === 'service:open') { stopVideo(); setShown(false); setServiceOpen(true); return; }
       if (type === 'customOpen' && !locked) navigate('custom', message.app);
       if (type === 'phone:open' || type === 'open') {
@@ -340,7 +347,7 @@ export default function App() {
       else if (type === 'bootstrap' && message.data) setDevice(adaptBootstrap(message.data));
       else if (type === 'phone:close' || type === 'phone:reset' || type === 'close') {
         if(type==='phone:reset'){notificationDevice.current=undefined;setNotifications([]);setEarlier([]);alarms.current=[];quietConfig.current={};contactNames.current.clear();remember('alarms','[]');remember('quiet','{}');}
-        setAlert(undefined); stopVideo(); setCoverCamera(false); coverAudio.current?.pause(); setCoverPlaying(false); setServiceOpen(false); setServiceRequest(undefined); setServiceResult(undefined); setShown(false); setDevice(undefined); setCall(undefined); setPin(''); }
+        setShareRequest(undefined); setAlert(undefined); stopVideo(); setCoverCamera(false); coverAudio.current?.pause(); setCoverPlaying(false); setServiceOpen(false); setServiceRequest(undefined); setServiceResult(undefined); setShown(false); setDevice(undefined); setCall(undefined); setPin(''); }
       else if (type === 'content:cleared') { setNotifications([]); setEarlier([]); setAlert(undefined); }
       else if (type === 'capture') setHiddenCapture(!!message.hidden);
       else if (type === 'phone:visibility') setHiddenCapture(message.data === false);
@@ -559,19 +566,29 @@ export default function App() {
   const startPhoneDrag = (event: React.PointerEvent<HTMLDivElement>) => {
     if (isPreview || event.button !== 0 || !phoneStage.current) return;
     const bounds = phoneStage.current.getBoundingClientRect();
-    phoneDrag.current = { x: event.clientX - bounds.left, y: event.clientY - bounds.top, width: bounds.width, height: bounds.height };
+    phoneDrag.current = { x: event.clientX - bounds.left, y: event.clientY - bounds.top, width: bounds.width, height: bounds.height, left: bounds.left, top: bounds.top, nextX: bounds.left, nextY: bounds.top, frame: 0 };
     setPhonePosition({ x: bounds.left, y: bounds.top });
     event.currentTarget.setPointerCapture(event.pointerId);
   };
   const movePhone = (event: React.PointerEvent<HTMLDivElement>) => {
     const drag = phoneDrag.current;
     if (!drag) return;
-    setPhonePosition({
-      x: Math.max(0, Math.min(event.clientX - drag.x, viewport.width - drag.width)),
-      y: Math.max(0, Math.min(event.clientY - drag.y, viewport.height - drag.height)),
+    drag.nextX = Math.max(0, Math.min(event.clientX - drag.x, viewport.width - drag.width));
+    drag.nextY = Math.max(0, Math.min(event.clientY - drag.y, viewport.height - drag.height));
+    if (drag.frame) return;
+    drag.frame = requestAnimationFrame(() => {
+      drag.frame = 0;
+      if (phoneStage.current) phoneStage.current.style.transform = `translate(${drag.nextX - drag.left}px, ${drag.nextY - drag.top}px)`;
     });
   };
-  const stopPhoneDrag = () => { phoneDrag.current = null; };
+  const stopPhoneDrag = () => {
+    const drag = phoneDrag.current;
+    phoneDrag.current = null;
+    if (!drag) return;
+    if (drag.frame) cancelAnimationFrame(drag.frame);
+    if (phoneStage.current) phoneStage.current.style.transform = '';
+    setPhonePosition({ x: drag.nextX, y: drag.nextY });
+  };
   const meta = appCopy(app);
   const active = call && ['ringing', 'active'].includes(call.status);
   const unread = (id: AppId) => notifications.filter(n => n.app === id).reduce((total, n) => total + (n.count ?? 1), 0);
@@ -653,6 +670,7 @@ export default function App() {
               {videoOn && <button className="icon-button" aria-label="Switch selfie or rear camera" disabled={busy} onClick={() => void run(async () => { await gameVideo.current?.flip(); })}><SwitchCamera size={22} /></button>}
               {active ? <button className="call-button" aria-label="End call" disabled={busy} onClick={() => run(async () => { await api('hangup', { id: call.id, reject: call.direction === 'incoming' && call.status === 'ringing' }); stopVideo(); setCall(undefined); })}><PhoneOff size={26} /></button> : <button className="primary" onClick={() => setCall(undefined)}>Done</button>}</div><small>{active ? 'YOUR WORLD, CONNECTED.' : 'CALL ENDED.'}</small></div>}
           </PhoneContext.Provider>
+          {shareRequest && <ShareRequestSheet key={shareRequest.id} request={shareRequest} onClose={() => setShareRequest(undefined)} onMessage={setToast} onSaved={() => { void api('refresh', {}).then(refreshed => { if (refreshed.data) updateData(refreshed.data); }).catch(() => undefined); }} />}
           {alert && !folded && !showNotifications && <HeadsUp key={alert.at} alert={{ ...alert, title: data.contacts.find(c => c.number === alert.title)?.name ?? alert.title }} locked={locked} onDismiss={() => setAlert(undefined)} onOpen={() => { if (!locked) { navigate(alert.app); markRead([alert]); } setAlert(undefined); }} />}
           {toast && <div className={`toast ${model === 'standard' ? 'nothing-status' : ''} ${locked ? 'toast-top' : app === 'home' ? 'toast-home' : ''}`} role="status"><span>{toast}</span><button aria-label="Dismiss notification" onClick={() => setToast('')}><X size={14} /></button></div>}
           {busy && <div className="busy-line" role="progressbar" aria-label="Working" />}

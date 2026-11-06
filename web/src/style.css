@@ -121,6 +121,10 @@ svg { flex-shrink: 0; }
 .home-page-dots { display: flex; justify-content: center; gap: 5px; padding: 13px 0 12px; }
 .home-page-dots i { width: 3px; height: 3px; background: var(--tone-cccccc,#cccccc); border-radius: 50%; }.home-page-dots i:first-child { background: var(--tone-454545,#454545); }
 .dock { background: var(--tone-dedede,#dedede); padding: 11px 12px; border-radius: 27px; display: flex; justify-content: space-between; }
+/* Keep the dock on screen: when the home screen is taller than the phone, only the app grid gives up height (and scrolls). */
+.home-screen > :not(.app-grid) { flex-shrink: 0; }
+.home-screen > .app-grid { min-height: 0; overflow-y: auto; overscroll-behavior: contain; scrollbar-width: none; padding: 3px 3px 4px; margin: -3px -3px -4px; }
+.home-screen > .app-grid::-webkit-scrollbar { display: none; }
 .dock-icon > span { background: var(--tone-f6f6f6,#f6f6f6); width: 47px; height: 47px; border: 0; }
 .dock-icon.app-phone > span { background: var(--red); color: var(--on-red,var(--tone-fff,#fff)); }
 .system-nav { height: 34px; min-height: 34px; display: flex; align-items: center; justify-content: space-around; padding: 0 35px; z-index: 12; }

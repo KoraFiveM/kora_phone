@@ -9,6 +9,11 @@ local function findOwnedId(deviceId, phoneNumber)
     )
 end
 
+-- The id of deviceId's contact with this number, or nil.
+function Contacts.findByNumber(deviceId, phoneNumber)
+    return findOwnedId(deviceId, phoneNumber)
+end
+
 function Contacts.list(deviceId)
     return MySQL.query.await([[
         SELECT c.id, c.display_name AS displayName, c.phone_number AS phoneNumber,

@@ -23,6 +23,7 @@ local callbacks = {
     ['contacts:update'] = 'kora_phone:server:saveContact',
     ['contacts:delete'] = 'kora_phone:server:deleteContact',
     ['contacts:list'] = 'kora_phone:server:getContacts',
+    ['share:answer'] = 'kora_phone:server:share:answer',
     ['messages:getConversations'] = 'kora_phone:server:getConversations',
     ['messages:startDirect'] = 'kora_phone:server:startDirectConversation',
     ['messages:markRead'] = 'kora_phone:server:markConversationRead',
@@ -128,7 +129,7 @@ end)
 
 RegisterNUICallback('camera:open', function(data, cb)
     local ok, errorCode = KoraPhone.Camera.Open(data)
-    cb({ ok = ok == true, error = errorCode, zoom = ok == true and KoraPhone.Camera.ZoomEnabled() or nil })
+    cb({ ok = ok == true, error = errorCode, zoom = ok == true and KoraPhone.Camera.ZoomEnabled() or nil, mic = ok == true and KoraPhone.Camera.MicSettings() or nil })
 end)
 
 -- The phone cursor owns the mouse wheel while it is up, so the Camera app forwards wheel steps here.
@@ -138,6 +139,11 @@ end)
 
 RegisterNUICallback('camera:facing', function(data, cb)
     cb({ ok = KoraPhone.Camera.SetFacing(type(data) == 'table' and data.front) })
+end)
+
+-- A video clip with followVoice is recording: report the game's talking state so the UI can open and close the mic.
+RegisterNUICallback('camera:recording', function(data, cb)
+    cb({ ok = KoraPhone.Camera.SetRecording(type(data) == 'table' and data.active == true) })
 end)
 
 RegisterNUICallback('camera:close', function(_, cb)

@@ -33,6 +33,12 @@ Config.Camera = {
         smoothSpeed = 10.0,
         selfie = { minFov = 30.0, maxFov = 60.0 },
     },
+    -- Sound in Camera video clips: the player's OWN microphone, recorded by the phone's browser (FiveM asks the
+    -- player once for microphone access and always uses their Windows default input). Other players' voices and
+    -- game sound cannot be recorded: FiveM gives the phone's browser no access to them (docs/features.md).
+    -- followVoice: the mic is only live while the game says the player is talking (push-to-talk or voice
+    -- activity), so a clip holds what nearby players actually heard from them. enabled = false: silent clips.
+    micAudio = { enabled = true, followVoice = true },
 }
 
 -- Phone prop and animation while the phone is open. The player holds a phone and plays the texting pose

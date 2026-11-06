@@ -2,7 +2,8 @@ import { useEffect, useRef, useState } from 'react';
 import { Camera, SwitchCamera } from 'lucide-react';
 import { api, isPreview, nui } from './api';
 import { createGameView } from './gameVideo';
-import { recordGameClip } from './gameRecording';
+import { openMicrophone, recordGameClip } from './gameRecording';
+import { isHostMessage } from './nuiEvents';
 import { usePhone } from './PhoneContext';
 
 export function CameraScreen() {
@@ -19,6 +20,8 @@ export function CameraScreen() {
   const [seconds, setSeconds] = useState(0);
   const [attempt, setAttempt] = useState(0);
   const [zoom, setZoom] = useState(false);
+  // From Config.Camera.micAudio (client): record the player's own microphone, optionally only while they are talking in game.
+  const [mic, setMic] = useState<{ enabled: boolean; followVoice: boolean }>({ enabled: false, followVoice: true });
 
   useEffect(() => {
     mounted.current = true;
@@ -29,9 +32,9 @@ export function CameraScreen() {
       if (isPreview) { setReady(true); return; }
       await closeRequest.current;
       if (cancelled) return;
-      const reply = await nui<{ok:boolean;error?:string;zoom?:boolean}>('camera:open', { preview: true, front });
+      const reply = await nui<{ok:boolean;error?:string;zoom?:boolean;mic?:{enabled?:boolean;followVoice?:boolean}}>('camera:open', { preview: true, front });
       if (!reply.ok) throw new Error(reply.error || 'The game camera is unavailable.');
-      if (!cancelled) setZoom(reply.zoom === true);
+      if (!cancelled) { setZoom(reply.zoom === true); setMic({ enabled: reply.mic?.enabled === true, followVoice: reply.mic?.followVoice !== false }); }
       if (cancelled || !canvas.current) return;
       view = createGameView(canvas.current, { preserveDrawingBuffer: true, onContextLost: () => {
         recording.current?.cancel('The game camera stopped. Please reopen Camera.');
@@ -86,10 +89,31 @@ export function CameraScreen() {
   const takeVideo = () => run(async () => {
     if (isPreview) throw new Error('In-game recording is available inside FiveM.');
     if (!canvas.current || !device.flash) return;
-    const current = recordGameClip(canvas.current, device.flash.maxSeconds, device.flash.maxBytes || 24 * 1024 * 1024);
+    let audio: MediaStream | undefined;
+    if (mic.enabled) {
+      audio = await openMicrophone();
+      if (!mounted.current || !canvas.current) { audio?.getTracks().forEach(track => track.stop()); return; }
+      if (!audio) notify('Microphone unavailable. Recording without sound.');
+    }
+    // followVoice: the mic track is live only while the game reports the player talking (push-to-talk or voice
+    // activity), so the clip holds what nearby players heard, not everything said at the desk.
+    const tracks = audio?.getAudioTracks() ?? [];
+    const follow = tracks.length > 0 && mic.followVoice;
+    const talking = (event: MessageEvent) => {
+      if (!isHostMessage(event.source, window, window.parent)) return;
+      const message = event.data;
+      if (message?.action === 'camera:talking') tracks.forEach(track => { track.enabled = message.data?.talking === true; });
+    };
+    let following = follow;
+    const unfollow = () => { if (following) { following = false; window.removeEventListener('message', talking); void nui('camera:recording', { active: false }).catch(() => undefined); } };
+    if (follow) { tracks.forEach(track => { track.enabled = false; }); window.addEventListener('message', talking); void nui('camera:recording', { active: true }).catch(() => undefined); }
+    let current: ReturnType<typeof recordGameClip>;
+    try { current = recordGameClip(canvas.current, device.flash.maxSeconds, device.flash.maxBytes || 24 * 1024 * 1024, audio); }
+    catch (problem) { unfollow(); throw problem; }
     recording.current = current; setSeconds(0); setCapturing(true);
     try {
       const blob = await current.result;
+      unfollow();
       if (!mounted.current) return;
       setCapturing(false);
       await api('uploadMedia', { blob });
@@ -99,7 +123,10 @@ export function CameraScreen() {
       if (refreshed.data) updateData(refreshed.data);
       navigate('gallery');
     } catch (problem) { if (mounted.current) throw problem; }
-    finally { recording.current = undefined; if (mounted.current) setCapturing(false); }
+    finally {
+      recording.current = undefined; if (mounted.current) setCapturing(false);
+      unfollow();
+    }
   });
 
   return <>
@@ -119,7 +146,7 @@ export function CameraScreen() {
         setFront(next);
       })}><SwitchCamera size={22} /></button>
     </div>
-    <p className="muted camera-caption">{mode === 'video' ? `Silent clips · up to ${device.flash ? device.flash.maxSeconds : 15}s` : front ? 'Selfie camera' : 'Rear camera'}</p>
+    <p className="muted camera-caption">{mode === 'video' ? `${mic.enabled ? (mic.followVoice ? 'Records your voice while you talk' : 'Records your microphone') : 'Silent clips'} · up to ${device.flash ? device.flash.maxSeconds : 15}s` : front ? 'Selfie camera' : 'Rear camera'}</p>
     <button className={`shutter ${mode === 'video' ? 'video-shutter' : ''}`} aria-label={capturing ? 'Stop recording' : mode === 'video' ? 'Record video' : 'Take photo'} disabled={!ready || (busy && !capturing)} onClick={() => {
       if (capturing) { recording.current?.stop(); return; }
       void (mode === 'video' ? takeVideo() : takePhoto());
