@@ -12,7 +12,6 @@ lua54 'yes'
 
 shared_scripts {
     '@kora_lib/init.lua',
-    '@kora_sql/init.lua',
     '@kora_core/init.lua',
     '@kora_core/shared/locale.lua',
     'config/shared.lua',
@@ -29,6 +28,7 @@ client_scripts {
 }
 
 server_scripts {
+    '@kora_sql/init.lua',
     'server/crypto.js',
     '@kora_sql/lib/MySQL.lua',
     'config/server.lua',
