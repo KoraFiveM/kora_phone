@@ -84,3 +84,6 @@ provide 'sd-phone'
 provide '17mov_Phone'
 provide 'yseries'
 provide 'high-phone'
+
+-- kora_qa: Gherkin test scenarios (converted legacy tests), see [kora]/kora_qa/README.md
+qa_feature 'tests/*.feature'
