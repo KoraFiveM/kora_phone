@@ -64,6 +64,16 @@ local function stripResourcePrefix(ui, resource)
     return ui
 end
 
+-- A function handed over through an export arrives as a callable funcref
+-- table, not a Lua function, so lifecycle hooks are accepted when callable.
+local function callable(value)
+    if type(value) == 'function' then return value end
+    if type(value) ~= 'table' then return nil end
+    if type(rawget(value, '__cfx_functionReference')) == 'string' then return value end
+    local mt = getmetatable(value)
+    return type(mt) == 'table' and mt.__call ~= nil and value or nil
+end
+
 local function register(app)
     if type(app) ~= 'table' or type(app.identifier) ~= 'string' or app.identifier == '' then
         return false, 'INVALID_APP'
@@ -85,10 +95,10 @@ local function register(app)
         -- than no price shown at all.
         price = tonumber(app.price),
         lifecycle = {
-            onOpen = type(app.onOpen) == 'function' and app.onOpen or nil,
-            onClose = type(app.onClose) == 'function' and app.onClose or nil,
-            onInstall = type(app.onInstall) == 'function' and app.onInstall or nil,
-            onDelete = type(app.onDelete) == 'function' and app.onDelete or nil,
+            onOpen = callable(app.onOpen),
+            onClose = callable(app.onClose),
+            onInstall = callable(app.onInstall),
+            onDelete = callable(app.onDelete),
         },
     }
     SendNUIMessage({ type = 'customRegistry' })

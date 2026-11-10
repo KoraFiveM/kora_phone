@@ -46,7 +46,9 @@ RegisterNetEvent('kora_phone:client:wallet:shown', function(card)
     Notifications.Push({ title = card.name:sub(1, 45) .. ' showed you their ID', body = body, message = body, app = 'banking', urgent = true })
 end)
 
-RegisterCommand('testnotify', function(_, args)
+-- Named testphonenotify: kora_lib-playground registers a plain /testnotify,
+-- and whichever resource starts last would silently own the shared name.
+RegisterCommand('testphonenotify', function(_, args)
     local kind = args[1]
     local samples = {
         { title = 'Jules Chen', body = 'Are you still on for Pillbox tonight?', app = 'messages' },
@@ -62,7 +64,7 @@ RegisterCommand('testnotify', function(_, args)
         { title = 'System', body = 'Phone connected.', app = 'system' },
     }
     if kind == 'sms' then
-        TriggerEvent('kora_phone:client:messages:new', { id = 0, conversationId = 0, senderNumber = '5550109999', body = 'Test text from /testnotify', isMine = 0 })
+        TriggerEvent('kora_phone:client:messages:new', { id = 0, conversationId = 0, senderNumber = '5550109999', body = 'Test text from /testphonenotify', isMine = 0 })
         return
     end
     if kind == 'all' then
@@ -80,11 +82,11 @@ RegisterCommand('testnotify', function(_, args)
                 return
             end
         end
-        print('[kora_phone] /testnotify: unknown app "' .. kind .. '"')
+        print('[kora_phone] /testphonenotify: unknown app "' .. kind .. '"')
         return
     end
     Notifications.Push({ title = samples[1].title, body = samples[1].body, message = samples[1].body, app = samples[1].app })
-    print('[kora_phone] /testnotify [all|sms|messages|phone|banking|mail|social|classifieds|gps|weather|flash|clock|system]')
+    print('[kora_phone] /testphonenotify [all|sms|messages|phone|banking|mail|social|classifieds|gps|weather|flash|clock|system]')
 end, false)
 
 KoraPhone.Notifications = Notifications
