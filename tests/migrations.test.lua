@@ -16,7 +16,7 @@ if root == script then root = "." end
 local stub = { calls = 0, spec = nil, reports = {}, err = nil, throw = nil }
 local printed = {}
 _G.print = function(...) printed[#printed + 1] = table.concat({ ... }, ' ') end
-Kora = { sql = { NULL = '\0qbsql:null\0', ensureTables = function(spec)
+Kora = { sql = { NULL = '\0kora_sql:null\0', ensureTables = function(spec)
     stub.calls = stub.calls + 1; stub.spec = spec
     if stub.throw then error(stub.throw) end
     if stub.err then return nil, stub.err end

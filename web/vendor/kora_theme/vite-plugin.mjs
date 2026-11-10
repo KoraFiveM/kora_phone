@@ -3,7 +3,7 @@ import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 
 const resourceRoot = dirname(fileURLToPath(import.meta.url));
-const developmentBase = "/@qbtheme";
+const developmentBase = "/@kora_theme";
 const productionBase = "https://cfx-nui-kora_theme";
 const runtimeVersion = "5";
 const contentTypes = {
@@ -14,10 +14,10 @@ const contentTypes = {
   woff2: "font/woff2",
 };
 
-export default function qbtheme() {
+export default function kora_theme() {
   let command = "build";
   return {
-    name: "qbtheme",
+    name: "kora_theme",
     enforce: "pre",
     configResolved(config) { command = config.command; },
     transformIndexHtml: {
@@ -25,7 +25,7 @@ export default function qbtheme() {
       handler(html) {
         const base = command === "serve" ? developmentBase : productionBase;
         return html
-          .replaceAll("__QBTHEME_BASE__", base)
+          .replaceAll("__KORA_THEME_BASE__", base)
           // The shared runtime is externally linked, so it has no Vite content
           // hash. Version it explicitly to prevent CEF retaining an older
           // loader across reconnects.
@@ -39,7 +39,7 @@ export default function qbtheme() {
         // dev server shows the same palette as the resource. fonts/ holds the
         // catalog, fonts.css (imported by theme.css) and the woff2 files.
         const name = ["theme.css", "theme.js", "theme.json"].find((file) => url === `${developmentBase}/${file}`)
-          ?? url?.match(/^\/@qbtheme\/(fonts\/(?:[a-z0-9-]+\/)?[a-z0-9-]+\.(?:css|json|woff2|txt))$/)?.[1];
+          ?? url?.match(/^\/@kora_theme\/(fonts\/(?:[a-z0-9-]+\/)?[a-z0-9-]+\.(?:css|json|woff2|txt))$/)?.[1];
         if (!name) return next();
         let body;
         try {

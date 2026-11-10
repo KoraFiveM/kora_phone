@@ -23,7 +23,7 @@ end
 
 local function hasPin(device) return device.hasPin == 1 or device.hasPin == true end
 
-local function pepper() return GetConvar('qbphone_pin_pepper', '') end
+local function pepper() return GetConvar('kora_phone_pin_pepper', '') end
 
 local function newSalt()
     local parts = {}

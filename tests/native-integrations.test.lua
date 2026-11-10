@@ -1,4 +1,4 @@
--- Run from qbphone-stevie: lua5.4 tests/native-integrations.test.lua
+-- Run from kora_phone-stevie: lua5.4 tests/native-integrations.test.lua
 local balance, duty, phone, allowDuty = 100, false, true, true
 Config = { RequirePhoneItem = true, PhoneItem = 'phone', Server = {} }
 KoraPhone = { Permissions = { requireDevice = function() return {} end } }
@@ -32,7 +32,7 @@ exports = { kora_core = {
         duty = value; return true
     end,
 } }
-dofile('server/integrations/qbcore.lua')
+dofile('server/integrations/kora_core.lua')
 dofile('server/integrations/banking.lua')
 dofile('server/integrations/jobs.lua')
 dofile('server/services/jobs.lua')

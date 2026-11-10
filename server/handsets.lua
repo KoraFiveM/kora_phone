@@ -445,7 +445,7 @@ KoraPhone.Services.Phone.bootstrap=function(src)
         if result.data.features and result.data.features.video then
             local servers={}; for _,ice in ipairs(Config.Calls.Video.IceServers or {}) do servers[#servers+1]=ice end
             local turn=exports[GetCurrentResourceName()]:turnCredentials(src)
-            local urls=GetConvar('qbphone_turn_urls','')
+            local urls=GetConvar('kora_phone_turn_urls','')
             if turn and urls~='' then servers[#servers+1]={urls=urls,username=turn.username,credential=turn.credential} end
             result.data.features.video.iceServers=servers
         end
@@ -478,7 +478,7 @@ KoraPhone.Repositories.Phones.clearPin=function(id)
 end
 function H.start()
     local gateway=pcall(function() exports.kora_inventory:PhoneItemTransaction(0,{op='probe'}) end)
-    if not gateway then error('Install the qbinventory PhoneItemTransaction companion before starting kora_phone') end
+    if not gateway then error('Install the kora_inventory PhoneItemTransaction companion before starting kora_phone') end
     for name,model in pairs(Config.Handsets) do
         exports.kora_core:registerShared('items',name,{name=name,label=({standard='Orchard One',flip='Circuit Flip',fold='Atlas Fold'})[model],weight=250,type='item',image='phone.png',unique=true,useable=true,shouldClose=true,description='Personal handset'})
         exports.kora_core:createUseable(name,function(src,item)

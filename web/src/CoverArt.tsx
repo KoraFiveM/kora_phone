@@ -1,6 +1,6 @@
 import { useId, useState } from 'react';
 import { imageUrl } from './Images';
-import { QB_MARK_PATH } from './LockLogo';
+import { KORA_MARK_PATH } from './LockLogo';
 import type { Settings } from './types';
 
 // Original vector scenes for the flip phone's folded back panel. Drawn for this project, so there
@@ -173,8 +173,8 @@ function Scene({ id }: { id: Scene }) {
       <defs><radialGradient id={`${g}r`} cx=".85" cy="0" r="1.1"><stop offset="0" stopColor="#8f3220" stopOpacity=".75" /><stop offset="1" stopColor="#8f3220" stopOpacity="0" /></radialGradient></defs>
       <rect width="300" height="340" fill="#17140f" />
       <rect width="300" height="340" fill={`url(#${g}r)`} />
-      <path d={QB_MARK_PATH} transform="translate(112 118) scale(.26) translate(-0.53 -0.56)" fill="#d86b59" opacity=".1" />
-      <path d={QB_MARK_PATH} transform="translate(105 18) scale(.088) translate(-0.53 -0.56)" fill="#d86b59" opacity=".9" />
+      <path d={KORA_MARK_PATH} transform="translate(112 118) scale(.26) translate(-0.53 -0.56)" fill="#d86b59" opacity=".1" />
+      <path d={KORA_MARK_PATH} transform="translate(105 18) scale(.088) translate(-0.53 -0.56)" fill="#d86b59" opacity=".9" />
     </>;
   }
 }

@@ -119,7 +119,7 @@ test("settings accepts a good appOrder", function()
     equal(PhoneValidation.settings(okSettings({ appOrder = { "banking", "notes" } })).appOrder[2], "notes")
 end)
 test("settings rejects non-table", function() equal(PhoneValidation.settings("x"), nil) end)
-test("settings accepts the qbcore theme and wallpaper", function()
+test("settings accepts the kora_core theme and wallpaper", function()
     local out = PhoneValidation.settings(okSettings({ theme = "kora_core", wallpaper = "kora_core" }))
     equal(out.theme, "kora_core"); equal(out.wallpaper, "kora_core")
 end)
@@ -342,13 +342,13 @@ test("conversation pages preserve tied sort keys without changing numeric cursor
 end)
 
 
-test("settings maps legacy qbcore ids to kora_core", function()
-    local out = PhoneValidation.settings(okSettings({ theme = "qbcore", wallpaper = "qbcore", phoneCase = "qbcore" }))
+test("settings maps legacy kora_core ids to kora_core", function()
+    local out = PhoneValidation.settings(okSettings({ theme = "kora_core", wallpaper = "kora_core", phoneCase = "kora_core" }))
     equal(out.theme, "kora_core"); equal(out.wallpaper, "kora_core"); equal(out.phoneCase, "kora_core")
 end)
 test("settings rejects legacy ids when AcceptLegacyIds is off", function()
     Config.Settings.AcceptLegacyIds = false
-    local out = PhoneValidation.settings(okSettings({ wallpaper = "qbcore" }))
+    local out = PhoneValidation.settings(okSettings({ wallpaper = "kora_core" }))
     Config.Settings.AcceptLegacyIds = true
     equal(out, nil)
 end)

@@ -69,7 +69,7 @@ Live video travels through WebRTC, directly or through your configured TURN rela
 
 Place this resource in your server's resources folder and name its directory **`kora_phone-stevie`** (or **`kora_phone`**). The inventory gateway only accepts those two resource names.
 
-Integrate [the companion kora_inventory server file](integration/qbinventory/server.lua) with your `[v2]` inventory resource. It supplies `PhoneItemTransaction`, which handles handset binding, SIM exchange and resale through inventory authority. Compare it with your installed version before replacing files.
+Integrate [the companion kora_inventory server file](integration/kora_inventory/server.lua) with your `[v2]` inventory resource. It supplies `PhoneItemTransaction`, which handles handset binding, SIM exchange and resale through inventory authority. Compare it with your installed version before replacing files.
 
 Keep one phone provider enabled. Stop the previous phone before starting this replacement.
 
@@ -100,9 +100,9 @@ Circuit Mobile counters are preset at the Digital Den doors (Vinewood, Mirror Pa
 Set secrets **before** starting the resources. Keep the PIN pepper stable between restarts and include it in your secure server backups.
 
 ```cfg
-set qbphone_pin_pepper "REPLACE_WITH_A_LONG_RANDOM_SECRET"
+set kora_phone_pin_pepper "REPLACE_WITH_A_LONG_RANDOM_SECRET"
 set kora_fivemanage_token "YOUR_FIVEMANAGE_TOKEN"
-set qbphone_workshop_wifi_password "YOUR_PRIVATE_HOTSPOT_PASSWORD"
+set kora_phone_workshop_wifi_password "YOUR_PRIVATE_HOTSPOT_PASSWORD"
 
 ensure kora_lib
 ensure kora_sql
@@ -120,8 +120,8 @@ ensure kora_phone
 Add these alongside the convars above when using a TURN service that supports time-limited REST credentials:
 
 ```cfg
-set qbphone_turn_urls "turn:YOUR_TURN_HOST:3478"
-set qbphone_turn_secret "YOUR_TURN_REST_SHARED_SECRET"
+set kora_phone_turn_urls "turn:YOUR_TURN_HOST:3478"
+set kora_phone_turn_secret "YOUR_TURN_REST_SHARED_SECRET"
 ```
 
 STUN servers are configured in `Config.Calls.Video.IceServers` in `config/server.lua`. Keep API tokens and shared TURN secrets server-side.

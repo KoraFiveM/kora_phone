@@ -209,21 +209,21 @@ assert.match(html, /<meta[^>]+charset=/i, "UI entry should declare charset");
 assert.match(html, /<meta[^>]+viewport/i, "UI entry should declare viewport");
 const remoteScripts = [...html.matchAll(/<script[^>]+src=["'](https?:\/\/[^"']+)/gi)].map((match) => match[1]);
 assert.ok(remoteScripts.every((src) => /^https:\/\/cfx-nui-kora_theme\/theme\.js(?:\?|$)/.test(src)),
-  "Only qbtheme's shared runtime may be loaded remotely");
+  "Only kora_theme's shared runtime may be loaded remotely");
 console.log("PASS web-contract: manifest and UI entry contract valid");
 }
 
 main().catch(error => { console.error(error); process.exitCode = 1; });
 
 {
-  // Setup ids must stay in step with the server allow-list, and legacy "qbcore" ids are normalised.
+  // Setup ids must stay in step with the server allow-list, and legacy "kora_core" ids are normalised.
   const setupSrc = fs.readFileSync(path.join(root, "web/src/Setup.tsx"), "utf8");
   const validationSrc = fs.readFileSync(path.join(root, "shared/validation.lua"), "utf8");
   const allowed = validationSrc.match(/SETTINGS_WALLPAPERS = \{([^}]*)\}/)[1].match(/\x27([a-z_]+)\x27/g).map(v => v.slice(1, -1));
   const offered = [...setupSrc.match(/WALLPAPERS = \[([\s\S]*?)\] as const/)[1].matchAll(/id: \x27([a-z_]+)\x27/g)].map(m => m[1]);
   assert.ok(offered.length > 0 && offered.every(id => allowed.includes(id)), "every setup wallpaper id is accepted by the server allow-list");
   assert.ok(offered.includes("kora_core"), "the default Signature wallpaper uses kora_core");
-  assert.match(fs.readFileSync(path.join(root, "web/src/types.ts"), "utf8"), /wallpaper === \x27qbcore\x27\) legacy\.wallpaper = \x27kora_core\x27/, "legacy qbcore wallpaper is normalised");
+  assert.match(fs.readFileSync(path.join(root, "web/src/types.ts"), "utf8"), /wallpaper === \x27qbcore\x27\) legacy\.wallpaper = \x27kora_core\x27/, "legacy kora_core wallpaper is normalised");
 }
 
 {

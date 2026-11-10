@@ -1,4 +1,4 @@
--- Adapted from qbcore2/qbphone-Stevie- legacy support; mail belongs to the current character.
+-- Adapted from qbcore2/kora_phone-Stevie- legacy support; mail belongs to the current character.
 local Repo=KoraPhone.Repositories.LegacyMail
 local function text(value,maximum)
     return type(value)=='string' and #value>0 and #value<=maximum and value or nil

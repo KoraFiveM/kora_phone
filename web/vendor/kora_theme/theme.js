@@ -111,7 +111,7 @@
       const custom = family(value);
       if (font && family(font.stack, 400)) out[slot] = font.stack;
       else if (custom) out[slot] = family(fallback, 400) ? `${custom}, ${fallback}` : custom;
-      else console.warn(`[qbtheme] ignoring invalid theme.json font "${slot}"`);
+      else console.warn(`[kora_theme] ignoring invalid theme.json font "${slot}"`);
     }
     return out;
   }
@@ -147,7 +147,7 @@
   async function loadPlayerTheme() {
     if (typeof GetParentResourceName !== "function") return;
     try {
-      const response = await fetch(`https://${GetParentResourceName()}/qbtheme:ready`, {
+      const response = await fetch(`https://${GetParentResourceName()}/kora_theme:ready`, {
         method: "POST",
         headers: { "Content-Type": "application/json; charset=UTF-8" },
         body: "{}",
@@ -178,24 +178,24 @@
       return true;
     } catch (error) {
       if (remaining > 0) window.setTimeout(() => void loadTheme(remaining - 1), retryDelay);
-      else console.error("[qbtheme] could not load theme.json", error);
+      else console.error("[kora_theme] could not load theme.json", error);
       return false;
     }
   }
 
   window.addEventListener("message", (event) => {
     if (event.origin !== "nui://game") return;
-    if (event.data?.action === "qbtheme:override") {
+    if (event.data?.action === "kora_theme:override") {
       overrides = event.data.data || null;
       applyConfigured();
-    } else if (event.data?.action === "qbtheme:fonts") {
+    } else if (event.data?.action === "kora_theme:fonts") {
       serverFonts = fontPayload(event.data.data);
       applyFonts();
-    } else if (event.data?.action === "qbtheme:refresh") {
+    } else if (event.data?.action === "kora_theme:refresh") {
       void loadTheme();
     }
   });
 
-  window.QBTheme = Object.freeze({ applyTokens, refresh: () => loadTheme() });
+  window.KoraTheme = Object.freeze({ applyTokens, refresh: () => loadTheme() });
   void loadTheme().then(() => loadPlayerTheme());
 })();

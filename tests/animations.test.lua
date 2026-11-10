@@ -45,7 +45,7 @@ local function setup(config)
     _G.DeleteEntity = function(e) ent[e] = nil; deleted[#deleted + 1] = e end
     _G.CreateObject = function(hash) local id = 100 + #props + 1; ent[id] = true; props[#props + 1] = { id = id, hash = hash }; return id end
     _G.AttachEntityToEntity = function(e, _, bone, ox, oy, oz) props[#props].bone, props[#props].ox = bone, ox end
-    _G.QB = {
+    _G.Kora = {
         cache = {
             ped = function() pedReads = pedReads + 1; return 1 end,
             onChange = function(key, fn) if key == "ped" then pedListeners[#pedListeners + 1] = fn end end,
@@ -57,7 +57,7 @@ local function setup(config)
             isPlaying = function() return true end,
         },
     }
-    _G.Kora = _G.QB -- the working tree may use either global name
+    _G.Kora = _G.Kora -- the working tree may use either global name
     dofile(root .. "/client/animations.lua")
 end
 

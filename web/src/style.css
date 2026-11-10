@@ -1180,7 +1180,7 @@ svg { flex-shrink: 0; }
 .now-playing h3 { font-size:14px; margin:0 0 12px; }.media-embed { width:100%; height:152px; border:0; border-radius:12px; display:block; background:var(--tone-e5e5e5,#e5e5e5); }audio.media-embed { height:40px; }
 .alarm-row-actions { display:flex; align-items:center; gap:8px; flex-shrink:0; }.alarm-row-actions .primary,.alarm-row-actions .text-button { padding:6px 12px; font-size:11px; }
 
-/* QBCore theme: palette from qbcore.org (background #17140f, foreground #f2ece1, accent #d86b59). Derived from Ember so neutrals stay warm. */
+/* QBCore theme: palette from kora_core.org (background #17140f, foreground #f2ece1, accent #d86b59). Derived from Ember so neutrals stay warm. */
 .phone-screen.theme-kora_core { --red:#d86b59; --paper:rgb(23, 20, 15);
 --tone-0005:#fff2eb55;
 --tone-0a0a0a:#fceae3;
@@ -1340,7 +1340,7 @@ svg { flex-shrink: 0; }
 .wallpaper-kora_core .lock-orbit span { color: #d86b59; }
 .wallpaper-kora_core .custom-wallpaper { opacity: .35; }
 
-/* qbtheme supplies these defaults in FiveM and through Vite's /@qbtheme route in local development. */
+/* kora_theme supplies these defaults in FiveM and through Vite's /@kora_theme route in local development. */
 :root .phone-screen { --red: hsl(var(--primary)); --on-red: hsl(var(--primary-foreground)); --paper: hsl(var(--surface)); --muted: hsl(var(--muted-foreground)); --line: hsl(var(--border)); }
 
 .map-blip { position: absolute; display: grid; place-items: center; width: 18px; height: 18px; padding: 0; border: 0; background: transparent; transform: translate(-50%, -50%) scale(calc(1 / var(--z))); cursor: pointer; }

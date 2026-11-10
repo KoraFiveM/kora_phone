@@ -93,7 +93,7 @@ local function host()
         setPlayerCall = function(source, channel) state.voice[#state.voice + 1] = { 'join', source, channel }; return true end,
         removePlayerFromCall = function(source, channel) state.voice[#state.voice + 1] = { 'leave', source, channel }; return true end,
     }
-    exports = { qbcore = {
+    exports = { kora_core = {
         getPlayerData = function(_, src) return players[src] and players[src].PlayerData end,
         getItemByName = function(_, src) return players[src] and { name = 'phone' } end,
         createCallback = function(_, name, fn) state.callbacks[name] = fn end,
@@ -148,7 +148,7 @@ local function host()
             return Citizen.Await(p)
         end }
     end
-    for _, file in ipairs({ 'server/integrations/qbcore.lua', 'server/repositories/phones.lua', 'server/repositories/blocks.lua',
+    for _, file in ipairs({ 'server/integrations/kora_core.lua', 'server/repositories/phones.lua', 'server/repositories/blocks.lua',
         'server/repositories/calls.lua', 'server/services/phone.lua', 'server/rate_limits.lua', 'server/permissions.lua',
         'server/sessions.lua', 'server/integrations/voice.lua', 'server/services/calling.lua' }) do dofile(root .. '/' .. file) end
     local file = assert(io.open(root .. '/server/callbacks.lua')); local callbackSource = file:read('*a'); file:close()
