@@ -4,7 +4,7 @@ game 'gta5'
 name 'kora_phone'
 author 'Kora Team'
 description 'Server-authoritative Kora phone'
-version '0.6.15'
+version '0.1.0'
 
 lua54 'yes'
 
