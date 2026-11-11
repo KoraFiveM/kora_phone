@@ -1,0 +1,96 @@
+/* Galaxy Z Flip style: the bottom half stays still and the top half (the cover, wearing the top half's bezel while
+   it moves) swings on the hinge. The body snaps to its folded size as a fold starts and back to full size as an
+   unfold ends, both at moments when the moving half hides the change. top keeps the bottom edge still. */
+.phone.style-flip { top:0; transition:height 0s .6s, top 0s .6s; }
+.phone.style-flip.is-folded { transition:none; }
+.phone.style-flip { height:820px; border-radius:32px; padding:8px; perspective:2400px; perspective-origin:50% calc(100% - 412px); }
+.style-flip .phone-screen { border-radius:24px; transition:opacity .15s; }
+.flip-crease { position:absolute; top:50%; left:8px; right:8px; height:18px; transform:translateY(-50%); background:linear-gradient(transparent,#00000020 40%,#ffffff12 50%,#00000018 60%,transparent); pointer-events:none; z-index:65; }
+.flip-hinge { position:absolute; top:calc(50% - 10px); width:9px; height:20px; border-radius:3px; background:linear-gradient(90deg,#161616,#888,#222); z-index:66; }.flip-hinge.left { left:-3px; }.flip-hinge.right { right:-3px; }
+.fold-control { position:absolute; right:19px; top:-27px; background:var(--tone-2f2f2f,#2f2f2f); color:var(--tone-f5f5f5,#f5f5f5); border:1px solid var(--tone-d0d0d0,#d0d0d0); font:9px var(--font-mono, 'Space Mono',monospace); letter-spacing:2px; padding:5px 12px; border-radius:10px; box-shadow:0 1px 0 var(--tone-1e1e1e,#1e1e1e); }
+.phone.style-flip.is-folded { height:420px; top:calc(400px * var(--phone-scale, 1)); box-shadow:0 24px 45px #0005,inset 0 0 0 3px #686868,inset 0 -8px 0 #111; }
+.is-folded .phone-screen { visibility:hidden; opacity:0; pointer-events:none; }
+.is-folded .flip-crease { display:none; }
+.flip-cover { position:absolute; bottom:8px; left:8px; right:8px; height:404px; padding:26px 20px 17px; border-radius:24px; background:linear-gradient(145deg,var(--tone-ddd,#ddd),var(--tone-333,#333) 70%); color:var(--tone-202020,#202020); transform-origin:50% 0; animation:fold-cover .6s cubic-bezier(.45,0,.25,1); box-shadow:0 6px 18px var(--tone-33333330,#33333330), inset 0 0 0 1px var(--tone-d8d8d8,#d8d8d8); z-index:70; }
+.flip-cover.unfolding { animation:unfold-cover .8s linear forwards; pointer-events:none; }
+/* The cover is the back of the top half. It starts flipped up above the hinge, where the player sees that half's
+   switched-off inner glass (brightness 0), then comes down toward them and turns into the cover once it passes
+   edge-on at 90deg, where the swap can't be seen. */
+@keyframes fold-cover {
+  0% { transform:rotateX(180deg); filter:brightness(0); box-shadow:0 0 0 8px #151515; }
+  49.9% { filter:brightness(0); }
+  50% { transform:rotateX(90deg); filter:brightness(.55); }
+  99% { box-shadow:0 0 0 8px #151515; }
+  100% { transform:rotateX(0); filter:brightness(1); }
+}
+/* .6s of swing (same easing as the fold, set per segment), then the landed half's dark glass fades out over .2s
+   while the display comes on under it. */
+@keyframes unfold-cover {
+  0% { transform:rotateX(0); filter:brightness(1); animation-timing-function:cubic-bezier(.45,0,.55,.6); }
+  1% { box-shadow:0 0 0 8px #151515; }
+  37.5% { transform:rotateX(90deg); filter:brightness(.55); animation-timing-function:cubic-bezier(.4,.45,.25,1); }
+  37.6% { filter:brightness(0); }
+  75% { transform:rotateX(180deg); filter:brightness(0); box-shadow:0 0 0 8px #151515; opacity:1; }
+  100% { transform:rotateX(180deg); filter:brightness(0); opacity:0; }
+}
+/* Folding: copies of the display made at the moment of folding (see snapshotForFold). The face follows the cover's
+   swing exactly (same geometry, same keyframe segments) and is drawn mirrored so it reads upright while it is
+   flipped up; it drops away edge-on at 90deg, where the cover takes over. Both go when the phone is shut. */
+.fold-rest,.fold-face { position:absolute; left:8px; right:8px; bottom:8px; overflow:hidden; pointer-events:none; }
+.fold-rest { height:401px; border-radius:0 0 24px 24px; z-index:60; }
+.fold-face { height:404px; border-radius:0 0 24px 24px; transform-origin:50% 0; z-index:71; box-shadow:0 0 0 8px #151515; animation:fold-face .6s cubic-bezier(.45,0,.25,1) forwards; }
+.fold-face-inner { position:absolute; inset:0; overflow:hidden; transform:scaleY(-1); }
+.phone .fold-copy-top,.phone .fold-copy-bottom { position:absolute; left:0; width:100%; height:802px; visibility:visible; opacity:1; animation:none; }
+.phone .fold-copy-top { top:0; }.phone .fold-copy-bottom { bottom:0; }
+@keyframes fold-face {
+  0% { transform:rotateX(180deg); filter:brightness(1); }
+  50% { transform:rotateX(90deg); filter:brightness(.55); opacity:1; }
+  50.1%,100% { transform:rotateX(90deg); opacity:0; }
+}
+/* Opening uses screen copies too: the lower display returns at the hinge, while the upper display
+   rotates down from its real folded position instead of appearing as a flat cross-fade. */
+.unfold-rest,.unfold-face { position:absolute; left:8px; right:8px; overflow:hidden; pointer-events:none; z-index:71; }
+.unfold-rest { top:412px; height:401px; border-radius:0 0 24px 24px; animation:unfold-rest .8s linear forwards; }
+.unfold-face { top:8px; height:404px; border-radius:24px 24px 0 0; transform-origin:50% 100%; animation:unfold-face .8s linear forwards; }
+.phone .unfold-copy-top,.phone .unfold-copy-bottom { position:absolute; left:0; width:100%; height:802px; visibility:visible; opacity:1; animation:none; }
+.phone .unfold-copy-top { top:0; }.phone .unfold-copy-bottom { bottom:0; }
+.style-flip.is-unfolding .phone-screen { animation:screen-on .8s linear; }
+@keyframes unfold-rest { 0%,37.5% { opacity:0; } 37.6%,100% { opacity:1; } }
+@keyframes unfold-face { 0% { transform:rotateX(180deg); filter:brightness(0); opacity:0; } 37.5% { transform:rotateX(90deg); filter:brightness(.45); opacity:0; } 37.6% { filter:brightness(1); opacity:1; } 100% { transform:rotateX(0); filter:brightness(1); opacity:1; } }
+@keyframes screen-on { 0%,99% { opacity:0; } 100% { opacity:1; } }
+.cover-lenses { display:flex; gap:8px; margin-bottom:18px; }.cover-lenses i { width:29px; height:29px; border-radius:50%; background:radial-gradient(circle,var(--tone-121b27,#121b27) 0 25%,var(--tone-05070a,#05070a) 28% 50%,var(--tone-555,#555) 55%,var(--tone-101014,#101014) 65%); border:2px solid var(--tone-909096,#909096); box-shadow:0 2px 4px var(--tone-0009,#0009); }
+.flip-cover > .eyebrow { position:absolute; top:36px; right:23px; font-size:8px; color:var(--tone-3a3a42,#3a3a42); letter-spacing:1.3px; }
+.cover-display { background:var(--tone-101014,#101014); border:1px solid var(--tone-84848d,#84848d); border-radius:20px; padding:22px 17px 17px; box-shadow:inset 2px 2px 0 var(--tone-ffffff30,#ffffff30), inset 0 0 0 1px var(--tone-555,#555); }
+.cover-display .dot-clock { width:100%; height:51px; color:var(--tone-ffffff,#ffffff); }.cover-display p { font-size:11px; color:var(--tone-6a6a6a,#6a6a6a); margin:13px 0; }.cover-notice { display:flex; gap:9px; align-items:center; border-top:1px solid var(--tone-35353a,#35353a); padding:12px 0; font-size:11px; color:var(--tone-828282,#828282); }.cover-display small { font:7px 'Space Mono',monospace; letter-spacing:1.3px; color:var(--tone-8a8a92,#8a8a92); }
+.cover-open { width:100%; display:flex; align-items:center; justify-content:center; gap:12px; margin-top:14px; padding:11px; background:var(--tone-55555d,#55555d); color:var(--tone-e8e8ec,#e8e8ec); border:1px solid var(--tone-8a8a92,#8a8a92); border-radius:13px; font-size:12px; font-weight:500; letter-spacing:.4px; }.cover-close { display:block; margin:10px auto 0; font-size:10px; color:var(--tone-999999,#999999); letter-spacing:.6px; }
+@media(prefers-reduced-motion:reduce) { .phone.style-flip,.phone.style-flip.is-folded { transition:none; } .flip-cover,.style-flip.is-unfolding .phone-screen { animation:none; } .flip-cover { transform:none; } .flip-cover.unfolding { display:none; } }
+
+/* Phone case: art covers the folded phone's back panel. The display turns into dark glass over it,
+   so the clock and notification text always sit on a dark backdrop, whatever the art is. */
+.flip-cover.has-art { overflow: hidden; background: #101014; }
+.cover-art { position: absolute; inset: 0; z-index: 0; border-radius: inherit; overflow: hidden; }
+.cover-art > svg, .cover-art img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.flip-cover.has-art > :not(.cover-art):not(.eyebrow) { position: relative; z-index: 1; }
+.flip-cover.has-art > .eyebrow { z-index: 1; color: #fff; text-shadow: 0 1px 3px #000c; }
+.flip-cover.has-art .cover-display { background: rgba(10, 10, 14, .68); backdrop-filter: blur(6px); }
+.flip-cover.has-art .cover-open { background: rgba(10, 10, 14, .6); backdrop-filter: blur(6px); }
+.flip-cover.has-art .cover-close { color: #fff; text-shadow: 0 1px 3px #000c; }
+
+/* Legibility on the cover: the date and hint were dim grey on the dark display. */
+.cover-display p { color: #a8a8ae; }
+.cover-display small { color: #a4a4ac; }
+.flip-cover.has-art .cover-display p { color: #ebe6dc; }
+.flip-cover.has-art .cover-notice { color: #f4efe6; border-top-color: #ffffff38; }
+.flip-cover.has-art .cover-display small { color: #dcd6cb; }
+/* "Put away" is a control, so over art it gets a glass pill instead of floating on the scene. */
+.flip-cover.has-art .cover-close { display: block; width: max-content; margin: 10px auto 0; padding: 6px 16px; border-radius: 14px; background: rgba(10, 10, 14, .62); backdrop-filter: blur(6px); text-shadow: none; }
+/* The label sits over the art, so it gets a glass pill (white text was unreadable on light scenes). */
+.flip-cover.has-art > .eyebrow { display: inline-flex; align-items: center; gap: 5px; padding: 4px 9px; border-radius: 10px; background: rgba(10, 10, 14, .6); backdrop-filter: blur(6px); text-shadow: none; }
+
+/* Folded: the two corner stubs looked like stray feet. The top half folds down onto the bottom half, so the
+   hinge ends up along the top edge; show a single metal hinge barrel centred there instead. (Unfolded, the small side tabs stay where they were.) */
+.phone.style-flip.is-folded .flip-hinge.right { display: none; }
+.phone.style-flip.is-folded .flip-hinge.left { left: 50%; right: auto; top: -5px; bottom: auto; width: 132px; height: 11px; margin-left: -66px; border-radius: 6px; background: linear-gradient(180deg, #b4b4b8, #6c6c72 38%, #2a2a2e 70%, #141416); box-shadow: 0 3px 6px #0006, inset 0 1px 0 #ffffff55; }
+.phone.style-flip.is-folded .flip-hinge.left::before, .phone.style-flip.is-folded .flip-hinge.left::after { content: ''; position: absolute; top: 2px; bottom: 2px; width: 2px; border-radius: 1px; background: #0000004d; }
+.phone.style-flip.is-folded .flip-hinge.left::before { left: 10px; }
+.phone.style-flip.is-folded .flip-hinge.left::after { right: 10px; }

@@ -1,0 +1,33 @@
+{
+  "name": "Kora green",
+  "fonts": { "heading": "default", "body": "default", "mono": "default" },
+  "colors": {
+    "background": "#101010",
+    "surface": "#171717",
+    "surfacePopover": "#1B1B1B",
+    "surfaceRaised": "#242424",
+    "surfaceHover": "#2A2A2A",
+    "foreground": "#F5F5F5",
+    "mutedForeground": "#949494",
+    "border": "#343434",
+    "borderStrong": "#444444",
+    "control": "#666666",
+    "controlHover": "#7A7A7A",
+    "primary": "#95FF00",
+    "success": "#22C55E",
+    "warning": "#F59E0B",
+    "danger": "#EF4444",
+    "info": "#D4D4D4",
+    "armour": "#3B9EFF"
+  },
+  "presets": [
+    { "label": "Crimson", "colour": "#DC143C" },
+    { "label": "Orange", "colour": "#F97316" },
+    { "label": "Amber", "colour": "#F59E0B" },
+    { "label": "Emerald", "colour": "#22C55E" },
+    { "label": "Cyan", "colour": "#06B6D4" },
+    { "label": "Blue", "colour": "#3B82F6" },
+    { "label": "Violet", "colour": "#7C3AED" },
+    { "label": "Pink", "colour": "#EC4899" }
+  ]
+}

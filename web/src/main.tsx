@@ -1,0 +1,10 @@
+import ReactDOM from 'react-dom/client';
+import App from './App';
+import './style.css';
+import './flip.css';
+import './polish.css';
+import './social.css';
+import { isDemo } from './mock';
+import { installDemoKeys } from './demoKeys';
+if (isDemo) installDemoKeys();
+ReactDOM.createRoot(document.getElementById('root')!).render(<App />);

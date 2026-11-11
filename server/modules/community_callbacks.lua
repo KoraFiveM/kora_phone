@@ -1,0 +1,31 @@
+local register = KoraPhone.registerCallback
+local community = function(name, rateKey, handler) register(name, 'community.' .. rateKey, handler) end
+
+community('social:createAccount', 'profile', KoraPhone.Services.Social.createAccount)
+community('social:getFeed', 'read', KoraPhone.Services.Social.getFeed)
+community('social:getProfile', 'read', KoraPhone.Services.Social.getProfile)
+community('social:createPost', 'post', KoraPhone.Services.Social.createPost)
+community('social:deletePost', 'post', KoraPhone.Services.Social.deletePost)
+community('social:toggleLike', 'reaction', KoraPhone.Services.Social.toggleLike)
+community('social:follow', 'follow', function(source, payload) return KoraPhone.Services.Social.follow(source, payload, true) end)
+community('social:unfollow', 'follow', function(source, payload) return KoraPhone.Services.Social.follow(source, payload, false) end)
+community('social:createComment', 'comment', KoraPhone.Services.Social.createComment)
+community('social:deleteComment', 'comment', KoraPhone.Services.Social.deleteComment)
+community('social:getComments', 'read', KoraPhone.Services.Social.getComments)
+community('social:block', 'block', KoraPhone.Services.Social.setBlock)
+community('social:report', 'report', KoraPhone.Services.Moderation.report)
+
+community('market:getListings', 'read', KoraPhone.Services.Marketplace.getListings)
+community('market:getListing', 'read', KoraPhone.Services.Marketplace.getListing)
+community('market:createListing', 'listing', KoraPhone.Services.Marketplace.createListing)
+community('market:updateListing', 'listing', KoraPhone.Services.Marketplace.updateListing)
+community('market:removeListing', 'listing', function(source, payload)
+    return KoraPhone.Services.Marketplace.setStatus(source, payload, 'removed')
+end)
+community('market:markSold', 'listing', function(source, payload)
+    return KoraPhone.Services.Marketplace.setStatus(source, payload, 'sold')
+end)
+community('market:contactSeller', 'contact', KoraPhone.Services.Marketplace.contactSeller)
+
+community('moderation:getQueue', 'moderation', KoraPhone.Services.Moderation.getQueue)
+community('moderation:resolve', 'moderation', KoraPhone.Services.Moderation.resolve)

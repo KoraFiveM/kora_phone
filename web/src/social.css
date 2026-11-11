@@ -1,0 +1,127 @@
+/* Flash and Pulse share the phone's semantic theme colors and control states. */
+.phone-screen .app-content-social { padding: 0; overflow: hidden; display: flex; flex-direction: column; }
+.flash-app,.pulse-app,.pulse-thread { height: 100%; min-height: 0; display: flex; flex-direction: column; color: var(--ui-ink); }
+.social-header { flex: 0 0 58px; padding: 4px 17px 9px; display: flex; align-items: center; gap: 8px; }
+.social-header h1 { display: flex; align-items: center; gap: 7px; margin: 0; font-size: 24px; letter-spacing: -1px; font-weight: 700; }
+.social-header h1 i { width: 5px; height: 5px; border-radius: 50%; background: var(--red); align-self: flex-end; margin: 0 0 8px -4px; }
+.social-brand-mark { display: flex; align-items: center; }
+.social-header-actions { margin-left: auto; }
+.social-kicker,.social-section-title,.social-endnote { font: 8px var(--font-mono, 'Space Mono',monospace); letter-spacing: 1.2px; color: var(--ui-muted); }
+.social-endnote { text-align: center; margin: 28px 0 16px; font-size: 7px; line-height: 1.8; }
+.social-avatar { flex-shrink: 0; width: 47px; height: 47px; display: inline-flex; align-items: center; justify-content: center; border-radius: 17px; background: var(--ui-surface); border: 1px solid var(--ui-line); color: var(--ui-ink); overflow: hidden; font-size: 14px; font-weight: 600; letter-spacing: -.5px; }
+.social-avatar img { width: 100%; height: 100%; object-fit: cover; }
+.social-avatar.is-group { border-style: dashed; border-radius: 50%; }
+.social-filter { display: flex; align-items: center; gap: 5px; }
+.social-filter button { display: inline-flex; align-items: center; justify-content: center; gap: 7px; min-height: 36px; padding: 8px 13px; border-radius: 20px; font-size: 12px; color: var(--ui-muted); white-space: nowrap; }
+.social-filter button[aria-pressed=true] { background: var(--ui-action); color: var(--ui-action-ink); }
+.social-filter button span { font-size: 9px; opacity: .65; }
+.social-search { display: flex; gap: 9px; align-items: center; background: var(--ui-surface); border: 1px solid var(--ui-line); border-radius: 14px; padding: 0 12px; color: var(--ui-muted); }
+.phone-screen .social-search input { min-height: 43px; background: transparent; border: 0; padding: 10px 0; font-size: 12px; }
+.social-section-title { display: flex; align-items: center; justify-content: space-between; margin-bottom: 15px; }
+.pulse-inbox-scroll,.flash-scroll { flex: 1; min-height: 0; overflow-y: auto; overscroll-behavior: contain; }
+.pulse-inbox-scroll { padding: 0 20px 12px; }
+.pulse-intro { position: relative; padding: 15px 0 19px; overflow: hidden; }
+.pulse-intro h2 { font-size: 30px; letter-spacing: -1.3px; font-weight: 500; margin: 9px 0 8px; }
+.pulse-intro p { font-size: 12px; color: var(--ui-muted); margin: 0; }
+.pulse-wave { position: absolute; right: 1px; bottom: 17px; height: 24px; width: 53px; display: flex; gap: 3px; align-items: center; transform: scaleY(.48); transform-origin: center; opacity: .6; }
+.pulse-wave i { width: 3px; border-radius: 3px; background: var(--red); }
+.pulse-quick-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 9px; margin: 3px 0 15px; }
+.pulse-quick-actions button { display: flex; align-items: center; gap: 8px; padding: 15px 12px; border: 1px solid var(--ui-line); background: var(--ui-field); border-radius: 17px; font-size: 11px; font-weight: 600; }
+.pulse-quick-actions button > svg:last-child { margin-left: auto; color: var(--ui-muted); }
+.pulse-people { padding: 24px 0 14px; }
+.pulse-contact-strip { display: flex; gap: 17px; overflow-x: auto; padding: 1px 2px 8px; scrollbar-width: none; }
+.pulse-contact-strip button { flex: 0 0 48px; display: flex; flex-direction: column; align-items: center; gap: 8px; padding: 0; font-size: 10px; }
+.pulse-contact-strip .social-avatar { border-radius: 50%; width: 48px; height: 48px; }
+.pulse-contact-strip button > span:last-child { max-width: 56px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: var(--ui-muted); }
+.pulse-inbox-scroll > .social-filter { margin: 10px 0 4px; }
+.pulse-chat-row { width: 100%; display: flex; align-items: center; gap: 11px; padding: 18px 0; border-bottom: 1px solid var(--ui-line); text-align: left; }
+.pulse-chat-copy { min-width: 0; flex: 1; }
+.pulse-chat-copy > span { display: flex; justify-content: space-between; gap: 7px; align-items: baseline; }
+.pulse-chat-copy strong { font-size: 13px; font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.pulse-chat-copy time { flex-shrink: 0; font-size: 9px; color: var(--ui-muted); }
+.pulse-chat-copy small { display: flex; align-items: center; gap: 5px; font-size: 11px; color: var(--ui-muted); margin-top: 6px; line-height: 1.5; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+.pulse-chat-row > svg { color: var(--ui-muted); }
+.pulse-picker { margin-top: 18px; }
+.pulse-picker button { display: flex; align-items: center; gap: 12px; text-align: left; width: 100%; padding: 13px 0; border-bottom: 1px solid var(--ui-line); }
+.pulse-picker button > span:nth-child(2) { flex: 1; min-width: 0; }
+.pulse-picker strong { font-size: 13px; display: block; overflow-wrap: anywhere; }
+.pulse-picker small { font-size: 11px; color: var(--ui-muted); display: block; margin-top: 4px; }
+.pulse-thread-header { display: flex; align-items: center; gap: 8px; padding: 8px 12px 15px; flex-shrink: 0; border-bottom: 1px solid var(--ui-line); }
+.pulse-thread-header .social-avatar { width: 37px; height: 37px; border-radius: 13px; font-size: 11px; }
+.pulse-thread-header > div { flex: 1; min-width: 0; }
+.pulse-thread-header h2 { font-size: 14px; margin: 0 0 4px; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+.pulse-thread-header small { color: var(--ui-muted); font-size: 10px; }
+.pulse-message-list { flex: 1; overflow-y: auto; min-height: 0; padding: 0 18px 15px; overscroll-behavior: contain; }
+.conversation-intro { display: flex; flex-direction: column; align-items: center; padding: 28px 0 20px; gap: 9px; text-align: center; }
+.conversation-intro .social-avatar { width: 58px; height: 58px; border-radius: 21px; }
+.conversation-intro strong { font-size: 14px; }
+.conversation-intro > span:last-child { font-size: 10px; color: var(--ui-muted); }
+.pulse-message-group { display: flex; flex-direction: column; }
+.pulse-day { align-self: center; font: 8px var(--font-mono, 'Space Mono',monospace); text-transform: uppercase; letter-spacing: .7px; color: var(--ui-muted); margin: 15px 0 22px; }
+.pulse-bubble { max-width: 88%; align-self: flex-start; background: var(--ui-surface); color: var(--ui-ink); border: 1px solid var(--ui-line); border-radius: 18px 18px 18px 5px; padding: 12px 13px 8px; margin-bottom: 9px; overflow-wrap: anywhere; min-width: 65px; }
+.pulse-bubble.sent { background: var(--ui-action); color: var(--ui-action-ink); border-color: transparent; border-radius: 18px 18px 5px 18px; align-self: flex-end; }
+.pulse-bubble p { font-size: 13px; line-height: 1.6; margin: 0 0 7px; white-space: pre-wrap; }
+.pulse-bubble time { display: block; text-align: right; font-size: 9px; opacity: .65; }
+.pulse-bubble :is(img,video) { display: block; max-width: 100%; max-height: 280px; border-radius: 11px; margin-bottom: 9px; }
+.pulse-bubble > svg { width: 100%; height: 80px; opacity: .6; }
+.pulse-sender { display: block; font-size: 11px; margin-bottom: 8px; }
+.pulse-shared { display: flex; align-items: center; gap: 4px; font-size: 9px; opacity: .7; margin-bottom: 9px; }
+.pulse-first-message { font-size: 12px; text-align: center; color: var(--ui-muted); margin: 25px 0; }
+.pulse-composer { display: flex; align-items: flex-end; gap: 8px; padding: 13px 15px; border-top: 1px solid var(--ui-line); background: var(--ui-bg); flex-shrink: 0; }
+.phone-screen .pulse-composer textarea { flex: 1; resize: vertical; min-height: 42px; max-height: 100px; font-size: 12px; border-radius: 15px; padding: 11px; }
+.pulse-composer > .icon-button { margin-bottom: 3px; }
+.pulse-send { height: 42px; width: 42px; flex-shrink: 0; display: grid; place-items: center; background: var(--red); color: var(--on-red,#fff); border-radius: 15px; }
+.flash-discover-bar { display: flex; justify-content: space-between; gap: 6px; align-items: center; padding: 0 17px 12px; border-bottom: 1px solid var(--ui-line); }
+.flash-city-label { display: flex; align-items: center; gap: 4px; font: 7px var(--font-mono, 'Space Mono',monospace); color: var(--ui-muted); letter-spacing: .6px; white-space: nowrap; }
+.flash-city-label i { height: 4px; width: 4px; background: var(--red); border-radius: 50%; }
+.flash-scroll { padding: 0 17px 10px; }
+.flash-editorial { padding: 20px 2px; }
+.flash-editorial h2 { font-weight: 500; font-size: 26px; letter-spacing: -1px; margin: 8px 0 6px; }
+.flash-editorial p { font-size: 11px; color: var(--ui-muted); margin: 0; }
+.flash-card { overflow: hidden; border: 1px solid var(--ui-line); border-radius: 23px; margin-bottom: 20px; background: var(--ui-field); }
+.flash-media-wrap { position: relative; height: 330px; background: #20251f; color: #fff; overflow: hidden; }
+.flash-media-wrap > :is(img,video) { width: 100%; height: 100%; display: block; object-fit: cover; }
+.flash-format { position: absolute; left: 14px; top: 14px; display: flex; align-items: center; gap: 5px; padding: 7px 9px; font: 7px var(--font-mono, 'Space Mono',monospace); letter-spacing: .8px; border: 1px solid #ffffff45; background: #0005; border-radius: 20px; }
+.flash-sound { position: absolute; right: 12px; top: 12px; width: 33px; height: 33px; display: grid; place-items: center; border-radius: 50%; background: #0008; color: #fff; }
+.flash-media-signature { position: absolute; right: 17px; bottom: 12px; font: 700 32px var(--font-mono, 'Space Mono',monospace); letter-spacing: -4px; text-shadow: 0 2px 12px #0008; pointer-events: none; }
+.flash-card-body { padding: 14px 15px 4px; }
+.flash-author { display: flex; align-items: center; gap: 8px; }
+.flash-author .social-avatar { width: 32px; height: 32px; border-radius: 50%; font-size: 10px; }
+.flash-author > div { flex: 1; min-width: 0; }
+.flash-author strong { font-size: 12px; display: block; overflow-wrap: anywhere; }
+.flash-author small { display: block; color: var(--ui-muted); margin-top: 3px; font-size: 9px; }
+.flash-author > .icon-button { color: var(--ui-muted); }
+.flash-caption-text { font-size: 12px; line-height: 1.6; margin: 12px 0; white-space: pre-wrap; overflow-wrap: anywhere; max-height: 110px; overflow-y: auto; }
+.flash-reactions { display: flex; align-items: center; gap: 17px; border-top: 1px solid var(--ui-line); margin-top: 13px; padding: 5px 0; }
+.flash-reactions button { min-height: 39px; display: flex; align-items: center; gap: 6px; font-size: 11px; padding: 0; }
+.flash-reactions .liked { color: var(--red); }
+.flash-reactions .flash-share { margin-left: auto; }
+.flash-capture-dock { padding: 10px 24px 8px; flex-shrink: 0; border-top: 1px solid var(--ui-line); background: var(--ui-bg); }
+.flash-capture-dock button { display: flex; justify-content: center; align-items: center; gap: 11px; min-height: 46px; width: 100%; background: var(--ui-action); color: var(--ui-action-ink); border-radius: 18px; font-size: 12px; font-weight: 600; }
+.flash-capture-dock button > svg:last-child { margin-left: auto; opacity: .6; }
+.flash-capture-dock button > svg:first-child { margin-right: auto; }
+.flash-media-error { height: 100%; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 15px; }
+.flash-media-error p { font-size: 12px; margin: 0; }
+.flash-media-error button { border: 1px solid #fff8; border-radius: 20px; padding: 9px 17px; font-size: 11px; }
+.social-sheet-backdrop { position: absolute; inset: 44px 0 34px; z-index: 30; background: #0008; display: flex; align-items: flex-end; }
+.social-sheet { width: 100%; max-height: 100%; min-height: 220px; background: var(--ui-bg); color: var(--ui-ink); border-radius: 26px 26px 0 0; box-shadow: 0 -12px 35px #0002; display: flex; flex-direction: column; outline: none; animation: social-sheet-enter .2s ease-out; }
+.sheet-handle { height: 4px; width: 32px; border-radius: 4px; background: var(--ui-line); margin: 11px auto 8px; flex-shrink: 0; }
+.social-sheet > header { display: flex; gap: 10px; align-items: flex-start; padding: 10px 20px 19px; flex-shrink: 0; border-bottom: 1px solid var(--ui-line); }
+.social-sheet > header > div { flex: 1; }
+.social-sheet h2 { font-size: 24px; letter-spacing: -.8px; font-weight: 500; margin: 0 0 7px; }
+.social-sheet header p { font-size: 12px; line-height: 1.5; color: var(--ui-muted); margin: 0; }
+.social-sheet-body { padding: 18px 20px 25px; min-height: 0; overflow-y: auto; overscroll-behavior: contain; }
+.social-record-stage { position: relative; background: #222821; color: #f2f3ef; min-height: 180px; border-radius: 20px; padding: 27px 15px; margin: 16px 0 20px; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; overflow: hidden; }
+.social-record-stage > video { width: 100%; max-height: 250px; border-radius: 12px; }
+.social-record-stage p { font-size: 17px; margin: 15px 0 8px; letter-spacing: -.3px; }
+.social-record-stage small { font-size: 10px; color: #bcc5b7; }
+.capture-corner { position: absolute; height: 17px; width: 17px; border-color: #ffffff60; border-style: solid; pointer-events: none; }
+.capture-corner.tl { top: 15px; left: 15px; border-width: 1px 0 0 1px; }.capture-corner.br { bottom: 15px; right: 15px; border-width: 0 1px 1px 0; }
+.capture-tabs { justify-content: center; }
+.flash-caption-field { font-size: 11px; color: var(--ui-muted); display: block; margin-bottom: 16px; }
+.flash-caption-field textarea { display: block; margin-top: 7px; min-height: 70px; }
+.flash-caption-field > span { display: block; text-align: right; font-size: 9px; margin-top: 5px; }
+.social-publish-note { text-align: center; font-size: 10px; color: var(--ui-muted); margin: 13px 0 0; }
+.flash-share-preview { display: flex; gap: 13px; align-items: center; padding: 15px; background: var(--ui-surface); border-radius: 17px; }
+.flash-share-preview strong { font-size: 12px; }.flash-share-preview p { font-size: 11px; color: var(--ui-muted); margin: 6px 0 0; line-height: 1.5; max-height: 65px; overflow: hidden; }
+@keyframes social-sheet-enter { from { transform: translateY(18px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }

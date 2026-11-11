@@ -1,0 +1,128 @@
+@import '@fontsource/space-grotesk/latin-400.css';
+@import '@fontsource/space-grotesk/latin-500.css';
+
+/* The standard handset's Nothing-inspired OS. Model identity still comes from the item. */
+.phone.handset-standard {
+  font-family:'Space Grotesk','DM Sans',sans-serif;
+  padding:8px;
+  border:1px solid #555;
+  border-radius:38px;
+  background:#202020;
+  box-shadow:none;
+}
+.phone.handset-standard .phone-screen {
+  --ui-bg:#000; --ui-surface:#111; --ui-field:#1a1a1a;
+  --ui-ink:#e8e8e8; --ui-muted:#999; --ui-line:#333;
+  --ui-action:#e8e8e8; --ui-action-ink:#000;
+  --nothing-display:#fff; --paper:var(--ui-bg); --muted:var(--ui-muted);
+  --line:var(--ui-line); --red:#d71921;
+  --wp-ink:var(--ui-ink); --wp-ink-muted:var(--ui-muted);
+  border:1px solid #111;
+  border-radius:30px;
+  background:var(--ui-bg);
+  color:var(--ui-ink);
+  color-scheme:dark;
+}
+.phone.handset-standard .phone-screen.theme-light {
+  --ui-bg:#f5f5f5; --ui-surface:#fff; --ui-field:#f0f0f0;
+  --ui-ink:#1a1a1a; --ui-muted:#666; --ui-line:#ccc;
+  --ui-action:#1a1a1a; --ui-action-ink:#fff; --nothing-display:#000;
+  color-scheme:light;
+}
+.phone.handset-standard .phone-screen.show-wallpaper.wallpaper-kora_core,
+.phone.handset-standard .phone-screen.show-wallpaper.wallpaper-plain {
+  background:var(--ui-bg);
+}
+.phone.handset-standard .camera-dot {
+  top:15px; left:calc(50% - 5px); width:10px; height:10px;
+  border:2px solid #2c2c2c; border-radius:50%; background:#070707; box-shadow:none;
+}
+.phone.handset-standard .status-bar { min-height:43px; padding:4px 22px 0; font-family:'Space Mono',monospace; font-size:10px; font-weight:400; }
+.phone.handset-standard .qb-mark { display:none; }
+.phone.handset-standard .home-screen { padding:8px 20px 0; color:var(--ui-ink); }
+.phone.handset-standard .home-top { margin:8px 0 20px; }
+.phone.handset-standard :is(.eyebrow,.home-section,.section-label,.settings-label,.lock-bottom) {
+  font-family:'Space Mono',monospace; font-size:9px; font-weight:400; letter-spacing:.08em; text-transform:uppercase;
+}
+.phone.handset-standard .home-top .eyebrow { color:var(--ui-muted); font-size:9px; }
+.phone.handset-standard .home-top .icon-button { width:29px; height:29px; }
+.phone.handset-standard .home-top .icon-button > svg { width:15px; height:15px; }
+.phone.handset-standard :is(.home-screen,.lock-screen) > .nothing-clock { color:var(--nothing-display); width:100%; }
+.phone.handset-standard .home-screen > .nothing-clock { margin:0 0 30px; padding:4px 0; }
+.phone.handset-standard .nothing-clock .dot-clock { width:100%; height:auto; color:inherit; }
+.phone.handset-standard .home-widgets { grid-template-columns:minmax(0,1fr) 80px; gap:12px; margin-bottom:28px; }
+.phone.handset-standard .home-widgets :is(.city-widget,.settings-widget) {
+  border:1px solid var(--ui-line); border-radius:16px; background:var(--ui-surface);
+  color:var(--ui-ink); box-shadow:none; backdrop-filter:none; min-height:80px;
+}
+.phone.handset-standard .city-widget { padding:14px 12px; gap:12px; }
+.phone.handset-standard .city-widget strong { font-size:12px; font-weight:500; }
+.phone.handset-standard .city-widget span { color:var(--ui-muted); font-size:9px; line-height:1.5; }
+.phone.handset-standard .city-widget > svg:first-child { width:29px; height:29px; }
+.phone.handset-standard .settings-widget { border-radius:50%; }
+.phone.handset-standard .settings-widget span { font-size:8px; font-family:'Space Mono',monospace; text-transform:uppercase; }
+.phone.handset-standard .home-section { color:var(--ui-muted); margin-bottom:18px; font-size:8px; }
+.phone.handset-standard .app-grid { row-gap:20px; }
+.phone.handset-standard .app-icon > span {
+  width:49px; height:49px; border:1px solid var(--ui-line); border-radius:50%;
+  background:var(--ui-surface); color:var(--ui-ink); box-shadow:none;
+}
+.phone.handset-standard .app-icon small { font-size:9px; font-weight:400; color:var(--ui-ink); }
+.phone.handset-standard .app-icon:hover > span { background:var(--ui-field); transform:none; }
+.phone.handset-standard .app-icon.drop-target > span { border-color:var(--red); color:var(--red); }
+.phone.handset-standard .home-note {
+  margin-top:auto; padding:14px 12px; border:1px solid var(--ui-line); border-radius:16px;
+  background:transparent; color:var(--ui-ink); box-shadow:none;
+}
+.phone.handset-standard .home-note strong { font-size:11px; font-weight:500; }
+.phone.handset-standard .home-note small { font-size:9px; color:var(--ui-muted); }
+.phone.handset-standard .home-page-dots { padding:16px 0; }
+.phone.handset-standard .home-page-dots i { background:var(--ui-muted); }
+.phone.handset-standard .dock {
+  padding:10px 6px; border:0; border-top:1px solid var(--ui-line); border-radius:0;
+  background:transparent; backdrop-filter:none; box-shadow:none;
+}
+.phone.handset-standard .dock .app-icon > span { background:var(--ui-ink); color:var(--ui-bg); border-color:var(--ui-ink); }
+.phone.handset-standard .dock .app-icon > span svg { color:inherit; }
+.phone.handset-standard .system-nav { min-height:31px; background:var(--ui-bg); }
+.phone.handset-standard .system-nav button { color:var(--ui-ink); }
+.phone.handset-standard .home-indicator span { width:72px; height:3px; background:var(--ui-ink); }
+.phone.handset-standard .page-header h1 { font-weight:500; font-size:28px; letter-spacing:-1px; }
+.phone.handset-standard :is(.panel,.note-card,.notification-card,.hs-card) { border-radius:16px; box-shadow:none; }
+.phone.handset-standard .handset-panel { --hs-line:var(--ui-line); --hs-muted:var(--ui-muted); --hs-surface:var(--ui-surface); --hs-accent:var(--ui-ink); }
+.phone.handset-standard :is(.primary,.small-primary,.hs-primary) { background:var(--ui-ink); color:var(--ui-bg); border-radius:999px; font-weight:500; }
+.phone.handset-standard :is(.theme-choice,.theme-swatch,.cover-choice,.cover-thumb) { box-shadow:none; }
+.phone.handset-standard .notification-shade { background:var(--ui-bg); }
+.phone.handset-standard .notification-dot,.phone.handset-standard .app-badge { background:var(--red); color: var(--on-red,#fff); }
+.phone.handset-standard .lock-screen { color:var(--ui-ink); background:var(--ui-bg); }
+.phone.handset-standard .lock-screen > .nothing-clock { margin:15px 0 0; }
+.phone.handset-standard .handset-lock-brand { opacity:1; }
+.phone.handset-standard .handset-lock-brand > svg { padding:12px; width:72px; height:72px; border:1px dotted var(--ui-line); border-radius:50%; }
+.phone.handset-standard .handset-lock-brand span { color:var(--ui-muted); font:9px 'Space Mono',monospace; letter-spacing:.18em; }
+.phone.handset-standard .unlock-button { background:var(--ui-ink); color:var(--ui-bg); box-shadow:none; border-radius:999px; }
+.phone.handset-standard .face-unlock { border-color:var(--ui-line); }
+.phone.handset-standard .call-screen { background:var(--ui-bg); color:var(--ui-ink); }
+.phone.handset-standard .call-status { color:var(--ui-muted); }
+.phone.handset-standard .call-orbits div { border-color:var(--ui-line); }
+.phone.handset-standard .call-button { background:var(--red); }
+.phone.handset-standard .call-button.accept { background:var(--ui-ink); color:var(--ui-bg); }
+.phone.handset-standard .toast { background:var(--ui-surface); color:var(--ui-ink); border:1px solid var(--ui-line); border-radius:8px; box-shadow:none; }
+.phone.handset-standard .nothing-status button { pointer-events:auto; }
+.phone.handset-standard .nothing-status { transform:none; animation:none; pointer-events:none; margin:0; padding:8px 10px; font:10px 'Space Mono',monospace; }
+.phone.handset-standard :is(.city-widget,.settings-widget,.panel,.home-note,.app-icon > span,.dock) { background-image:none; }
+.phone.handset-standard :is(strong,h1,h2,h3) { font-weight:500; }
+/* Nothing OS headings stay in the handset's Space Grotesk rather than the shared heading font. */
+.phone.handset-standard :is(h1,h2,h3,h4,h5,h6) { font-family:inherit; }
+.phone.handset-standard .onboard,.phone.handset-standard .onboard-footer { background:var(--ui-bg); color:var(--ui-ink); }
+.phone.handset-standard .onboard :is(.onboard-top > span:last-child,.onboard-kicker,.onboard-heading p,.onboard-number > span,.onboard-number small,.onboard-field,.onboard-field-note,.onboard-skip,.onboard-footer-note,.onboard-ready > span,.onboard-summary dt) { color:var(--ui-muted); }
+.phone.handset-standard .onboard :is(.onboard-footer,.onboard-number,.onboard-summary > div,.onboard-back,.onboard-orbit,.onboard-orbit > div) { border-color:var(--ui-line); }
+.phone.handset-standard .onboard-progress i { background:var(--ui-line); }
+.phone.handset-standard .onboard-progress i.filled,.phone.handset-standard .onboard-kicker i { background:var(--ui-ink); }
+.phone.handset-standard .onboard :is(.onboard-next,.onboard-ready > svg,.onboard-identity > span) { background:var(--ui-ink); color:var(--ui-bg); }
+.phone.handset-standard .onboard-identity { background:var(--ui-surface); border-color:var(--ui-line); transform:none; }
+.phone.handset-standard .onboard-identity small { color:var(--ui-muted); border-color:var(--ui-line); }
+.phone.handset-standard .onboard-orbit > i { background:var(--ui-ink); box-shadow:none; }
+.phone.handset-standard .onboard-orbit > span > span { color:var(--ui-ink); }
+.phone.handset-standard .onboard-preview { border-radius:16px; }
+.phone.handset-standard .onboard-preview-pill { border:1px solid var(--ui-line); background:var(--ui-surface); color:var(--ui-ink); backdrop-filter:none; }
+.phone.handset-standard .loading { font:10px 'Space Mono',monospace; text-transform:uppercase; color:var(--ui-muted); }
