@@ -1,4 +1,4 @@
--- Run from kora_phone-stevie: lua5.4 tests/native-integrations.test.lua
+-- Run from kora_phone: lua5.4 tests/native-integrations.test.lua
 local balance, duty, phone, allowDuty = 100, false, true, true
 Config = { RequirePhoneItem = true, PhoneItem = 'phone', Server = {} }
 KoraPhone = { Permissions = { requireDevice = function() return {} end } }
