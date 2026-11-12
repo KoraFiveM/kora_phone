@@ -1,7 +1,7 @@
 name: Release
 
-# Tags the next version and cuts a GitHub Release on every push to main.
-# The version is stamped into fxmanifest.lua, committed back to main ([skip ci]) and packaged.
+# Tags the next version and cuts a GitHub Release on every push to dev.
+# The version is stamped into fxmanifest.lua, committed back to dev ([skip ci]) and packaged.
 
 on:
   push:
@@ -40,7 +40,7 @@ jobs:
             git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
             git add fxmanifest.lua
             git commit -m "chore: bump version to ${{ steps.tag.outputs.new_version }} [skip ci]"
-            git push origin HEAD:main
+            git push origin "HEAD:refs/heads/${GITHUB_REF_NAME}"
           fi
 
       - uses: actions/setup-node@v4
