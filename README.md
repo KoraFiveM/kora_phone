@@ -109,8 +109,9 @@ ensure kora_sql
 ensure kora_core
 ensure kora_inventory
 ensure kora_theme
-ensure pma-voice
-ensure screenshot-basic
+ensure kora_voice
+
+
 ensure kora_phone
 ```
 
