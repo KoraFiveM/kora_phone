@@ -9,17 +9,18 @@ sidebar_position: 1
 
 Current version: see `version` in `fxmanifest.lua`.
 
-## Pages
+## Documentation map
 
 | Page | Contents |
 | --- | --- |
-| [Installation](./installation.md) | Dependencies, inventory companion, convars, server.cfg, clean-install check, updating |
+| [Installation](./installation.md) | Install steps, manifest, dependencies, inventory companion, convars, server.cfg, clean-install check, updating |
+| [How to use](./how-to-use.md) | Request pipeline, opening the phone, Wallet, Banking transfers and rollback, Marketplace, shops, custom apps |
 | [Configuration](./configuration.md) | Every option in `config/*.lua` |
 | [Features](./features.md) | What the phone and each app do |
 | [UI](./ui.md) | Apps, handset styles, custom apps, NUI development |
 | [Handsets, SIMs and cloud](./three-handsets.md) | Handset identity, security, inventory gateway, backup and rollback |
 | [Commands](./commands.md) | Chat commands, key mappings, third-eye options |
-| [Exports](./exports.md) | Client and server exports, including phone-alias exports |
+| [Exports](./api/exports-events.md) | Client and server exports, including phone-alias exports |
 | [Events and callbacks](./events.md) | Net events, local events, server callbacks, NUI callbacks |
 | [Permissions](./permissions.md) | ACE and QBCore permissions |
 | [Items](./items.md) | Handset and SIM items |

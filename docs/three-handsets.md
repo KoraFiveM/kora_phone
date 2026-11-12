@@ -1,6 +1,6 @@
 ---
 title: Handsets, SIMs and cloud
-sidebar_position: 6
+sidebar_position: 9
 ---
 
 # Three-handset deployment and acceptance

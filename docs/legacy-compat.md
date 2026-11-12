@@ -1,6 +1,6 @@
 ---
 title: Legacy qb-phone support
-sidebar_position: 16
+sidebar_position: 17
 ---
 
 # Legacy qb-phone support on three handsets
