@@ -1,4 +1,11 @@
+---
+title: Acceptance tests
+sidebar_position: 19
+---
+
 # v1 acceptance tests
+
+A manual and automation plan for release testing. The scripted checks in `tests/` (see `tests/README.md`) cover only part of it.
 
 ## Global release gates
 

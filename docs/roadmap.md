@@ -1,4 +1,11 @@
+---
+title: Roadmap
+sidebar_position: 20
+---
+
 # Phased roadmap
+
+This is the original phase plan. It is planning history, not a statement of what ships; see [Features](./features.md) and the README for what the code does today.
 
 ## Phase 1 — foundation
 

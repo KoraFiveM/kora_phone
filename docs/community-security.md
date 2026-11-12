@@ -1,3 +1,8 @@
+---
+title: Community security
+sidebar_position: 15
+---
+
 # Community security model
 
 The community module treats NUI and client payloads as untrusted requests. It derives the acting device and character from `source`; callers cannot supply an owner, author, seller, reporter or moderator identity.
@@ -23,13 +28,13 @@ The community module treats NUI and client payloads as untrusted requests. It de
 
 - Reports use allowlisted target types and reasons, bounded details, and a database uniqueness constraint against repeated reports of the same target by one device.
 - A sanitized snapshot is stored at report time so later deletion does not erase evidence.
-- Queue access and resolution require either the `kora_phone.moderate` ACE or QBCore `admin`/`god` permission. Opening a staff UI grants no authority.
+- Queue access and resolution require either the `kora.phone.moderate` ACE or QBCore `admin`/`god` permission. Opening a staff UI grants no authority.
 - Resolution actions are allowlisted. Each successful action creates an append-only audit record containing actor, action, target, reason and report ID.
-- Configure ACE access explicitly, for example: `add_ace group.admin kora_phone.moderate allow`.
+- Configure ACE access explicitly, for example `add_ace group.admin kora.phone.moderate allow` (see [Permissions](./permissions.md)).
 
 ## Operational requirements
 
-- Load `server/modules/community_callbacks.lua` after repositories, services, rate limits and permissions.
+- `server/modules/community_callbacks.lua` registers these callbacks and is loaded by the manifest after repositories, services, rate limits and permissions.
 - Map NUI routes only to the named callbacks; unknown routes must receive a bounded error response.
-- Add stricter per-action rate rules in server configuration for production. Callback keys are isolated (`community.post`, `community.comment`, `community.listing`, `community.report`, and others), even when they currently inherit the default mutation budget.
+- Add stricter per-action rate rules in server configuration for production. Callback keys are isolated (`community.post`, `community.comment`, `community.listing`, `community.report`, and others), each with its own bucket in `Config.Server.RateLimits`.
 - Retain moderation audit records independently of user-generated content retention. Do not log post, message or report bodies in server console output.

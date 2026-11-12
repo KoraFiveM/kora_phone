@@ -180,3 +180,5 @@ The launch interface includes the apps listed above. Legacy group history remain
 Battery, physical damage, account-based Wi-Fi calling and technician crafting/wiping/SIM-hacking gameplay are deferred.
 
 Before production deployment, verify native calls/video, provider uploads and backup/rollback on an isolated copy of your server. Shop locations, permissions and hotspot routing buckets must match your setup.
+
+Full documentation: see [docs/](docs/index.md).

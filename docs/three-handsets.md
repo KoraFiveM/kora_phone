@@ -1,3 +1,8 @@
+---
+title: Handsets, SIMs and cloud
+sidebar_position: 6
+---
+
 # Three-handset deployment and acceptance
 
 ## Identity and security
@@ -14,7 +19,7 @@ New PINs use salted scrypt with the server pepper; old PINs remain verifiable un
 
 ## Inventory companion API
 
-The supplied `[v2]/kora_inventory/server.lua` now exposes `PhoneItemTransaction(source, request)` and its lowercase alias, callable only by resource **kora_phone**.
+The companion `integration/kora_inventory/server.lua` makes `kora_inventory` expose `PhoneItemTransaction(source, request)` and its lowercase alias, callable only by the resource named `kora_phone` (or the legacy `kora_phone-stevie`).
 
 | Operation | Trusted request fields |
 |---|---|
