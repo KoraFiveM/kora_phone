@@ -1,3 +1,8 @@
+---
+title: Security checklist
+sidebar_position: 17
+---
+
 # Security checklist
 
 - Derive the acting character and source on the server; ignore client-supplied sender identity.

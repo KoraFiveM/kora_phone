@@ -1,3 +1,8 @@
+---
+title: Legacy qb-phone support
+sidebar_position: 16
+---
+
 # Legacy qb-phone support on three handsets
 
 Adapted from `qbcore2/kora_phone-Stevie-` commit `bf1ef3921845a413cd018b07c1dd909099060743`. Its legacy public interface was pinned to `qbcore-framework/qb-phone` commit `333e8132359b1c50c31c2bc6db8e8a64db6c93f6`.

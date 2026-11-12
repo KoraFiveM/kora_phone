@@ -1,10 +1,15 @@
+---
+title: Banking and jobs
+sidebar_position: 14
+---
+
 # Banking and jobs
 
 ## Banking model
 
-Balance is read directly from the current server-side QBCore player. The client never submits a balance or sender identity. Phone history comes from `phone_economy_audit`, which records phone-initiated transfers and their final state.
+Balance is read on the server from `kora_core` (`getMoney` for `Config.Server.Banking.Account`). The client never submits a balance or sender identity. Phone history comes from `phone_economy_audit`, which records phone-initiated transfers and their final state.
 
-Default QBCore `RemoveMoney`/`AddMoney` operations cannot join the SQL audit transaction. For that reason transfers are safely disabled by default. Balance and history remain available. An operator may explicitly enable the compensating path:
+The `kora_core` `removeMoney` and `addMoney` operations cannot join the SQL audit transaction. For that reason transfers are safely disabled by default. Balance and history remain available. An operator may explicitly enable the compensating path:
 
 ```lua
 Config.Server.Banking.AllowCompensatingTransfers = true
@@ -12,7 +17,7 @@ Config.Server.Banking.AllowCompensatingTransfers = true
 
 The compensating path requires both players online, debits the sender, credits the recipient, and refunds the sender if the credit fails. A failed refund is marked `manual_review` and logged. It cannot protect against a process crash between framework money calls; servers requiring true atomic transfers should replace the integration with a banking resource that provides one atomic server-side transfer operation.
 
-Other defaults can be overridden after `Config.Server` is defined:
+The shipped defaults in `config/server.lua` (plus `HistoryPageSize`, default 30, read by the banking integration):
 
 ```lua
 Config.Server.Banking = {
@@ -28,7 +33,7 @@ Every transfer requires a client-generated request ID of 8–64 characters. The 
 
 ## Job model
 
-Job name, grade, boss state and duty state are always read from the current QBCore player on the server. Clients may request a boolean duty state or an action ID but cannot submit their job or grade.
+Job name, grade, boss state and duty state are always read from the current player data on the server (`kora_core`). Clients may request a boolean duty state or an action ID but cannot submit their job or grade.
 
 Actions are an explicit server configuration allowlist:
 
@@ -59,7 +64,7 @@ The configured server event receives one context table containing the verified `
 | `setJobDuty` | Boolean duty-state request |
 | `runJobAction` | Execute one configured, grade-checked action |
 
-Load `server/modules/economy_callbacks.lua` after the integrations, repository and services. The `phone_economy_audit` table (`server/schema.lua`) is created automatically at start.
+`server/modules/economy_callbacks.lua` registers these callbacks. The `phone_economy_audit` table (`server/schema.lua`) is created automatically at start.
 
 ## Operational checks
 
