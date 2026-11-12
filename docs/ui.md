@@ -1,6 +1,6 @@
 ---
 title: UI
-sidebar_position: 5
+sidebar_position: 8
 ---
 
 # UI
@@ -21,7 +21,7 @@ Settings also offers a `classic` style, themes (`light`, `dark`, `ocean`, `fores
 
 App ids in `web/src/App.tsx`: Phone, Contacts, Messages (Pulse chat), Camera, Gallery, Maps (`gps`), Mail, Notes, Weather, Calculator, Clock, Sound (`music`), Settings, plus the optional Wallet (`banking`), Pulse (`social`), Market (`classifieds`), Services, Home (`property`), Garage (`vehicles`), Flash and Moderation. Availability depends on `Config.Apps`, `Config.LaunchApps`, and server checks reported at bootstrap (media provider, housing tables, garage table, transfers). Notes, alarms and Sound stations are stored on the server ([Database](./database.md)). The list of installed optional apps is kept in the NUI's `localStorage`.
 
-Custom apps registered through [Exports](./exports.md) appear in the App Store (unless `Config.AppStore` is `false`) and open in an embedded frame.
+Custom apps registered through [Exports](./api/exports-events.md) appear in the App Store (unless `Config.AppStore` is `false`) and open in an embedded frame.
 
 ## Maps
 

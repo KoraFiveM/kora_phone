@@ -1,6 +1,6 @@
 ---
 title: Acceptance tests
-sidebar_position: 19
+sidebar_position: 20
 ---
 
 # v1 acceptance tests

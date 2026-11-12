@@ -1,6 +1,6 @@
 ---
 title: Features
-sidebar_position: 4
+sidebar_position: 7
 ---
 
 # Features in detail
@@ -15,7 +15,7 @@ The production NUI is built from `web/src` with React, TypeScript and Vite and s
 - **Pulse and Flash (social):** account (handle) creation, feed and profile retrieval, posting, comments, likes, follows, blocks and reports are implemented on the server. Flash needs a media provider that supports video; the Flash app is on by default (`Config.Apps.flash`).
 - **Market:** browse, create, remove, mark sold, contact seller (sent to the seller's Messages through the same server path as any text) and report a listing. Listing detail and edit exist as server routes.
 - **Moderation:** an ACE/QBCore-authorised report queue and resolution ([Permissions](./permissions.md)). The Moderation app is off by default (`Config.Apps.moderation = false`) and only shown to moderators when on.
-- **Custom apps:** other resources can register apps through the exports in [Exports](./exports.md).
+- **Custom apps:** other resources can register apps through the exports in [Exports](./api/exports-events.md).
 
 `web/` doubles as a dependency-free browser demo. Outside FiveM it uses seeded responses; in FiveM it calls the NUI callbacks registered in `client/nui.lua`. Loading, empty and server-error states are rendered without inserting untrusted HTML.
 
