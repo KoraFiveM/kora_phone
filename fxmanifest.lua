@@ -66,7 +66,6 @@ dependencies {
     'kora_core',
     'kora_sql',
     'kora_inventory',
-    'pma-voice'
 }
 
 -- Lets this resource answer as each aliased phone (client/customapps.lua) for real: many
