@@ -40,7 +40,7 @@ jobs:
             git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
             git add fxmanifest.lua
             git commit -m "chore: bump version to ${{ steps.tag.outputs.new_version }} [skip ci]"
-            git push origin HEAD:main
+            git push origin HEAD:dev
           fi
 
       - uses: actions/setup-node@v4
