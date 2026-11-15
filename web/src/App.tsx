@@ -18,7 +18,7 @@ import './nothing-standard.css';
 import { CoverBackdrop } from './CoverArt';
 import { imageUrl } from './Images';
 import { PhoneContext } from './PhoneContext';
-import { appCopy } from './locales';
+import { appCopy, setLocales, useLocales } from './locales';
 import { StoreScreen } from './Store';
 import { PhotoImage } from './Images';
 import { handsetIconStyle, handsetThemeTokens, resolveHandsetTheme } from './themes';
@@ -102,6 +102,7 @@ function AppIcon({ id, onClick, dock = false, badge = 0, editing = false, draggi
 }
 function useTime() { const [date, setDate] = useState(new Date()); useEffect(() => { const timer = setInterval(() => setDate(new Date()), 1000); return () => clearInterval(timer); }, []); return date; }
 export default function App() {
+  useLocales();
   const [device, setDevice] = useState<Bootstrap | undefined>(() => isPreview ? previewBootstrap() : undefined);
   const [shown, setShown] = useState(isPreview); const [app, setApp] = useState<AppId>(() => lastApp(isPreview ? previewBootstrap() : undefined)); const [target, setTarget] = useState('');
   const [call, setCall] = useState<Call | undefined>(); const [toast, setToast] = useState(''); const [alert, setAlert] = useState<Notification | undefined>();
@@ -331,6 +332,7 @@ export default function App() {
       // Embedded apps must never spoof native phone events.
       if (!isHostMessage(event.source, window, window.parent)) return;
       const type = message.action || message.type;
+      if (type === 'phone:locales') { setLocales(message.data); return; }
       if (type === 'service:request' && message.data?.id) { setServiceRequest({ id: String(message.data.id), label: String(message.data.label || 'Mobile shop'), operation: String(message.data.operation || 'service') }); return; }
       if (type === 'service:result' && message.data) {
         const result = message.data.result || message.data; const details = result.data || result;

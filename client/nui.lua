@@ -121,6 +121,7 @@ end)
 RegisterNUICallback('phone:ready', function(_, cb)
     KoraPhone.State.ready = true
     cb({ ok = true, data = KoraPhone.State.Public() })
+    KoraPhone.SendNui('phone:locales', Kora.locale.getResourceLocale())
 end)
 
 RegisterNUICallback('route:changed', function(_, cb)
