@@ -24,6 +24,11 @@ local function fixture(mode)
     env.GetGameTimer = function() return 0 end
     env.GetCurrentResourceName = function() return 'kora_phone-stevie' end
     env.GetResourceMetadata = function() return 'test' end
+    state.logs = {}
+    env.Kora = { logging = setmetatable({}, { __index = function(_, level) return function(event, message, fields)
+        state.logs[#state.logs + 1] = { level = level, event = event, message = message, fields = fields }
+        return true
+    end end }) }
     env.print = function(message) state.messages[#state.messages + 1] = message end
     env.StopResource = function()
         state.stopped = true
@@ -44,9 +49,15 @@ for _, mode in ipairs({ 'success', 'migration_failure', 'recovery_failure' }) do
     check(coroutine.resume(state.threads[1]), 'startup did not finish')
     check(coroutine.status(state.threads[1]) == 'dead', 'startup remained pending')
     check(state.stopped == (mode ~= 'success'), 'failure did not stop the resource')
+    if mode == 'migration_failure' then
+        local log = state.logs[1]
+        check(log and log.level == 'error' and log.event == 'phone.database_setup_failed', 'setup failure must log error phone.database_setup_failed')
+        check(log.fields and tostring(log.fields.error):find('controlled migration failure', 1, true), 'setup failure log must carry the error field')
+    end
     check(state.cleanup == (mode == 'migration_failure' and 0 or 1), 'recovery ran the wrong number of times')
     check((env.KoraPhone.Services.Calling.ready == true) == (mode == 'success'), 'readiness published before recovery')
-    local ready = table.concat(state.messages, '\n'):find('foundation ready', 1, true) ~= nil
+    local ready = false
+    for _, log in ipairs(state.logs) do if log.event == 'phone.server_ready' then ready = true end end
     check(ready == (mode == 'success'), 'misleading ready log')
 end
 -- Boot runs schema setup only: no legacy conversion, import or data preflight is wired in.

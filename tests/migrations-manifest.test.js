@@ -29,7 +29,7 @@ assert.equal(fs.existsSync(path.join(root, "migrations")), false, "the migration
 
 const main = fs.readFileSync(path.join(root, "server/main.lua"), "utf8");
 assert.match(main, /KoraPhone\.SchemaSetup\.run\(\)/, "the resource must set up the database at start");
-assert.match(main, /Database setup failed, stopping resource/, "a failed setup must stop the resource, not run on a half-built schema");
+assert.match(main, /Database setup failed; stopping resource/, "a failed setup must stop the resource, not run on a half-built schema");
 assert.match(fs.readFileSync(path.join(root, "server/integrations/schema_setup.lua"), "utf8"), /Kora\.sql\.ensureTables, KoraPhoneSchema/, "the runner must call ensureTables");
 assert.doesNotMatch(fs.readFileSync(path.join(root, "config/server.lua"), "utf8"), /AutoMigrate/, "no AutoMigrate flag");
 const handsets = fs.readFileSync(path.join(root, "server/handsets.lua"), "utf8");

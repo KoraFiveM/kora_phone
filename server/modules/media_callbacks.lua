@@ -12,7 +12,7 @@ local function registerAsync(name, rateKey, handler)
         end
         local ok, err = xpcall(function() handler(source, payload, reply) end, debug.traceback)
         if not ok then
-            print(('[kora_phone] media callback %s failed: %s'):format(name, err))
+            Kora.logging.error('media.callback_failed','Media callback failed',{callback=tostring(name),error=tostring(err)})
             reply(PhoneError(PhoneConstants.Errors.INTERNAL, 'Request failed'))
         end
         return Citizen.Await(response)

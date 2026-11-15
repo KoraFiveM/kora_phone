@@ -255,7 +255,7 @@ local function secondary(kind, id, opts)
             inventories[inventoryKey] = restored
             return restored, true
         elseif restoreErr then
-            print(('^3[kora_inventory]^7 could not restore %s: %s'):format(inventoryKey, tostring(restoreErr)))
+            Kora.logging.warn('inventory.secondary_restore_failed','Could not restore a secondary inventory',{inventoryKey=tostring(inventoryKey),error=tostring(restoreErr)})
         end
     end
     inv = {
@@ -394,7 +394,7 @@ local function mayInspectPlayer(src, target)
             inventory.copy(playerData(target) or {})
         )
         if not ok then
-            print(('^3[kora_inventory]^7 player inspection policy failed: %s'):format(tostring(result)))
+            Kora.logging.warn('inventory.inspection_policy_failed','Player inspection policy failed',{error=tostring(result)})
             return false, 'player inspection policy failed'
         end
         if result == false then
@@ -603,7 +603,7 @@ local function lock(keys, transaction)
         end
     end
     if not result[1] then
-        print(('^1[kora_inventory]^7 transaction failed: %s'):format(result[2]))
+        Kora.logging.error('inventory.transaction_failed','Inventory transaction failed',{error=tostring(result[2])})
         return false, 'transaction failed'
     end
     return table.unpack(result, 2, result.n)
@@ -957,7 +957,7 @@ local function physicalCashTransfer(fromSrc, toSrc, account, amount, reason)
         if not added then
             local rolledBack, rollbackErr = physicalCashCredit(fromSrc, policy, account, amount, 'transfer-rollback')
             if not rolledBack then
-                print(('^1[kora_inventory]^7 physical cash rollback failed: %s'):format(tostring(rollbackErr)))
+                Kora.logging.error('inventory.cash_rollback_failed','Physical cash rollback failed',{error=tostring(rollbackErr)})
             end
             return false, addErr
         end
@@ -1044,7 +1044,7 @@ local function runHooks(name, src, payload)
             -- unmodified -- it just never reads the extra parameter.
             local ok, result = pcall(hook.callback, payload, src)
             if not ok then
-                print(('^3[kora_inventory]^7 hook %d failed: %s'):format(hook.id, result))
+                Kora.logging.warn('inventory.hook_failed','Inventory hook failed',{hookId=hook.id,error=tostring(result)})
             elseif result == false then
                 return false, 'action denied by hook'
             elseif type(result) == 'string' then
@@ -1547,9 +1547,7 @@ local function intentGive(src, request)
         if not addedOK then
             local rollbackOK, rollbackErr = addPlayer(src, removed.name, amount, slot, removed.info, 'give-rollback')
             if not rollbackOK then
-                print(
-                    ('^1[kora_inventory]^7 give rollback failed for %s: %s'):format(session.primary, tostring(rollbackErr))
-                )
+                Kora.logging.error('inventory.give_rollback_failed','Give rollback failed',{inventory=tostring(session.primary),error=tostring(rollbackErr)})
             end
             return false, addedErr
         end
@@ -3113,7 +3111,7 @@ local function phoneItemTransaction(src, request)
         local function refund()
             if moneyAmount and moneyAmount > 0 then
                 local refunded = exports.kora_core[refundAction](exports.kora_core, src, 'bank', moneyAmount, 'kora_phone-service-rollback', true)
-                if not refunded then print('^1[kora_inventory]^7 phone bank compensation failed for player ' .. src) end
+                if not refunded then Kora.logging.error('inventory.phone_bank_compensation_failed','Phone bank compensation failed',{playerId=src}) end
                 return refunded
             end
             return true
@@ -3312,7 +3310,7 @@ AddEventHandler('kora_inventory:server:persistenceReady', function()
     end
     local restored, rejected = persistence.restoreAll()
     if not restored then
-        print(('^1[kora_inventory]^7 secondary inventory restore failed: %s'):format(tostring(rejected)))
+        Kora.logging.error('inventory.secondary_restore_all_failed','Secondary inventory restore failed',{error=tostring(rejected)})
         return
     end
     for _, inv in ipairs(restored) do
@@ -3348,10 +3346,10 @@ AddEventHandler('kora_inventory:server:persistenceReady', function()
         inventories[inv.key] = inv
     end
     for _, bad in ipairs(rejected or {}) do
-        print(('^3[kora_inventory]^7 ignored malformed persisted %s:%s (%s)'):format(bad.type, bad.id, bad.reason))
+        Kora.logging.warn('inventory.persisted_entry_ignored','Ignored malformed persisted inventory entry',{type=tostring(bad.type),id=tostring(bad.id),reason=tostring(bad.reason)})
         TriggerEvent('kora_inventory:server:persistenceRejected', inventory.copy(bad))
     end
-    print(('^2[kora_inventory]^7 restored %d secondary inventories.'):format(#restored))
+    Kora.logging.info('inventory.secondary_restored','Restored secondary inventories',{count=#restored})
 end)
 
 -- Writes made by another server resource through kora_core's public mutation
@@ -3405,16 +3403,11 @@ CreateThread(function()
     end
     local ok, err = exports.kora_core:registerPhysicalCash(policy.account)
     if not ok then
-        print(('^1[kora_inventory]^7 physical cash was not enabled: %s'):format(tostring(err)))
+        Kora.logging.error('inventory.cash_not_enabled','Physical cash was not enabled',{error=tostring(err)})
         return
     end
     cashItemsActive = true
-    print(
-        ('^2[kora_inventory]^7 physical cash enabled for kora_core account %s as item %s.'):format(
-            policy.account,
-            policy.item
-        )
-    )
+    Kora.logging.info('inventory.cash_enabled','Physical cash enabled',{account=tostring(policy.account),item=tostring(policy.item)})
 end)
 
 CreateThread(function()

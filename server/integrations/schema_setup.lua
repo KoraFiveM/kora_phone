@@ -12,9 +12,9 @@ function SchemaSetup.run()
     for _, report in ipairs(reports) do
         if report.created then created = created + 1 end
         for _, warning in ipairs(report.warnings or {}) do
-            print(('[kora_phone] schema warning (%s): %s'):format(tostring(report.table), tostring(warning)))
+            Kora.logging.warn('schema.setup_warning','Schema setup reported a warning',{table=tostring(report.table),warning=tostring(warning)})
         end
     end
-    if created > 0 then print(('[kora_phone] database ready (%d tables created)'):format(created)) end
+    if created > 0 then Kora.logging.info('schema.database_ready','Database ready',{tablesCreated=created}) end
     return true
 end
