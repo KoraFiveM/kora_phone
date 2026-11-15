@@ -26,6 +26,7 @@ local function fixture()
     end })
     env.AddEventHandler, env.RegisterNetEvent, env.RegisterCommand, env.CreateThread = function() end, function() end, function() end, function() end
     env.print = function() end
+    env.Kora = { logging = setmetatable({}, { __index = function() return function() return true end end }) }
     assert(loadfile('server/handsets.lua', 't', env))()
     return state, env.KoraPhone.Handsets
 end

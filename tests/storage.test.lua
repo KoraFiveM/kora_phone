@@ -28,6 +28,8 @@ function SaveResourceFile() return true end
 function GetCurrentResourceName() return 'kora_phone' end
 function GetResourceState() return 'missing' end
 
+Kora = Kora or {}
+Kora.logging = setmetatable({}, { __index = function() return function() return true end end })
 KoraPhone = {}
 Config = { Server = { Media = { Provider = 'fivemanage' } } }
 dofile(root .. "/server/integrations/storage.lua")
