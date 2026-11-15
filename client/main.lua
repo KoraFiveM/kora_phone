@@ -71,7 +71,7 @@ function KoraPhone.Open(app, payload)
     watchUnavailable()
     KoraPhone.State.currentApp = type(app) == 'string' and app or nil
     local started, animationError = pcall(KoraPhone.Animations.Start)
-    if not started then print(('[kora_phone] phone animation failed: %s'):format(animationError)) end
+    if not started then Kora.logging.error('phone.animation_failed','Phone animation failed',{error=tostring(animationError)}) end
     SetNuiFocus(true, true)
     SetNuiFocusKeepInput(false)
     KoraPhone.SendNui('phone:open', { app = KoraPhone.State.currentApp, payload = payload, state = KoraPhone.State.Public() })

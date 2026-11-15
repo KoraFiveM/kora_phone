@@ -96,7 +96,7 @@ function BankingService.transfer(source, payload)
         local status = rolledBack and 'rolled_back' or 'manual_review'
         local code = rolledBack and 'CREDIT_FAILED' or 'ROLLBACK_FAILED'
         KoraPhone.Repositories.Transactions.finish(transaction.id, status, code)
-        print(('[kora_phone] transfer %s failed credit; status=%s'):format(transaction.id, status))
+        Kora.logging.error('banking.transfer_credit_failed','Transfer recipient credit failed',{transactionId=transaction.id,status=status})
         return unavailable(rolledBack and 'Recipient credit failed; sender was refunded' or 'Transfer requires administrator review')
     end
 

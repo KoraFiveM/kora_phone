@@ -20,7 +20,7 @@ function KoraPhone.registerCallback(name, rateKey, handler)
             return run()
         end, debug.traceback)
         if not ok then
-            print(('[kora_phone] callback %s failed for source %s: %s'):format(name, source, result))
+            Kora.logging.error('phone.callback_failed','Phone callback failed',{callback=tostring(name),playerId=source,error=tostring(result)})
             return PhoneError(PhoneConstants.Errors.INTERNAL, 'Request failed')
         end
         local intentionallyChanged=name=='handsetAction' and (payload.op=='select' or payload.op=='reset')

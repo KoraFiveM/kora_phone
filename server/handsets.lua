@@ -135,7 +135,7 @@ function H.current(src,provision)
     H.resolving[src]=true
     local ok,value=xpcall(function() return currentImpl(src,provision) end,debug.traceback)
     H.resolving[src]=nil
-    if not ok then print('[kora_phone] handset resolution failed: '..tostring(value)); return nil end
+    if not ok then Kora.logging.error('phone.handset_resolution_failed','Handset resolution failed',{error=tostring(value)}); return nil end
     if value and (cid(src)~=expectedCharacter or H.selected[src]~=value.handsetId or not itemFor(src,value.handsetId)) then
         H.revoke(src,'possession_lost'); return nil
     end
@@ -243,7 +243,7 @@ function H.accountLock(id,handler)
     H.accountLocks[id]=true
     local ok,result=xpcall(handler,debug.traceback)
     H.accountLocks[id]=nil
-    if not ok then print('[kora_phone] cloud operation failed: '..tostring(result)); return fail('Cloud operation failed') end
+    if not ok then Kora.logging.error('phone.cloud_operation_failed','Cloud operation failed',{error=tostring(result)}); return fail('Cloud operation failed') end
     return result
 end
 local backupImpl=H.backup
@@ -287,7 +287,7 @@ function H.settleSimItem(src,op,request,info)
         if left and left.name==Config.SimItem and left.amount==1 and left.info and left.info.simId==request.simId then
             local removed,why=exports.kora_inventory:RemoveItem(src,Config.SimItem,1,request.simSlot,'phone-sim-install')
             if not removed then
-                print('[kora_phone] SIM install could not consume the SIM item: '..tostring(why))
+                Kora.logging.warn('phone.sim_install_consume_failed','SIM install could not consume the SIM item',{reason=tostring(why)})
                 return false,'SIM item could not be moved into the phone'
             end
         end
@@ -298,7 +298,7 @@ function H.settleSimItem(src,op,request,info)
         if type(info)~='table' or info.simId~=request.simId then return false,'SIM details are missing' end
         local added,why=exports.kora_inventory:AddItem(src,Config.SimItem,1,nil,info,'phone-sim-remove')
         if not added then
-            print('[kora_phone] SIM removal could not return the SIM item: '..tostring(why))
+            Kora.logging.warn('phone.sim_removal_return_failed','SIM removal could not return the SIM item',{reason=tostring(why)})
             return false,'No room to return the SIM to your inventory'
         end
     end
@@ -419,7 +419,7 @@ function H.locked(src,handler,payload)
     H.busy[src]=true
     local ok,result=xpcall(function() return handler(src,payload) end,debug.traceback)
     H.busy[src]=nil
-    if not ok then print('[kora_phone] handset operation failed: '..tostring(result)); return fail('Phone operation failed') end
+    if not ok then Kora.logging.error('phone.handset_operation_failed','Handset operation failed',{error=tostring(result)}); return fail('Phone operation failed') end
     return result
 end
 

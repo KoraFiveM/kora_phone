@@ -4,13 +4,13 @@ CreateThread(function()
     local deadline = GetGameTimer() + Config.Server.DatabaseReadyTimeoutMs
     while GetGameTimer() < deadline and not KoraPhone.Database.isReady() do Wait(250) end
     if not KoraPhone.Database.isReady() then
-        print('[kora_phone] Database unavailable; stopping resource')
+        Kora.logging.error('phone.database_unavailable','Database unavailable; stopping resource')
         StopResource(GetCurrentResourceName())
         return
     end
     local ready, reason = KoraPhone.SchemaSetup.run()
     if not ready then
-        print('[kora_phone] Database setup failed, stopping resource: ' .. tostring(reason))
+        Kora.logging.error('phone.database_setup_failed','Database setup failed; stopping resource',{error=tostring(reason)})
         StopResource(GetCurrentResourceName())
         return
     end
@@ -19,11 +19,11 @@ CreateThread(function()
         KoraPhone.Handsets.start()
     end)
     if not started then
-        print('[kora_phone] handset setup failed: '..tostring(startError))
+        Kora.logging.error('phone.handset_setup_failed','Handset setup failed',{error=tostring(startError)})
         KoraPhone.Handsets.ready=false
         StopResource(GetCurrentResourceName()); return
     end
-    print(('[kora_phone] server foundation ready (v%s)'):format(GetResourceMetadata(GetCurrentResourceName(), 'version', 0) or 'unknown'))
+    Kora.logging.info('phone.server_ready','Server foundation ready',{version=GetResourceMetadata(GetCurrentResourceName(), 'version', 0) or 'unknown'})
 end)
 
 RegisterNetEvent('kora_phone:server:phone:closed', function()
