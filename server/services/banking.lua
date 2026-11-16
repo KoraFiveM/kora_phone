@@ -6,27 +6,15 @@ local function unavailable(message)
     return PhoneError(PhoneConstants.Errors.CONFLICT, message or 'Banking is unavailable')
 end
 
-local function publicTransaction(transaction)
-    return {
-        id = transaction.id,
-        amount = transaction.amount,
-        status = transaction.status,
-        failureCode = transaction.failureCode,
-        createdAt = transaction.createdAt,
-        completedAt = transaction.completedAt
-    }
-end
-
 function BankingService.balance(source)
     local device, err = KoraPhone.Permissions.requireDevice(source)
     if not device then return err end
     local player = KoraPhone.GetPlayer(source)
     local balance = KoraPhone.Integrations.Banking.getBalance(player)
     if balance == nil then return unavailable() end
-    -- 'account' is the QBCore money type ("bank"); the holder and account number are what a person recognises.
-    local pd = player
-    local holder = pd.charinfo and ('%s %s'):format(pd.charinfo.firstname or '', pd.charinfo.lastname or '') or ''
-    return PhoneResult({ balance = balance, account = Config.Server.Banking.Account, holder = holder, number = pd.citizenid })
+    local info = player.charinfo
+    local holder = info and ('%s %s'):format(info.firstname or '', info.lastname or '') or ''
+    return PhoneResult({ balance = balance, account = Config.Server.Banking.Account, holder = holder, number = player.citizenid })
 end
 
 function BankingService.history(source, payload)
@@ -39,15 +27,35 @@ function BankingService.history(source, payload)
     return PhoneResult({ items = items, nextCursor = nextCursor })
 end
 
+local RETRYABLE = { pending = true, indeterminate = true, unavailable = true }
+local MAX_OPERATION_KEY = 128
+
+--- Maps a kora_banking refusal code to a PhoneError. Ambiguous codes are never compensated.
+local function refusal(code, message)
+    if code == 'insufficient_funds' then
+        return PhoneError(PhoneConstants.Errors.CONFLICT, 'Insufficient funds')
+    elseif code == 'conflict' then
+        return PhoneError(PhoneConstants.Errors.CONFLICT, 'Transfer request ID was already used for different transfer details')
+    elseif RETRYABLE[code] then
+        return PhoneError(PhoneConstants.Errors.CONFLICT, 'Transfer is still being processed; retry with the same request ID',
+            { retryable = true, code = code })
+    end
+    Kora.logging.error('banking.transfer_refused', 'kora_banking refused a phone transfer',
+        { code = tostring(code), message = tostring(message) })
+    return PhoneError(PhoneConstants.Errors.INTERNAL, 'Transfer is not available')
+end
+
+local function sameTerms(row, recipientDevice, amount)
+    return tonumber(row.amount) == amount and tonumber(row.recipientDeviceId) == tonumber(recipientDevice.id)
+end
+
 function BankingService.transfer(source, payload)
     local senderDevice, permissionError = KoraPhone.Permissions.requireDevice(source)
     if not senderDevice then return permissionError end
     if type(payload) ~= 'table' then
         return PhoneError(PhoneConstants.Errors.INVALID_INPUT, 'payload must be an object')
     end
-    if not KoraPhone.Integrations.Banking.canTransfer() then
-        return unavailable('Transfers are disabled because the configured banking API cannot provide atomic transfers')
-    end
+    if not KoraPhone.Integrations.Banking.canTransfer() then return unavailable('Transfers are unavailable') end
 
     local recipientNumber, numberError = PhoneValidation.phoneNumber(payload.to)
     if not recipientNumber then return PhoneError(PhoneConstants.Errors.INVALID_INPUT, numberError) end
@@ -63,46 +71,33 @@ function BankingService.transfer(source, payload)
         return PhoneError(PhoneConstants.Errors.INVALID_INPUT, 'Cannot transfer to your own phone')
     end
 
-    local claimed, transaction = KoraPhone.Repositories.Transactions.claim(
-        senderDevice.id, recipientDevice.id, senderCitizenId, recipientDevice.ownerCitizenId, amount, requestId
-    )
-    if not transaction then return PhoneError(PhoneConstants.Errors.INTERNAL, 'Unable to create transfer') end
-    if not claimed then
-        if tonumber(transaction.amount) ~= amount or tonumber(transaction.recipientDeviceId) ~= tonumber(recipientDevice.id) then
-            return PhoneError(PhoneConstants.Errors.CONFLICT, 'Transfer request ID was already used for different transfer details')
-        end
-        if transaction.status == 'completed' then return PhoneResult({ transaction = publicTransaction(transaction), replayed = true }) end
-        return PhoneError(PhoneConstants.Errors.CONFLICT, 'Transfer request has already been processed', { status = transaction.status })
+    -- The key is unique per calling resource inside kora_banking; the recipient is part of the
+    -- request terms, so reusing a request ID for a different transfer is a `conflict`.
+    local operationKey = ('transfer:%s:%s'):format(senderCitizenId, requestId)
+    if #operationKey > MAX_OPERATION_KEY then
+        return PhoneError(PhoneConstants.Errors.INVALID_INPUT, 'clientRequestId is too long')
     end
 
-    local sender = KoraPhone.GetPlayer(source)
-    local recipient = KoraPhone.Integrations.Banking.getOnlinePlayerByCitizenId(recipientDevice.ownerCitizenId)
-    if not recipient then
-        transaction = KoraPhone.Repositories.Transactions.finish(transaction.id, 'rejected', 'RECIPIENT_OFFLINE')
-        return unavailable('Recipient must be online for a safe transfer')
-    end
-    if (KoraPhone.Integrations.Banking.getBalance(sender) or 0) < amount then
-        transaction = KoraPhone.Repositories.Transactions.finish(transaction.id, 'rejected', 'INSUFFICIENT_FUNDS')
-        return PhoneError(PhoneConstants.Errors.CONFLICT, 'Insufficient funds')
+    local Transactions = KoraPhone.Repositories.Transactions
+    local recorded = Transactions.findByKey(operationKey)
+    if recorded then
+        if not sameTerms(recorded, recipientDevice, amount) then return refusal('conflict') end
+        return PhoneResult({ transaction = Transactions.public(recorded), replayed = true })
     end
 
-    local reason = ('kora_phone transfer %s'):format(transaction.id)
-    if not KoraPhone.Integrations.Banking.debit(sender, amount, reason) then
-        KoraPhone.Repositories.Transactions.finish(transaction.id, 'rejected', 'DEBIT_FAILED')
-        return unavailable('Transfer debit failed')
-    end
-    if not KoraPhone.Integrations.Banking.credit(recipient, amount, reason) then
-        local rolledBack = KoraPhone.Integrations.Banking.credit(sender, amount, reason .. ' rollback')
-        local status = rolledBack and 'rolled_back' or 'manual_review'
-        local code = rolledBack and 'CREDIT_FAILED' or 'ROLLBACK_FAILED'
-        KoraPhone.Repositories.Transactions.finish(transaction.id, status, code)
-        Kora.logging.error('banking.transfer_credit_failed','Transfer recipient credit failed',{transactionId=transaction.id,status=status})
-        return unavailable(rolledBack and 'Recipient credit failed; sender was refunded' or 'Transfer requires administrator review')
-    end
+    local receipt, code, message = KoraPhone.Integrations.Banking.execute(operationKey, {
+        debits = { { citizenid = senderCitizenId, amount = amount } },
+        credits = { { citizenid = recipientDevice.ownerCitizenId, amount = amount } },
+        reason = 'Phone transfer',
+        statements = { Transactions.historyStatement(operationKey, senderDevice.id, recipientDevice.id, amount) },
+    })
+    if not receipt then return refusal(code, message) end
 
-    transaction = KoraPhone.Repositories.Transactions.finish(transaction.id, 'completed', nil)
+    local transaction = Transactions.findByKey(operationKey)
     return PhoneResult({
-        transaction = publicTransaction(transaction),
-        balance = KoraPhone.Integrations.Banking.getBalance(sender)
+        transaction = transaction and Transactions.public(transaction) or {
+            amount = amount, status = 'completed', createdAt = receipt.timestamp, completedAt = receipt.timestamp,
+        },
+        balance = KoraPhone.Integrations.Banking.getBalance(KoraPhone.GetPlayer(source)),
     })
 end

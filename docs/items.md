@@ -13,7 +13,7 @@ On start (`Handsets.start`) the resource registers its items with `kora_core` (`
 | `phone_flip` | Circuit Flip | Useable |
 | `phone_fold` | Atlas Fold | Useable |
 | `phone` | Legacy item, treated as Standard | Registered from `Config.Handsets`; useable |
-| `phone_sim` (`Config.SimItem`) | Removable SIM carrying a phone number | Not useable; inserted and removed through the phone's Settings. Label "Mobile SIM" |
+| `phone_sim` (`Config.SimItem`) | Removable SIM carrying a phone number | Not useable; inserted and removed through the phone's Settings. Label "Mobile SIM", weight 1 |
 
 Handset registration uses weight 250, image `phone.png`, label per model (Orchard One, Circuit Flip, Atlas Fold), description "Personal handset". Only item names present in `Config.Handsets` are registered and recognised, so removing an entry disables that model.
 

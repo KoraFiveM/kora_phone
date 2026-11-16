@@ -21,7 +21,9 @@ local script = arg and arg[0] or "tests/validation.test.lua"
 local root = script:gsub("[\\/]tests[\\/]validation%.test%.lua$", "")
 if root == script then root = "." end
 
+dofile(root .. "/tests/config_shim.lua")
 dofile(root .. "/config/shared.lua")
+dofile(root .. "/config/handsets.lua")
 dofile(root .. "/shared/validation.lua")
 dofile(root .. "/shared/contracts.lua")
 
@@ -254,7 +256,7 @@ test("a call signal keeps the SDP byte-for-byte, including its final CRLF", func
     equal(PhoneContracts.callSignal({ id = callId, kind = "offer", sdp = { type = "offer", sdp = sdp } }).sdp.sdp, sdp)
 end)
 test("conversation pages preserve tied sort keys without changing numeric cursors", function()
-    local oldPhone, oldMySQL, oldConstants, oldResult, oldError = KoraPhone, MySQL, PhoneConstants, PhoneResult, PhoneError
+    local oldPhone, oldSql, oldConstants, oldResult, oldError = KoraPhone, Kora.sql, PhoneConstants, PhoneResult, PhoneError
     dofile(root .. "/shared/constants.lua")
     -- An inert row host applies the emitted keyset predicates, not a database engine.
     local rows = {
@@ -264,7 +266,7 @@ test("conversation pages preserve tied sort keys without changing numeric cursor
         { id = 1, deviceId = 11 }, { id = 90, deviceId = 22 }, { id = 99, deviceId = 11, left = true },
     }
     local queries = {}
-    MySQL = { query = { await = function(sql, params)
+    Kora.sql = { query = function(sql, params)
         queries[#queries + 1] = { sql = sql, params = params }
         equal(params[1], params[2]); equal(params[2], params[3])
         assert(sql:find('cm.device_id = ? AND cm.left_at IS NULL', 1, true))
@@ -292,7 +294,7 @@ test("conversation pages preserve tied sort keys without changing numeric cursor
         local out = {}
         for i = 1, math.min(params[#params], #selected) do out[i] = selected[i] end
         return out
-    end } }
+    end }
     KoraPhone = { Repositories = {}, Permissions = { requireDevice = function(source)
         if source == 7 then return { id = 11 } end
         if source == 8 then return { id = 22 } end
@@ -338,7 +340,7 @@ test("conversation pages preserve tied sort keys without changing numeric cursor
     equal(list(7, { cursor = '50', cursorId = '50', limit = 2 }).data.items[1].id, 7)
     equal(list(99, { cursorId = -1 }).error.code, PhoneConstants.Errors.UNAUTHORIZED)
     equal(PhoneValidation.page({ cursor = 50, cursorId = -1 }).cursor, 50)
-    KoraPhone, MySQL, PhoneConstants, PhoneResult, PhoneError = oldPhone, oldMySQL, oldConstants, oldResult, oldError
+    KoraPhone, Kora.sql, PhoneConstants, PhoneResult, PhoneError = oldPhone, oldSql, oldConstants, oldResult, oldError
 end)
 
 
@@ -348,7 +350,7 @@ test("settings maps legacy kora_core ids to kora_core", function()
 end)
 test("settings rejects legacy ids when AcceptLegacyIds is off", function()
     Config.Settings.AcceptLegacyIds = false
-    local out = PhoneValidation.settings(okSettings({ wallpaper = "kora_core" }))
+    local out = PhoneValidation.settings(okSettings({ wallpaper = "qbcore" }))
     Config.Settings.AcceptLegacyIds = true
     equal(out, nil)
 end)

@@ -1,0 +1,128 @@
+import { lazy } from 'react';
+import type { ComponentType, LazyExoticComponent } from 'react';
+import {
+  AlarmClock, Aperture, Blocks, Calculator, Camera, Car, CloudSun, ContactRound, CreditCard, House, Image, Mail, MapPin,
+  MessageCircle, Music, Phone, Radio, Settings as SettingsIcon, ShieldAlert, ShieldCheck, Store as StoreIcon,
+  StickyNote, Tag,
+} from 'lucide-react';
+import type { LucideIcon } from 'lucide-react';
+import { ClockScreen } from '../apps/clock/ClockScreen';
+import { CalculatorScreen } from '../apps/calculator/CalculatorScreen';
+import { ContactsScreen, MessagesScreen, PhoneScreen } from '../apps/communication/Communication';
+import { CustomAppRoute } from '../apps/custom/CustomApps';
+import { GalleryScreen } from '../apps/gallery/GalleryScreen';
+import { GPSScreen } from '../apps/maps/GPSScreen';
+import { MailScreen } from '../apps/mail/MailScreen';
+import { MusicScreen } from '../apps/music/MusicScreen';
+import { NotesScreen } from '../apps/notes/NotesScreen';
+import { PropertyScreen } from '../apps/property/PropertyScreen';
+import { ServicesScreen } from '../apps/services/ServicesScreen';
+import { VehiclesScreen } from '../apps/vehicles/VehiclesScreen';
+import { BankScreen } from '../apps/wallet/BankScreen';
+import { WeatherScreen } from '../apps/weather/WeatherScreen';
+import { SettingsHost } from './SettingsHost';
+import { appCopy } from '../locales';
+import { optionalApps } from '../catalog';
+import { recall } from '../lastScreen';
+import type { AppId, Bootstrap } from '../types';
+
+export interface ScreenProps { target: string }
+export type AppComponent = ComponentType<ScreenProps> | LazyExoticComponent<ComponentType<ScreenProps>>;
+export type StoreCategory = 'Life' | 'Social' | 'Tools';
+
+export interface AppDefinition {
+  id: Exclude<AppId, 'home'>;
+  /** Label and tagline shown on the icon and the page header (see locales.ts). */
+  copy: { label: string; subtitle: string };
+  icon: LucideIcon;
+  component: AppComponent;
+  /** Optional apps are installed from the App Store; their listing lives here. */
+  optional?: { category: StoreCategory; description: string };
+  /** Where the app sits on the home screen. `system` apps are launched from elsewhere (dock defaults, Settings). */
+  placement: 'grid' | 'dock' | 'system' | 'hidden';
+  /** The app draws its own header and fills the screen. */
+  fullBleed?: boolean;
+  /** Extra capability gate on top of `device.capabilities[id] !== false`. */
+  gate?: (device: Bootstrap) => boolean;
+}
+
+const screen = (load: () => Promise<ComponentType<ScreenProps>>) => lazy(async () => ({ default: await load() }));
+// Heavy apps are split into their own chunks and loaded the first time they open.
+// The App Store reads this registry for its listings, so it loads lazily to keep the module graph acyclic.
+const StoreApp = screen(async () => (await import('../apps/store/Store')).StoreScreen);
+const PulseApp = screen(async () => (await import('../apps/pulse/Pulse')).PulseScreen);
+const FlashApp = screen(async () => (await import('../apps/flash/Flash')).FlashScreen);
+const MarketApp = screen(async () => (await import('../apps/market/MarketScreen')).FeedScreen);
+const ModerationApp = screen(async () => (await import('../apps/moderation/Moderation')).ModerationScreen);
+const CameraApp = screen(async () => (await import('../apps/camera/CameraScreen')).CameraScreen);
+
+const entry = (
+  id: AppDefinition['id'], icon: LucideIcon, component: AppComponent,
+  placement: AppDefinition['placement'], extra: Partial<Pick<AppDefinition, 'optional' | 'fullBleed' | 'gate'>> = {},
+): AppDefinition => ({ id, icon, component, placement, copy: appCopy(id), ...extra });
+
+/** One entry per built-in app. Adding an app is adding a line here (plus its server-side id). Order is the home-screen order. */
+export const appRegistry: readonly AppDefinition[] = [
+  entry('store', StoreIcon, StoreApp, 'grid'),
+  entry('banking', CreditCard, BankScreen, 'grid', { optional: { category: 'Life', description: 'Your balance, transfers, and everyday peace of mind.' } }),
+  entry('social', Radio, PulseApp, 'grid', { fullBleed: true, optional: { category: 'Social', description: 'Message your people, one-on-one or in a group.' } }),
+  entry('gallery', Image, GalleryScreen, 'grid'),
+  entry('classifieds', Tag, MarketApp, 'grid', { optional: { category: 'Life', description: 'Buy, sell, and find something worth keeping.' } }),
+  entry('gps', MapPin, GPSScreen, 'grid', { optional: { category: 'Tools', description: 'Familiar places. New directions. Your city, mapped.' } }),
+  entry('services', ShieldCheck, ServicesScreen, 'grid', { optional: { category: 'Life', description: 'Get in touch with the people who keep the city moving.' } }),
+  entry('notes', StickyNote, NotesScreen, 'grid', { optional: { category: 'Tools', description: 'A home for your plans, ideas, and little reminders.' } }),
+  entry('mail', Mail, MailScreen, 'grid', { optional: { category: 'Social', description: 'For the things that deserve more than a text.' } }),
+  entry('weather', CloudSun, WeatherScreen, 'grid', { optional: { category: 'Life', description: 'A look outside before you head out.' } }),
+  entry('calculator', Calculator, CalculatorScreen, 'grid', { optional: { category: 'Tools', description: 'Everyday numbers, made a little simpler.' } }),
+  entry('property', House, PropertyScreen, 'grid', { optional: { category: 'Life', description: 'Your properties and a shortcut home.' } }),
+  entry('vehicles', Car, VehiclesScreen, 'grid', { optional: { category: 'Life', description: 'Your vehicles, fuel, and last registered garage.' } }),
+  entry('flash', Aperture, FlashApp, 'grid', { fullBleed: true, optional: { category: 'Social', description: 'Short videos and photos from around the city, for everyone to see.' } }),
+  entry('music', Music, MusicScreen, 'grid', { optional: { category: 'Tools', description: 'Save YouTube, SoundCloud, or stream links and play them from your phone.' } }),
+  entry('clock', AlarmClock, ClockScreen, 'grid', { optional: { category: 'Tools', description: 'Set alarms that ring on your local clock, even with the phone closed.' } }),
+  entry('phone', Phone, PhoneScreen, 'dock'),
+  entry('messages', MessageCircle, MessagesScreen, 'dock'),
+  entry('contacts', ContactRound, ContactsScreen, 'dock'),
+  entry('camera', Camera, CameraApp, 'dock'),
+  entry('settings', SettingsIcon, SettingsHost, 'system'),
+  entry('moderation', ShieldAlert, ModerationApp, 'grid'),
+  // Third-party SDK apps (apps:list) are not entries: they all render through this host, with the SDK app id as the
+// route target. Their runtime list lives in runtimeApps.ts and feeds the App Store and the host.
+  entry('custom', Blocks, CustomAppRoute, 'hidden'),
+];
+
+const byId = new Map<string, AppDefinition>(appRegistry.map(item => [item.id, item]));
+export const appDefinition = (id: AppId): AppDefinition | undefined => byId.get(id);
+/** Icon and copy for any app id, with a safe fallback for ids that are not registered. */
+export const iconOf = (id: AppId): LucideIcon => byId.get(id)?.icon ?? Phone;
+
+/** Optional apps, in registry order. Must stay in step with catalog.ts (and the server allow-list). */
+export const optionalListings = appRegistry.filter((item): item is AppDefinition & { optional: NonNullable<AppDefinition['optional']> } => !!item.optional);
+export const registeredOptionalIds = optionalListings.map(item => item.id);
+export const catalogMatchesRegistry = (): boolean =>
+  registeredOptionalIds.length === optionalApps.length && optionalApps.every(id => registeredOptionalIds.includes(id));
+
+const isOptionalApp = (id: AppId): boolean => !!byId.get(id)?.optional;
+
+/**
+ * Whether an app can open on this handset: registered, not switched off by the server (`capabilities`),
+ * passing its own gate, and installed when it is an optional app.
+ */
+export function canLaunch(id: AppId, device?: Bootstrap): boolean {
+  if (id === 'home') return true;
+  const definition = byId.get(id);
+  if (!definition || id === 'custom' || definition.placement === 'hidden') return false;
+  if (device?.capabilities[id] === false || (device && definition.gate && !definition.gate(device))) return false;
+  return !isOptionalApp(id) || device?.data?.installedApps?.includes(id) === true;
+}
+
+/** The screen the phone reopens on: the last one used, if it still exists and may open. */
+export function restoreApp(device?: Bootstrap): AppId {
+  const id = recall('app') as AppId;
+  return byId.has(id) && canLaunch(id, device) ? id : 'home';
+}
+
+export const homeGridIds = (device?: Bootstrap): AppId[] =>
+  appRegistry.filter(item => item.placement === 'grid' && canLaunch(item.id, device)).map(item => item.id);
+
+/** Default dock; the gallery stands in when the camera is unavailable. */
+export const defaultDock = (device?: Bootstrap): AppId[] => ['phone', 'messages', 'contacts', canLaunch('camera', device) ? 'camera' : 'gallery'];

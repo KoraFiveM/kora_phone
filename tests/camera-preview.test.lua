@@ -3,7 +3,13 @@ local focus, visible, selfie, destroyed = false, false, false, false
 KoraPhone = { State = { cameraMode = false, open = true }, SendNui = function(name, data)
     if name == 'phone:visibility' then visible = data end
 end }
-Kora = { cache = { ped = function() return 1 end } }
+local keybinds = {}
+Kora = {
+    cache = { ped = function() return 1 end },
+    lang = function(key) return key end,
+    keybind = { add = function(options) keybinds[options.name] = options end },
+    timers = { setInterval = function() return 1 end, clearInterval = function() end },
+}
 local threads = 0
 function CreateThread() threads = threads + 1 end
 function IsEntityDead() return false end
@@ -30,6 +36,8 @@ function DestroyCam() destroyed = true end
 function AddEventHandler() end
 function GetCurrentResourceName() return 'kora_phone' end
 dofile('client/camera.lua')
+local look = keybinds.kora_phone_camera_look
+assert(look and look.defaultKey == 'LMENU', 'the look key registers through Kora.keybind')
 assert(threads == 0, 'no camera loop may run before the camera opens')
 assert(KoraPhone.Camera.Open({preview=true,front=true}))
 assert(focus and visible and selfie and KoraPhone.State.cameraMode)

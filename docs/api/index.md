@@ -8,3 +8,4 @@ sidebar_position: 1
 | Module | Namespace | Realms |
 | --- | --- | --- |
 | [Cross-resource exports & events](./exports-events.md) | `exports.kora_phone / kora_phone:client:*` | client, server |
+| [App SDK](./apps.md) | `exports.kora_phone:RegisterApp / RegisterAppCallback / SendAppEvent` and `apps:*` routes | server, web |

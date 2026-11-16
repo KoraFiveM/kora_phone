@@ -11,11 +11,17 @@ export interface Alarm { id: string; label: string; time: string; days: number[]
 export interface DeviceData { contacts: Contact[]; notes: Note[]; photos: Photo[]; stations: Station[]; alarms: Alarm[]; settings: Settings; installedApps?: AppId[]; customApps?: Record<string, boolean> }
 export interface Call { id: string; status: 'ringing' | 'active' | 'busy' | 'missed' | 'ended' | 'declined' | 'cancelled' | 'failed'; number: string; direction: 'incoming' | 'outgoing'; deviceId: string; volume?: number }
 export interface WalletCard { name: string; citizenId: string; birthdate: string; gender: string; nationality: string; job: string; licences: { id: string; label: string; valid: boolean }[] }
-export interface LegacyActivity { id: number; title: string; message: string; created_at: string }
+/** A server-registered SDK app as `apps:list` returns it. */
+export interface SdkApp {
+  id: string; name: string; description: string; icon?: string; entry: string; version?: string; resource: string; url?: string;
+  permissions: string[]; job?: unknown; defaultInstalled?: boolean; price?: number; installed: boolean;
+}
+export interface MailAcceptResult { accepted: boolean; dispatched: boolean }
+export interface SystemActivity { id: number; title: string; message: string; created_at: string }
 export interface MailItem { hasAction?: boolean; id: number; peer: string; subject: string; body: string; created_at: string; unread: boolean }
 export interface Location { label: string; x: number; y: number }
 export interface Service { label: string; description: string; numbers: string[] }
-export interface JobData { job: { name: string; label: string; grade: number; gradeLabel: string; onDuty: boolean }; actions: { id: string; label: string }[] }
+export interface JobData { job: { name: string; label: string; grade: number | { name: string; label?: string; level?: number }; gradeLabel: string; onDuty: boolean }; actions: { id: string; label: string }[] }
 export interface ModerationReport { id: number; targetType: 'profile' | 'post' | 'comment' | 'listing'; targetId: number; reason: string; details: string; status: string; createdAt: string; snapshot?: Record<string, unknown> }
 export interface Bootstrap { homeReorder?: boolean; galleryViewer?: boolean; model?: 'standard' | 'flip' | 'fold'; characterName?: string; transfers?: boolean; moderator?: boolean; id: string; number: string; locked: boolean; hasPin: boolean; data?: DeviceData; preferences?: Settings; capabilities: Partial<Record<AppId, boolean>>; unavailable: Record<string, string>; locations: Location[]; services: Service[]; call?: Call; video: { iceServers: RTCIceServer[] } | false; flash: { maxSeconds: number; maxBytes?: number } | false; admin: boolean }
 export type MediaKind = 'photo' | 'video';
@@ -31,11 +37,12 @@ export interface Vehicle { vehicle: string; plate: string; garage: string; state
 export interface Weather { condition: string; hour: number; minute: number; rain: number }
 export interface Notification { deviceId: string; title: string; body: string; app: AppId; at?: number; count?: number }
 export type Api = {
+  appsList: [Record<string, never>, SdkApp[]]; appsInstall: [{ id: string }, { id: string; installed: boolean }]; appsUninstall: [{ id: string }, { id: string; installed: boolean }];
   customApp: [{ app: string; installed?: boolean }, DeviceData];
-  installApp: [{ app: AppId; installed: boolean }, DeviceData];
+  installApp: [{ app: AppId; installed: boolean; expectedDeviceId?: string }, DeviceData];
   unlock: [{ pin: string }, Bootstrap]; lock: [Record<string, never>, Bootstrap]; refresh: [Record<string, never>, Bootstrap];
   pin: [{ currentPin: string; pin: string }, { hasPin: boolean }];
-  settings: [Settings, DeviceData]; contactSave: [Contact & { remove?: boolean }, DeviceData];
+  settings: [Settings & { expectedDeviceId?: string }, DeviceData]; contactSave: [Contact & { remove?: boolean }, DeviceData];
   messages: [{ kind: 'sms' | 'mail'; before?: number }, Message[]];
   sendMessage: [{ recipient: string; kind: 'sms' | 'mail'; subject: string; body: string }, { sent: boolean }];
   history: [Record<string, never>, CallHistory[]]; dial: [{ number: string }, Call];
@@ -61,7 +68,7 @@ export type Api = {
   job: [Record<string, never>, JobData]; setDuty: [{ onDuty: boolean }, JobData]; jobAction: [{ action: string }, { completed: boolean }];
   capture: [{ front?: boolean }, DeviceData]; deletePhoto: [{ id: string }, DeviceData];
   blocked: [Record<string, never>, string[]]; setBlocked: [{ number: string; blocked: boolean }, boolean];
-  legacyMailList: [{ before?: number }, MailItem[]]; legacyActivity: [{ before?: number }, LegacyActivity[]]; mailAccept: [{ id: number }, boolean]; legacyMailRead: [{ id: number }, boolean]; legacyMailDelete: [{ id: number }, boolean];
+  systemMailList: [{ before?: number }, MailItem[]]; systemActivity: [{ before?: number }, SystemActivity[]]; mailAccept: [{ id: number }, MailAcceptResult]; systemMailRead: [{ id: number }, boolean]; systemMailDelete: [{ id: number }, boolean];
   mailList: [{ box: 'inbox' | 'sent'; before?: number }, MailItem[]]; mailSend: [{ to: string; subject: string; body: string }, boolean]; mailRead: [{ id: number }, boolean]; mailDelete: [{ id: number }, boolean];
   wallet: [Record<string, never>, WalletCard]; showWallet: [Record<string, never>, { shown: boolean }]; myLocation: [Record<string, never>, { x: number; y: number; label: string; heading?: number; waypoint?: { x: number; y: number } }];
   mapBlips: [Record<string, never>, MapBlip[]];

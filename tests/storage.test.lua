@@ -183,5 +183,46 @@ test("deleting a Fivemanage record just forgets it (their API has no delete)", f
     equal(result(function(cb) Storage.delete({ storageProvider = 'fivemanage', storageKey = 'abc' }, cb) end)[1], true)
 end)
 
+local function withCapture(reply, fn)
+    local seen = {}
+    Kora.screenshot = { requestClient = function(src, options, cb) seen.source, seen.options = src, options; cb(table.unpack(reply)) end }
+    fn(seen)
+    Kora.screenshot = nil
+end
+local PNG_B64 = 'aGVsbG8='  -- "hello"
+test("local-development captures through Kora.screenshot.requestClient and saves the file", function()
+    reset('local-development')
+    local saved
+    SaveResourceFile = function(_, key, data) saved = { key = key, data = data }; return true end
+    withCapture({ false, 'data:image/jpeg;base64,' .. PNG_B64 }, function(seen)
+        local out = result(function(cb) Storage.completeLocal(7, ticket({ mimeType = 'image/jpeg', byteSize = 100 }), cb) end)
+        equal(out[1], true); equal(seen.source, 7); equal(seen.options.encoding, 'jpg')
+        equal(out[2].storageProvider, 'local-development'); equal(out[2].byteSize, 5)
+        equal(saved.key, 'local-media/tok.jpg'); equal(saved.data, 'hello')
+    end)
+    SaveResourceFile = function() return true end
+end)
+test("local-development reports capture failures and oversize images", function()
+    reset('local-development')
+    withCapture({ 'The client could not capture' }, function()
+        equal(result(function(cb) Storage.completeLocal(7, ticket({ mimeType = 'image/jpeg' }), cb) end)[3], 'CAPTURE_FAILED')
+    end)
+    withCapture({ false, 'data:image/jpeg;base64,' .. PNG_B64 }, function()
+        equal(result(function(cb) Storage.completeLocal(7, ticket({ mimeType = 'image/jpeg', byteSize = 2 }), cb) end)[3], 'MEDIA_TOO_LARGE')
+    end)
+    equal(result(function(cb) Storage.completeLocal(7, ticket({ mimeType = 'image/jpeg' }), cb) end)[3], 'SCREENSHOT_PROVIDER_UNAVAILABLE')
+end)
+test("external provider hosts: the broker may be on AllowedProviderHosts or AllowedPublicHosts", function()
+    reset('external', { External = { BrokerUrl = 'https://broker.example.com/b', VerifyUrl = 'https://broker.example.com/v', Secret = 's' } })
+    equal(result(function(cb) Storage.begin(ticket({ mimeType = 'image/jpeg' }), cb) end)[3], 'PROVIDER_HOST_DENIED')
+    Config.Server.Media.AllowedProviderHosts = { 'broker.example.com' }
+    local out = result(function(cb) Storage.begin(ticket({ mimeType = 'image/jpeg' }), cb) end)
+    assert(out[3] ~= 'PROVIDER_HOST_DENIED', 'provider host list was ignored')
+    Config.Server.Media.AllowedProviderHosts = nil
+    Config.Server.Media.AllowedPublicHosts = { 'broker.example.com' }
+    out = result(function(cb) Storage.begin(ticket({ mimeType = 'image/jpeg' }), cb) end)
+    assert(out[3] ~= 'PROVIDER_HOST_DENIED', 'public host list no longer covers the broker')
+end)
+
 io.write(("\n%d passed, %d failed\n"):format(passed, failed))
 if failed > 0 then os.exit(1) end

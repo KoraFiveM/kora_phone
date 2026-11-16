@@ -1,5 +1,14 @@
 KoraPhone = KoraPhone or {}
-local Camera = { handle = nil, previousRadar = true, front=false, preview=false, looking=false, fov=nil, targetFov=nil, zoom=nil }
+local Camera = {
+    handle = nil,
+    previousRadar = true,
+    front = false,
+    preview = false,
+    looking = false,
+    fov = nil,
+    targetFov = nil,
+    zoom = nil,
+}
 
 local watchCamera
 
@@ -48,21 +57,39 @@ local function stepZoom()
     SetCamFov(Camera.handle, fov)
 end
 
+local HEAD_BONE = 31086
+
+-- The selfie camera orbits to wherever the player is aiming the gameplay camera.
+local function updateSelfieCamera(ped)
+    local rot = GetGameplayCamRot(2)
+    local pitch = math.rad(math.max(-30.0, math.min(30.0, rot.x)))
+    local yaw = math.rad(rot.z)
+    local head = GetPedBoneCoords(ped, HEAD_BONE, 0.0, 0.0, 0.0)
+    local reach = math.cos(pitch) * 0.9
+    SetCamCoord(
+        Camera.handle,
+        head.x - math.sin(yaw) * reach,
+        head.y + math.cos(yaw) * reach,
+        head.z + math.sin(pitch) * 0.9
+    )
+    PointCamAtPedBone(Camera.handle, ped, HEAD_BONE, 0.0, 0.0, 0.0, true)
+end
+
+local function updateRearCamera(ped)
+    StopCamPointing(Camera.handle)
+    local at = GetPedBoneCoords(ped, HEAD_BONE, 0.0, 0.12, 0.03)
+    local rot = GetGameplayCamRot(2)
+    SetCamCoord(Camera.handle, at.x, at.y, at.z)
+    SetCamRot(Camera.handle, rot.x, rot.y, rot.z, 2)
+end
+
 local function updateCamera()
     if not Camera.handle then return end
-    local ped=PlayerPedId()
+    local ped = PlayerPedId()
     if Camera.front then
-        -- The selfie camera orbits to wherever the player is aiming the gameplay camera.
-        local rot=GetGameplayCamRot(2)
-        local pitch,yaw=math.rad(math.max(-30.0,math.min(30.0,rot.x))),math.rad(rot.z)
-        local head=GetPedBoneCoords(ped,31086,0.0,0.0,0.0)
-        SetCamCoord(Camera.handle,head.x-math.sin(yaw)*math.cos(pitch)*0.9,head.y+math.cos(yaw)*math.cos(pitch)*0.9,head.z+math.sin(pitch)*0.9)
-        PointCamAtPedBone(Camera.handle,ped,31086,0.0,0.0,0.0,true)
+        updateSelfieCamera(ped)
     else
-        StopCamPointing(Camera.handle)
-        local p=GetPedBoneCoords(ped,31086,0.0,0.12,0.03)
-        local rot=GetGameplayCamRot(2)
-        SetCamCoord(Camera.handle,p.x,p.y,p.z); SetCamRot(Camera.handle,rot.x,rot.y,rot.z,2)
+        updateRearCamera(ped)
     end
 end
 
@@ -85,13 +112,19 @@ function Camera.Open(options)
     local ped = Kora.cache.ped()
     if IsEntityDead(ped) then return false, 'PLAYER_DEAD' end
     if KoraPhone.UiBlocked and KoraPhone.UiBlocked() then return false, 'UI_BLOCKED' end
-    if KoraPhone.Video and KoraPhone.Video.active then return false,'Close video before opening the camera' end
+    if KoraPhone.Video and KoraPhone.Video.active then return false, Kora.lang('camera.close_video_first') end
     Camera.previousRadar = not IsRadarHidden()
     KoraPhone.State.cameraMode = true
-    Camera.front=options.front == true
-    Camera.handle=CreateCam('DEFAULT_SCRIPTED_CAMERA',true)
-    if not Camera.handle or Camera.handle==0 then Camera.handle=nil; KoraPhone.State.cameraMode=false; return false,'CAMERA_UNAVAILABLE' end
-    resetZoom(); updateCamera(); RenderScriptCams(true,false,0,true,true)
+    Camera.front = options.front == true
+    Camera.handle = CreateCam('DEFAULT_SCRIPTED_CAMERA', true)
+    if not Camera.handle or Camera.handle == 0 then
+        Camera.handle = nil
+        KoraPhone.State.cameraMode = false
+        return false, 'CAMERA_UNAVAILABLE'
+    end
+    resetZoom()
+    updateCamera()
+    RenderScriptCams(true, false, 0, true, true)
     Camera.preview = options.preview == true
     Camera.looking = false
     SetNuiFocus(Camera.preview, Camera.preview)
@@ -105,14 +138,18 @@ end
 function Camera.SetFacing(front)
     if not KoraPhone.State.cameraMode or type(front) ~= 'boolean' then return false end
     -- Rear and selfie have their own zoom range, so flipping starts the new lens at its default view.
-    if front ~= Camera.front then Camera.front = front; resetZoom() end
+    if front ~= Camera.front then
+        Camera.front = front
+        resetZoom()
+    end
     updateCamera()
     return true
 end
 
 -- dir 1 zooms in (narrower field of view), -1 zooms out, one step per call.
 function Camera.Zoom(dir)
-    if not KoraPhone.State.cameraMode or not Camera.handle or not Camera.zoom or (dir ~= 1 and dir ~= -1) then return false end
+    if not KoraPhone.State.cameraMode or not Camera.handle or not Camera.zoom then return false end
+    if dir ~= 1 and dir ~= -1 then return false end
     local zoom = Camera.zoom
     if not zoom.enabled then return false end
     Camera.targetFov = math.max(zoom.minFov, math.min(zoom.maxFov, (Camera.targetFov or zoom.fov) - dir * zoom.step))
@@ -148,27 +185,35 @@ function Camera.Close()
     end
 end
 
+local CAPTURE_TIMEOUT_MS = 30000
+
+-- A broker answers { receipt }, Fivemanage answers { data = { id } }.
+local function receiptFrom(responseBody)
+    if type(responseBody) ~= 'string' or #responseBody > 8192 then return nil end
+    local ok, response = pcall(json.decode, responseBody)
+    if not ok or type(response) ~= 'table' then return nil end
+    local receipt = response.receipt or (type(response.data) == 'table' and response.data.id or nil)
+    return type(receipt) == 'string' and receipt or nil
+end
+
 function Camera.Capture(done)
     done = done or function() end
     if not KoraPhone.State.cameraMode then return done({ ok = false, error = 'CAMERA_NOT_OPEN' }) end
-    if GetResourceState('screenshot-basic') ~= 'started' then
-        return done({ ok = false, error = 'SCREENSHOT_PROVIDER_UNAVAILABLE' })
-    end
     local reply, finished = done, false
     done = function(result)
         if finished then return end
         finished = true
         reply(result)
     end
-    SetTimeout(30000, function()
+    Kora.timers.setTimeout(function()
         if finished then return end
         Camera.Close()
-        done({ ok = false, error = { code = 'CAPTURE_TIMEOUT', message = 'Taking the photo timed out. Please try again.' } })
-    end)
+        done({ ok = false, error = { code = 'CAPTURE_TIMEOUT', message = Kora.lang('camera.capture_timeout') } })
+    end, CAPTURE_TIMEOUT_MS)
     KoraPhone.ServerCallback('kora_phone:server:requestMediaUpload', {
         mimeType = 'image/jpeg',
         -- This is only an upper-bound declaration. The provider verifies the actual size.
-        byteSize = 8 * 1024 * 1024
+        byteSize = 8 * 1024 * 1024,
     }, function(result)
         if finished then return end
         if type(result) ~= 'table' or result.ok ~= true then return done(result) end
@@ -179,37 +224,33 @@ function Camera.Capture(done)
 
         if instruction.mode == 'server-capture' then
             return KoraPhone.ServerCallback('kora_phone:server:completeMediaUpload', {
-                token = instruction.token
+                token = instruction.token,
             }, done)
         end
 
-        if (instruction.mode ~= 'multipart-upload' and instruction.mode ~= 'direct-upload') or type(instruction.uploadUrl) ~= 'string' then
+        local uploads = instruction.mode == 'multipart-upload' or instruction.mode == 'direct-upload'
+        if not uploads or type(instruction.uploadUrl) ~= 'string' then
             return done({ ok = false, error = { code = 'UNSUPPORTED_UPLOAD_MODE' } })
         end
 
         -- uploadUrl is issued by the server's configured provider. NUI data can
         -- never supply or override it.
-        local started = pcall(function() exports['screenshot-basic']:requestScreenshotUpload(
+        local started = pcall(Kora.screenshot.requestScreenshotUpload,
             instruction.uploadUrl,
             type(instruction.field) == 'string' and instruction.field or 'file',
             { encoding = 'jpg', quality = 0.90 },
             function(responseBody)
                 if finished then return end
-                local receipt
-                if type(responseBody) == 'string' and #responseBody <= 8192 then
-                    local ok, response = pcall(json.decode, responseBody)
-                    -- A broker answers { receipt }, Fivemanage answers { data = { id } }.
-                    if ok and type(response) == 'table' then receipt = response.receipt or (type(response.data) == 'table' and response.data.id or nil) end
-                end
-                if type(receipt) ~= 'string' then
+                local receipt = receiptFrom(responseBody)
+                if not receipt then
                     return done({ ok = false, error = { code = 'UPLOAD_FAILED' } })
                 end
                 KoraPhone.ServerCallback('kora_phone:server:completeMediaUpload', {
                     token = instruction.token,
-                    receipt = receipt
+                    receipt = receipt,
                 }, done)
             end
-        ) end)
+        )
         if not started then
             Camera.Close()
             done({ ok = false, error = 'UPLOAD_FAILED' })
@@ -228,45 +269,57 @@ end
 
 -- While a clip records, tell the UI when the player starts or stops talking (native voice state, the same one
 -- kora_voice and the HUD use). Polls every 100 ms only while recording with the camera open.
+local TALK_POLL_MS = 100
+
+local function stopTalkWatch()
+    Camera.recording = false
+    if Camera.talkTimer then Kora.timers.clearInterval(Camera.talkTimer) end
+    Camera.talkTimer = nil
+end
+
 function Camera.SetRecording(active)
     Camera.recording = active == true and KoraPhone.State.cameraMode == true
-    if not Camera.recording or Camera.talkWatch then return Camera.recording end
-    Camera.talkWatch = true
-    CreateThread(function()
-        local last
-        while Camera.recording and KoraPhone.State.cameraMode do
-            local talking = NetworkIsPlayerTalking(PlayerId()) == true
-            if talking ~= last then
-                last = talking
-                KoraPhone.SendNui('camera:talking', { talking = talking })
-            end
-            Wait(100)
+    if not Camera.recording then
+        stopTalkWatch()
+        return false
+    end
+    if Camera.talkTimer then return true end
+    local last
+    Camera.talkTimer = Kora.timers.setInterval(function()
+        if not Camera.recording or not KoraPhone.State.cameraMode then return stopTalkWatch() end
+        local talking = NetworkIsPlayerTalking(PlayerId()) == true
+        if talking ~= last then
+            last = talking
+            KoraPhone.SendNui('camera:talking', { talking = talking })
         end
-        Camera.recording = false
-        Camera.talkWatch = false
-    end)
+    end, TALK_POLL_MS)
     return true
 end
 
 local function lookHint()
     local _, key = lookSettings()
+    local text = Camera.looking and Kora.lang('camera.hint_aiming', key) or Kora.lang('camera.hint_hold', key)
+    if Camera.zoom and Camera.zoom.enabled then text = text .. Kora.lang('camera.hint_zoom') end
     BeginTextCommandDisplayHelp('STRING')
-    local text = Camera.looking and ('Aiming - release ' .. key .. ' to use the phone.') or ('Hold ' .. key .. ' and move the mouse to aim the camera.')
-    if Camera.zoom and Camera.zoom.enabled then text = text .. ' Scroll to zoom.' end
     AddTextComponentSubstringPlayerName(text)
     EndTextCommandDisplayHelp(0, false, false, -1)
 end
 
+-- Aiming key: held (or toggled) to release the cursor so the mouse aims the camera. Kora.keybind makes it rebindable.
 do
     local mode, key = lookSettings()
-    if mode ~= 'off' and RegisterCommand and RegisterKeyMapping then
-        RegisterCommand('+kora_phone_camera_look', function()
-            Camera.SetLooking(mode == 'toggle' and not Camera.looking or true)
-        end, false)
-        RegisterCommand('-kora_phone_camera_look', function()
-            if mode == 'hold' then Camera.SetLooking(false) end
-        end, false)
-        RegisterKeyMapping('+kora_phone_camera_look', 'Phone camera: aim the camera', 'keyboard', key)
+    if mode ~= 'off' then
+        Kora.keybind.add({
+            name = 'kora_phone_camera_look',
+            description = Kora.lang('keybind.camera_look'),
+            defaultKey = key,
+            onPressed = function()
+                Camera.SetLooking(mode == 'toggle' and not Camera.looking or true)
+            end,
+            onReleased = function()
+                if mode == 'hold' then Camera.SetLooking(false) end
+            end,
+        })
     end
 end
 
@@ -274,10 +327,22 @@ end
 -- cameraMode is cleared (finishMode / character reset).
 local watching = false
 -- Every control bound to the mouse wheel (weapon wheel, weapon select on foot and in vehicles, cursor scroll).
+-- Weapon wheel, attack, aim, cover: nothing but the camera should react while it is up.
+local blockedControls = { 19, 24, 25, 37, 44 }
 local wheelControls = { 14, 15, 16, 17, 99, 100, 241, 242, 261, 262 }
+local WHEEL_UP = { 241, 15, 17 }
+local WHEEL_DOWN = { 242, 14, 16 }
+
+local function wheelPressed(controls)
+    for i = 1, #controls do
+        if IsDisabledControlJustPressed(0, controls[i]) then return true end
+    end
+    return false
+end
+
 local function wheelDirection()
-    if IsDisabledControlJustPressed(0, 241) or IsDisabledControlJustPressed(0, 15) or IsDisabledControlJustPressed(0, 17) then return 1 end
-    if IsDisabledControlJustPressed(0, 242) or IsDisabledControlJustPressed(0, 14) or IsDisabledControlJustPressed(0, 16) then return -1 end
+    if wheelPressed(WHEEL_UP) then return 1 end
+    if wheelPressed(WHEEL_DOWN) then return -1 end
 end
 function watchCamera()
     if watching then return end
@@ -301,11 +366,7 @@ function watchCamera()
             if Camera.preview and not Camera.looking then
                 for control = 1, 6 do DisableControlAction(0, control, true) end
             end
-            DisableControlAction(0, 19, true)
-            DisableControlAction(0, 24, true)
-            DisableControlAction(0, 25, true)
-            DisableControlAction(0, 37, true)
-            DisableControlAction(0, 44, true)
+            for i = 1, #blockedControls do DisableControlAction(0, blockedControls[i], true) end
             HideHudAndRadarThisFrame()
             if IsControlJustReleased(0, 177) then Camera.Close() end
         end
@@ -316,7 +377,10 @@ end
 -- NUI focus is released by the engine on stop; this also drops the scripted camera and keep-input flag.
 AddEventHandler('onResourceStop', function(resource)
     if resource ~= GetCurrentResourceName() then return end
-    if KoraPhone.State.cameraMode or Camera.handle then finishMode(); SetNuiFocus(false, false) end
+    if KoraPhone.State.cameraMode or Camera.handle then
+        finishMode()
+        SetNuiFocus(false, false)
+    end
 end)
 
 KoraPhone.Camera = Camera

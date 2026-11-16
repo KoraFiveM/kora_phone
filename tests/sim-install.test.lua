@@ -9,11 +9,15 @@ local function fixture()
     env.KoraPhone = auto()
     env.KoraPhone.GetPlayer = function() return { items = state.items } end
     env.PhoneError, env.PhoneResult, env.PhoneConstants = function() end, function() end, { Errors = {} }
-    env.MySQL = auto()
     env.exports = setmetatable({}, { __call = function() end, __index = function(_, resource)
         return setmetatable({}, { __index = function(_, name) return function(_, ...)
             local a = { ... }
             if name == 'getItemBySlot' then return state.items[a[2]] end
+            if name == 'getItemsByName' then
+                local out = {}
+                for _, item in pairs(state.items) do if item.name == a[2] then out[#out + 1] = item end end
+                return out
+            end
             if resource == 'kora_inventory' and name == 'RemoveItem' then
                 if not state.removeOk then return false, 'blocked' end
                 state.items[a[4]] = nil; state.removed = state.removed + 1; return true
@@ -27,7 +31,9 @@ local function fixture()
     env.AddEventHandler, env.RegisterNetEvent, env.RegisterCommand, env.CreateThread = function() end, function() end, function() end, function() end
     env.print = function() end
     env.Kora = { logging = setmetatable({}, { __index = function() return function() return true end end }) }
-    assert(loadfile('server/handsets.lua', 't', env))()
+    for _, file in ipairs({ 'server/handsets/core.lua', 'server/handsets/sim.lua' }) do
+        assert(loadfile(file, 't', env))()
+    end
     return state, env.KoraPhone.Handsets
 end
 local sim = string.rep('a', 32)

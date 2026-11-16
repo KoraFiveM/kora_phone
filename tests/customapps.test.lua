@@ -33,16 +33,15 @@ local function loadCustomApps()
     _G.SendNUIMessage = function(msg) sent[#sent + 1] = msg end
     _G.GetInvokingResource = function() return 'addon-resource' end
     _G.exports = setmetatable({ kora_core = { getPlayerData = function()
-        local job = playerJob and { name = playerJob.name, grade = playerJob.grade }
-        if job and type(job.grade) == 'table' then
-            job.grade = { level = job.grade.level + 1 }
-        end
-        return { job = job }
+        -- kora_core grades are one-based: grade = { level = n }.
+        return { job = playerJob and { name = playerJob.name, grade = { level = playerJob.grade } } }
     end } }, { __call = function(_, name, fn) exportsTable[name] = fn end })
     _G.AddEventHandler = function(event, fn) handlers[event] = fn end
     _G.KoraPhone = {
         Notifications = { Native = function(title, body, urgent) natives[#natives + 1] = { title = title, body = body, urgent = urgent }; return true end },
     }
+    _G.KoraPhone.SDK = nil
+    dofile(root .. "/client/sdk/registry.lua")
     dofile(root .. "/client/customapps.lua")
 end
 
@@ -121,21 +120,49 @@ test("lb-phone AddCustomApp carries price through to the listing", function()
 end)
 
 test("a job-gated app is hidden from a player without that job", function()
-    playerJob = { name = 'ambulance', grade = 0 }
+    playerJob = { name = 'ambulance', grade = 1 }
     alias('__cfx_export_sd-phone_addCustomApp', { identifier = 'police-app', ui = 'ui/index.html', job = 'police' })
     equal(findApp('police-app'), nil)
-    playerJob = { name = 'police', grade = 0 }
+    playerJob = { name = 'police', grade = 1 }
     equal(findApp('police-app') ~= nil, true)
     playerJob = nil
 end)
 
 test("a job-gated app respects a minimum grade", function()
     alias('__cfx_export_17mov_Phone_AddApplication', { name = 'chief-app', ui = 'ui/index.html', job = { name = 'police', grade = 3 } })
-    playerJob = { name = 'police', grade = 1 }
+    playerJob = { name = 'police', grade = 2 }
     equal(findApp('chief-app'), nil)
     playerJob = { name = 'police', grade = 3 }
     equal(findApp('chief-app') ~= nil, true)
     playerJob = nil
+end)
+
+test("list exposes the SDK-shaped fields next to the legacy ones", function()
+    alias('__cfx_export_lb-phone_AddCustomApp', { identifier = 'shape-app', ui = 'ui/index.html' })
+    local app = findApp('shape-app')
+    equal(app.id, 'shape-app')
+    equal(app.source, 'client')
+    equal(#app.permissions, 0)
+end)
+
+test("lifecycle hooks fire for client-registered apps", function()
+    local calls = {}
+    alias('__cfx_export_lb-phone_AddCustomApp', {
+        identifier = 'hook-app', ui = 'ui/index.html',
+        onOpen = function() calls[#calls + 1] = 'open' end, onClose = function() calls[#calls + 1] = 'close' end,
+    })
+    KoraPhone.CustomApps.Fire('hook-app', 'onOpen')
+    KoraPhone.CustomApps.Fire('hook-app', 'onClose')
+    KoraPhone.CustomApps.Fire('hook-app', 'onDelete')
+    equal(table.concat(calls, ','), 'open,close')
+end)
+
+test("RemoveApp and SendAppMessage exports keep their names and results", function()
+    equal(exportsTable['SendAppMessage']('hook-app', { a = 1 }), true)
+    equal(sent[#sent].type, 'customMessage')
+    equal(exportsTable['SendAppMessage']('nope', {}), false)
+    equal(exportsTable['RemoveApp']('hook-app'), true)
+    equal(exportsTable['RemoveApp']('hook-app'), false)
 end)
 
 io.write(("\n%d passed, %d failed (%d NUI messages sent)\n"):format(passed, failed, #sent))

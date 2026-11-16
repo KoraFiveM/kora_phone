@@ -1,13 +1,16 @@
 KoraPhone = KoraPhone or {}
-local Voice = { provider = 'none', channel = nil, muted = false, speaker = false }
 
-local function resourceStarted(name)
-    return GetResourceState(name) == 'started'
-end
+---Client side of the phone call voice integration (kora_voice).
+---SetMuted calls kora_voice's call-only microphone mute (proximity and radio keep
+---working); speaker is a presentation flag only, because kora_voice has no call
+---volume boost and call routing stays private and server-owned.
+local Voice = { channel = nil, muted = false, speaker = false }
 
-function Voice.Detect()
-    Voice.provider = resourceStarted('pma-voice') and 'pma-voice' or 'none'
-    return Voice.provider
+---Current call channel as published by the server, or false.
+---@return integer|false
+function Voice.CallChannel()
+    local ok, channel = pcall(exports.kora_voice.getCallChannel, exports.kora_voice)
+    return ok and channel or false
 end
 
 function Voice.Leave()
@@ -16,21 +19,33 @@ function Voice.Leave()
     Voice.speaker = false
 end
 
+---@param value boolean
+---@return boolean ok, string|nil err
 function Voice.SetMuted(value)
-    -- pma-voice does not expose a call-only microphone mute. The native
-    -- per-player mute API alters receive state, not this player's microphone.
-    Voice.muted = false
-    return false, 'CALL_MUTE_UNSUPPORTED'
+    local wanted = value == true
+    local called, ok, reason = pcall(exports.kora_voice.setCallMuted, exports.kora_voice, wanted)
+    if not called then
+        Kora.logging.warn('voice.mute_failed', 'kora_voice setCallMuted failed', { error = tostring(ok) })
+        return false, 'CALL_MUTE_FAILED'
+    end
+    if ok ~= true then
+        Voice.muted = false
+        return false, reason or 'CALL_MUTE_FAILED'
+    end
+    Voice.muted = wanted
+    return true
 end
 
+---@param value boolean
+---@return boolean
 function Voice.SetSpeaker(value)
-    -- Speaker is presentation/volume policy only; pma call routing stays private.
     Voice.speaker = value == true
     return true
 end
 
+---@return { provider: string, available: boolean, inCall: boolean }
 function Voice.Capabilities()
-    return { provider = Voice.Detect(), available = Voice.provider ~= 'none' }
+    return { provider = 'kora_voice', available = true, inCall = Voice.CallChannel() ~= false }
 end
 
 KoraPhone.Voice = Voice

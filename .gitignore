@@ -11,3 +11,6 @@ test-results/
 .playwright/
 release/
 
+
+config.local.lua
+config.local.lua.bak

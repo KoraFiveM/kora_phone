@@ -7,31 +7,39 @@ const fs = require("node:fs");
 const path = require("node:path");
 
 const root = path.resolve(__dirname, "..");
-const read = (file) => fs.readFileSync(path.join(root, file), "utf8");
+const { resolveWeb } = require("./helpers/web-source");
+const read = (file) => fs.readFileSync(resolveWeb(root, file), "utf8");
+const readApi = () => { // the web API layer is split across web/src/api/**
+  const walk = (dir) => fs.readdirSync(path.join(root, dir), { withFileTypes: true }).flatMap(e => e.isDirectory() ? walk(`${dir}/${e.name}`) : e.name.endsWith(".ts") ? [read(`${dir}/${e.name}`)] : []);
+  return [read("web/src/api.ts"), ...walk("web/src/api")].join("\n");
+};
 
-const nui = read("client/nui.lua");
+const nui = require("./helpers/nui-source").source;
+const { bound } = require("./helpers/bound");
 const notifications = read("client/notifications.lua");
 const calls = read("client/calls.lua");
 const wallet = read("server/services/wallet.lua");
 const economy = read("server/modules/economy_callbacks.lua");
-const api = read("web/src/api.ts");
-const app = read("web/src/App.tsx");
+const api = readApi();
+const background = read("web/src/core/useBackgroundEffects.ts");
+const actions = read("web/src/core/usePhoneActions.ts");
+const hostEvents = read("web/src/core/useHostEvents.ts");
 
 // Every new NUI route the UI calls exists on the client and reaches a registered server callback.
 for (const [route, callback] of [["wallet:get", "getWallet"], ["wallet:show", "showWalletId"]]) {
   assert.match(nui, new RegExp(`\\['${route}'\\] = 'kora_phone:server:${callback}'`), `${route} must map to ${callback}`);
-  assert.match(economy, new RegExp(`registerCallback\\('${callback}'`), `${callback} must be registered on the server`);
-  assert.match(api, new RegExp(`server\\('${route}'\\)`), `the UI must call ${route}`);
+  assert.match(economy, bound(callback), `${callback} must be registered on the server`);
+  assert.match(api, new RegExp(`server(?:<.*?>)?\\('${route}'[,)]`), `the UI must call ${route}`);
 }
 for (const route of ["location:mine", "waypoint", "quiet"]) {
   assert.match(nui, new RegExp(`RegisterNUICallback\\('${route}'`), `${route} must be registered on the client`);
 }
-assert.match(api, /server\('location:mine'\)/);
+assert.match(api, /server(?:<.*?>)?\('location:mine'\)/);
 assert.match(api, /server\('waypoint',/);
-assert.match(app, /nui\('quiet',/, "the UI must tell the client when Do Not Disturb changes");
+assert.match(background, /nui\('quiet',/, "the UI must tell the client when Do Not Disturb changes");
 
 // The waypoint route only accepts sane numbers.
-assert.match(nui, /math\.abs\(x\) > 20000/, "waypoint coordinates must be bounded");
+assert.match(nui, /math\.abs\(x\) > MAX_WORLD/, "waypoint coordinates must be bounded");
 
 // The ID card is built from the server's copy of the character and shown only to a nearby player.
 assert.match(wallet, /KoraPhone.GetPlayer/, "the card must come from server-side player data");
@@ -44,29 +52,33 @@ assert.match(notifications, /kora_phone:client:wallet:shown/, "the receiving cli
 // Do Not Disturb silences native alerts and doesn't pop the phone open for a call, except for urgent alerts.
 assert.match(notifications, /KoraPhone\.State\.quiet and not urgent/, "Do Not Disturb silences the native alert unless it is urgent");
 assert.match(notifications, /Notifications\.Native\(notification\.title/, "pushed notifications must go through the same silenced path");
-assert.match(nui, /RegisterNUICallback\('notify'/, "the UI must be able to ask the game for a notification while the phone is closed");
-assert.match(app, /nui\('notify'/, "texts, mail and missed calls must raise a game notification when the phone is closed");
-assert.match(api, /case'shareToChat'/, "sharing a Flash post to a chat must be wired in game");
+assert.match(nui, /route\('notify'/, "the UI must be able to ask the game for a notification while the phone is closed");
+assert.match(actions, /nui\('notify'/, "texts, mail and missed calls must raise a game notification when the phone is closed");
+assert.match(api, /shareToChat:/, "sharing a Flash post to a chat must be wired in game");
 assert.match(calls, /KoraPhone\.State\.quiet/);
 
 // Persistent notes/alarms/stations, group chats and the Garage go through registered, validated server code.
 const callbacks = read("server/callbacks.lua");
 const items = read("server/services/items.lua");
 const garage = read("server/services/garage.lua");
+const external = read("server/repositories/external.lua");
 const messaging = read("server/services/messaging.lua");
 const migration9 = read("server/schema.lua");
 for (const [route, callback] of [["items:save", "saveItem"], ["items:remove", "removeItem"], ["garage:list", "getVehicles"], ["messages:createGroup", "createGroup"], ["messages:leaveGroup", "leaveGroup"]]) {
   assert.match(nui, new RegExp(`\\['${route}'\\] = 'kora_phone:server:${callback}'`), `${route} must map to ${callback}`);
-  assert.match(callbacks, new RegExp(`registerCallback\\('${callback}'`), `${callback} must be registered on the server`);
+  assert.match(callbacks, bound(callback), `${callback} must be registered on the server`);
   assert.match(api, new RegExp(`'${route}'`), `the UI must call ${route}`);
 }
-assert.match(nui, /RegisterNUICallback\('weather:get'/);
-assert.match(nui, /RegisterNUICallback\('alarm'/);
+assert.match(nui, /route\('weather:get'/);
+assert.match(nui, /route\('alarm'/);
 assert.match(items, /PhoneValidation\.item\(/, "items must be validated on the server");
 assert.match(items, /Config\.Server\.Items\[kind\]/, "items must be limited per phone");
 assert.match(migration9, /primary = \{ 'device_id', 'kind', 'item_key' \}/, "an item is unique per device, kind and key");
-assert.match(garage, /\^\[%w_\]\+\$/, "the vehicles table name must be checked before it is put in SQL");
-assert.match(garage, /device\.ownerCitizenId/, "vehicles must be looked up by the caller's own character");
+assert.match(external, /\^\[%w_\]\+\$/, "table and column names must be checked before they are put in SQL");
+assert.match(garage, /exports\.kora_garages:getOwnedVehicles\(device\.ownerCitizenId\)/, "vehicles come from kora_garages, not raw SQL");
+assert.doesNotMatch(garage, /Kora\.sql|MySQL|information_schema/, "the garage service runs no SQL");
+assert.doesNotMatch(garage, /information_schema|MySQL|Kora\.sql/, "the garage service holds no SQL");
+
 assert.match(messaging, /otherMembers\(conversationId, sender\.id\)/, "group messages must go to the other members");
 assert.match(messaging, /requireConversation\(device, payload\)/, "leaving a group must check membership");
 
@@ -76,17 +88,17 @@ const mailRepo = read("server/repositories/mail.lua");
 const property = read("server/services/property.lua");
 for (const [route, callback] of [["messages:addMember", "addGroupMember"], ["mail:list", "getMail"], ["mail:send", "sendMail"], ["mail:read", "readMail"], ["mail:delete", "deleteMail"], ["property:list", "getProperties"]]) {
   assert.match(nui, new RegExp(`\\['${route}'\\] = 'kora_phone:server:${callback}'`), `${route} must map to ${callback}`);
-  assert.match(callbacks, new RegExp(`registerCallback\\('${callback}'`), `${callback} must be registered on the server`);
+  assert.match(callbacks, bound(callback), `${callback} must be registered on the server`);
   assert.match(api, new RegExp(`'${route}'`), `the UI must call ${route}`);
 }
 assert.match(mailSvc, /PhoneContracts\.mail\(/, "mail must be validated on the server");
 assert.match(mailSvc, /isEitherBlocked/, "mail must respect blocks");
 assert.match(mailRepo, /INSERT IGNORE INTO phone_mail/, "a retried mail request must not send twice");
 assert.match(mailRepo, /recipient_device_id = \?/, "mail is only read or deleted by its own sender or recipient");
-assert.match(property, /\^\[%w_\]\+\$/, "housing table and column names must be checked before they go into SQL");
+assert.match(read("server/repositories/external.lua"), /External\.isIdentifier\(name\)/, "housing table and column names must be checked before they go into SQL");
 assert.match(property, /device\.ownerCitizenId/, "homes must be looked up by the caller's own character");
 assert.match(messaging, /memberCount\(conversationId\) >= 50/, "groups are capped");
-assert.match(app, /type === 'mail:new'/, "the UI must handle new mail");
+assert.match(hostEvents, /type === 'mail:new'/, "the UI must handle new mail");
 
 // Blocking numbers, contact photos and the gallery loading with the phone.
 const blocking = read("server/services/blocking.lua");
@@ -95,7 +107,7 @@ const contactsRepo = read("server/repositories/contacts.lua");
 const phoneSvc = read("server/services/phone.lua");
 for (const [route, callback] of [["blocks:list", "getBlocked"], ["blocks:set", "setBlocked"]]) {
   assert.match(nui, new RegExp(`\\['${route}'\\] = 'kora_phone:server:${callback}'`), `${route} must map to ${callback}`);
-  assert.match(callbacks, new RegExp(`registerCallback\\('${callback}'`), `${callback} must be registered on the server`);
+  assert.match(callbacks, bound(callback), `${callback} must be registered on the server`);
   assert.match(api, new RegExp(`'${route}'`), `the UI must call ${route}`);
 }
 assert.match(blocking, /You cannot block your own number/, "a player must not be able to block themselves");
@@ -103,8 +115,8 @@ assert.match(blocking, /findByNumber\(number\)/, "blocking resolves the number o
 assert.match(contactsSvc, /Media\.findOwned\(device\.id, contact\.avatarMediaId\)/, "a contact photo must be one of the caller's own gallery photos");
 assert.match(contactsRepo, /NULLIF\(\?, 0\)/, "a cleared contact photo must be stored as NULL");
 assert.match(phoneSvc, /media = KoraPhone\.Storage\.provider\(\) ~= 'disabled'/, "the UI must be told whether photo storage exists");
-assert.match(api, /server\('gallery:list'/, "the gallery must load with the phone");
-assert.match(app, /Missed call/, "a missed call must leave a notification");
+assert.match(api, /server(?:<.*?>)?\('gallery:list'/, "the gallery must load with the phone");
+assert.match(hostEvents, /Missed call/, "a missed call must leave a notification");
 
 // Wallet honesty, favourites and the death check.
 const clientMain = read("client/main.lua");
@@ -113,11 +125,11 @@ const bankSvc = read("server/services/banking.lua");
 assert.match(clientMain, /KoraPhone\.Unavailable\(\)/, "Config.Client.DisableWhileDead must be enforced");
 assert.match(clientMain, /metadata\.isdead == true or metadata\.inlaststand == true/, "last stand must count as unavailable");
 assert.match(txRepo, /AND t\.id < \?/, "the history cursor must be qualified now that the query joins devices");
-assert.match(txRepo, /item\.peer =/, "history must say who the other person was");
-assert.match(bankSvc, /holder = holder, number = pd\.citizenid/, "the wallet must show the holder and account number");
+assert.match(txRepo, /entry\.peer =/, "history must say who the other person was");
+assert.match(bankSvc, /holder = holder, number = player\.citizenid/, "the wallet must show the holder and account number");
 assert.match(phoneSvc, /transfers = KoraPhone\.Integrations\.Banking\.canTransfer\(\)/, "the UI must know whether transfers are on");
-assert.match(read("web/src/SocialBank.tsx"), /!device\.transfers/, "the Send money form must be hidden when transfers are off");
-assert.match(api, /isFavorite:p\.favorite===true/, "saving a contact must not wipe its favourite flag");
+assert.match(read("web/src/apps/wallet/BankScreen.tsx"), /!device\.transfers/, "the Send money form must be hidden when transfers are off");
+assert.match(api, /isFavorite: p\.favorite === true/, "saving a contact must not wipe its favourite flag");
 
 // Flash and chat clips: the upload pipeline and where its trust boundaries are.
 const storageSvc = read("server/integrations/storage.lua");
@@ -126,7 +138,7 @@ const socialSvc = read("server/services/social.lua");
 const socialRepo = read("server/repositories/social.lua");
 const mediaRepo = read("server/repositories/media.lua");
 const migration11 = read("server/schema.lua");
-const flash = read("web/src/Flash.tsx");
+const flash = read("web/src/apps/flash/Flash.tsx");
 for (const [route, callback] of [["media:request", "requestMediaUpload"], ["media:complete", "completeMediaUpload"]]) {
   assert.match(nui, new RegExp(`\\['${route}'\\] = 'kora_phone:server:${callback}'`), `${route} must map to ${callback}`);
   assert.match(api, new RegExp(`'${route}'`), `the UI must call ${route}`);
@@ -144,7 +156,7 @@ assert.match(socialSvc, /Media\.findOwned\(device\.id, mediaId\)/, "a post may o
 assert.match(socialRepo, /\(po\.author_profile_id = \?\) AS mine/, "the feed must say which posts are the viewer's own");
 assert.match(migration11, /name = 'media_id'[^\n]*after = 'body'/, "posts need a media column");
 assert.match(migration11, /'video'/, "messages need a video type");
-assert.match(api, /if\(action==='uploadMedia'\)/, "uploads must bypass the serial request queue so they don't block the phone");
+assert.match(api, /if \(action === 'uploadMedia'\)/, "uploads must bypass the serial request queue so they don't block the phone");
 assert.match(api, /koraPhoneTicket/, "the upload must carry its ticket tag");
 assert.match(flash, /createProfile/, "Flash must create a social profile on first use");
 assert.match(flash, /uploadMedia/, "Flash clips must go through the upload pipeline");

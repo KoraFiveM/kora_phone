@@ -1,6 +1,6 @@
 -- Run outside FiveM with: lua tests/downed-watch.test.lua
--- Covers client/main.lua: the "put the phone away when downed" watcher only
--- runs while the phone is open, and never runs twice.
+-- Covers client/main.lua: the phone is put away when the player goes down, driven by
+-- Kora.cache.onChange('isDead') and the kora_core metadata mirror (no polling thread).
 
 local passed, failed = 0, 0
 local function test(name, fn)
@@ -16,10 +16,10 @@ local script = arg and arg[0] or "tests/downed-watch.test.lua"
 local root = script:gsub("[\\/]tests[\\/]downed%-watch%.test%.lua$", "")
 if root == script then root = "." end
 
-local threads, flags, closes
+local threads, flags, closes, cacheHandlers, mirrorHandlers
 
 local function setup()
-    threads, closes = {}, 0
+    threads, closes, cacheHandlers, mirrorHandlers = {}, 0, {}, {}
     flags = { dead = false, metadata = {} }
     _G.Config = { Client = { DisableWhileDead = true, UiBlockBag = "koraUiBlocked", Command = "phone", Keybind = "M" } }
     _G.KoraPhone = {
@@ -33,67 +33,82 @@ local function setup()
     _G.RegisterNetEvent = function() end
     _G.AddEventHandler = function() end
     _G.RegisterCommand = function() end
-    _G.RegisterKeyMapping = function() end
     _G.TriggerServerEvent = function() end
     _G.SetNuiFocus = function() end
     _G.SetNuiFocusKeepInput = function() end
-    _G.NetworkIsSessionStarted = function() return false end
     _G.exports = setmetatable({
-        kora_core = { getPlayerData = function() return { metadata = flags.metadata } end },
+        kora_core = {
+            getPlayerData = function() return { metadata = flags.metadata } end,
+            onPlayerDataChange = function(_, path, handler) mirrorHandlers[path[1]] = handler end,
+        },
     }, { __call = function() end })
     _G.LocalPlayer = { state = {} }
     _G.GetPlayerServerId = function() return 7 end
     _G.PlayerId = function() return 0 end
     _G.Kora = {
-        cache = { isDead = function() return flags.dead end }, notify = { send = function() end },
+        cache = {
+            isDead = function() return flags.dead end,
+            onChange = function(key, handler) cacheHandlers[key] = handler end,
+        },
+        notify = { send = function() end },
+        lang = function(key) return key end,
+        keybind = { add = function(options) flags.keybind = options end },
+        timers = { debounce = function(fn) return { run = fn } end },
         state = { onChange = function(key, bag, handler) flags.stateKey, flags.stateHandler = key, handler end },
     }
     dofile(root .. "/client/main.lua")
 end
 
-local function tick() for _, co in ipairs(threads) do if coroutine.status(co) == "suspended" then assert(coroutine.resume(co)) end end end
 local function live() local n = 0; for _, co in ipairs(threads) do if coroutine.status(co) == "suspended" then n = n + 1 end end; return n end
 
-test("no watcher thread while the phone is closed", function()
-    setup()
-    local base = live() -- the startup session wait
-    tick(); tick()
-    equal(live(), base)
-end)
-
-test("closes the phone when the player dies while it is open, then the watcher exits", function()
+test("no polling thread exists, open or closed", function()
     setup()
     local base = live()
     assert(KoraPhone.Open())
-    equal(live(), base + 1)
-    tick()
-    equal(KoraPhone.State.open, true)
-    flags.dead = true
-    tick()
-    equal(KoraPhone.State.open, false)
-    equal(closes, 1)
-    tick()
+    equal(live(), base)
+    KoraPhone.Close(false)
     equal(live(), base)
 end)
 
-test("last-stand metadata (no cache key) still closes the phone", function()
+test("closes the phone when the cache reports death while it is open", function()
+    setup()
+    assert(KoraPhone.Open())
+    cacheHandlers.isDead(false, true)
+    equal(KoraPhone.State.open, true)
+    flags.dead = true
+    cacheHandlers.isDead(true, false)
+    equal(KoraPhone.State.open, false)
+    equal(closes, 1)
+end)
+
+test("a death while the phone is closed does nothing", function()
+    setup()
+    flags.dead = true
+    cacheHandlers.isDead(true, false)
+    equal(closes, 0)
+end)
+
+test("last-stand metadata changes from kora_core close the phone", function()
     setup()
     assert(KoraPhone.Open())
     flags.metadata = { inlaststand = true }
-    tick()
+    mirrorHandlers.metadata({ "metadata", "inlaststand" }, true)
     equal(KoraPhone.State.open, false)
 end)
 
-test("reopening never starts a second watcher", function()
+test("DisableWhileDead = false keeps the phone open", function()
     setup()
-    local base = live()
+    Config.Client.DisableWhileDead = false
     assert(KoraPhone.Open())
-    KoraPhone.Close(false)
-    assert(KoraPhone.Open())
-    equal(live(), base + 1)
-    KoraPhone.Close(false)
-    tick()
-    equal(live(), base)
+    flags.dead = true
+    cacheHandlers.isDead(true, false)
+    equal(KoraPhone.State.open, true)
+end)
+
+test("the phone key is registered through Kora.keybind", function()
+    setup()
+    equal(flags.keybind.name, "kora_phone_toggle")
+    equal(flags.keybind.defaultKey, "M")
 end)
 
 test("a blocked phone does not open, and opens again once the block clears", function()

@@ -27,11 +27,21 @@ function Mail.send(source, payload)
     if KoraPhone.Repositories.Blocks.isEitherBlocked(sender.id, recipient.id) then
         return PhoneError(PhoneConstants.Errors.FORBIDDEN, 'Mail is unavailable for this contact')
     end
-    local id = KoraPhone.Repositories.Mail.insert(sender.id, recipient.id, mail.subject, mail.body, mail.clientRequestId)
+    local id = KoraPhone.Repositories.Mail.insert(
+        sender.id,
+        recipient.id,
+        mail.subject,
+        mail.body,
+        mail.clientRequestId
+    )
     if not id then return PhoneResult({ sent = true, replayed = true }) end
     local target = KoraPhone.Sessions.sourceByNumber(recipient.phoneNumber)
     if target then
-        TriggerClientEvent('kora_phone:client:mail:new', target, { id = id, sender = sender.phoneNumber, subject = mail.subject })
+        TriggerClientEvent('kora_phone:client:mail:new', target, {
+            id = id,
+            sender = sender.phoneNumber,
+            subject = mail.subject,
+        })
     end
     return PhoneResult({ sent = true, id = id })
 end

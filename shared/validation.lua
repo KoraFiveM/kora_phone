@@ -4,7 +4,8 @@ local function trim(value)
     return type(value) == 'string' and value:match('^%s*(.-)%s*$') or value
 end
 
--- `raw` keeps the value byte-for-byte (no trimming) where whitespace is significant, e.g. SDP, whose lines must end in CRLF.
+-- `raw` keeps the value byte-for-byte (no trimming) where whitespace is significant, e.g. SDP,
+-- whose lines must end in CRLF.
 function PhoneValidation.string(value, field, minimum, maximum, allowEmpty, raw)
     if type(value) ~= 'string' then return nil, field .. ' must be a string' end
     if not raw then value = trim(value) end
@@ -36,7 +37,12 @@ end
 
 function PhoneValidation.page(payload)
     payload = type(payload) == 'table' and payload or {}
-    local limit, err = PhoneValidation.integer(payload.limit or Config.Limits.PageSizeDefault, 'limit', 1, Config.Limits.PageSizeMaximum)
+    local limit, err = PhoneValidation.integer(
+        payload.limit or Config.Limits.PageSizeDefault,
+        'limit',
+        1,
+        Config.Limits.PageSizeMaximum
+    )
     if not limit then return nil, err end
     local cursor
     if payload.cursor ~= nil then
@@ -47,7 +53,9 @@ function PhoneValidation.page(payload)
 end
 
 function PhoneValidation.enum(value, field, values)
-    for _, allowed in ipairs(values) do if value == allowed then return value end end
+    for _, allowed in ipairs(values) do
+        if value == allowed then return value end
+    end
     return nil, field .. ' is invalid'
 end
 
@@ -55,7 +63,20 @@ end
 local SETTINGS_THEMES = { 'light', 'dark', 'ocean', 'forest', 'amethyst', 'ember', 'kora_core' }
 local SETTINGS_WALLPAPERS = { 'orbit', 'plain', 'midnight', 'slate', 'ember', 'kora_core', 'custom' }
 local SETTINGS_STYLES = { 'classic', 'standard', 'flip', 'fold' }
-local SETTINGS_CASES = { 'default', 'nightdrive', 'citypop', 'sakura', 'touge', 'garage', 'kora_core', 'arcade', 'space', 'palms', 'skyline', 'custom' }
+local SETTINGS_CASES = {
+    'default',
+    'nightdrive',
+    'citypop',
+    'sakura',
+    'touge',
+    'garage',
+    'kora_core',
+    'arcade',
+    'space',
+    'palms',
+    'skyline',
+    'custom',
+}
 local SETTINGS_ICONS = { 'circle', 'squircle', 'outline', 'solid' }
 
 local function boundedNumber(value, field, minimum, maximum)
@@ -76,8 +97,22 @@ end
 -- Whitelists the appearance settings a client may persist. Unknown keys are dropped
 -- so the stored JSON can never grow arbitrary client-controlled fields.
 -- Apps a player installs from the store; they only appear in the home order while installed.
-local OPTIONAL_APPS = { banking=true, social=true, classifieds=true, gps=true, services=true, notes=true, mail=true,
-    weather=true, calculator=true, property=true, vehicles=true, flash=true, music=true, clock=true }
+local OPTIONAL_APPS = {
+    banking = true,
+    social = true,
+    classifieds = true,
+    gps = true,
+    services = true,
+    notes = true,
+    mail = true,
+    weather = true,
+    calculator = true,
+    property = true,
+    vehicles = true,
+    flash = true,
+    music = true,
+    clock = true,
+}
 
 -- Read at use time so a config change applies without touching callers.
 function PhoneValidation.homeReorderAllowed()
@@ -88,14 +123,22 @@ end
 -- that are not installed drop out, and installed apps the list missed are appended at the end.
 function PhoneValidation.homeOrder(order, installed)
     local keep, seen, out = {}, {}, {}
-    if installed then for _, id in ipairs(installed) do keep[id] = true end end
+    if installed then
+        for _, id in ipairs(installed) do keep[id] = true end
+    end
     for _, id in ipairs(order) do
         local known = not Config.LaunchApps or Config.LaunchApps[id]
         local present = not installed or not OPTIONAL_APPS[id] or keep[id]
-        if known and present and not seen[id] then seen[id] = true; out[#out + 1] = id end
+        if known and present and not seen[id] then
+            seen[id] = true
+            out[#out + 1] = id
+        end
     end
     for _, id in ipairs(installed or {}) do
-        if not seen[id] then seen[id] = true; out[#out + 1] = id end
+        if not seen[id] then
+            seen[id] = true
+            out[#out + 1] = id
+        end
     end
     return out
 end
@@ -107,7 +150,11 @@ function PhoneValidation.settings(payload)
     if not out.name then return nil, err end
     out.theme, err = PhoneValidation.enum(currentId(payload.theme) or 'light', 'theme', SETTINGS_THEMES)
     if not out.theme then return nil, err end
-    out.wallpaper, err = PhoneValidation.enum(currentId(payload.wallpaper) or 'kora_core', 'wallpaper', SETTINGS_WALLPAPERS)
+    out.wallpaper, err = PhoneValidation.enum(
+        currentId(payload.wallpaper) or 'kora_core',
+        'wallpaper',
+        SETTINGS_WALLPAPERS
+    )
     if not out.wallpaper then return nil, err end
     out.phoneStyle, err = PhoneValidation.enum(payload.phoneStyle or 'classic', 'phoneStyle', SETTINGS_STYLES)
     if not out.phoneStyle then return nil, err end
@@ -124,7 +171,9 @@ function PhoneValidation.settings(payload)
         if value ~= nil and value ~= '' then
             local hours, minutes
             if type(value) == 'string' then hours, minutes = value:match('^(%d%d):(%d%d)$') end
-            if not hours or tonumber(hours) > 23 or tonumber(minutes) > 59 then return nil, key .. ' must be a time like 22:00' end
+            if not hours or tonumber(hours) > 23 or tonumber(minutes) > 59 then
+                return nil, key .. ' must be a time like 22:00'
+            end
             out[key] = value
         end
     end
@@ -137,13 +186,15 @@ function PhoneValidation.settings(payload)
         out.setupComplete = payload.setupComplete
     end
     if payload.wallpaperUrl ~= nil and payload.wallpaperUrl ~= '' then
-        local url; url, err = PhoneValidation.string(payload.wallpaperUrl, 'wallpaperUrl', 1, 500)
+        local url
+        url, err = PhoneValidation.string(payload.wallpaperUrl, 'wallpaperUrl', 1, 500)
         if not url then return nil, err end
         if url:sub(1, 8) ~= 'https://' then return nil, 'wallpaperUrl must be an https URL' end
         out.wallpaperUrl = url
     end
     if payload.phoneCaseUrl ~= nil and payload.phoneCaseUrl ~= '' then
-        local coverUrl; coverUrl, err = PhoneValidation.string(payload.phoneCaseUrl, 'phoneCaseUrl', 1, 500)
+        local coverUrl
+        coverUrl, err = PhoneValidation.string(payload.phoneCaseUrl, 'phoneCaseUrl', 1, 500)
         if not coverUrl then return nil, err end
         if coverUrl:sub(1, 8) ~= 'https://' then return nil, 'phoneCaseUrl must be an https URL' end
         out.phoneCaseUrl = coverUrl
@@ -165,11 +216,33 @@ function PhoneValidation.settings(payload)
         end
     end
     if payload.installedApps ~= nil then
-        if type(payload.installedApps) ~= 'table' or #payload.installedApps>20 then return nil,'Invalid installed apps' end
-        out.installedApps={}
-        for _,id in ipairs(payload.installedApps) do
-            if not OPTIONAL_APPS[id] or not Config.LaunchApps or not Config.LaunchApps[id] then return nil,'App is unavailable' end
-            out.installedApps[#out.installedApps+1]=id
+        if type(payload.installedApps) ~= 'table' or #payload.installedApps > 20 then
+            return nil, 'Invalid installed apps'
+        end
+        out.installedApps = {}
+        for _, id in ipairs(payload.installedApps) do
+            if not OPTIONAL_APPS[id] or not Config.LaunchApps or not Config.LaunchApps[id] then
+                return nil, 'App is unavailable'
+            end
+            out.installedApps[#out.installedApps + 1] = id
+        end
+    end
+    if payload.sdkApps ~= nil then
+        -- Install state of third-party apps: app id -> installed. The server keeps its stored copy on save
+        -- (KoraPhone.SDK.Install.preserve), so this only has to be well formed.
+        if type(payload.sdkApps) ~= 'table' then return nil, 'sdkApps must be an object' end
+        out.sdkApps = {}
+        local count = 0
+        for id, installed in pairs(payload.sdkApps) do
+            count = count + 1
+            if count > 64
+                or type(id) ~= 'string'
+                or not id:match('^[a-z0-9][a-z0-9_-]+$')
+                or #id > 32
+                or type(installed) ~= 'boolean' then
+                return nil, 'sdkApps is invalid'
+            end
+            out.sdkApps[id] = installed
         end
     end
     if not PhoneValidation.homeReorderAllowed() then
@@ -204,13 +277,16 @@ function PhoneValidation.item(kind, item)
     if not id then return nil, err end
     if not id:match('^[%w_%-]+$') then return nil, 'id is invalid' end
     if kind == 'note' then
-        local title; title, err = PhoneValidation.string(item.title, 'title', 1, 100)
+        local title
+        title, err = PhoneValidation.string(item.title, 'title', 1, 100)
         if not title then return nil, err end
-        local body; body, err = PhoneValidation.string(item.body == nil and '' or item.body, 'body', 0, 4000, true)
+        local body
+        body, err = PhoneValidation.string(item.body == nil and '' or item.body, 'body', 0, 4000, true)
         if not body then return nil, err end
         return { id = id, title = title, body = body }
     elseif kind == 'alarm' then
-        local label; label, err = PhoneValidation.string(item.label == nil and '' or item.label, 'label', 0, 60, true)
+        local label
+        label, err = PhoneValidation.string(item.label == nil and '' or item.label, 'label', 0, 60, true)
         if not label then return nil, err end
         if not clockTime(item.time) then return nil, 'time must look like 07:30' end
         if type(item.enabled) ~= 'boolean' then return nil, 'enabled must be a boolean' end
@@ -218,17 +294,23 @@ function PhoneValidation.item(kind, item)
         if item.days ~= nil then
             if type(item.days) ~= 'table' or #item.days > 7 then return nil, 'days is invalid' end
             for _, day in ipairs(item.days) do
-                local value; value, err = PhoneValidation.integer(day, 'day', 0, 6)
+                local value
+                value, err = PhoneValidation.integer(day, 'day', 0, 6)
                 if not value then return nil, err end
-                if not seen[value] then seen[value] = true; days[#days + 1] = value end
+                if not seen[value] then
+                    seen[value] = true
+                    days[#days + 1] = value
+                end
             end
             table.sort(days)
         end
         return { id = id, label = label, time = item.time, days = days, enabled = item.enabled }
     elseif kind == 'station' then
-        local label; label, err = PhoneValidation.string(item.label, 'label', 1, 60)
+        local label
+        label, err = PhoneValidation.string(item.label, 'label', 1, 60)
         if not label then return nil, err end
-        local url; url, err = PhoneValidation.string(item.url, 'url', 1, 500)
+        local url
+        url, err = PhoneValidation.string(item.url, 'url', 1, 500)
         if not url then return nil, err end
         if url:sub(1, 8) ~= 'https://' then return nil, 'url must be an https URL' end
         return { id = id, label = label, url = url }

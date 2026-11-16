@@ -42,7 +42,7 @@ Equivalent to pressing the phone keybind, but can target a specific app and payl
 
 #### `exports.kora_phone:RegisterApp({ identifier, ui, name?, description?, icon?, defaultApp?, job?, price?, onOpen?, onClose?, onInstall?, onDelete? }) / RemoveApp(identifier) / SendAppMessage(identifier, data)`
 
-Client-side custom-app registry (`client/customapps.lua`). Lets another resource add an installable app to the Store/home screen and push it messages.
+Client-side custom-app registry (`client/customapps.lua`, `client/sdk/registry.lua`). Lets another resource add an installable app to the Store/home screen and push it messages. These client exports share their names with the server SDK exports of the same name (`RegisterApp`, `RemoveApp`); the realm decides which one runs, and client-registered apps hold no server permissions (see [App SDK](../apps.md)).
 
 **Parameters**
 
@@ -124,11 +124,11 @@ The blip itself is not deleted; it just stops being listed (unless it was create
 
 Server-side exports: resolve a phone number for/from a player, push a notification to one, and deliver mail to a character even while they are offline.
 
-Namespace: `exports.kora_phone / kora_phone:client:*` · Source: `server/main.lua, server/compat/qb-phone.lua`
+Namespace: `exports.kora_phone` · Source: `server/main.lua`, `server/mail/system.lua`, `server/handsets/lifecycle.lua`, `server/crypto.js`, `server/sdk/exports.lua`
 
 ### Functions
 
-4 server exports.
+`GetPhoneNumber`, `GetSourceByPhoneNumber`, `SendNotification`, `SendSystemMail`, `AddSystemActivity`, `CanResellHandset`, the app SDK exports and four internal crypto helpers; the full list is in the reference table below.
 
 #### `exports.kora_phone:GetPhoneNumber(source)`
 
@@ -209,7 +209,7 @@ exports.kora_phone:SendNotification(src, { app = 'dispatch', title = 'New call',
 Fires `kora_phone:client:notification`, which `client/notifications.lua` turns into an in-phone push and (if the phone is closed and not Do Not Disturb-silenced) a native on-screen alert.
 ```
 
-#### `exports.kora_phone:sendNewMailToOffline(citizenId, { sender, subject, message, button? })`
+#### `exports.kora_phone:SendSystemMail(citizenId, { sender, subject, message, button? })`
 
 Delivers a mail to a character's Mail app by citizen id, whether or not that player is online.
 
@@ -218,16 +218,16 @@ Delivers a mail to a character's Mail app by citizen id, whether or not that pla
 | Name | Type | Description |
 | --- | --- | --- |
 | `citizenId` | string | The character's citizen id (at most 64 bytes). |
-| `data` | table | `sender` (up to 100 bytes), `subject` (up to 120) and `message` (up to 16000) are required. HTML tags are stripped from `message`, with `<br>` and `</p>` becoming line breaks. Optional `button = { enabled?, buttonEvent, buttonData }` adds a button. |
+| `data` | table | `sender` (up to 100 bytes), `subject` (up to 120) and `message` (up to 16000) are required. HTML tags are stripped from `message`, with `<br>` and `</p>` becoming line breaks. Optional `button = { enabled?, event, data }` adds a one-use Accept button; `event` must be a `resource:client:name` event outside the Kora core stack and the server fires it when the player accepts. See [System mail](../system-mail.md). |
 
 **Returns**
 
-- **No return value; invalid input is silently ignored.**
+- `true, mailId` when stored, otherwise `false`.
 
 **Example**
 
 ```lua
-exports.kora_phone:sendNewMailToOffline(citizenId, {
+exports.kora_phone:SendSystemMail(citizenId, {
     sender = 'Los Santos Bank',
     subject = 'Statement ready',
     message = 'Your monthly statement is available.',
@@ -237,7 +237,7 @@ exports.kora_phone:sendNewMailToOffline(citizenId, {
 **Representative console output**
 
 ```text
-The mail is stored for the character. If that player is online, their phone also receives a `kora_phone:client:mail:new` event. Also reachable as `exports['qb-phone']:sendNewMailToOffline`.
+The mail is stored for the character. If that player is online, their phone also receives a `kora_phone:client:mail:new` event.
 ```
 
 ### Limits and related APIs
@@ -246,7 +246,7 @@ The mail is stored for the character. If that player is online, their phone also
 
 ## Additional exports and aliases
 
-Reference of every export, including those not covered above: client and server tables, internal helpers and the phone-alias exports.
+Reference of every export, including those not covered above: client and server tables, internal helpers, the SDK exports and the phone-alias exports.
 
 ### Server exports (`exports.kora_phone`)
 
@@ -255,13 +255,17 @@ Reference of every export, including those not covered above: client and server 
 | `GetPhoneNumber` | `(source)` | The selected handset's active SIM number, or `nil` without a handset or SIM |
 | `GetSourceByPhoneNumber` | `(phoneNumber)` | The online player source holding that number, or `nil` |
 | `SendNotification` | `(target, notification)` | `true` after sending the `kora_phone:client:notification` event to `target`; `false` if the arguments are not a number and a table. `notification` fields: `app` (32 chars), `title` (80), `body` (240), `data` |
-| `sendNewMailToOffline` | `(citizenId, data)` | Nothing (void). Trusted legacy mail; also provided as `exports['qb-phone']:sendNewMailToOffline`. See [Legacy qb-phone support](../legacy-compat.md) |
+| `SendSystemMail` | `(citizenId, mail)` | `true, mailId` or `false`. Trusted system mail, also for offline characters. See [System mail](../system-mail.md) |
+| `AddSystemActivity` | `(citizenId, title, message)` | `true` or `false`. Informational note, never changes a balance |
 | `CanResellHandset` | `(source, slot)` | `true` when the handset in that slot is factory reset, has no SIM, account, PIN or Face ID, and holds no local content |
 | `randomHex` | `(bytes)` | Random hex string (16 to 64 bytes). Used internally via the resource's own exports |
 | `pinHash` / `pinVerify` | `(pin)` / `(pin, stored)` | Salted scrypt PIN hash and constant-time verify, mixed with the `kora_phone_pin_pepper` convar. Internal helpers |
 | `turnCredentials` | `(subject)` | Time-limited TURN REST credentials, or `nil` when `kora_phone_turn_secret` is unset. Internal helper |
+| `RegisterApp`, `RemoveApp`, `RegisterAppCallback`, `SendAppEvent`, `GetInstalledApps` | See [App SDK API](./apps.md) | Sandboxed app SDK (`server/sdk/exports.lua`) |
 
 `randomHex`, `pinHash`, `pinVerify` and `turnCredentials` are defined in `server/crypto.js` and are callable by any server resource; they exist for the phone's own use.
+
+The server also fires these client events that other resources may observe (all `kora_phone:client:*`): `notification`, `mail:new`, `messages:new`, `appEvent` and `appNotify`. They are listed in [Events and callbacks](../events.md).
 
 ### Client exports
 
@@ -293,4 +297,6 @@ Maps also mirrors the visible blips registered through `kora_lib`; see [Features
 
 The `SendNotification` aliases show a game notification only; they do not create a shade notification. `web/dist/compat.js` (source `web/public/compat.js`) can be added as a script tag in a custom app UI to provide the `fetchNui`, `onNuiEvent`, `resourceName`, `appName` and `settings` data bridge. Job gating on custom apps is a display filter, not a security boundary.
 
-On the server, `Kora.compat.provideExport('qb-phone', 'sendNewMailToOffline', ...)` makes `exports['qb-phone']:sendNewMailToOffline` resolve to this resource.
+## App SDK
+
+The sandboxed app SDK exports (`RegisterApp`, `RemoveApp`, `RegisterAppCallback`, `SendAppEvent`, `GetInstalledApps`) are documented in [App SDK API](./apps.md) and the [App developer guide](../apps.md).

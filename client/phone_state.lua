@@ -4,6 +4,7 @@ local State = {
     open = false,
     ready = false,
     playerLoaded = false,
+    citizenId = nil,
     initialData = nil,
     currentApp = nil,
     activeCall = nil,
@@ -25,6 +26,7 @@ function State.ResetCharacter()
     State.generation = State.generation + 1
     State.ready = false
     State.playerLoaded = false
+    State.citizenId = nil
     State.initialData = nil
     State.currentApp = nil
     State.activeCall = nil

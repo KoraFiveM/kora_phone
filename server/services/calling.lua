@@ -50,7 +50,10 @@ local function allocateChannel()
         Calling.nextVoiceChannel = candidate >= channelMaximum and channelMinimum or candidate + 1
         local used = false
         for _, call in pairs(Calling.activeById) do
-            if call.voiceChannel == candidate and not terminal[call.status] then used = true; break end
+            if call.voiceChannel == candidate and not terminal[call.status] then
+                used = true
+                break
+            end
         end
         if not used then return candidate end
     end
@@ -65,8 +68,12 @@ local function makeId()
 end
 
 local function clear(call)
-    if Calling.callByDevice[call.callerDeviceId] == call.id then Calling.callByDevice[call.callerDeviceId] = nil end
-    if Calling.callByDevice[call.calleeDeviceId] == call.id then Calling.callByDevice[call.calleeDeviceId] = nil end
+    if Calling.callByDevice[call.callerDeviceId] == call.id then
+        Calling.callByDevice[call.callerDeviceId] = nil
+    end
+    if Calling.callByDevice[call.calleeDeviceId] == call.id then
+        Calling.callByDevice[call.calleeDeviceId] = nil
+    end
     Calling.activeById[call.id] = nil
 end
 
@@ -81,7 +88,9 @@ local function finish(call, finalStatus, reason)
     call.status = finalStatus
     call.endedReason = reason
     notify(call, 'kora_phone:client:calls:ended', {
-        id = call.id, status = finalStatus, reason = reason,
+        id = call.id,
+        status = finalStatus,
+        reason = reason,
     })
     clear(call)
     return true
@@ -110,16 +119,22 @@ local function isCurrentCharacter(source, citizenId, session)
 end
 
 function Calling.start(source, payload)
-    local device,deviceError=KoraPhone.Permissions.requireDevice(source)
-    if not device then return deviceError end
-    if not device.cellular then return PhoneError(PhoneConstants.Errors.FORBIDDEN,'An active SIM is required for calls') end
+    -- Capture identity BEFORE the first yielding lookup: if the session is replaced while
+    -- requireDevice waits on SQL, the later isCurrentCharacter checks must see the change.
     local callerSession = KoraPhone.Sessions.bySource[source]
     local callerCitizenId = KoraPhone.GetCitizenId(source)
+    local device, deviceError = KoraPhone.Permissions.requireDevice(source)
+    if not device then return deviceError end
+    if not device.cellular then
+        return PhoneError(PhoneConstants.Errors.FORBIDDEN, 'An active SIM is required for calls')
+    end
     local caller, err = KoraPhone.Permissions.requireDevice(source)
     if not caller then return err end
     local number, validationError = PhoneValidation.phoneNumber(type(payload) == 'table' and payload.to)
     if not number then return PhoneError(PhoneConstants.Errors.INVALID_INPUT, validationError) end
-    if number == caller.phoneNumber then return PhoneError(PhoneConstants.Errors.INVALID_INPUT, 'Cannot call your own number') end
+    if number == caller.phoneNumber then
+        return PhoneError(PhoneConstants.Errors.INVALID_INPUT, 'Cannot call your own number')
+    end
     if Calling.callByDevice[caller.id] then return PhoneError(PhoneConstants.Errors.CONFLICT, 'Already in a call') end
 
     if not isCurrentCharacter(source, callerCitizenId, callerSession) then
@@ -146,9 +161,14 @@ function Calling.start(source, payload)
     if not voiceChannel then return PhoneError(PhoneConstants.Errors.INTERNAL, 'No call channel is available') end
 
     local call = {
-        id = makeId(), callerDeviceId = caller.id, calleeDeviceId = callee.id,
-        callerNumber = caller.phoneNumber, calleeNumber = callee.phoneNumber,
-        status = 'ringing', voiceChannel = voiceChannel, startedAt = os.time(),
+        id = makeId(),
+        callerDeviceId = caller.id,
+        calleeDeviceId = callee.id,
+        callerNumber = caller.phoneNumber,
+        calleeNumber = callee.phoneNumber,
+        status = 'ringing',
+        voiceChannel = voiceChannel,
+        startedAt = os.time(),
     }
     -- Keep both devices busy while the database insert yields.
     Calling.callByDevice[caller.id] = call.id
@@ -207,7 +227,9 @@ function Calling.reject(source, payload)
     if device.id ~= call.calleeDeviceId or call.status ~= 'ringing' then
         return PhoneError(PhoneConstants.Errors.CONFLICT, 'Call cannot be rejected')
     end
-    if not finish(call, 'rejected', 'declined') then return PhoneError(PhoneConstants.Errors.CONFLICT,'Call changed; try again') end
+    if not finish(call, 'rejected', 'declined') then
+        return PhoneError(PhoneConstants.Errors.CONFLICT, 'Call changed; try again')
+    end
     return PhoneResult({ id = call.id, status = 'rejected' })
 end
 
@@ -215,7 +237,9 @@ function Calling.hangup(source, payload)
     local call, _, err = activeOwnedCall(source, payload)
     if not call then return err end
     local finalStatus = call.status == 'ringing' and 'cancelled' or 'ended'
-    if not finish(call, finalStatus, 'hangup') then return PhoneError(PhoneConstants.Errors.CONFLICT,'Call changed; try again') end
+    if not finish(call, finalStatus, 'hangup') then
+        return PhoneError(PhoneConstants.Errors.CONFLICT, 'Call changed; try again')
+    end
     return PhoneResult({ id = call.id, status = finalStatus })
 end
 
@@ -242,51 +266,80 @@ function Calling.videoSignal(source, payload)
     local call, device, err = activeOwnedCall(source, payload)
     if not call then return err end
     if call.status ~= 'active' then return PhoneError(PhoneConstants.Errors.CONFLICT, 'Call is not active') end
-    if not call.video or not call.video.accepted or payload.epoch~=call.video.epoch then
-        return PhoneError(PhoneConstants.Errors.FORBIDDEN,'Video has not been accepted')
+    if not call.video or not call.video.accepted or payload.epoch ~= call.video.epoch then
+        return PhoneError(PhoneConstants.Errors.FORBIDDEN, 'Video has not been accepted')
     end
     local signal, validationError = PhoneContracts.callSignal(payload)
     if not signal then return PhoneError(PhoneConstants.Errors.INVALID_INPUT, validationError) end
     local targetDeviceId = device.id == call.callerDeviceId and call.calleeDeviceId or call.callerDeviceId
     local targetSource = sourceForDevice(targetDeviceId)
-    if not targetSource then return PhoneError(PhoneConstants.Errors.NOT_FOUND, 'The other participant is unavailable') end
-    TriggerClientEvent('kora_phone:client:calls:signal', targetSource, { id=call.id,epoch=call.video.epoch,kind = signal.kind, sdp = signal.sdp, candidate = signal.candidate })
+    if not targetSource then
+        return PhoneError(PhoneConstants.Errors.NOT_FOUND, 'The other participant is unavailable')
+    end
+    TriggerClientEvent('kora_phone:client:calls:signal', targetSource, {
+        id = call.id,
+        epoch = call.video.epoch,
+        kind = signal.kind,
+        sdp = signal.sdp,
+        candidate = signal.candidate,
+    })
     return PhoneResult(true)
 end
 
-function Calling.videoControl(source,payload)
-    local call,device,err=activeOwnedCall(source,payload)
+function Calling.videoControl(source, payload)
+    local call, device, err = activeOwnedCall(source, payload)
     if not call then return err end
-    if call.status~='active' or not device.cellular then return PhoneError(PhoneConstants.Errors.CONFLICT,'Call is not active') end
-    local otherId=device.id==call.callerDeviceId and call.calleeDeviceId or call.callerDeviceId
-    local target=sourceForDevice(otherId)
-    if not target then return PhoneError(PhoneConstants.Errors.NOT_FOUND,'Other participant is unavailable') end
-    local action=payload.action
-    if action=='request' then
-        if not Config.Calls.Video.Enabled then return PhoneError(PhoneConstants.Errors.FORBIDDEN,'Video is disabled') end
-        if call.video and not call.video.accepted and call.video.expires<os.time() then call.video=nil end
-        if call.video then return PhoneError(PhoneConstants.Errors.CONFLICT,'A video request is already active') end
-        call.video={requester=device.id,expires=os.time()+30,epoch=exports[GetCurrentResourceName()]:randomHex(16)}
-        TriggerClientEvent('kora_phone:client:calls:videoControl',target,{id=call.id,action='request',epoch=call.video.epoch})
-        TriggerClientEvent('kora_phone:client:calls:videoControl',source,{id=call.id,action='pending',epoch=call.video.epoch})
-        local epoch=call.video.epoch
-        SetTimeout(30000,function()
-            if call.video and call.video.epoch==epoch and not call.video.accepted then
-                call.video=nil; notify(call,'kora_phone:client:calls:videoControl',{id=call.id,action='stop'})
+    if call.status ~= 'active' or not device.cellular then
+        return PhoneError(PhoneConstants.Errors.CONFLICT, 'Call is not active')
+    end
+    local otherId = device.id == call.callerDeviceId and call.calleeDeviceId or call.callerDeviceId
+    local target = sourceForDevice(otherId)
+    if not target then return PhoneError(PhoneConstants.Errors.NOT_FOUND, 'Other participant is unavailable') end
+    local action = payload.action
+    if action == 'request' then
+        if not Config.Calls.Video.Enabled then
+            return PhoneError(PhoneConstants.Errors.FORBIDDEN, 'Video is disabled')
+        end
+        if call.video and not call.video.accepted and call.video.expires < os.time() then call.video = nil end
+        if call.video then return PhoneError(PhoneConstants.Errors.CONFLICT, 'A video request is already active') end
+        call.video = {
+            requester = device.id,
+            expires = os.time() + 30,
+            epoch = exports[GetCurrentResourceName()]:randomHex(16),
+        }
+        TriggerClientEvent('kora_phone:client:calls:videoControl', target, {
+            id = call.id,
+            action = 'request',
+            epoch = call.video.epoch,
+        })
+        TriggerClientEvent('kora_phone:client:calls:videoControl', source, {
+            id = call.id,
+            action = 'pending',
+            epoch = call.video.epoch,
+        })
+        local epoch = call.video.epoch
+        SetTimeout(30000, function()
+            if call.video and call.video.epoch == epoch and not call.video.accepted then
+                call.video = nil
+                notify(call, 'kora_phone:client:calls:videoControl', { id = call.id, action = 'stop' })
             end
         end)
-    elseif action=='accept' then
-        local v=call.video
-        if not v or payload.epoch~=v.epoch or v.accepted or v.requester==device.id or v.expires<os.time() then return PhoneError(PhoneConstants.Errors.FORBIDDEN,'Video request expired') end
-        v.accepted=true
-        notify(call,'kora_phone:client:calls:videoControl',{id=call.id,action='accept',epoch=v.epoch})
-    elseif action=='decline' or action=='stop' then
-        if call.video and payload.epoch~=call.video.epoch then return PhoneError(PhoneConstants.Errors.FORBIDDEN,'Video session changed') end
-        call.video=nil
-        notify(call,'kora_phone:client:calls:videoControl',{id=call.id,action='stop'})
-    elseif action=='mute' and type(payload.muted)=='boolean' then
-        TriggerClientEvent('kora_phone:client:calls:remoteMute',target,{id=call.id,source=source,muted=payload.muted})
-    else return PhoneError(PhoneConstants.Errors.INVALID_INPUT,'Invalid call control') end
+    elseif action == 'accept' then
+        local v = call.video
+        if not v or payload.epoch ~= v.epoch or v.accepted or v.requester == device.id or v.expires < os.time() then
+            return PhoneError(PhoneConstants.Errors.FORBIDDEN, 'Video request expired')
+        end
+        v.accepted = true
+        notify(call, 'kora_phone:client:calls:videoControl', { id = call.id, action = 'accept', epoch = v.epoch })
+    elseif action == 'decline' or action == 'stop' then
+        if call.video and payload.epoch ~= call.video.epoch then
+            return PhoneError(PhoneConstants.Errors.FORBIDDEN, 'Video session changed')
+        end
+        call.video = nil
+        notify(call, 'kora_phone:client:calls:videoControl', { id = call.id, action = 'stop' })
+    else
+        return PhoneError(PhoneConstants.Errors.INVALID_INPUT, 'Invalid call control')
+    end
     return PhoneResult(true)
 end
 
@@ -305,11 +358,11 @@ function Calling.disconnect(source, reason)
     if call then finish(call, call.status == 'ringing' and 'cancelled' or 'ended', reason or 'disconnected') end
 end
 
-function Calling.disconnectDevice(deviceId,reason,expectedCallId)
-    local id=Calling.callByDevice[deviceId]
-    if expectedCallId and id~=expectedCallId then return end
-    local call=id and Calling.activeById[id]
-    if call then finish(call,call.status=='ringing' and 'cancelled' or 'ended',reason or 'handset_changed') end
+function Calling.disconnectDevice(deviceId, reason, expectedCallId)
+    local id = Calling.callByDevice[deviceId]
+    if expectedCallId and id ~= expectedCallId then return end
+    local call = id and Calling.activeById[id]
+    if call then finish(call, call.status == 'ringing' and 'cancelled' or 'ended', reason or 'handset_changed') end
 end
 
 function Calling.shutdown(reason)
@@ -326,15 +379,16 @@ AddEventHandler('playerDropped', function()
     Calling.disconnect(source, 'disconnected')
 end)
 
-AddEventHandler('QBCore:Server:OnPlayerUnload', function(source)
-    Calling.disconnect(source, 'character_unload')
+-- kora_voice does not clear call membership on logout, so the call ends here.
+AddEventHandler('kora_core:server:playerUnloaded', function(source, _, cause)
+    Calling.disconnect(source, cause == 'logout' and 'character_unload' or 'disconnected')
 end)
 
 -- Schema setup owns recovery; a fixed delay can run before the calls table exists.
 function Calling.initialize()
-    local recovered=KoraPhone.Repositories.Calls.endUnfinished('resource_restart')
-    if recovered==nil or recovered==false then error('Call recovery did not finish') end
-    Calling.ready=true
+    local recovered = KoraPhone.Repositories.Calls.endUnfinished('resource_restart')
+    if recovered == nil or recovered == false then error('Call recovery did not finish') end
+    Calling.ready = true
 end
 
 AddEventHandler('onResourceStop', function(resource)

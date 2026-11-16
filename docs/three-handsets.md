@@ -17,9 +17,9 @@ Cloud restores grant access to existing media objects instead of duplicating pro
 
 New PINs use salted scrypt with the server pepper; old PINs remain verifiable until changed. Face ID checks the enrolled character and requires a backup PIN. Recovery codes use cryptographic randomness and are stored hashed. Identity-checked shop recovery rotates the code and removes previous cloud links. Player-business services require customer approval, and recovery details go only to that customer.
 
-## Inventory companion API
+## Inventory gateway API
 
-The companion `integration/kora_inventory/server.lua` makes `kora_inventory` expose `PhoneItemTransaction(source, request)` and its lowercase alias, callable only by the resource named `kora_phone` (or the legacy `kora_phone-stevie`).
+`kora_inventory` natively exports `PhoneItemTransaction(source, request)` and its lowercase alias, callable only by the resource named `kora_phone` (or the legacy `kora_phone-stevie`). The phone probes it at start (`op = 'probe'`) and stops if it is missing; there is no separate companion file to install.
 
 | Operation | Trusted request fields |
 |---|---|
@@ -34,7 +34,9 @@ Returns `ok, error, handsetOrBoundItem, returnedSim`. Slots, serials, definition
 
 Supported unique item names are `phone`, `phone_standard`, `phone_flip`, `phone_fold`, and `phone_sim`. Disabling models through config is supported; arbitrary new item names require a deliberate gateway update. Phone shops reserve 64 slots for stock and used handsets.
 
-The gateway and its smoke test are also copied under `integration/kora_inventory/` for deployment review. This is a companion source copy, not another resource to start. Back up the inventory resource and compare versions before replacing its server file.
+Every phone item operation goes through one helper, `Handsets.inventoryTx(src, request)`, which wraps `exports.kora_inventory:PhoneItemTransaction`. Held handsets and SIMs are read with `exports.kora_core:getItemsByName` and `getItemBySlot` rather than by walking the player's item table. Shop stock is read with `exports.kora_inventory:GetShopItems`. The any-handset phone check (`HasPhone`) still loops over the configured handset item names, because kora_core's `hasItem` with a list means every item.
+
+Back up the inventory resource before upgrading it, and keep it on a version that exports `PhoneItemTransaction`.
 
 ## Backup and rollback
 

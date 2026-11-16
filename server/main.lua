@@ -1,29 +1,37 @@
 math.randomseed(os.time())
 
-CreateThread(function()
+local DATABASE_POLL_MS = 250
+
+local function stopResource(event, message, reason)
+    Kora.logging.error(event, message, reason and { error = tostring(reason) } or nil)
+    StopResource(GetCurrentResourceName())
+end
+
+local function waitForDatabase()
     local deadline = GetGameTimer() + Config.Server.DatabaseReadyTimeoutMs
-    while GetGameTimer() < deadline and not KoraPhone.Database.isReady() do Wait(250) end
-    if not KoraPhone.Database.isReady() then
-        Kora.logging.error('phone.database_unavailable','Database unavailable; stopping resource')
-        StopResource(GetCurrentResourceName())
-        return
+    while GetGameTimer() < deadline and not KoraPhone.Database.isReady() do Wait(DATABASE_POLL_MS) end
+    return KoraPhone.Database.isReady()
+end
+
+CreateThread(function()
+    if not waitForDatabase() then
+        return stopResource('phone.database_unavailable', 'Database unavailable; stopping resource')
     end
     local ready, reason = KoraPhone.SchemaSetup.run()
     if not ready then
-        Kora.logging.error('phone.database_setup_failed','Database setup failed; stopping resource',{error=tostring(reason)})
-        StopResource(GetCurrentResourceName())
-        return
+        return stopResource('phone.database_setup_failed', 'Database setup failed; stopping resource', reason)
     end
-    local started,startError=pcall(function()
+    local started, startError = pcall(function()
         KoraPhone.Services.Calling.initialize()
         KoraPhone.Handsets.start()
     end)
     if not started then
-        Kora.logging.error('phone.handset_setup_failed','Handset setup failed',{error=tostring(startError)})
-        KoraPhone.Handsets.ready=false
-        StopResource(GetCurrentResourceName()); return
+        KoraPhone.Handsets.ready = false
+        return stopResource('phone.handset_setup_failed', 'Handset setup failed', startError)
     end
-    Kora.logging.info('phone.server_ready','Server foundation ready',{version=GetResourceMetadata(GetCurrentResourceName(), 'version', 0) or 'unknown'})
+    Kora.logging.info('phone.server_ready', 'Server foundation ready', {
+        version = GetResourceMetadata(GetCurrentResourceName(), 'version', 0) or 'unknown',
+    })
 end)
 
 RegisterNetEvent('kora_phone:server:phone:closed', function()
@@ -34,15 +42,15 @@ RegisterNetEvent('kora_phone:server:phone:closed', function()
     if session then session.unlocked = false end
 end)
 
-AddEventHandler('QBCore:Server:PlayerLoaded', function(player)
-    -- Provision only when a physical handset is selected, after startup finishes.
-end)
-
 -- /phonereset [id]: wipes a player's phone settings and PIN so the setup screen shows again.
--- No id resets your own phone. Moderators only (kora.phone.moderate ace or QBCore admin/god); console needs an id.
+-- No id resets your own phone. Moderators only (kora.phone.moderate ace or a kora_core admin/god permission); console needs an id.
 RegisterCommand('phonereset', function(caller, args)
-    local function reply(msg)
-        if caller == 0 then print('[kora_phone] ' .. msg) else TriggerClientEvent('QBCore:Notify', caller, msg) end
+    local function reply(message)
+        if caller == 0 then
+            Kora.logging.info('phone.reset_command', message)
+        else
+            Kora.notify.send(caller, { title = 'Phone', message = message, type = 'info', duration = 4000 })
+        end
     end
     if caller ~= 0 and not KoraPhone.Services.Moderation.isModerator(caller) then return reply('No permission') end
     local target = tonumber(args[1]) or caller
@@ -51,14 +59,14 @@ RegisterCommand('phonereset', function(caller, args)
     if not device then return reply('No phone found for player ' .. tostring(args[1] or target)) end
     -- setupComplete=false, not '{}': the UI merges bootstrap settings over its cached ones, so a missing key would keep the old true.
     KoraPhone.Repositories.Phones.updateSettings(device.id, json.encode({ setupComplete = false }))
+    -- Clearing the PIN also drops the handset's Face ID enrolment.
     KoraPhone.Repositories.Phones.clearPin(device.id)
-    MySQL.update.await('UPDATE phone_handsets SET face_citizenid=NULL WHERE device_id=?',{device.id})
     TriggerClientEvent('kora_phone:client:reset', target)
     reply(('Phone reset for player %d'):format(target))
 end, false)
 
-AddEventHandler('QBCore:Server:OnPlayerUnload', function(source)
-    KoraPhone.Sessions.close(source)
+AddEventHandler('kora_core:server:playerUnloaded', function(src)
+    KoraPhone.Sessions.close(src)
 end)
 
 exports('GetPhoneNumber', function(source)

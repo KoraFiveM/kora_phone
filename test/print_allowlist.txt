@@ -1,3 +1,1 @@
 server/main.lua:only remaining print is the /phonereset console reply (operator command reply meant for the console)
-client/notifications.lua:/testphonenotify usage/error replies to the invoking developer, not diagnostics
-web/vendor/kora_theme/theme.js:vendored third-party (kora_theme) browser code, not owned by this repo

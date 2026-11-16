@@ -5,7 +5,9 @@ KoraPhone.Share = Share
 -- Share your number with a nearby player. This file only collects answers: the server picks the number,
 -- checks the distance and saves the contact (server/services/share.lua).
 
-local function cfg() return Config.ShareNumber or {} end
+local function cfg()
+    return Config.ShareNumber or {}
+end
 
 local function holdsPhone()
     if Config.RequirePhoneItem == false then return true end
@@ -34,22 +36,33 @@ local function prettyNumber(number)
     return number
 end
 
+local function notify(titleKey, text, kind, duration)
+    Kora.notify.send({ title = Kora.lang(titleKey), message = text, type = kind, duration = duration })
+end
+
 local function offer(target)
     local label
     if cfg().AskForName ~= false then
         local result = Kora.nui.openInputDialog({
-            { id = 'name', label = 'Share as', type = 'text', required = true, minLength = 1,
-              maxLength = Config.Limits.ContactName, default = GetResourceKvpString(nameKey()) or '' },
-        }, 'Share your number', 'They see this name and your number, and choose whether to save it.')
+            {
+                id = 'name',
+                label = Kora.lang('share.share_as'),
+                type = 'text',
+                required = true,
+                minLength = 1,
+                maxLength = Config.Limits.ContactName,
+                default = GetResourceKvpString(nameKey()) or '',
+            },
+        }, Kora.lang('share.dialog_title'), Kora.lang('share.dialog_description'))
         if not result or result.cancelled or type(result.values) ~= 'table' then return end
         label = type(result.values.name) == 'string' and result.values.name:sub(1, Config.Limits.ContactName) or nil
         if label and label ~= '' then SetResourceKvp(nameKey(), label) end
     end
     KoraPhone.ServerCallback('kora_phone:server:share:offer', { target = target, label = label }, function(result)
         if result.ok then
-            Kora.notify.send({ title = 'Phone', message = 'Number offered. Waiting for them to accept.', type = 'info', duration = 3500 })
+            notify('title.phone', Kora.lang('share.offered'), 'info', 3500)
         else
-            Kora.notify.send({ title = 'Phone', message = message(result, 'Could not share your number'), type = 'error', duration = 3500 })
+            notify('title.phone', message(result, Kora.lang('share.offer_failed')), 'error', 3500)
         end
     end)
 end
@@ -61,11 +74,16 @@ local function answer(id, accept, shareBack)
         if not accept then return end
         local data = type(result) == 'table' and result.data or {}
         if result.ok then
-            local text = data.existing and 'That number is already in your contacts.' or ('Saved %s to your contacts.'):format(tostring(data.name or 'the contact'):sub(1, 40))
-            if data.sharedBack then text = text .. ' Your number was shared back.' end
-            Kora.notify.send({ title = 'Contacts', message = text, type = 'success', duration = 4000 })
+            local text
+            if data.existing then
+                text = Kora.lang('share.already_saved')
+            else
+                text = Kora.lang('share.saved', tostring(data.name or Kora.lang('share.default_contact')):sub(1, 40))
+            end
+            if data.sharedBack then text = text .. ' ' .. Kora.lang('share.shared_back') end
+            notify('title.contacts', text, 'success', 4000)
         else
-            Kora.notify.send({ title = 'Contacts', message = message(result, 'Could not save the contact'), type = 'error', duration = 4000 })
+            notify('title.contacts', message(result, Kora.lang('share.save_failed')), 'error', 4000)
         end
     end)
 end
@@ -73,11 +91,11 @@ end
 -- Phone closed: a kora_lib menu. Escape (cancel) declines.
 local function popup(request)
     local items = {
-        { id = 'accept', label = 'Save contact', description = ('%s · %s'):format(request.label, prettyNumber(request.number)) },
+        { id = 'accept', label = Kora.lang('share.save_contact'), description = ('%s · %s'):format(request.label, prettyNumber(request.number)) },
     }
-    if request.shareBack then items[#items + 1] = { id = 'both', label = 'Save and share my number back' } end
-    items[#items + 1] = { id = 'decline', label = 'Decline' }
-    local choice = Kora.nui.openMenu(items, ('%s wants to share their number'):format(request.label))
+    if request.shareBack then items[#items + 1] = { id = 'both', label = Kora.lang('share.save_and_share') } end
+    items[#items + 1] = { id = 'decline', label = Kora.lang('share.decline') }
+    local choice = Kora.nui.openMenu(items, Kora.lang('share.menu_title', request.label))
     local picked = type(choice) == 'table' and choice.selectedId or nil
     answer(request.id, picked == 'accept' or picked == 'both', picked == 'both')
 end
@@ -86,7 +104,7 @@ RegisterNetEvent('kora_phone:client:share:request', function(data)
     if type(data) ~= 'table' or type(data.id) ~= 'string' or #data.id > 64 or type(data.number) ~= 'string' then return end
     local request = {
         id = data.id,
-        label = (type(data.label) == 'string' and data.label or 'Someone'):sub(1, Config.Limits.ContactName),
+        label = (type(data.label) == 'string' and data.label or Kora.lang('share.someone')):sub(1, Config.Limits.ContactName),
         number = data.number:gsub('[^%d]', ''):sub(1, 15),
         expiresIn = math.max(1, math.min(120, tonumber(data.expiresIn) or 30)),
         shareBack = data.shareBack == true,
@@ -105,7 +123,7 @@ local function register()
     if cfg().Enabled ~= true or GetResourceState('kora_target') ~= 'started' then return end
     local distance = tonumber(cfg().Distance) or 3.0
     exports.kora_target:addGlobalType('player', { {
-        label = 'Share phone number',
+        label = Kora.lang('share.target_label'),
         icon = 'Phone',
         distance = distance,
         canInteract = function(entity)

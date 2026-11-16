@@ -33,16 +33,27 @@ function Media.requestUpload(source, payload, callback)
             return callback(PhoneError(PhoneConstants.Errors.RATE_LIMITED, 'You have posted enough clips for today'))
         end
     elseif KoraPhone.Repositories.Media.countImages(device.id) >= limits.MaxImagesPerDevice then
-        return callback(PhoneError(PhoneConstants.Errors.CONFLICT, 'Your gallery is full. Delete a photo to make room.'))
+        return callback(PhoneError(
+            PhoneConstants.Errors.CONFLICT,
+            'Your gallery is full. Delete a photo to make room.'
+        ))
     end
     local token = newToken()
     local ticket = {
-        token = token, source = source, deviceId = device.id, session = KoraPhone.Sessions.bySource[source], mimeType = mimeType,
-        byteSize = byteSize, expiresAt = os.time() + KoraPhone.Storage.Config().TokenTtlSeconds
+        token = token,
+        source = source,
+        deviceId = device.id,
+        session = KoraPhone.Sessions.bySource[source],
+        mimeType = mimeType,
+        byteSize = byteSize,
+        expiresAt = os.time() + KoraPhone.Storage.Config().TokenTtlSeconds,
     }
     Media.tickets[token] = ticket
     KoraPhone.Storage.begin(ticket, function(ok, instruction, providerError, providerData)
-        if not ok then Media.tickets[token] = nil; return callback(PhoneError(PhoneConstants.Errors.INTERNAL, providerError)) end
+        if not ok then
+            Media.tickets[token] = nil
+            return callback(PhoneError(PhoneConstants.Errors.INTERNAL, providerError))
+        end
         ticket.providerData = providerData or {}
         callback(PhoneResult({ upload = instruction, expiresAt = ticket.expiresAt }))
     end)
@@ -53,7 +64,9 @@ function Media.completeUpload(source, payload, callback)
     local ticket, ticketError = takeTicket(source, payload.token)
     if not ticket then return callback(PhoneError(PhoneConstants.Errors.UNAUTHORIZED, ticketError)) end
     local device, permissionError = KoraPhone.Permissions.requireDevice(source)
-    if not device or device.id ~= ticket.deviceId then return callback(permissionError or PhoneError(PhoneConstants.Errors.UNAUTHORIZED, 'Device changed')) end
+    if not device or device.id ~= ticket.deviceId then
+        return callback(permissionError or PhoneError(PhoneConstants.Errors.UNAUTHORIZED, 'Device changed'))
+    end
 
     local accessSession = ticket.session
     if not accessSession or KoraPhone.Sessions.bySource[source] ~= accessSession then
@@ -105,7 +118,9 @@ function Media.delete(source, payload, callback)
     if not KoraPhone.Repositories.Media.softDelete(device.id, mediaId) then
         return callback(PhoneError(PhoneConstants.Errors.CONFLICT, 'Media could not be deleted'))
     end
-    if KoraPhone.Repositories.Media.referenceCount(mediaId)>0 then return callback(PhoneResult({id=mediaId,storageDeleted=false})) end
+    if KoraPhone.Repositories.Media.referenceCount(mediaId) > 0 then
+        return callback(PhoneResult({ id = mediaId, storageDeleted = false }))
+    end
     KoraPhone.Storage.delete(record, function(deleted)
         if deleted then KoraPhone.Repositories.Media.hardDelete(mediaId) end
         callback(PhoneResult({ id = mediaId, storageDeleted = deleted == true }))
@@ -129,10 +144,10 @@ CreateThread(function()
                 storageConfig.CleanupBatchSize
             )
             for _, record in ipairs(tombstones) do
-                if KoraPhone.Repositories.Media.referenceCount(record.id)==0 then
-                KoraPhone.Storage.delete(record, function(deleted)
-                    if deleted then KoraPhone.Repositories.Media.hardDelete(record.id) end
-                end)
+                if KoraPhone.Repositories.Media.referenceCount(record.id) == 0 then
+                    KoraPhone.Storage.delete(record, function(deleted)
+                        if deleted then KoraPhone.Repositories.Media.hardDelete(record.id) end
+                    end)
                 end
             end
         end

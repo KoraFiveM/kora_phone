@@ -1,0 +1,45 @@
+/*
+ * Friendly aliases over the real kora_theme tokens the host forwards on `init`.
+ * Colour tokens are HSL triplets (e.g. `84 100% 50%`), so they are wrapped in hsl().
+ * The fallbacks after each comma are neutral keywords used before `init` arrives.
+ */
+:root {
+    --kp-bg: hsl(var(--background, 0 0% 0%) / 1);
+    --kp-fg: hsl(var(--foreground, 0 0% 100%) / 1);
+    --kp-surface: hsl(var(--surface, var(--card, 0 0% 10%)) / 1);
+    --kp-surface-raised: hsl(var(--surface-raised, var(--card, 0 0% 14%)) / 1);
+    --kp-muted: hsl(var(--muted-foreground, 0 0% 60%) / 1);
+    --kp-accent: hsl(var(--primary, 210 100% 50%) / 1);
+    --kp-accent-fg: hsl(var(--primary-foreground, 0 0% 0%) / 1);
+    --kp-border: hsl(var(--border, 0 0% 25%) / 1);
+    --kp-danger: hsl(var(--destructive, 0 80% 50%) / 1);
+    --kp-success: hsl(var(--success, 140 60% 40%) / 1);
+    --kp-radius: var(--radius, 12px);
+    --kp-font: var(--font-sans, system-ui, sans-serif);
+    --kp-font-heading: var(--font-heading, var(--font-sans, system-ui, sans-serif));
+    --kp-font-mono: var(--font-mono, ui-monospace, monospace);
+    color-scheme: light dark;
+}
+
+html,
+body {
+    margin: 0;
+    background: var(--kp-bg);
+    color: var(--kp-fg);
+    font-family: var(--kp-font);
+}
+
+.kora-surface {
+    background: var(--kp-surface);
+    border: 1px solid var(--kp-border);
+    border-radius: var(--kp-radius);
+}
+
+.kora-button {
+    background: var(--kp-accent);
+    color: var(--kp-accent-fg);
+    border: 0;
+    border-radius: var(--kp-radius);
+    padding: 0.5rem 1rem;
+    font: inherit;
+}

@@ -6,7 +6,8 @@ const fs = require("node:fs");
 const path = require("node:path");
 
 const root = path.resolve(__dirname, "..");
-const read = (file) => fs.readFileSync(path.join(root, file), "utf8");
+const { resolveWeb } = require("./helpers/web-source");
+const read = (file) => fs.readFileSync(resolveWeb(root, file), "utf8");
 const storage = read("server/integrations/storage.lua");
 const service = read("server/services/media.lua");
 const camera = read("client/camera.lua");
@@ -31,6 +32,7 @@ assert.match(repository, /referenceCount/, "reference-safe deletion check missin
 assert.match(camera, /instruction\.uploadUrl/, "client must consume server-issued upload URL");
 assert.doesNotMatch(camera, /payload\.(?:url|uploadUrl)/, "client payload must not provide an upload URL");
 assert.doesNotMatch(service, /payload\.(?:url|publicUrl|storageKey)/, "server must not persist client-provided storage locations");
-assert.match(callbacks, /'requestMediaUpload', 'mediaUpload'/, "media tickets need a dedicated rate limit");
+const mediaRoute = JSON.parse(read("shared/routes.json")).find(route => route.nui === "media:request");
+assert.strictEqual(mediaRoute && mediaRoute.rate, "mediaUpload", "media tickets need a dedicated rate limit");
 
 console.log("PASS media-contract: provider, token, ownership, allowlist and deletion boundaries present");

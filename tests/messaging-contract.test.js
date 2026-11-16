@@ -5,18 +5,24 @@ const assert = require("node:assert/strict");
 const fs = require("node:fs");
 const path = require("node:path");
 const root = path.resolve(__dirname, "..");
-const read = file => fs.readFileSync(path.join(root, file), "utf8");
+const { resolveWeb } = require("./helpers/web-source");
+const read = file => fs.readFileSync(resolveWeb(root, file), "utf8");
+const readApi = () => { // the web API layer is split across web/src/api/**
+  const walk = (dir) => fs.readdirSync(path.join(root, dir), { withFileTypes: true }).flatMap(e => e.isDirectory() ? walk(`${dir}/${e.name}`) : e.name.endsWith(".ts") ? [read(`${dir}/${e.name}`)] : []);
+  return [read("web/src/api.ts"), ...walk("web/src/api")].join("\n");
+};
 
 const repository = read("server/repositories/messages.lua");
 const service = read("server/services/messaging.lua");
 const callbacks = read("server/callbacks.lua");
-const nui = read("client/nui.lua");
+const nui = require("./helpers/nui-source").source;
+const { bound } = require("./helpers/bound");
 const migration = read("server/schema.lua");
-const web = read("web/src/api.ts");
+const web = readApi();
 const contracts = read("shared/contracts.lua");
 
 for (const callback of ["getContacts", "getConversations", "startDirectConversation", "markConversationRead", "deleteMessageForSelf"]) {
-  assert.match(callbacks, new RegExp(`registerCallback\\('${callback}'`), `${callback} must be registered`);
+  assert.match(callbacks, bound(callback), `${callback} must be registered`);
 }
 for (const route of ["contacts:list", "messages:getConversations", "messages:startDirect", "messages:markRead", "messages:deleteForSelf"]) {
   assert.match(nui, new RegExp(`\\['${route.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}']`), `${route} needs an explicit NUI bridge`);
@@ -39,7 +45,7 @@ assert.match(migration, /name = 'uq_phone_conversations_direct_key'[^\n]*unique 
 
 assert.match(web, /messages:getConversations/, "UI must load real conversations");
 assert.match(web, /messages:getPage/, "UI must load real message pages");
-assert.match(web, /conversationId:p\.conversationId,body:p\.body.*clientRequestId:id/, "composer must send against the selected conversation");
+assert.match(web, /conversationId: p\.conversationId, body: p\.body.*clientRequestId: id/, "composer must send against the selected conversation");
 assert.doesNotMatch(web, /5550000000/, "composer must not use a hard-coded recipient");
 assert.doesNotMatch(read("web/src/Communication.tsx"), /dangerouslySetInnerHTML/, "React must render message bodies as text");
 

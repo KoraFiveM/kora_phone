@@ -20,7 +20,11 @@ RegisterNetEvent('kora_phone:client:calls:incoming', function(call)
     if participantEvent('calls:incoming', call) and not KoraPhone.State.open then
         if KoraPhone.State.quiet then
             -- Do Not Disturb: leave the phone closed and drop a silent note in the notification shade.
-            KoraPhone.SendNui('notification:push', { title = tostring(call.remoteNumber or 'Unknown'), body = 'Incoming call · Do Not Disturb', app = 'phone' })
+            KoraPhone.SendNui('notification:push', {
+                title = tostring(call.remoteNumber or Kora.lang('notify.unknown_caller')),
+                body = Kora.lang('notify.incoming_call_quiet'),
+                app = 'phone',
+            })
         else
             -- The UI is hidden while the phone is closed, so open it or the call would ring unseen.
             KoraPhone.Open()
@@ -48,30 +52,11 @@ RegisterNetEvent('kora_phone:client:calls:signal', function(signal)
     KoraPhone.SendNui('videoSignal', signal)
 end)
 
-RegisterNetEvent('kora_phone:client:calls:videoControl',function(control)
-    if type(control)=='table' and KoraPhone.State.activeCall and KoraPhone.State.activeCall.id==control.id then
-        KoraPhone.SendNui('videoControl',control)
+RegisterNetEvent('kora_phone:client:calls:videoControl', function(control)
+    local call = KoraPhone.State.activeCall
+    if type(control) == 'table' and call and call.id == control.id then
+        KoraPhone.SendNui('videoControl', control)
     end
-end)
-
-local mutedPeer
-local function clearRemoteMute()
-    if mutedPeer then
-        if GetResourceState('pma-voice')=='started' then
-            local ok,muted=pcall(function() return exports['pma-voice']:isPlayerMuted(mutedPeer) end)
-            if ok and muted then exports['pma-voice']:toggleMutePlayer(mutedPeer) end
-        end
-        mutedPeer=nil
-    end
-end
-RegisterNetEvent('kora_phone:client:calls:remoteMute',function(data)
-    if not KoraPhone.State.activeCall or type(data)~='table' or KoraPhone.State.activeCall.id~=data.id then return end
-    if data.muted then
-        if GetResourceState('pma-voice')~='started' then return end
-        local ok,muted=pcall(function() return exports['pma-voice']:isPlayerMuted(data.source) end)
-        if not ok then return end
-        if not muted then exports['pma-voice']:toggleMutePlayer(data.source); mutedPeer=data.source end
-    else clearRemoteMute() end
 end)
 
 RegisterNetEvent('kora_phone:client:calls:ended', function(payload)
@@ -79,13 +64,11 @@ RegisterNetEvent('kora_phone:client:calls:ended', function(payload)
     local current = KoraPhone.State.activeCall
     if current and current.id ~= payload.id then return end
     KoraPhone.Voice.Leave()
-    clearRemoteMute()
     KoraPhone.State.activeCall = nil
     KoraPhone.SendNui('calls:ended', payload)
 end)
 
 function Calls.Cleanup(notifyServer)
-    clearRemoteMute()
     local call = KoraPhone.State.activeCall
     KoraPhone.Voice.Leave()
     KoraPhone.State.activeCall = nil

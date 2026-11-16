@@ -1,8 +1,11 @@
-KoraPhone.registerCallback('getBankBalance', 'read', KoraPhone.Services.Banking.balance)
-KoraPhone.registerCallback('getBankHistory', 'read', KoraPhone.Services.Banking.history)
-KoraPhone.registerCallback('transferBankMoney', 'bankTransfer', KoraPhone.Services.Banking.transfer)
-KoraPhone.registerCallback('getWallet', 'read', KoraPhone.Services.Wallet.get)
-KoraPhone.registerCallback('showWalletId', 'mutation', KoraPhone.Services.Wallet.show)
-KoraPhone.registerCallback('getJob', 'read', KoraPhone.Services.Jobs.get)
-KoraPhone.registerCallback('setJobDuty', 'jobMutation', KoraPhone.Services.Jobs.setDuty)
-KoraPhone.registerCallback('runJobAction', 'jobMutation', KoraPhone.Services.Jobs.runAction)
+local bind = KoraPhone.Routes.handle
+local Services = KoraPhone.Services
+
+bind('getBankBalance', Services.Banking.balance)
+bind('getBankHistory', Services.Banking.history)
+bind('transferBankMoney', Services.Banking.transfer)
+bind('getWallet', Services.Wallet.get)
+bind('showWalletId', Services.Wallet.show)
+bind('getJob', Services.Jobs.get)
+bind('setJobDuty', Services.Jobs.setDuty)
+bind('runJobAction', Services.Jobs.runAction)

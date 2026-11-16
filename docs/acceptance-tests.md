@@ -5,7 +5,7 @@ sidebar_position: 20
 
 # v1 acceptance tests
 
-A manual and automation plan for release testing. The scripted checks in `tests/` (see `tests/README.md`) cover only part of it.
+A manual and automation plan for release testing. The scripted checks (`test/run.sh`, see `tests/README.md`) cover only part of it.
 
 ## Global release gates
 
@@ -48,10 +48,10 @@ A manual and automation plan for release testing. The scripted checks in `tests/
 
 ## Banking and jobs
 
-- Balance and history come from server integrations.
+- Balance comes from kora_core and transfers run through kora_banking; history comes from `phone_bank_history`.
 - Positive bounded transfers succeed once; insufficient, negative, replayed and forged transfers fail safely.
 - A committed transfer still produces one result if the response is delayed or retried.
-- Job/grade/duty come from QBCore; management actions enforce grade server-side.
+- Job, grade and duty come from kora_core (grades are one-based); management actions enforce grade server-side, and duty changes respect kora_multijob's duty lock.
 - Missing optional job resources hide their actions without breaking the phone.
 
 ## Social and marketplace
@@ -76,5 +76,5 @@ A manual and automation plan for release testing. The scripted checks in `tests/
 
 ## Compatibility matrix
 
-Test fresh/upgrade databases; 1, 2, 32, 64 and target-max players; supported QBCore, inventory and voice versions; 16:9, 16:10 and 21:9; 50–200 ms simulated latency; resource restart, server restart, reconnect, character switch, phone removal and player death.
+Test a fresh database and a restart on an existing one (tables are only added to, never migrated); 1, 2, 32, 64 and target-max players; the kora_core, kora_inventory, kora_banking and kora_voice versions you run; 16:9, 16:10 and 21:9; 50–200 ms simulated latency; resource restart, server restart, reconnect, character switch, phone removal and player death.
 
