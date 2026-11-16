@@ -225,6 +225,13 @@ end)
 -- Schema: tests/config_shim.lua does NOT validate, so this loads the REAL kora_lib consumer
 -- ([pre]/kora_lib/modules/config/consumer.lua) with stubbed natives and runs config/shared.lua through it.
 -- The bone field's default is swapped for each candidate; define() asserts on an invalid default.
+local koraLibConsumer = root .. "/../../[pre]/kora_lib/modules/config/consumer.lua"
+local function haveKoraLib()
+    local handle = io.open(koraLibConsumer, "r")
+    if handle then handle:close() end
+    return handle ~= nil
+end
+
 local function defineWithBone(candidate)
     local saved = { Kora = _G.Kora, Config = _G.Config, name = _G.GetCurrentResourceName, dup = _G.IsDuplicityVersion,
         load = _G.LoadResourceFile }
@@ -232,7 +239,7 @@ local function defineWithBone(candidate)
     _G.IsDuplicityVersion = function() return true end
     _G.LoadResourceFile = function() return nil end
     local ok, err = pcall(function()
-        local consumer = assert(loadfile(root .. "/../../[pre]/kora_lib/modules/config/consumer.lua"))
+        local consumer = assert(loadfile(koraLibConsumer))
         local real = consumer()({ config_register = function() return true end })
         local wrapped = setmetatable({}, { __index = real })
         wrapped.string = function(value, options)
@@ -249,6 +256,10 @@ local function defineWithBone(candidate)
 end
 
 test("config schema (real kora_lib validator) accepts '28422' and 'PH_R_Hand'", function()
+    if not haveKoraLib() then
+        io.write("SKIP real kora_lib validator: " .. koraLibConsumer .. " not found (CI clones kora_lib there)\n")
+        return
+    end
     local ok, err = defineWithBone("28422")
     assert(ok, tostring(err))
     ok, err = defineWithBone("PH_R_Hand")
@@ -256,6 +267,10 @@ test("config schema (real kora_lib validator) accepts '28422' and 'PH_R_Hand'", 
 end)
 
 test("config schema (real kora_lib validator) rejects 'bad bone!'", function()
+    if not haveKoraLib() then
+        io.write("SKIP real kora_lib validator: " .. koraLibConsumer .. " not found (CI clones kora_lib there)\n")
+        return
+    end
     local ok, err = defineWithBone("bad bone!")
     assert(not ok, "expected the schema to reject 'bad bone!'")
     assert(tostring(err):find("format", 1, true) or tostring(err):find("nvalid", 1, true), tostring(err))

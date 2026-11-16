@@ -30,14 +30,20 @@ jobs:
       - name: Install Lua
         run: command -v lua5.4 >/dev/null || sudo apt-get install -y lua5.4
 
-      # web/vite.config.ts imports ../../../[standalone]/kora_theme/vite-plugin.mjs, i.e. kora_theme sits in a
-      # [standalone] folder three levels above web/ (the server's resources/ tree). actions/checkout cannot write
-      # outside the workspace, so clone it to that exact spot. Used by the tests (tsc) and the UI build below.
-      - name: Checkout kora_theme next to the resource
+      # Two sibling resources are needed, both expected under the server's resources/ tree (three levels above web/):
+      #  - [standalone]/kora_theme: web/vite.config.ts imports its vite plugin (tests run tsc, and the UI build uses it).
+      #  - [pre]/kora_lib: tests/animations.test.lua loads the real kora_lib config validator.
+      # actions/checkout cannot write outside the workspace, so clone them to those exact spots.
+      - name: Checkout sibling resources (kora_theme, kora_lib)
         run: |
-          theme_dir="$(cd "$GITHUB_WORKSPACE/../.." && pwd)/[standalone]/kora_theme"
-          rm -rf "$theme_dir"
-          git clone --depth 1 "https://x-access-token:${{ secrets.KORA_THEME_TOKEN || secrets.GITHUB_TOKEN }}@github.com/${{ github.repository_owner }}/kora_theme.git" "$theme_dir"
+          base="$(cd "$GITHUB_WORKSPACE/../.." && pwd)"
+          token="${{ secrets.KORA_THEME_TOKEN || secrets.GITHUB_TOKEN }}"
+          owner="${{ github.repository_owner }}"
+          for entry in "[standalone]/kora_theme" "[pre]/kora_lib"; do
+            dir="$base/$entry"
+            rm -rf "$dir"
+            git clone --depth 1 "https://x-access-token:${token}@github.com/${owner}/${entry##*/}.git" "$dir"
+          done
 
       - name: Install dependencies
         run: (cd sdk && npm ci) && (cd web && npm ci)
