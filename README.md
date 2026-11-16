@@ -2,7 +2,7 @@
 
 **Three handsets. One connected city.**
 
-A FiveM phone system with distinct Standard, Flip and Fold interfaces, physical handset identities, removable SIMs and cloud recovery. Built from Stevie for the custom **`[v2]` QBCore stack**.
+A FiveM phone system with distinct Standard, Flip and Fold interfaces, physical handset identities, removable SIMs and cloud recovery. Built from Stevie for the custom **`[v2]` Kora stack**.
 
 ## Meet the handsets
 
@@ -31,12 +31,14 @@ Each handset has its own visual identity, with coordinated colors across the lau
 
 ## What's included
 
-- **Calls and video:** pma-voice audio, accepted WebRTC video upgrades, in-game selfie/rear cameras, mute and hang-up.
+- **Calls and video:** kora_voice audio, accepted WebRTC video upgrades, in-game selfie/rear cameras and hang-up. Muting a call is not supported because kora_voice has no call-only mute.
 - **Everyday apps:** Contacts, Messages with photo attachments, Camera, Gallery, Maps, Mail, Notes, Weather, Calculator, Clock and Sound.
+- **Social, money and work apps:** Pulse and Flash (social, clips), Market (classifieds), Banking and the Wallet ID card (transfers through kora_banking), Services (jobs, duty and configured actions through kora_core), Garage (kora_core vehicles, kora_garages names), Property (your housing tables) and a moderation queue (off by default). Each can be switched off in `Config.Apps`.
+- **Third-party apps:** sandboxed iframe apps declared by manifest and built with `@kora/phone-sdk` (server-checked permissions, per-app storage and callbacks; see [docs/apps.md](docs/apps.md)), plus the lb-phone, sd-phone, 17mov_Phone, yseries and high-phone custom-app export aliases.
 - **Personal security:** optional PINs, simulated character-based Face ID with a backup PIN, cloud backup/restore and recovery codes.
 - **Physical ownership:** multiple handsets, one selected phone, removable SIMs and persistent serials that stay with the inventory items.
 - **City services:** configured NPC and authorised business counters, handset/SIM sales, SIM replacement, account recovery, resale and public/private Wi-Fi.
-- **Legacy integrations:** supported `qb-phone` mail events and exports, offline system mail, one-use Accept actions and informational transaction notes.
+- **Mail:** offline system mail from trusted server scripts, one-use Accept actions and informational transaction notes.
 
 ### Your handset, SIM and account
 
@@ -48,28 +50,32 @@ System Mail is character-owned, so job offers, billing messages and activity not
 
 ## Requirements
 
-Use the resource names below. The phone integrates with the custom `[v2]` APIs and the included inventory companion.
+Use the resource names below. The phone integrates with the Kora `[v2]` APIs.
 
 | Resource/service | Used for |
 |---|---|
-| `kora_lib` | Shared helpers, interactions and callbacks |
+| `kora_lib` | Config handler, callbacks, keybinds, language files, logging, interactions and screenshots |
 | `kora_sql` | Database access and table setup |
-| `kora_core` | Character identity, shared items, jobs and money |
-| `kora_inventory` | Physical handset/SIM ownership and locked inventory changes |
+| `kora_core` | Character identity, shared items, jobs, money and owned vehicles |
+| `kora_inventory` | Physical handset/SIM ownership and locked inventory changes (must export `PhoneItemTransaction`) |
 | `kora_theme` | Shared theme runtime and client bridge |
-| `Kora_voice` | Call audio |
-| `Kora_lib` | Saved in-game photos |
-| **Fivemanage** | Saved photo and message-media hosting |
+| `kora_voice` | Call audio |
+| `kora_banking` (optional) | Bank transfers (`ExecuteTransaction`); its `Config.transactionCallers` must list `kora_phone` (its default does) |
+| `kora_multijob`, `kora_garages` (optional) | Duty lock for configured jobs; garage names in the Garage app |
+| `kora_target`, `kora_hud` (optional) | Third-eye **Share phone number**; minimap layout after the Maps app |
+| **Fivemanage** | Saved photo and message-media hosting (`Config.Server.Media.Provider`); photos are captured by kora_lib's screenshot module |
+
+`pma-voice` is no longer used: call audio goes through `kora_voice`'s native API.
 
 Live video travels through WebRTC, directly or through your configured TURN relay. It does not use Fivemanage as a streaming service.
 
 ## Installation
 
-### 1. Install the resource and inventory companion
+### 1. Install the resource
 
 Place this resource in your server's resources folder and name its directory **`kora_phone`**. The inventory gateway also still accepts the old folder name `kora_phone-stevie`.
 
-Integrate [the companion kora_inventory server file](integration/kora_inventory/server.lua) with your `[v2]` inventory resource. It supplies `PhoneItemTransaction`, which handles handset binding, SIM exchange and resale through inventory authority. Compare it with your installed version before replacing files.
+`kora_inventory` exports `PhoneItemTransaction` natively; it handles handset binding, SIM exchange and resale through inventory authority. Start-up stops if it is missing.
 
 Keep one phone provider enabled. Stop the previous phone before starting this replacement.
 
@@ -79,7 +85,7 @@ Keep one phone provider enabled. Stop the previous phone before starting this re
 |---|---|
 | **New server (empty database)** | Nothing to do: startup creates the tables from `server/schema.lua`. No migrations or data conversion exist. |
 
-The tables are declared in `server/schema.lua` and created by `Kora.sql.ensureTables` at start.
+The tables are declared in `server/schema.lua` and `server/sdk/schema.lua` and created by `Kora.sql.ensureTables` at start. There are no SQL files and no migrations.
 
 See [deployment and rollback](docs/three-handsets.md) for backups.
 
@@ -87,13 +93,16 @@ See [deployment and rollback](docs/three-handsets.md) for backups.
 
 | File | Settings |
 |---|---|
+| [config/shared.lua](config/shared.lua) | Phone item requirement, number format, limits, `Config.Apps` switches, share-number rules, and the client settings (phone command and key, death restriction, notification sound, camera, animation) |
 | [config/handsets.lua](config/handsets.lua) | Models, shop stock/prices, business jobs, counter locations, SIM-swap rules and Wi-Fi hotspots |
-| [config/server.lua](config/server.lua) | Media provider, limits, STUN and video configuration |
-| [config/client.lua](config/client.lua) | Phone command/keybind, death restrictions and notification sound |
+| [config/server.lua](config/server.lua) | Rate limits, banking, jobs, PIN lockout, wallet, garage and property sources, media provider and limits, calls, STUN and video configuration |
+| `config.local.lua` | Your overrides, written by the in-game `/config` editor (ACE `kora_lib.config.edit`); you can also edit it by hand. Never committed |
+
+See [docs/configuration.md](docs/configuration.md) for every option. [config/client.lua](config/client.lua) is only a note.
 
 Circuit Mobile counters are preset at the Digital Den doors (Vinewood, Mirror Park, Sinner St) and Alta St; add more entries under `shops` for other stores. Replace the example shop coordinates, business job names and hotspot settings for your server. SIM swapping supports `player`, `shop` or `both`; the default is `both`.
 
-`Config.ConsumeSimOnInstall` (default `true`, in `config/handsets.lua`): inserting a SIM moves its item into the phone so exactly one SIM item leaves the inventory, and removing it returns the same item with its number. The inventory gateway does the move; the phone re-checks the result and corrects it through `kora_inventory` `RemoveItem`/`AddItem` if an older companion file left the SIM loose or lost it. Set `false` to skip the re-check.
+`Config.ConsumeSimOnInstall` (default `true`, in `config/handsets.lua`): inserting a SIM moves its item into the phone so exactly one SIM item leaves the inventory, and removing it returns the same item with its number. The inventory gateway does the move; the phone re-checks the result and corrects it through `kora_inventory` `RemoveItem`/`AddItem` if the SIM was left loose or lost. Set `false` to skip the re-check.
 
 ### 4. Add your server configuration
 
@@ -110,7 +119,7 @@ ensure kora_core
 ensure kora_inventory
 ensure kora_theme
 ensure kora_voice
-
+ensure kora_banking
 
 ensure kora_phone
 ```
@@ -125,13 +134,13 @@ set kora_phone_turn_urls "turn:YOUR_TURN_HOST:3478"
 set kora_phone_turn_secret "YOUR_TURN_REST_SHARED_SECRET"
 ```
 
-STUN servers are configured in `Config.Calls.Video.IceServers` in `config/server.lua`. Keep API tokens and shared TURN secrets server-side.
+STUN servers are configured in `Config.Calls.Video.IceServers` (`config/server.lua`, or `/config`). Keep API tokens and shared TURN secrets server-side.
 
 </details>
 
 ## Using the phone
 
-Use a handset from inventory, press **M**, or run **`/phone`** to open the selected handset. Players can visit a configured counter to buy their first phone without already owning one.
+Use a handset from inventory, press **M** (rebindable in the game's key settings), or run **`/phone`** to open the selected handset. Players can visit a configured counter to buy their first phone without already owning one.
 
 Settings is organised into **Appearance**, **Connections**, **Cloud account**, **Privacy & security**, **Sound & alerts**, and **About & resale**. Insert or remove SIMs, connect to Wi-Fi, set a PIN, enrol Face ID, and manage cloud recovery there. Save the cloud account ID and recovery code shown during registration.
 
@@ -142,22 +151,6 @@ Settings is organised into **Appearance**, **Connections**, **Cloud account**, *
 | Put any handset away | The call ends. |
 | Select another handset | Any active call ends and the selected handset changes. |
 | Prepare a handset for normal resale | Remove its SIM and perform an unlocked factory reset first. Cloud backups are preserved. |
-
-## Legacy qb-phone support
-
-Server integrations can keep using the supported `qb-phone` identity. For example, from a trusted server script:
-
-```lua
-exports['qb-phone']:sendNewMailToOffline(citizenId, {
-    sender = 'Job Office',
-    subject = 'Delivery offer',
-    message = 'A delivery is waiting for you at the depot.'
-})
-```
-
-Mail can arrive before the character owns a phone. Trusted server deliveries can include one-use Accept actions; the browser cannot nominate an event. Transaction notes appear under **Mail → Activity** and never change player balances.
-
-See [legacy events, exports and data adoption](docs/legacy-compat.md) for the complete supported surface.
 
 ## UI development
 
@@ -176,10 +169,10 @@ npm run build --prefix web
 
 ## Scope and deployment status
 
-The launch interface includes the apps listed above. Legacy group history remains readable; the inherited social, banking, job and marketplace interfaces remain outside the launch UI.
+Every app listed above ships in this release, including Pulse, Flash, Market, Banking, Services, Garage, Property and the moderation queue; each can be turned off with `Config.Apps`. The `media.read`, `location` and `payments` SDK permissions are accepted in app manifests but do not gate any route yet. Legacy group history remains readable.
 
 Battery, physical damage, account-based Wi-Fi calling and technician crafting/wiping/SIM-hacking gameplay are deferred.
 
-Before production deployment, verify native calls/video, provider uploads and backup/rollback on an isolated copy of your server. Shop locations, permissions and hotspot routing buckets must match your setup.
+Run `LUA=lua5.4 bash test/run.sh` for the scripted checks (see [tests/README.md](tests/README.md)). Before production deployment, verify native calls/video, provider uploads and backup/rollback on an isolated copy of your server. Shop locations, permissions and hotspot routing buckets must match your setup.
 
 Full documentation: see [docs/](docs/index.md).

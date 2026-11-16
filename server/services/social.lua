@@ -32,7 +32,9 @@ local function cleanHandle(value)
     local handle, err = PhoneValidation.string(value, 'handle', 3, 24)
     if not handle then return nil, err end
     handle = handle:lower()
-    if not handle:match('^[a-z0-9_]+$') then return nil, 'handle may contain only letters, numbers and underscore' end
+    if not handle:match('^[a-z0-9_]+$') then
+        return nil, 'handle may contain only letters, numbers and underscore'
+    end
     return handle
 end
 
@@ -43,11 +45,20 @@ function Social.createAccount(source, payload)
     payload = type(payload) == 'table' and payload or {}
     local handle, validationError = cleanHandle(payload.handle)
     if not handle then return invalid(validationError) end
-    local displayName; displayName, validationError = PhoneValidation.string(payload.displayName, 'displayName', 1, 64)
+    local displayName
+    displayName, validationError = PhoneValidation.string(payload.displayName, 'displayName', 1, 64)
     if not displayName then return invalid(validationError) end
-    local bio; bio, validationError = PhoneValidation.string(payload.bio or '', 'bio', 0, 280, true)
+    local bio
+    bio, validationError = PhoneValidation.string(payload.bio or '', 'bio', 0, 280, true)
     if not bio then return invalid(validationError) end
-    local ok, created = pcall(KoraPhone.Repositories.Social.createProfile, device.id, handle, displayName, bio, payload.isPrivate == true)
+    local ok, created = pcall(
+        KoraPhone.Repositories.Social.createProfile,
+        device.id,
+        handle,
+        displayName,
+        bio,
+        payload.isPrivate == true
+    )
     if not ok or not created then return PhoneError(PhoneConstants.Errors.CONFLICT, 'Handle is unavailable') end
     return PhoneResult(created)
 end
@@ -67,7 +78,9 @@ function Social.getProfile(source, payload)
     local id, validationError = PhoneValidation.integer(type(payload) == 'table' and payload.id, 'id', 1)
     if not id then return invalid(validationError) end
     local profile = KoraPhone.Repositories.Social.profileById(id)
-    if not profile or profile.isSuspended == 1 or KoraPhone.Repositories.Blocks.isEitherBlocked(device.id, profile.deviceId) then
+    if not profile
+        or profile.isSuspended == 1
+        or KoraPhone.Repositories.Blocks.isEitherBlocked(device.id, profile.deviceId) then
         return PhoneError(PhoneConstants.Errors.NOT_FOUND, 'Profile was not found')
     end
     profile.deviceId = nil
@@ -83,11 +96,21 @@ function Social.createPost(source, payload)
     if payload.mediaId ~= nil then
         mediaId, validationError = PhoneValidation.integer(payload.mediaId, 'mediaId', 1)
         if not mediaId then return invalid(validationError) end
-        if not KoraPhone.Repositories.Media.findOwned(device.id, mediaId) then return invalid('That media was not found') end
+        if not KoraPhone.Repositories.Media.findOwned(device.id, mediaId) then
+            return invalid('That media was not found')
+        end
     end
-    local body; body, validationError = PhoneValidation.string(payload.body == nil and '' or payload.body, 'body', mediaId and 0 or 1, 5000, mediaId ~= nil)
+    local body
+    body, validationError = PhoneValidation.string(
+        payload.body == nil and '' or payload.body,
+        'body',
+        mediaId and 0 or 1,
+        5000,
+        mediaId ~= nil
+    )
     if not body then return invalid(validationError) end
-    local idempotency; idempotency, validationError = requestId(payload)
+    local idempotency
+    idempotency, validationError = requestId(payload)
     if not idempotency then return invalid(validationError) end
     local post, replayed = KoraPhone.Repositories.Social.insertPost(profile.id, body, idempotency, mediaId)
     if not post then return PhoneError(PhoneConstants.Errors.INTERNAL, 'Unable to create post') end
@@ -150,11 +173,17 @@ end
 function Social.follow(source, payload, following)
     local device, profile, err = ownProfile(source, true)
     if not device then return err end
-    local targetId, validationError = PhoneValidation.integer(type(payload) == 'table' and payload.profileId, 'profileId', 1)
+    local targetId, validationError = PhoneValidation.integer(
+        type(payload) == 'table' and payload.profileId,
+        'profileId',
+        1
+    )
     if not targetId then return invalid(validationError) end
     if targetId == profile.id then return invalid('Cannot follow yourself') end
     local target = KoraPhone.Repositories.Social.profileById(targetId)
-    if not target or target.isSuspended == 1 or KoraPhone.Repositories.Blocks.isEitherBlocked(device.id, target.deviceId) then
+    if not target
+        or target.isSuspended == 1
+        or KoraPhone.Repositories.Blocks.isEitherBlocked(device.id, target.deviceId) then
         return PhoneError(PhoneConstants.Errors.NOT_FOUND, 'Profile was not found')
     end
     if following and target.isPrivate == 1 then
@@ -172,7 +201,8 @@ function Social.createComment(source, payload)
     if not profile then return err end
     local body, validationError = PhoneValidation.string(payload.body, 'body', 1, 1000)
     if not body then return invalid(validationError) end
-    local idempotency; idempotency, validationError = requestId(payload)
+    local idempotency
+    idempotency, validationError = requestId(payload)
     if not idempotency then return invalid(validationError) end
     local comment = KoraPhone.Repositories.Social.insertComment(post.id, profile.id, body, idempotency)
     return comment and PhoneResult(comment) or PhoneError(PhoneConstants.Errors.INTERNAL, 'Unable to create comment')
@@ -200,7 +230,11 @@ end
 function Social.setBlock(source, payload)
     local device, profile, err = ownProfile(source, false)
     if not device then return err end
-    local targetId, validationError = PhoneValidation.integer(type(payload) == 'table' and payload.profileId, 'profileId', 1)
+    local targetId, validationError = PhoneValidation.integer(
+        type(payload) == 'table' and payload.profileId,
+        'profileId',
+        1
+    )
     if not targetId then return invalid(validationError) end
     local target = KoraPhone.Repositories.Social.profileById(targetId)
     if not target then return PhoneError(PhoneConstants.Errors.NOT_FOUND, 'Profile was not found') end

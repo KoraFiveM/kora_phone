@@ -25,10 +25,13 @@ local function hasPin(device) return device.hasPin == 1 or device.hasPin == true
 
 local function pepper() return GetConvar('kora_phone_pin_pepper', '') end
 
-local function newSalt()
-    local parts = {}
-    for i = 1, 4 do parts[i] = string.format('%08x', math.random(0, 0x7fffffff)) end
-    return table.concat(parts)
+local function crypto() return exports[GetCurrentResourceName()] end
+
+-- Handsets store a KDF hash; PINs set before that kept the salted SHA-256 compared in SQL.
+local function pinMatches(deviceId, pin)
+    local kdf = KoraPhone.Repositories.Phones.pinKdf(deviceId)
+    if kdf then return crypto():pinVerify(pin, kdf) end
+    return KoraPhone.Repositories.Phones.legacyPinMatches(deviceId, pepper(), pin)
 end
 
 -- Verifies a PIN with attempt limiting. Returns true, or nil plus a client-safe error.
@@ -42,13 +45,47 @@ local function checkPin(device, pin)
     if lockedUntil > now then
         return nil, PhoneError(PhoneConstants.Errors.RATE_LIMITED, ('Too many attempts. Try again in %d seconds.'):format(lockedUntil - now))
     end
-    if KoraPhone.Repositories.Phones.pinMatches(device.id, pepper(), pin) then
+    if pinMatches(device.id, pin) then
         KoraPhone.Repositories.Phones.clearPinFailures(device.id)
         return true
     end
     local cfg = Config.Server.Pin
     KoraPhone.Repositories.Phones.recordPinFailure(device.id, cfg.MaxAttempts, cfg.LockSeconds, now)
     return nil, PhoneError(PhoneConstants.Errors.FORBIDDEN, 'Incorrect PIN')
+end
+
+local function characterInfo(player)
+    local info = player.charinfo
+    local job = player.job
+    return {
+        firstName = info and info.firstname or '',
+        lastName = info and info.lastname or '',
+        job = job and {
+            name = job.name,
+            label = job.label,
+            grade = job.grade and job.grade.level or 0,
+            onDuty = job.onduty == true,
+        } or nil,
+    }
+end
+
+---Which optional apps and capabilities this server offers, so the UI only shows what works.
+local function featureFlags()
+    local video = Config.Calls.Video
+    return {
+        homeReorder = PhoneValidation.homeReorderAllowed(),
+        galleryViewer = not Config.Gallery or Config.Gallery.fullscreenViewer ~= false,
+        maps = #Config.Server.Maps.Locations > 0,
+        garage = KoraPhone.Services.Garage.available(),
+        property = KoraPhone.Services.Property.available(),
+        media = KoraPhone.Storage.provider() ~= 'disabled',
+        transfers = KoraPhone.Integrations.Banking.canTransfer(),
+        flash = KoraPhone.Storage.supportsVideo() and {
+            maxSeconds = KoraPhone.Storage.Config().MaxVideoSeconds,
+            maxBytes = KoraPhone.Storage.Config().MaxVideoBytes,
+        } or false,
+        video = video and video.Enabled and { iceServers = video.IceServers or {} } or false,
+    }
 end
 
 function Phone.bootstrap(source)
@@ -68,24 +105,19 @@ function Phone.bootstrap(source)
     if locked then
         return PhoneResult({ device = deviceInfo, security = { hasPin = true, locked = true } })
     end
-    local pd = KoraPhone.GetPlayer(source)
+    local player = KoraPhone.GetPlayer(source)
+    local isModerator = KoraPhone.Services.Moderation.isModerator(source)
     return PhoneResult({
         device = deviceInfo,
         security = { hasPin = hasPin(device), locked = false },
-        moderator = KoraPhone.Services.Moderation.isModerator(source),
+        moderator = isModerator,
         -- Same permission as moderator: lets the feed's own delete buttons remove someone
         -- else's post/comment directly, instead of only through a filed report.
-        admin = KoraPhone.Services.Moderation.isModerator(source),
-        character = {
-            firstName = pd.charinfo and pd.charinfo.firstname or '',
-            lastName = pd.charinfo and pd.charinfo.lastname or '',
-            job = pd.job and { name = pd.job.name, label = pd.job.label, grade = pd.job.grade and pd.job.grade.level or 0, onDuty = pd.job.onduty == true } or nil
-        },
+        admin = isModerator,
+        character = characterInfo(player),
         apps = Config.Apps or {},
         appStore = Config.AppStore ~= false,
-        features = { homeReorder = PhoneValidation.homeReorderAllowed(), galleryViewer = not Config.Gallery or Config.Gallery.fullscreenViewer ~= false, maps = #Config.Server.Maps.Locations > 0, garage = KoraPhone.Services.Garage.available(), property = KoraPhone.Services.Property.available(), media = KoraPhone.Storage.provider() ~= 'disabled', transfers = KoraPhone.Integrations.Banking.canTransfer(),
-            flash = KoraPhone.Storage.supportsVideo() and { maxSeconds = KoraPhone.Storage.Config().MaxVideoSeconds, maxBytes = KoraPhone.Storage.Config().MaxVideoBytes } or false,
-            video = Config.Calls.Video and Config.Calls.Video.Enabled and { iceServers = Config.Calls.Video.IceServers or {} } or false },
+        features = featureFlags(),
         locations = Config.Server.Maps.Locations,
         items = KoraPhone.Services.Items.forDevice(device.id),
         contacts = KoraPhone.Repositories.Contacts.list(device.id),
@@ -126,7 +158,7 @@ function Phone.setPin(source, payload)
         local ok, checkError = checkPin(device, current)
         if not ok then return checkError end
     end
-    if not KoraPhone.Repositories.Phones.setPin(device.id, newSalt(), pepper(), pin) then
+    if not KoraPhone.Repositories.Phones.setPinKdf(device.id, crypto():pinHash(pin)) then
         return PhoneError(PhoneConstants.Errors.INTERNAL, 'Unable to save PIN')
     end
     local session = KoraPhone.Sessions.bySource[source]
@@ -162,6 +194,9 @@ function Phone.saveSettings(source, payload)
         local ok, previous = pcall(json.decode, device.settingsJson)
         if ok and type(previous) == 'table' then settings.appOrder, settings.dockOrder = previous.appOrder, previous.dockOrder end
     end
+    -- Third-party app install state is server-owned: never let a settings save drop or rewrite it.
+    settings.sdkApps = nil
+    KoraPhone.SDK.Install.preserve(device.settingsJson, settings)
     if not KoraPhone.Repositories.Phones.updateSettings(device.id, json.encode(settings)) then
         return PhoneError(PhoneConstants.Errors.INTERNAL, 'Unable to save settings')
     end

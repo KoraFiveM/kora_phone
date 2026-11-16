@@ -1,12 +1,20 @@
 -- Run from the resource root: lua tests/camera-capture.test.lua
 local timer, upload, request, replies, closes, throws
 function CreateThread() end
-function SetTimeout(ms, callback) assert(ms == 30000); timer = callback end
 function GetResourceState() return 'started' end
-exports = { ['screenshot-basic'] = { requestScreenshotUpload = function(_, _, _, _, callback)
-    if throws then error('provider unavailable') end
-    upload = callback
-end } }
+Kora = {
+    lang = function(key) return key end,
+    keybind = { add = function() end },
+    timers = {
+        setTimeout = function(callback, ms) assert(ms == 30000); timer = callback; return 1 end,
+        setInterval = function() return 1 end,
+        clearInterval = function() end,
+    },
+    screenshot = { requestScreenshotUpload = function(_, _, _, callback)
+        if throws then error('provider unavailable') end
+        upload = callback
+    end },
+}
 json = { decode = function() return { receipt = 'receipt' } end }
 KoraPhone = { State = { cameraMode = true }, ServerCallback = function(name, _, callback)
     request = { name = name, callback = callback }

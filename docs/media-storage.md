@@ -9,32 +9,33 @@ The gallery never accepts a URL or storage key chosen by a player. The server is
 
 ## Provider modes
 
-Set `Config.Server.Media` in the server-only configuration. Secrets must never be placed in shared or client configuration.
+`Config.Server.Media` is a server-scoped config branch (`config/server.lua`), so it is never sent to a client. Change it in game with `/config` or in `config.local.lua` (see [Configuration](./configuration.md)). Secrets (`External.Secret`, `Fivemanage.Token`) are `sensitive`: they never show in `/config`. Put the Fivemanage token in the `kora_fivemanage_token` convar; `External.Secret` belongs in `config.local.lua`, never in a tracked file.
 
 ```lua
-Config.Server.Media = {
-    Provider = 'disabled', -- disabled | local-development | external | fivemanage
-    TokenTtlSeconds = 120,
-    MaxBytes = 8 * 1024 * 1024,
-    AllowedMimeTypes = { 'image/jpeg', 'image/png', 'image/webp' },
-    AllowedProviderHosts = { 'uploads.example.com' },
-    AllowedUploadHosts = { 'signed-uploads.example.com' },
-    AllowedPublicHosts = { 'media.example.com' },
-    LocalDirectory = 'local-media',
-    CleanupIntervalMinutes = 30,
-    DeletedRetentionHours = 24,
-    CleanupBatchSize = 25,
-    External = {
-        BrokerUrl = 'https://uploads.example.com/v1/begin',
-        VerifyUrl = 'https://uploads.example.com/v1/verify',
-        DeleteUrl = 'https://uploads.example.com/v1/delete',
-        Secret = 'replace-from-server-secret-store'
-    }
+-- config.local.lua: only the values that differ from the defaults
+return {
+    Server = {
+        Media = {
+            Provider = 'external', -- disabled | local-development | external | fivemanage
+            TokenTtlSeconds = 120,
+            MaxBytes = 8 * 1024 * 1024,
+            AllowedMimeTypes = { 'image/jpeg', 'image/png', 'image/webp' },
+            AllowedPublicHosts = { 'uploads.example.com', 'media.example.com' },
+            External = {
+                BrokerUrl = 'https://uploads.example.com/v1/begin',
+                VerifyUrl = 'https://uploads.example.com/v1/verify',
+                DeleteUrl = 'https://uploads.example.com/v1/delete',
+                Secret = 'replace-from-server-secret-store',
+            },
+        },
+    },
 }
 ```
 
-- `disabled` makes capture requests fail closed. It is also what the code falls back to when `Provider` is missing or not one of the four known values. The shipped `config/server.lua` sets `Provider = 'fivemanage'`, so set it explicitly if you do not want uploads.
-- `local-development` asks `screenshot-basic` to return the image to the server, writes it beneath the resource, and records a resource-owned URL. It is intended only for local development. The default directory `local-media` is already in the manifest `files` list; another directory must be added there. FiveM lacks a portable file-delete API, so orphaned development files require manual maintenance.
+Other fields: `MaxWidth`, `MaxHeight`, `AllowedVideoMimeTypes`, `MaxVideoBytes`, `MaxVideoSeconds`, `MaxImagesPerDevice`, `MaxVideosPerDay`, `LocalDirectory`, `CleanupIntervalMinutes`, `DeletedRetentionHours`, `CleanupBatchSize` and the `Fivemanage` branch. The ticket lifetime and limits are live; the provider needs a restart.
+
+- `disabled` makes capture requests fail closed. It is also what the code falls back to when `Provider` is missing or not one of the four known values. The shipped `config/server.lua` sets `Provider = 'fivemanage'`, so set it to `disabled` if you do not want uploads.
+- `local-development` asks the player's client for a screenshot (`server/integrations/storage.lua`), writes it beneath the resource, and records a resource-owned URL. It is intended only for local development. The server-side capture is requested through `Kora.screenshot.requestClient` (kora_lib validates the image bytes and returns a data URI that the phone size-checks and saves). A failed capture returns `CAPTURE_FAILED`; `SCREENSHOT_PROVIDER_UNAVAILABLE` only appears if kora_lib's screenshot module is not loaded. The default directory `local-media` is already in the manifest `files` list; another directory must be added there. FiveM lacks a portable file-delete API, so orphaned development files require manual maintenance.
 - `external` asks a trusted broker for a signed multipart destination. The client receives that destination but cannot replace it. Completion persists nothing until the server calls the broker's verification endpoint and validates MIME, actual byte size, object key and final public host.
 
 The broker's begin response must contain `uploadUrl`, `objectKey`, and optionally `field`. The upload response returned to the client must contain an opaque `receipt`. The verify response must contain:
@@ -51,7 +52,7 @@ The broker's begin response must contain `uploadUrl`, `objectKey`, and optionall
 }
 ```
 
-Provider endpoints must use HTTPS and exact hostname allowlists. Redirect destinations should be disabled or revalidated by the broker. Rotate the provider secret periodically.
+Provider endpoints must use HTTPS and exact hostname allowlists; the broker, verify and delete hosts must appear in `AllowedProviderHosts` or `AllowedPublicHosts`, and the upload URL host in `AllowedUploadHosts` or `AllowedPublicHosts`. The lists are merged, so putting every host in `AllowedPublicHosts` still works. Redirect destinations should be disabled or revalidated by the broker. Rotate the provider secret periodically.
 
 ## Fivemanage, and video clips
 
@@ -64,6 +65,7 @@ set kora_fivemanage_token "your-media-token"
 and switch the provider on:
 
 ```lua
+-- Defaults shipped in config/server.lua; override any of them in /config or config.local.lua
 Config.Server.Media = {
     Provider = 'fivemanage',
     MaxVideoBytes = 24 * 1024 * 1024, -- ceiling; a 15 second clip is about 3 MB
@@ -85,13 +87,13 @@ How a clip gets from the phone to a post:
 Notes and limits:
 
 - Fivemanage's API has no delete call. Removing a photo or clip forgets it on the phone; the file stays in Fivemanage until your retention settings remove it.
-- `RequireTag = true` rejects any upload that does not carry its ticket tag. It works for uploads made from the phone itself (clips), but photos taken with `screenshot-basic` cannot carry the tag, so leave it `false` if you use the Camera app. If Fivemanage does not echo the metadata back, tag checks are skipped unless `RequireTag` is on.
+- `RequireTag = true` rejects any upload that does not carry its ticket tag. It works for uploads made from the phone itself (clips), but Camera app photos, captured and uploaded by kora_lib's `Kora.screenshot.requestScreenshotUpload`, cannot carry the tag, so leave it `false` if you use the Camera app. If Fivemanage does not echo the metadata back, tag checks are skipped unless `RequireTag` is on.
 - Videos are hidden from the Gallery (they live in the posts and messages that use them) and count against `MaxVideosPerDay`, not the photo limit.
 - Flash and Pulse clips use the player's real webcam and microphone through the browser's recorder. Camera app clips record the game view plus, with `Config.Camera.micAudio`, the player's own microphone (see [Features](./features.md)).
 
 ## Loading and schema
 
-The media tables (`phone_media` in `server/schema.lua`) and the columns that let Flash posts and chat messages carry media (`media_id` on `phone_social_posts`/`phone_messages` in `server/schema.lua`) are created automatically at start. `server/modules/media_callbacks.lua` registers the media callbacks and is loaded by the manifest after the integrations, repositories, services, rate limits and permissions.
+The media tables (`phone_media` and `phone_gallery_links` in `server/schema.lua`) and the columns that let Flash posts and chat messages carry media (`media_id` on `phone_social_posts`/`phone_messages` in `server/schema.lua`) are created automatically at start. `server/modules/media_callbacks.lua` registers the media callbacks and is loaded by the manifest after the integrations, repositories, services, rate limits and permissions.
 
 Gallery reads use descending ID cursors. Deletion requires device ownership and refuses media referenced by a contact or live message. Records are first soft-deleted; external objects are then deleted and the row is removed only after provider confirmation. Failed provider deletion leaves a tombstone for later cleanup rather than exposing the media again.
 

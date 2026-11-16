@@ -169,29 +169,25 @@ KoraPhoneSchema = {
         },
     },
     {
-        name = 'phone_economy_audit', collate = COLLATE,
+        -- One slim row per completed transfer, written inside kora_banking's durable transaction.
+        name = 'phone_bank_history', collate = COLLATE,
         columns = {
-            idColumn(), idRef('sender_device_id'), idRef('recipient_device_id'),
-            { name = 'sender_citizenid', type = 'varchar(64)' },
-            { name = 'recipient_citizenid', type = 'varchar(64)' },
+            idColumn(), { name = 'operation_key', type = 'varchar(128)' },
+            idRef('sender_device_id'), idRef('recipient_device_id'),
             { name = 'amount', type = 'bigint', unsigned = true },
-            { name = 'status', type = 'enum', values = { 'pending', 'completed', 'rejected', 'rolled_back', 'manual_review' }, default = 'pending' },
-            { name = 'client_request_id', type = 'varchar(64)' },
-            nullable('failure_code', 'varchar(48)'),
-            createdAt(), nullable('completed_at', 'timestamp'),
+            createdAt(),
         },
         primary = { 'id' },
         indexes = {
-            { name = 'uq_phone_economy_idempotency', columns = { 'sender_citizenid', 'client_request_id' }, unique = true },
-            { name = 'idx_phone_economy_sender_device', columns = { 'sender_device_id', 'id' } },
-            { name = 'idx_phone_economy_recipient_device', columns = { 'recipient_device_id', 'id' } },
-            { name = 'idx_phone_economy_status', columns = { 'status', 'created_at' } },
+            { name = 'uq_phone_bank_history_operation', columns = { 'operation_key' }, unique = true },
+            { name = 'idx_phone_bank_history_sender', columns = { 'sender_device_id', 'id' } },
+            { name = 'idx_phone_bank_history_recipient', columns = { 'recipient_device_id', 'id' } },
         },
         foreign = {
-            { name = 'fk_phone_economy_sender_device', columns = { 'sender_device_id' }, ref_table = 'phone_devices', ref_columns = { 'id' } },
-            { name = 'fk_phone_economy_recipient_device', columns = { 'recipient_device_id' }, ref_table = 'phone_devices', ref_columns = { 'id' } },
+            { name = 'fk_phone_bank_history_sender', columns = { 'sender_device_id' }, ref_table = 'phone_devices', ref_columns = { 'id' } },
+            { name = 'fk_phone_bank_history_recipient', columns = { 'recipient_device_id' }, ref_table = 'phone_devices', ref_columns = { 'id' } },
         },
-        checks = { { name = 'chk_phone_economy_positive_amount', expr = '`amount` > 0' } },
+        checks = { { name = 'chk_phone_bank_history_positive_amount', expr = '`amount` > 0' } },
     },
     {
         name = 'phone_social_profiles', collate = COLLATE,
@@ -427,21 +423,6 @@ KoraPhoneSchema = {
         },
     },
     {
-        name = 'phone_legacy_claims', collate = COLLATE,
-        columns = {
-            idRef('device_id'),
-            { name = 'citizenid', type = 'varchar(64)' },
-            nullable('handset_id', 'varchar(64)'),
-            { name = 'account_id', type = 'varchar(64)' },
-            nullable('claimed_at', 'timestamp'),
-        },
-        primary = { 'device_id' },
-        indexes = {
-            { name = 'handset_id', columns = { 'handset_id' }, unique = true },
-            { name = 'legacy_character', columns = { 'citizenid' } },
-        },
-    },
-    {
         name = 'phone_mailboxes', collate = COLLATE,
         columns = {
             idColumn(), idRef('device_id'),
@@ -471,17 +452,6 @@ KoraPhoneSchema = {
         foreign = {
             { name = 'phone_threads_ibfk_1', columns = { 'device_id' }, ref_table = 'phone_devices', ref_columns = { 'id' } },
         },
-    },
-    {
-        name = 'phone_migration_issues', collate = COLLATE,
-        columns = {
-            idColumn(), idRef('device_id', true),
-            { name = 'issue_key', type = 'varchar(160)' },
-            { name = 'detail', type = 'text' },
-            createdAt(),
-        },
-        primary = { 'id' },
-        indexes = { { name = 'issue_key', columns = { 'issue_key' }, unique = true } },
     },
     {
         name = 'phone_gallery_links', collate = COLLATE,
@@ -528,9 +498,9 @@ KoraPhoneSchema = {
         indexes = { { name = 'new_sim_id', columns = { 'new_sim_id' }, unique = true } },
     },
     {
-        name = 'phone_legacy_mail', collate = COLLATE,
+        name = 'phone_system_mail', collate = COLLATE,
         columns = {
-            idColumn(), idRef('legacy_source_id', true),
+            idColumn(),
             { name = 'citizenid', type = 'varchar(64)' },
             { name = 'sender', type = 'varchar(100)' },
             { name = 'subject', type = 'varchar(120)' },
@@ -541,12 +511,11 @@ KoraPhoneSchema = {
         },
         primary = { 'id' },
         indexes = {
-            { name = 'legacy_source_id', columns = { 'legacy_source_id' }, unique = true },
-            { name = 'legacy_mail_owner', columns = { 'citizenid', 'deleted_at', 'id' } },
+            { name = 'system_mail_owner', columns = { 'citizenid', 'deleted_at', 'id' } },
         },
     },
     {
-        name = 'phone_legacy_transactions', collate = COLLATE,
+        name = 'phone_system_activity', collate = COLLATE,
         columns = {
             idColumn(),
             { name = 'citizenid', type = 'varchar(64)' },
@@ -555,6 +524,6 @@ KoraPhoneSchema = {
             createdAt(),
         },
         primary = { 'id' },
-        indexes = { { name = 'legacy_transactions_owner', columns = { 'citizenid', 'id' } } },
+        indexes = { { name = 'system_activity_owner', columns = { 'citizenid', 'id' } } },
     },
 }

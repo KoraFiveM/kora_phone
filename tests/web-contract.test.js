@@ -6,6 +6,7 @@ const fs = require("node:fs");
 const path = require("node:path");
 
 const root = path.resolve(process.argv[2] || path.join(__dirname, ".."));
+const { resolveWeb } = require("./helpers/web-source");
 // Run the production API and normalizer with a local NUI transport; no browser or server is started.
 async function checkDeviceCache() {
   let ts;
@@ -33,9 +34,10 @@ async function checkDeviceCache() {
     const source = fs.readFileSync(file, "utf8");
     const { outputText } = ts.transpileModule(source, { compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2020 } });
     const requireLocal = (name) => {
-      if (name === "./mock") return { mockRequest: () => { throw new Error("Production requests must not use the preview adapter"); } };
-      assert.ok(name.startsWith("./"), `Unexpected runtime dependency: ${name}`);
-      return load(path.resolve(path.dirname(file), `${name}.ts`));
+      if (name === "./mock" || name === "../mock") return { isDemo: false, mockRequest: () => { throw new Error("Production requests must not use the preview adapter"); } };
+      assert.ok(name.startsWith("./") || name.startsWith("../"), `Unexpected runtime dependency: ${name}`);
+      const target = path.resolve(path.dirname(file), name);
+      return load(fs.existsSync(`${target}.ts`) ? `${target}.ts` : path.join(target, "index.ts"));
     };
     new Function("require", "module", "exports", "window", "fetch", "localStorage", "addEventListener", "crypto", "AbortSignal", outputText)(
       requireLocal, module, module.exports, { GetParentResourceName: () => "kora_phone" }, transport,
@@ -60,7 +62,7 @@ async function checkDeviceCache() {
     items: { notes: [{ id: "a", title: "Private", body: "A note" }], alarms: [{ id: "a", label: "Alarm", time: "07:00", days: [], enabled: true }], stations: [{ id: "a", label: "Station", url: "https://example.invalid/radio" }] },
   }), gallery(1));
   equal(first.id, "101", "the existing string device ID contract is retained");
-  equal(first.data.photos, [{ id: "1", url: "https://example.invalid/1.jpg", created_at: 123 }], "gallery fields retain their public mapping");
+  equal(first.data.photos, [{ id: "1", url: "https://example.invalid/1.jpg", created_at: 123, kind: 'photo' }], "gallery fields retain their public mapping");
   equal(first.data.contacts[0], { id: 1, name: "A contact", number: "555001", photo: undefined, favorite: true }, "contacts retain their public mapping");
   const same = adaptBootstrap(raw("101", { name: "Renamed A" }));
   equal(same.preferences.name, "Renamed A", "same-device partial settings are applied");
@@ -76,7 +78,7 @@ async function checkDeviceCache() {
   equal(second.data.settings.name, "Phone B", "new-phone settings remain usable when gallery fails");
   equal(second.data.settings.volume, 0, "same-device partial settings retain zero values");
   for (const key of ["contacts", "notes", "alarms", "stations", "photos"]) equal(second.data[key], [], `phone B has no phone A ${key}`);
-  equal(second.data.installedApps, ["notes", "mail"], "the existing shared install preferences are preserved");
+  equal(second.data.installedApps, ["gps", "notes", "mail", "weather", "calculator", "music", "clock"], "a phone with no saved installs starts with the starter apps (install lists live in device settings, not NUI storage)");
   equal(second.data.customApps, { "test-addon": true }, "the existing shared addon preferences are preserved");
   equal(first.data.settings, privateSettings, "resetting another device does not mutate an earlier returned snapshot");
   equal(first.data.photos.length, 1, "an earlier returned gallery remains intact");
@@ -96,7 +98,7 @@ async function checkDeviceCache() {
   completeGallery(gallery(4));
   equal((await loading).data.photos[0].id, "4", "the pending gallery still publishes a successful result");
   const settings = { name: "Saved B", volume: 0, scale: 1, wallpaper: "kora_core" };
-  ok("settings:save", settings, settings);
+  ok("settings:save", settings, { ...settings, installedApps: ["gps", "notes", "mail", "weather", "calculator", "music", "clock"], expectedDeviceId: "202" });
   equal((await api("settings", settings)).settings, settings, "saving settings keeps its existing request and return shape");
   const newCollections = adaptBootstrap(raw(303, { name: "Phone C" }));
   for (const key of ["contacts", "notes", "alarms", "stations", "photos"]) equal(newCollections.data[key], [], `omitted new-device ${key} starts empty`);
@@ -125,20 +127,23 @@ async function checkDeviceCache() {
   };
   const jsx = (type, props) => ({ type, props: props || {} });
   const componentModule = { exports: {} };
-  const componentSource = ts.transpileModule(fs.readFileSync(path.join(root, 'web/src/Communication.tsx'), 'utf8'), {
+  const componentSource = ts.transpileModule(fs.readFileSync(resolveWeb(root, 'web/src/Communication.tsx'), 'utf8'), {
     compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2020, jsx: ts.JsxEmit.ReactJSX },
   }).outputText;
-  const componentRequire = name => {
+  const componentRequire = full => {
+    // Screens move between folders: match imports by module basename, not by relative path.
+    const name = full.startsWith('.') ? full.split('/').pop() : full;
     if (name === 'react') return { useState, useEffect: () => {} };
     if (name === 'react/jsx-runtime') return { jsx, jsxs: jsx, Fragment: 'Fragment' };
-    if (name === './api') return { api, isPreview: false };
-    if (name === './PhoneContext') return { usePhone: () => context };
-    if (name === './types') return load(path.join(root, 'web/src/types.ts'));
-    if (name === './chatTokens') return load(path.join(root, 'web/src/chatTokens.ts'));
-    if (name === './Images') return { ImagePicker: 'ImagePicker', PhotoImage: 'PhotoImage' };
-    if (name === './components') return { Row: 'Row', Empty: 'Empty' };
+    if (name === 'api') return { api, isPreview: false };
+    if (name === 'PhoneContext') return { usePhone: () => context, useLoad: () => ({}), LoadState: 'LoadState' };
+    if (name === 'types') return load(path.join(root, 'web/src/types.ts'));
+    if (name === 'chatTokens') return load(path.join(root, 'web/src/chatTokens.ts'));
+    if (name === 'chatMessages') return load(path.join(root, 'web/src/chatMessages.ts'));
+    if (name === 'Images') return { ImagePicker: 'ImagePicker', PhotoImage: 'PhotoImage' };
+    if (name === 'components') return { Row: 'Row', Empty: 'Empty', dateLabel: () => '' };
     if (name === 'lucide-react') return {};
-    throw new Error(`Unexpected component import: ${name}`);
+    throw new Error(`Unexpected component import: ${full}`);
   };
   new Function('require', 'module', 'exports', componentSource)(componentRequire, componentModule, componentModule.exports);
   const view = () => { hookIndex = 0; return componentModule.exports.ContactsScreen(); };
@@ -217,7 +222,7 @@ main().catch(error => { console.error(error); process.exitCode = 1; });
 
 {
   // Setup ids must stay in step with the server allow-list, and legacy "kora_core" ids are normalised.
-  const setupSrc = fs.readFileSync(path.join(root, "web/src/Setup.tsx"), "utf8");
+  const setupSrc = fs.readFileSync(resolveWeb(root, "web/src/Setup.tsx"), "utf8");
   const validationSrc = fs.readFileSync(path.join(root, "shared/validation.lua"), "utf8");
   const allowed = validationSrc.match(/SETTINGS_WALLPAPERS = \{([^}]*)\}/)[1].match(/\x27([a-z_]+)\x27/g).map(v => v.slice(1, -1));
   const offered = [...setupSrc.match(/WALLPAPERS = \[([\s\S]*?)\] as const/)[1].matchAll(/id: \x27([a-z_]+)\x27/g)].map(m => m[1]);
@@ -227,50 +232,54 @@ main().catch(error => { console.error(error); process.exitCode = 1; });
 }
 
 {
-  // The vendored kora_theme ships the font tokens and its bundled fonts/, and the dev helper serves them.
-  const vendor = path.join(root, "web/vendor/kora_theme");
-  const themeCss = fs.readFileSync(path.join(vendor, "theme.css"), "utf8");
-  assert.match(themeCss, /@import url\("fonts\/fonts\.css"\)/, "vendored theme.css imports its bundled fonts");
-  for (const token of ["--font-sans", "--font-heading", "--font-mono"]) assert.match(themeCss, new RegExp(`${token}:`), `vendored theme.css defines ${token}`);
-  const fontsCss = fs.readFileSync(path.join(vendor, "fonts/fonts.css"), "utf8");
-  const files = [...fontsCss.matchAll(/url\("([^"]+)"\)/g)].map((match) => match[1]);
-  assert.ok(files.length > 0 && files.every((file) => file.endsWith(".woff2") && fs.existsSync(path.join(vendor, "fonts", file))), "every vendored @font-face file exists");
-  const catalog = JSON.parse(fs.readFileSync(path.join(vendor, "fonts/catalog.json"), "utf8"));
-  for (const font of catalog.fonts) {
-    assert.ok(fontsCss.includes(`font-family: "${font.family}";`), `vendored fonts.css declares ${font.family}`);
-    assert.ok(fs.existsSync(path.join(vendor, "fonts", font.id, "OFL.txt")), `vendored ${font.id} keeps its OFL licence`);
-  }
-  const plugin = fs.readFileSync(path.join(vendor, "vite-plugin.mjs"), "utf8");
-  assert.match(plugin, /fonts\\\//, "the vendored dev helper serves fonts/");
-  assert.match(plugin, /woff2: "font\/woff2"/, "the vendored dev helper serves woff2 with a font MIME type");
-  assert.match(fs.readFileSync(path.join(vendor, "README.txt"), "utf8"), /theme-fonts-20261102 at commit d21375a/, "README names the vendored kora_theme commit");
+  // kora_theme owns colour, font and shape: the web build imports its Vite plugin from the real resource, loads
+  // its theme.css/theme.js at runtime and carries no palette, bundled font or vendored copy of its own.
+  const web = path.join(root, "web");
+  const src = path.join(web, "src");
+  const read = (file) => fs.readFileSync(file, "utf8");
+  const strip = (text) => text.replace(/\/\*[\s\S]*?\*\//g, "");
+  assert.ok(!fs.existsSync(path.join(web, "vendor")), "no vendored kora_theme copy in web/");
+  assert.match(read(path.join(web, "vite.config.ts")), /\[standalone\]\/kora_theme\/vite-plugin\.mjs/, "vite imports the plugin from the real kora_theme resource");
+  const pkg = JSON.parse(read(path.join(web, "package.json")));
+  assert.deepEqual(Object.keys({ ...pkg.dependencies, ...pkg.devDependencies }).filter((name) => name.startsWith("@fontsource")), [], "no @fontsource packages");
+  const indexHtml = read(path.join(web, "index.html"));
+  assert.match(indexHtml, /__KORA_THEME_BASE__\/theme\.css/, "index.html loads kora_theme's theme.css");
+  assert.match(indexHtml, /__KORA_THEME_BASE__\/theme\.js/, "index.html loads kora_theme's theme.js");
+  // The bundled fonts load from cfx-nui-kora_theme, and an underscore host is an invalid CSP source, so font-src allows the https: scheme.
+  assert.match(indexHtml, /font-src 'self' data: https:;/, "CSP allows kora_theme's bundled fonts");
 
-  // UI text follows the kora_theme font tokens, keeping the original stacks as fallbacks.
-  const src = path.join(root, "web/src");
-  const css = Object.fromEntries(fs.readdirSync(src).filter((file) => file.endsWith(".css")).map((file) => [file, fs.readFileSync(path.join(src, file), "utf8")]));
-  assert.match(css["style.css"], /:root \{ font-family: var\(--font-sans, 'DM Sans', Arial, sans-serif\);/, "body text uses --font-sans with the DM Sans fallback");
-  assert.match(css["style.css"], /:where\(h1, h2, h3, h4, h5, h6\) \{ font-family: var\(--font-heading, var\(--font-sans, 'DM Sans', Arial, sans-serif\)\); \}/, "headings use --font-heading, falling back to the body stack");
-  assert.match(css["handset-shells.css"], /font-family:var\(--font-sans, 'DM Sans',Arial,sans-serif\);/, "handset shells use --font-sans");
-  // Deliberately fixed: the Nothing OS mimic (standard handset), the flip cover display, and text-built logo marks.
-  const fixed = [/^\.cover-display small$/, /^\.onboard-orbit > span$/, /^\.setup-mark$/, /^\.lock-orbit span$/];
-  let themed = 0;
-  for (const [file, text] of Object.entries(css)) {
-    for (const rule of text.replace(/\/\*[\s\S]*?\*\//g, "").replace(/@import[^;]*;/g, "").split("}")) {
-      const declarations = [...rule.matchAll(/font(?:-family)?:([^;]*(?:'DM Sans'|'Space Mono'|'Space Grotesk')[^;]*)/g)].map((match) => match[1].trim());
-      if (declarations.length === 0) continue;
-      const selector = rule.slice(0, rule.indexOf("{")).trim();
-      if (fixed.some((pattern) => pattern.test(selector)) || (file === "nothing-standard.css" && /^\.phone\.handset-standard/.test(selector))) continue;
-      for (const value of declarations) {
-        assert.match(value, /var\(--font-(?:sans|mono|heading), /, `${file} ${selector} uses a kora_theme font token with a fallback`);
-        themed += 1;
-      }
+  const files = fs.readdirSync(src).filter((file) => /\.(css|tsx?)$/.test(file));
+  const css = files.filter((file) => file.endsWith(".css"));
+  // Artwork and sample data are content, not UI colour: CoverArt draws the Flip cover scenes, mock.ts is demo data.
+  const contentOnly = new Set(["CoverArt.tsx", "mock.ts"]);
+  let rules = 0;
+  for (const file of files) {
+    const text = strip(read(path.join(src, file)));
+    assert.ok(!/@fontsource/.test(text), `${file} does not import @fontsource`);
+    assert.ok(!/--ui-|--tone-|resolveHandsetTheme|handsetThemeTokens/.test(text), `${file} has no private palette tokens`);
+    if (contentOnly.has(file)) continue;
+    assert.ok(!/#[0-9a-fA-F]{3,8}\b|\brgba?\(/.test(text), `${file} has no hard-coded hex or rgb colour`);
+    if (file.endsWith(".css")) {
+      assert.ok(!/font-family:\s*['"]|font:[^;]*['"][A-Za-z ]+['"]/.test(text), `${file} sets no hard-coded font family`);
+      assert.ok(!/var\(--font-(?:sans|mono|heading),/.test(text), `${file} uses the kora_theme font tokens without private fallbacks`);
+      rules += (text.match(/var\(--font-(?:sans|mono|heading)\)/g) || []).length;
     }
   }
-  assert.ok(themed >= 50, "the generic UI fonts are themed");
-  assert.ok(Object.values(css).every((text) => !/var\(--font-(?:sans|mono|heading)\)/.test(text)), "font tokens always carry the original stack as a fallback");
+  assert.ok(rules >= 50, "UI text follows the kora_theme font tokens");
+  assert.match(read(path.join(src, "style.css")), /:root \{ font-family: var\(--font-sans\);/, "body text uses --font-sans");
+  assert.match(read(path.join(src, "style.css")), /:where\(h1, h2, h3, h4, h5, h6\) \{ font-family: var\(--font-heading\); \}/, "headings use --font-heading");
 
-  // The bundled fonts load from cfx-nui-kora_theme, and an underscore host is an invalid CSP source, so font-src allows the https: scheme.
-  const indexHtml = fs.readFileSync(path.join(root, "web/index.html"), "utf8");
-  assert.match(indexHtml, /font-src 'self' data: https:;/, "CSP allows kora_theme's bundled fonts");
-  console.log(`PASS web-contract: kora_theme fonts vendored; ${themed} UI font declarations follow the theme tokens`);
+  // Colour is derived from kora_theme's tokens by scheme.css; handsets only carry structure.
+  const scheme = read(path.join(src, "scheme.css"));
+  for (const token of ["--foreground", "--background", "--primary", "--border", "--surface-raised"]) assert.ok(scheme.includes(`var(${token})`), `scheme.css derives from kora_theme ${token}`);
+  assert.match(scheme, /\.appearance-light\s*\{/, "scheme.css derives a light appearance");
+  const themes = read(path.join(src, "themes.ts"));
+  assert.ok(!/(?:dark|light|flip|fold)\s*:\s*Palette|#[0-9a-fA-F]{3,8}\b/.test(themes), "themes.ts carries no palette tables");
+  const validation = read(path.join(root, "shared/validation.lua"));
+  const serverThemes = validation.match(/SETTINGS_THEMES = \{([^}]*)\}/)[1].match(/'([a-z_]+)'/g).map((id) => id.slice(1, -1));
+  const clientThemes = [...themes.match(/THEME_IDS = \[([^\]]*)\]/)[1].matchAll(/'([a-z_]+)'/g)].map((match) => match[1]);
+  assert.deepEqual([...clientThemes].sort(), [...serverThemes].sort(), "client theme ids match the server allow-list");
+  assert.ok(css.length <= 11, "the stylesheet set stays consolidated");
+  console.log(`PASS web-contract: kora_theme owns colour, font and shape; ${rules} font declarations, ${css.length} stylesheets, no hard-coded colours`);
 }
+

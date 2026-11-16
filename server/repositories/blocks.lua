@@ -3,7 +3,7 @@ local Blocks = {}
 KoraPhone.Repositories.Blocks = Blocks
 
 function Blocks.isEitherBlocked(deviceA, deviceB)
-    return MySQL.scalar.await([[
+    return Kora.sql.scalar([[
         SELECT EXISTS(SELECT 1 FROM phone_blocks
         WHERE (blocker_device_id = ? AND blocked_device_id = ?)
            OR (blocker_device_id = ? AND blocked_device_id = ?))
@@ -12,18 +12,18 @@ end
 
 function Blocks.set(blockerDeviceId, blockedDeviceId, blocked)
     if blocked then
-        MySQL.insert.await('INSERT IGNORE INTO phone_blocks (blocker_device_id, blocked_device_id) VALUES (?, ?)',
+        Kora.sql.insert('INSERT IGNORE INTO phone_blocks (blocker_device_id, blocked_device_id) VALUES (?, ?)',
             { blockerDeviceId, blockedDeviceId })
         return true
     end
-    MySQL.update.await('DELETE FROM phone_blocks WHERE blocker_device_id = ? AND blocked_device_id = ?',
+    Kora.sql.update('DELETE FROM phone_blocks WHERE blocker_device_id = ? AND blocked_device_id = ?',
         { blockerDeviceId, blockedDeviceId })
     return false
 end
 
 -- The phone numbers this device has blocked (what the Settings list shows).
 function Blocks.listBlocked(blockerDeviceId)
-    return MySQL.query.await([[
+    return Kora.sql.query([[
         SELECT d.phone_number AS number FROM phone_blocks b JOIN phone_devices d ON d.id = b.blocked_device_id
         WHERE b.blocker_device_id = ? ORDER BY b.created_at DESC LIMIT 200
     ]], { blockerDeviceId }) or {}
@@ -37,5 +37,5 @@ function Blocks.list(blockerDeviceId, limit, cursor)
     local params = { blockerDeviceId }
     if cursor then sql = sql .. ' AND b.blocked_device_id < ?'; params[#params + 1] = cursor end
     sql = sql .. ' ORDER BY b.blocked_device_id DESC LIMIT ?'; params[#params + 1] = limit
-    return MySQL.query.await(sql, params) or {}
+    return Kora.sql.query(sql, params) or {}
 end

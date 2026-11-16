@@ -3,7 +3,7 @@ local Calls = {}
 KoraPhone.Repositories.Calls = Calls
 
 function Calls.create(call)
-    local inserted = MySQL.update.await([[
+    local inserted = Kora.sql.update([[
         INSERT INTO phone_calls
             (id, caller_device_id, callee_device_id, caller_number_snapshot,
              callee_number_snapshot, status, voice_channel, started_at)
@@ -31,7 +31,7 @@ function Calls.transition(callId, fromStatuses, toStatus, reason)
         placeholders[#placeholders + 1] = '?'
         params[#params + 1] = status
     end
-    local changed = MySQL.update.await(([[
+    local changed = Kora.sql.update(([[
         UPDATE phone_calls SET status = ? %s
         WHERE id = ? AND status IN (%s)
     ]]):format(timestampSql, table.concat(placeholders, ',')), params)
@@ -39,7 +39,7 @@ function Calls.transition(callId, fromStatuses, toStatus, reason)
 end
 
 function Calls.get(callId)
-    return MySQL.single.await([[
+    return Kora.sql.single([[
         SELECT id, caller_device_id AS callerDeviceId, callee_device_id AS calleeDeviceId,
                caller_number_snapshot AS callerNumber, callee_number_snapshot AS calleeNumber,
                status, voice_channel AS voiceChannel,
@@ -58,7 +58,7 @@ function Calls.listForDevice(deviceId, limit, cursor)
         )
     ]] or ''
     local params = cursor and { deviceId, deviceId, cursor, cursor, cursor, limit } or { deviceId, deviceId, limit }
-    return MySQL.query.await(([[
+    return Kora.sql.query(([[
         SELECT id, caller_number_snapshot AS callerNumber, callee_number_snapshot AS calleeNumber,
                status, UNIX_TIMESTAMP(started_at) AS startedAt,
                UNIX_TIMESTAMP(answered_at) AS answeredAt,
@@ -71,7 +71,7 @@ function Calls.listForDevice(deviceId, limit, cursor)
 end
 
 function Calls.endUnfinished(reason)
-    return MySQL.update.await([[
+    return Kora.sql.update([[
         UPDATE phone_calls
         SET status = CASE WHEN status = 'ringing' THEN 'cancelled' ELSE 'ended' END,
             ended_at = COALESCE(ended_at, CURRENT_TIMESTAMP), ended_reason = ?

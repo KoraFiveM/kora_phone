@@ -8,7 +8,7 @@ local selectListing = [[SELECT l.id, l.owner_device_id AS ownerDeviceId, l.title
     FROM phone_market_listings l LEFT JOIN phone_social_profiles p ON p.device_id = l.owner_device_id]]
 
 function Market.get(id)
-    return MySQL.single.await(selectListing .. ' WHERE l.id = ? LIMIT 1', { id })
+    return Kora.sql.single(selectListing .. ' WHERE l.id = ? LIMIT 1', { id })
 end
 
 function Market.list(viewerDeviceId, limit, cursor, category)
@@ -20,26 +20,26 @@ function Market.list(viewerDeviceId, limit, cursor, category)
     if category then sql = sql .. ' AND l.category = ?'; params[#params + 1] = category end
     if cursor then sql = sql .. ' AND l.id < ?'; params[#params + 1] = cursor end
     sql = sql .. ' ORDER BY l.id DESC LIMIT ?'; params[#params + 1] = limit
-    return MySQL.query.await(sql, params) or {}
+    return Kora.sql.query(sql, params) or {}
 end
 
 function Market.create(ownerDeviceId, listing)
-    local ok, id = pcall(MySQL.insert.await, [[INSERT INTO phone_market_listings
+    local id = Kora.sql.insert([[INSERT INTO phone_market_listings
         (owner_device_id, title, description, category, price, client_request_id)
         VALUES (?, ?, ?, ?, ?, ?)]], { ownerDeviceId, listing.title, listing.description,
         listing.category, listing.price, listing.clientRequestId })
-    if ok then return Market.get(id), false end
-    local existing = MySQL.single.await(selectListing ..
+    if id then return Market.get(id), false end
+    local existing = Kora.sql.single(selectListing ..
         ' WHERE l.owner_device_id = ? AND l.client_request_id = ? LIMIT 1', { ownerDeviceId, listing.clientRequestId })
     return existing, existing ~= nil
 end
 
 function Market.update(ownerDeviceId, listingId, listing)
-    local changed = MySQL.update.await([[UPDATE phone_market_listings SET title = ?, description = ?,
+    local changed = Kora.sql.update([[UPDATE phone_market_listings SET title = ?, description = ?,
         category = ?, price = ? WHERE id = ? AND owner_device_id = ? AND status = 'active']],
         { listing.title, listing.description, listing.category, listing.price, listingId, ownerDeviceId })
-    if changed == 0 then
-        local owned = MySQL.scalar.await([[SELECT id FROM phone_market_listings
+    if changed == 0 or changed == nil then
+        local owned = Kora.sql.scalar([[SELECT id FROM phone_market_listings
             WHERE id = ? AND owner_device_id = ? AND status = 'active']], { listingId, ownerDeviceId })
         if not owned then return nil end
     end
@@ -47,15 +47,16 @@ function Market.update(ownerDeviceId, listingId, listing)
 end
 
 function Market.setStatus(ownerDeviceId, listingId, status)
-    return MySQL.update.await([[UPDATE phone_market_listings SET status = ?
-        WHERE id = ? AND owner_device_id = ? AND status = 'active']], { status, listingId, ownerDeviceId }) > 0
+    local changed = Kora.sql.update([[UPDATE phone_market_listings SET status = ?
+        WHERE id = ? AND owner_device_id = ? AND status = 'active']], { status, listingId, ownerDeviceId })
+    return (tonumber(changed) or 0) > 0
 end
 
 function Market.ownerPhone(ownerDeviceId)
-    return MySQL.scalar.await('SELECT phone_number FROM phone_devices WHERE id = ? AND is_active = 1', { ownerDeviceId })
+    return Kora.sql.scalar('SELECT phone_number FROM phone_devices WHERE id = ? AND is_active = 1', { ownerDeviceId })
 end
 
 function Market.hideByModerator(listingId)
-    return MySQL.update.await([[UPDATE phone_market_listings SET status = 'removed'
+    return Kora.sql.update([[UPDATE phone_market_listings SET status = 'removed'
         WHERE id = ? AND status <> 'removed']], { listingId }) > 0
 end

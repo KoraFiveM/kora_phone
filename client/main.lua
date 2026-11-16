@@ -31,20 +31,19 @@ function KoraPhone.Unavailable()
     return metadata.isdead == true or metadata.inlaststand == true
 end
 
--- Puts the phone away if the player goes down while it is open. Only polls while the phone is open (started from
--- KoraPhone.Open and exits on close), so nothing runs with the phone in the pocket.
-local watching = false
-local function watchUnavailable()
-    if watching then return end
-    watching = true
-    CreateThread(function()
-        while KoraPhone.State.open do
-            Wait(500)
-            if KoraPhone.State.open and KoraPhone.Unavailable() then KoraPhone.Close(false) end
-        end
-        watching = false
-    end)
+-- Puts the phone away when the player goes down while it is open. Event driven: the cache fires on death and
+-- kora_core's mirror fires when the last-stand / dead metadata flags change, so nothing polls.
+local function closeIfUnavailable()
+    if KoraPhone.State.open and KoraPhone.Unavailable() then KoraPhone.Close(false) end
 end
+
+Kora.cache.onChange('isDead', function(dead)
+    if dead then closeIfUnavailable() end
+end)
+
+exports.kora_core:onPlayerDataChange({ 'metadata' }, function()
+    closeIfUnavailable()
+end)
 
 -- True while another resource holds the phone shut through Config.Client.UiBlockBag.
 function KoraPhone.UiBlocked()
@@ -66,20 +65,29 @@ do
 end
 
 function KoraPhone.Open(app, payload)
-    if KoraPhone.State.open or not KoraPhone.State.playerLoaded or KoraPhone.Unavailable() or KoraPhone.UiBlocked() then return false end
+    if KoraPhone.State.open or not KoraPhone.State.playerLoaded then return false end
+    if KoraPhone.Unavailable() or KoraPhone.UiBlocked() then return false end
     KoraPhone.State.open = true
-    watchUnavailable()
     KoraPhone.State.currentApp = type(app) == 'string' and app or nil
     local started, animationError = pcall(KoraPhone.Animations.Start)
-    if not started then Kora.logging.error('phone.animation_failed','Phone animation failed',{error=tostring(animationError)}) end
+    if not started then
+        Kora.logging.error('phone.animation_failed', 'Phone animation failed', { error = tostring(animationError) })
+    end
     SetNuiFocus(true, true)
     SetNuiFocusKeepInput(false)
-    KoraPhone.SendNui('phone:open', { app = KoraPhone.State.currentApp, payload = payload, state = KoraPhone.State.Public() })
+    KoraPhone.SendNui('phone:open', {
+        app = KoraPhone.State.currentApp,
+        payload = payload,
+        state = KoraPhone.State.Public(),
+    })
     return true
 end
 
 function KoraPhone.Close(force)
-    if KoraPhone.Video then KoraPhone.Video.Cleanup(); KoraPhone.Video.cover=false end
+    if KoraPhone.Video then
+        KoraPhone.Video.Cleanup()
+        KoraPhone.Video.cover = false
+    end
     KoraPhone.Camera.Cleanup()
     TriggerServerEvent('kora_phone:server:phone:closed')
     KoraPhone.State.open = false
@@ -91,16 +99,23 @@ function KoraPhone.Close(force)
 end
 
 RegisterNetEvent('kora_phone:client:sessionRevoked', function()
-    KoraPhone.State.generation=KoraPhone.State.generation+1
+    KoraPhone.State.generation = KoraPhone.State.generation + 1
     KoraPhone.Close(true)
     KoraPhone.Calls.Cleanup(false)
 end)
-RegisterNetEvent('kora_phone:client:useHandset',function()
+
+RegisterNetEvent('kora_phone:client:useHandset', function()
     KoraPhone.Close(true)
     KoraPhone.Open()
 end)
-RegisterNetEvent('kora_phone:client:contentCleared',function() KoraPhone.SendNui('content:cleared',{}) end)
-RegisterNetEvent('kora_phone:client:ready',function() KoraPhone.Bootstrap() end)
+
+RegisterNetEvent('kora_phone:client:contentCleared', function()
+    KoraPhone.SendNui('content:cleared', {})
+end)
+
+RegisterNetEvent('kora_phone:client:ready', function()
+    KoraPhone.Bootstrap()
+end)
 
 function KoraPhone.Bootstrap()
     if not KoraPhone.State.playerLoaded then return end
@@ -120,39 +135,69 @@ local function cleanupCharacter(notifyCallServer)
     KoraPhone.State.ResetCharacter()
 end
 
-RegisterNetEvent('QBCore:Client:OnPlayerLoaded', function()
+-- kora_core raises this locally for every snapshot, including a resync of the same character, so only a
+-- different character (or none loaded yet) starts a session.
+local function startSession(playerData)
+    local citizenId = type(playerData) == 'table' and playerData.citizenid or nil
+    if not citizenId or (KoraPhone.State.playerLoaded and KoraPhone.State.citizenId == citizenId) then return end
     KoraPhone.State.playerLoaded = true
+    KoraPhone.State.citizenId = citizenId
     KoraPhone.Bootstrap()
-end)
+end
 
-RegisterNetEvent('QBCore:Client:OnPlayerUnload', function()
+AddEventHandler('kora_core:client:playerLoaded', startSession)
+
+AddEventHandler('kora_core:client:playerLoggedOut', function()
     cleanupCharacter(true)
 end)
 
-RegisterNetEvent('QBCore:Player:SetPlayerData', function(playerData)
+-- Job and money changes arrive as one mirror op each; coalesce a burst into a single UI update.
+local pushPlayerUpdate = Kora.timers.debounce(function()
     if not KoraPhone.State.playerLoaded then return end
-    KoraPhone.SendNui('player:update', {
-        job = playerData and playerData.job or nil,
-        money = playerData and playerData.money or nil,
-    })
+    local data = exports.kora_core:getPlayerData() or {}
+    KoraPhone.SendNui('player:update', { job = data.job, money = data.money })
+end, 50)
+
+local pushJobUpdate = Kora.timers.debounce(function()
+    if not KoraPhone.State.playerLoaded then return end
+    local data = exports.kora_core:getPlayerData() or {}
+    KoraPhone.SendNui('job:update', data.job)
+end, 50)
+
+exports.kora_core:onPlayerDataChange({ 'job' }, function()
+    pushJobUpdate.run()
+    pushPlayerUpdate.run()
 end)
 
-RegisterNetEvent('QBCore:Client:OnJobUpdate', function(job)
-    KoraPhone.SendNui('job:update', job)
+exports.kora_core:onPlayerDataChange({ 'money' }, function()
+    pushPlayerUpdate.run()
 end)
 
 RegisterNetEvent('kora_phone:client:messages:new', function(message)
     KoraPhone.SendNui('messages:new', message)
-    if not KoraPhone.State.open and type(message) == 'table' and not message.isMine then
-        KoraPhone.SendNui('phone:peek', { title = tostring(message.senderNumber or 'New message'), body = tostring(message.body or ''):sub(1, 120) })
-    end
+    if KoraPhone.State.open or type(message) ~= 'table' or message.isMine then return end
+    KoraPhone.SendNui('phone:peek', {
+        title = tostring(message.senderNumber or Kora.lang('notify.new_message')),
+        body = tostring(message.body or ''):sub(1, 120),
+    })
 end)
 
 RegisterNetEvent('kora_phone:client:mail:new', function(mail)
     if type(mail) ~= 'table' or type(mail.sender) ~= 'string' then return end
-    local player=exports.kora_core:getPlayerData()
-    if mail.citizenId and (not player or mail.citizenId~=player.citizenid) then return end
-    KoraPhone.SendNui('mail:new', { deviceId=mail.deviceId, sender = mail.sender:sub(1, 100), subject = tostring(mail.subject or ''):sub(1, 120) })
+    local player = exports.kora_core:getPlayerData()
+    if mail.citizenId and (not player or mail.citizenId ~= player.citizenid) then return end
+    KoraPhone.SendNui('mail:new', {
+        deviceId = mail.deviceId,
+        sender = mail.sender:sub(1, 100),
+        subject = tostring(mail.subject or ''):sub(1, 120),
+    })
+end)
+
+-- A system activity note was stored for this character: tell the Mail app to refresh its Activity list.
+RegisterNetEvent('kora_phone:client:activity:new', function(data)
+    local player = exports.kora_core:getPlayerData()
+    if type(data) ~= 'table' or not player or data.citizenId ~= player.citizenid then return end
+    KoraPhone.SendNui('mail:activity')
 end)
 
 -- Sent by /phonereset: put the phone away and reload it so the setup screen comes back.
@@ -165,21 +210,37 @@ RegisterNetEvent('kora_phone:client:messages:read', function(receipt)
     KoraPhone.SendNui('messages:read', receipt)
 end)
 
+local function unavailableMessage()
+    if Config.Client.NoPhoneNoticeWhileDown then
+        local ok, hasPhone = pcall(Kora.callback.trigger, 'kora_phone:server:hasPhone', {})
+        if ok and hasPhone == false then return Kora.lang('notify.no_phone') end
+    end
+    return Kora.lang('notify.phone_unavailable')
+end
+
 local function togglePhone()
     if KoraPhone.State.open then
         KoraPhone.Close(false)
     elseif not KoraPhone.Open() and KoraPhone.Unavailable() then
-        local message = 'You cannot use your phone right now'
-        if Config.Client.NoPhoneNoticeWhileDown then
-            local ok, result = pcall(Kora.callback.trigger, 'kora_phone:server:hasPhone', {})
-            if ok and result == false then message = "You don't have a phone" end
-        end
-        Kora.notify.send({ title = 'Phone', message = message, type = 'error', duration = 3000 })
+        Kora.notify.send({
+            title = Kora.lang('title.phone'),
+            message = unavailableMessage(),
+            type = 'error',
+            duration = 3000,
+        })
     end
 end
 
+-- /phone stays a typed command (Kora.commands is server-side and would add a round trip to open the phone);
+-- the key goes through Kora.keybind so it is rebindable in the game's key settings.
 RegisterCommand(Config.Client.Command, togglePhone, false)
-RegisterKeyMapping(Config.Client.Command, 'Open phone', 'keyboard', Config.Client.Keybind)
+
+Kora.keybind.add({
+    name = 'kora_phone_toggle',
+    description = Kora.lang('keybind.open_phone'),
+    defaultKey = Config.Client.Keybind,
+    onPressed = togglePhone,
+})
 
 exports('OpenPhone', KoraPhone.Open)
 exports('ClosePhone', function() KoraPhone.Close(false) end)
@@ -192,11 +253,7 @@ AddEventHandler('onClientResourceStop', function(resource)
     KoraPhone.Calls.Cleanup(false)
 end)
 
+-- A restart of this resource while a character is already in the world: the mirror exists, no event will come.
 CreateThread(function()
-    while not NetworkIsSessionStarted() do Wait(250) end
-    local data = exports.kora_core:getPlayerData()
-    if data and data.citizenid then
-        KoraPhone.State.playerLoaded = true
-        KoraPhone.Bootstrap()
-    end
+    startSession(exports.kora_core:getPlayerData())
 end)

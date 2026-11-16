@@ -8,10 +8,9 @@ local function requireJobPlayer(source)
     if not Config.Server.Jobs.Enabled then
         return nil, nil, PhoneError(PhoneConstants.Errors.CONFLICT, 'Jobs app is disabled')
     end
-    local player = KoraPhone.GetPlayer(source)
-    local snapshot = KoraPhone.Integrations.Jobs.snapshot(player)
+    local snapshot = KoraPhone.Integrations.Jobs.snapshot(source)
     if not snapshot then return nil, nil, PhoneError(PhoneConstants.Errors.NOT_FOUND, 'No current job') end
-    return player, snapshot
+    return KoraPhone.GetPlayer(source), snapshot
 end
 
 local function actionsFor(snapshot)
@@ -29,10 +28,21 @@ local function actionsFor(snapshot)
     return output
 end
 
+local DUTY_ERRORS = {
+    duty_locked = 'This job cannot change duty from the phone',
+    multijob_unavailable = 'Duty management is currently unavailable',
+}
+
+---The job snapshot plus the display-only `dutyLocked` flag (kora_multijob's roster).
+local function jobView(source, snapshot)
+    snapshot.dutyLocked = KoraPhone.Integrations.Jobs.dutyLocked(source, snapshot.name)
+    return snapshot
+end
+
 function JobsService.get(source)
     local _, snapshot, err = requireJobPlayer(source)
     if not snapshot then return err end
-    return PhoneResult({ job = snapshot, actions = actionsFor(snapshot) })
+    return PhoneResult({ job = jobView(source, snapshot), actions = actionsFor(snapshot) })
 end
 
 function JobsService.setDuty(source, payload)
@@ -41,14 +51,15 @@ function JobsService.setDuty(source, payload)
     if type(payload) ~= 'table' or type(payload.onDuty) ~= 'boolean' then
         return PhoneError(PhoneConstants.Errors.INVALID_INPUT, 'onDuty must be a boolean')
     end
-    if not KoraPhone.Integrations.Jobs.setDuty(player, payload.onDuty) then
-        return PhoneError(PhoneConstants.Errors.CONFLICT, 'Duty state could not be changed')
+    local changed, reason = KoraPhone.Integrations.Jobs.setDuty(source, payload.onDuty)
+    if not changed then
+        return PhoneError(PhoneConstants.Errors.CONFLICT, DUTY_ERRORS[reason] or 'Duty state could not be changed')
     end
-    local after = KoraPhone.Integrations.Jobs.snapshot(KoraPhone.GetPlayer(source))
+    local after = KoraPhone.Integrations.Jobs.snapshot(source)
     if not after or after.name ~= before.name then
         return PhoneError(PhoneConstants.Errors.CONFLICT, 'Job changed while duty state was being updated')
     end
-    return PhoneResult({ job = after, actions = actionsFor(after) })
+    return PhoneResult({ job = jobView(source, after), actions = actionsFor(after) })
 end
 
 function JobsService.runAction(source, payload)

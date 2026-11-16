@@ -41,11 +41,14 @@ local function setup(state, result)
     _G.IsRadarHidden = function() return radarHidden end
     _G.DisplayRadar = function(v) radarSet = v end
     _G.GetResourceState = function(name) assert(name == "kora_hud"); return hudState end
-    _G.exports = { kora_hud = { applyMinimapLayout = function()
+    -- exports is both callable (exports('Name', fn) registers) and indexable (exports.kora_hud:fn()).
+    _G.exports = setmetatable({ kora_hud = { applyMinimapLayout = function()
         hudCalls = hudCalls + 1
         if hudResult == "error" then error("export failed") end
         return hudResult
-    end } }
+    end } }, { __call = function() end })
+    _G.AddEventHandler = function() end
+    _G.GetInvokingResource = function() return "test" end
     dofile(root .. "/client/map.lua")
 end
 

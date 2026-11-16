@@ -22,31 +22,65 @@ shared_scripts {
 client_scripts {
     '@kora_theme/client/bridge.lua',
     'config/client.lua',
-    'client/**/*.lua'
+    -- Explicit order: the SDK registry must exist before client/customapps.lua (the alias exports feed it),
+    -- and client/nui.lua (route table loop) must load before client/video.lua.
+    'client/animations.lua',
+    'client/calls.lua',
+    'client/camera.lua',
+    'client/sdk/registry.lua',
+    'client/sdk/events.lua',
+    'client/customapps.lua',
+    'client/integrations/voice.lua',
+    'client/main.lua',
+    'client/map.lua',
+    'client/notifications.lua',
+    'client/nui.lua',
+    'client/phone_state.lua',
+    'client/services.lua',
+    'client/share.lua',
+    'client/video.lua'
 }
 
 server_scripts {
     '@kora_sql/init.lua',
     'server/crypto.js',
-    '@kora_sql/lib/MySQL.lua',
     'config/server.lua',
     'server/schema.lua',
+    'server/sdk/schema.lua',
     'server/integrations/*.lua',
     'server/repositories/*.lua',
     'server/services/*.lua',
     'server/rate_limits.lua',
     'server/permissions.lua',
     'server/sessions.lua',
-    'server/handsets.lua',
+    'server/handsets/core.lua',
+    'server/handsets/location.lua',
+    'server/handsets/sim.lua',
+    'server/handsets/identity.lua',
+    'server/handsets/cloud.lua',
+    'server/handsets/actions.lua',
+    'server/handsets/lifecycle.lua',
     'server/mailboxes.lua',
+    'server/mail/system.lua',
     'server/phone_commerce.lua',
+    -- App SDK: needs server/permissions.lua, rate_limits.lua and shared/constants.lua above.
+    'server/sdk/manifest.lua',
+    'server/sdk/registry.lua',
+    'server/sdk/permissions.lua',
+    'server/sdk/install.lua',
+    'server/sdk/storage_repository.lua',
+    'server/sdk/storage.lua',
+    'server/sdk/callbacks.lua',
+    'server/sdk/routes.lua',
+    'server/sdk/discovery.lua',
+    'server/sdk/exports.lua',
+    -- Gateway: registers every callback from shared/routes.json; handlers bind lazily.
     'server/callbacks.lua',
     'server/modules/call_callbacks.lua',
     'server/modules/economy_callbacks.lua',
     'server/modules/media_callbacks.lua',
     'server/modules/community_callbacks.lua',
     'server/handset_callbacks.lua',
-    'server/compat/qb-phone.lua',
     'server/main.lua'
 }
 
@@ -57,6 +91,8 @@ files {
     'web/dist/assets/*',
     'web/dist/compat.js',
     'web/dist/map.jpg',
+    'shared/routes.json',
+    'locales/*.lua',
     'local-media/*'
 }
 
@@ -66,16 +102,16 @@ dependencies {
     'kora_core',
     'kora_sql',
     'kora_inventory',
+    'kora_voice',
 }
 
--- Lets this resource answer as each aliased phone (client/customapps.lua) for real: many
+-- Custom-app compatibility only (no qb-phone): lets this resource answer as each aliased phone (client/customapps.lua) for real: many
 -- custom apps gate their AddCustomApp-style call behind GetResourceState('lb-phone') (etc)
 -- being 'started' before ever attempting the export, which the export-event trick alone
 -- can't satisfy. `provide` makes GetResourceState and dependency resolution treat this
 -- resource as if it were that one too. Don't also run the real lb-phone/sd-phone/etc
 -- alongside this -- same warning sky_phone documents for the same trick: two active
 -- providers of the same name race for the same registrations.
-provide 'qb-phone'
 provide 'lb-phone'
 provide 'sd-phone'
 provide '17mov_Phone'

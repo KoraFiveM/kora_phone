@@ -71,8 +71,10 @@ local function onCall()
 end
 
 local function createProp(ped)
+    -- Config stores the bone as text: digits mean a bone index, anything else is a bone name.
     local bone = option('bone')
-    local boneIndex = type(bone) == 'number' and GetPedBoneIndex(ped, bone) or GetEntityBoneIndexByName(ped, bone)
+    local boneNumber = tonumber(bone)
+    local boneIndex = boneNumber and GetPedBoneIndex(ped, boneNumber) or GetEntityBoneIndexByName(ped, bone)
     local offset, rotation = option('offset'), option('rotation')
     local created
     Kora.stream.loadModel(option('model'), function(hash)
@@ -90,7 +92,11 @@ local function apply(ped)
     local key = onCall() and (inVehicle and 'vehicleCall' or 'call') or (inVehicle and 'vehicleText' or 'text')
     if key == currentKey and handle and Kora.anim.isPlaying(ped) then return true end
     local clip = animation(key)
-    local started = Kora.anim.play(ped, clip.dict, clip.clip, { flag = clip.flag or 50, blendInSpeed = 3.0, blendOutSpeed = 2.0 })
+    local started = Kora.anim.play(ped, clip.dict, clip.clip, {
+        flag = clip.flag or 50,
+        blendInSpeed = 3.0,
+        blendOutSpeed = 2.0,
+    })
     if not started then return false end
     handle, currentKey = started, key
     if not prop or not DoesEntityExist(prop) then

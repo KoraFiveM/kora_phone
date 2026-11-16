@@ -1,0 +1,10 @@
+{
+  "id": "hello",
+  "name": "Hello",
+  "description": "Counter demo for the kora_phone SDK",
+  "icon": "smile",
+  "entry": "ui/dist/index.html",
+  "version": "1.0.0",
+  "permissions": ["storage", "notify"],
+  "defaultInstalled": true
+}

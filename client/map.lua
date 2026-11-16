@@ -50,7 +50,9 @@ end
 -- same live map the pause menu uses, just resized into the app instead of
 -- filling the whole screen.
 function Map.Show(x, y, w, h)
-    if not (type(x) == 'number' and type(y) == 'number' and type(w) == 'number' and type(h) == 'number') then return false end
+    for i = 1, 4 do
+        if type((select(i, x, y, w, h))) ~= 'number' then return false end
+    end
     if w <= 0 or h <= 0 then return false end
     if not Map.active then Map.previousRadar = not IsRadarHidden() end
     Map.active = true
@@ -78,7 +80,8 @@ end
 
 exports('RegisterMapBlip', function(handle, title)
     local owner = GetInvokingResource()
-    if not owner or type(handle) ~= 'number' or math.tointeger(handle) == nil or not DoesBlipExist(handle) then return false end
+    if not owner or type(handle) ~= 'number' or math.tointeger(handle) == nil then return false end
+    if not DoesBlipExist(handle) then return false end
     if type(title) ~= 'string' or #title > 160 or not title:find('%S') then return false end
     if registered[handle] and registered[handle].owner ~= owner then return false end
     registered[handle] = { owner = owner, title = title }

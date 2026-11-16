@@ -3,7 +3,11 @@ local Messaging = {}
 KoraPhone.Services.Messaging = Messaging
 
 local function requireConversation(device, payload)
-    local id, validationError = PhoneValidation.integer(type(payload) == 'table' and payload.conversationId, 'conversationId', 1)
+    local id, validationError = PhoneValidation.integer(
+        type(payload) == 'table' and payload.conversationId,
+        'conversationId',
+        1
+    )
     if not id then return nil, PhoneError(PhoneConstants.Errors.INVALID_INPUT, validationError) end
     if not KoraPhone.Repositories.Messages.isMember(device.id, id) then
         return nil, PhoneError(PhoneConstants.Errors.NOT_FOUND, 'Conversation was not found')
@@ -12,15 +16,21 @@ local function requireConversation(device, payload)
 end
 
 local function startDirectFor(device, number)
-    if number == device.phoneNumber then return nil, nil, PhoneError(PhoneConstants.Errors.INVALID_INPUT, 'Cannot message your own number') end
+    if number == device.phoneNumber then
+        return nil, nil, PhoneError(PhoneConstants.Errors.INVALID_INPUT, 'Cannot message your own number')
+    end
     local recipient = KoraPhone.Repositories.Phones.findByNumber(number)
     if not recipient then return nil, nil, PhoneError(PhoneConstants.Errors.NOT_FOUND, 'Recipient was not found') end
     if KoraPhone.Repositories.Blocks.isEitherBlocked(device.id, recipient.id) then
         return nil, nil, PhoneError(PhoneConstants.Errors.FORBIDDEN, 'Messaging is unavailable for this contact')
     end
     local conversationId = KoraPhone.Repositories.Messages.findDirectConversation(device.id, recipient.id)
-    if not conversationId then conversationId = KoraPhone.Repositories.Messages.createDirectConversation(device.id, recipient.id) end
-    if not conversationId then return nil, nil, PhoneError(PhoneConstants.Errors.INTERNAL, 'Unable to create conversation') end
+    if not conversationId then
+        conversationId = KoraPhone.Repositories.Messages.createDirectConversation(device.id, recipient.id)
+    end
+    if not conversationId then
+        return nil, nil, PhoneError(PhoneConstants.Errors.INTERNAL, 'Unable to create conversation')
+    end
     return conversationId, recipient
 end
 
@@ -47,7 +57,9 @@ function Messaging.send(source, payload)
         if KoraPhone.Repositories.Messages.conversationType(conversationId) == 'group' then
             for _, member in ipairs(KoraPhone.Repositories.Messages.otherMembers(conversationId, sender.id)) do
                 -- Someone who blocked the sender (or was blocked) simply isn't notified; the rest still get it.
-                if not KoraPhone.Repositories.Blocks.isEitherBlocked(sender.id, member.id) then recipients[#recipients + 1] = member end
+                if not KoraPhone.Repositories.Blocks.isEitherBlocked(sender.id, member.id) then
+                    recipients[#recipients + 1] = member
+                end
             end
         else
             recipient = KoraPhone.Repositories.Messages.peerDevice(conversationId, sender.id)
@@ -65,11 +77,15 @@ function Messaging.send(source, payload)
     local existing = KoraPhone.Repositories.Messages.findIdempotent(sender.id, message.clientRequestId)
     if existing then
         if tonumber(existing.conversationId) ~= tonumber(conversationId) or existing.body ~= message.body then
-            return PhoneError(PhoneConstants.Errors.CONFLICT, 'Message request ID was already used for different message details')
+            return PhoneError(
+                PhoneConstants.Errors.CONFLICT,
+                'Message request ID was already used for different message details'
+            )
         end
         local replay = KoraPhone.Repositories.Messages.getForDevice(existing.id, sender.id)
         if replay then replay.replayed = true end
-        return replay and PhoneResult(replay) or PhoneError(PhoneConstants.Errors.CONFLICT, 'Message request was already processed')
+        return replay and PhoneResult(replay)
+            or PhoneError(PhoneConstants.Errors.CONFLICT, 'Message request was already processed')
     end
     local messageType = 'text'
     if message.mediaId then
@@ -77,10 +93,20 @@ function Messaging.send(source, payload)
         if not media then return PhoneError(PhoneConstants.Errors.INVALID_INPUT, 'That media was not found') end
         messageType = KoraPhone.Storage.isVideo(media.mimeType) and 'video' or 'image'
     end
-    local ok, messageId = pcall(KoraPhone.Repositories.Messages.insert, conversationId, sender.id, message.body, message.clientRequestId, message.mediaId, messageType)
+    local ok, messageId = pcall(
+        KoraPhone.Repositories.Messages.insert,
+        conversationId,
+        sender.id,
+        message.body,
+        message.clientRequestId,
+        message.mediaId,
+        messageType
+    )
     if not ok or not messageId then
         existing = KoraPhone.Repositories.Messages.findIdempotent(sender.id, message.clientRequestId)
-        if existing and tonumber(existing.conversationId) == tonumber(conversationId) and existing.body == message.body then
+        if existing
+            and tonumber(existing.conversationId) == tonumber(conversationId)
+            and existing.body == message.body then
             local replay = KoraPhone.Repositories.Messages.getForDevice(existing.id, sender.id)
             if replay then replay.replayed = true end
             if replay then return PhoneResult(replay) end
@@ -107,7 +133,9 @@ function Messaging.createGroup(source, payload)
     for _, number in ipairs(group.numbers) do
         if number ~= creator.phoneNumber then
             local member = KoraPhone.Repositories.Phones.findByNumber(number)
-            if not member then return PhoneError(PhoneConstants.Errors.NOT_FOUND, 'One of those numbers was not found') end
+            if not member then
+                return PhoneError(PhoneConstants.Errors.NOT_FOUND, 'One of those numbers was not found')
+            end
             if KoraPhone.Repositories.Blocks.isEitherBlocked(creator.id, member.id) then
                 return PhoneError(PhoneConstants.Errors.FORBIDDEN, 'Messaging is unavailable for one of those contacts')
             end
@@ -124,7 +152,8 @@ end
 function Messaging.addMember(source, payload)
     local device, err = KoraPhone.Permissions.requireDevice(source)
     if not device then return err end
-    local conversationId; conversationId, err = requireConversation(device, payload)
+    local conversationId
+    conversationId, err = requireConversation(device, payload)
     if not conversationId then return err end
     if KoraPhone.Repositories.Messages.conversationType(conversationId) ~= 'group' then
         return PhoneError(PhoneConstants.Errors.NOT_FOUND, 'Group was not found')
@@ -149,7 +178,8 @@ end
 function Messaging.leaveGroup(source, payload)
     local device, err = KoraPhone.Permissions.requireDevice(source)
     if not device then return err end
-    local conversationId; conversationId, err = requireConversation(device, payload)
+    local conversationId
+    conversationId, err = requireConversation(device, payload)
     if not conversationId then return err end
     if not KoraPhone.Repositories.Messages.leave(device.id, conversationId) then
         return PhoneError(PhoneConstants.Errors.NOT_FOUND, 'Group was not found')
@@ -160,7 +190,8 @@ end
 function Messaging.list(source, payload)
     local device, err = KoraPhone.Permissions.requireDevice(source)
     if not device then return err end
-    local conversationId; conversationId, err = requireConversation(device, payload)
+    local conversationId
+    conversationId, err = requireConversation(device, payload)
     if not conversationId then return err end
     local page, validationError = PhoneValidation.page(payload)
     if not page then return PhoneError(PhoneConstants.Errors.INVALID_INPUT, validationError) end
@@ -175,19 +206,26 @@ function Messaging.listConversations(source, payload)
     if not page then return PhoneError(PhoneConstants.Errors.INVALID_INPUT, validationError) end
     local cursorId
     if type(payload) == 'table' and payload.cursorId ~= nil then
-        if not page.cursor then return PhoneError(PhoneConstants.Errors.INVALID_INPUT, 'cursor is required with cursorId') end
+        if not page.cursor then
+            return PhoneError(PhoneConstants.Errors.INVALID_INPUT, 'cursor is required with cursorId')
+        end
         cursorId, validationError = PhoneValidation.integer(payload.cursorId, 'cursorId', 1)
         if not cursorId then return PhoneError(PhoneConstants.Errors.INVALID_INPUT, validationError) end
     end
     local rows = KoraPhone.Repositories.Messages.listConversations(device.id, page.limit, page.cursor, nil, cursorId)
     local last = #rows == page.limit and rows[#rows] or nil
-    return PhoneResult({ items = rows, nextCursor = last and last.sortId or nil, nextCursorId = last and last.id or nil })
+    return PhoneResult({
+        items = rows,
+        nextCursor = last and last.sortId or nil,
+        nextCursorId = last and last.id or nil,
+    })
 end
 
 function Messaging.markRead(source, payload)
     local device, err = KoraPhone.Permissions.requireDevice(source)
     if not device then return err end
-    local conversationId; conversationId, err = requireConversation(device, payload)
+    local conversationId
+    conversationId, err = requireConversation(device, payload)
     if not conversationId then return err end
     local messageId
     if type(payload) == 'table' and payload.messageId ~= nil then
@@ -202,7 +240,11 @@ end
 function Messaging.deleteForSelf(source, payload)
     local device, err = KoraPhone.Permissions.requireDevice(source)
     if not device then return err end
-    local id, validationError = PhoneValidation.integer(type(payload) == 'table' and payload.messageId, 'messageId', 1)
+    local id, validationError = PhoneValidation.integer(
+        type(payload) == 'table' and payload.messageId,
+        'messageId',
+        1
+    )
     if not id then return PhoneError(PhoneConstants.Errors.INVALID_INPUT, validationError) end
     if not KoraPhone.Repositories.Messages.deleteForDevice(device.id, id) then
         return PhoneError(PhoneConstants.Errors.NOT_FOUND, 'Message was not found')
