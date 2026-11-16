@@ -41,6 +41,11 @@ for file in tests/*.test.lua; do
     record "$file" "$lua_bin" "$file"
 done
 
+# tests/customapps-host.test.js wires the real SDK build (sdk/dist, gitignored) to the host router.
+if [ -d sdk/node_modules ]; then
+    (cd sdk && npm run build >/dev/null 2>&1) || echo "WARN: sdk build failed; tests that need sdk/dist will fail"
+fi
+
 for file in tests/*.test.js; do
     record "$file" node "$file"
 done
