@@ -1,7 +1,7 @@
 name: Release
 
-# Tags the next version and cuts a GitHub Release on every push to main.
-# The version is stamped into fxmanifest.lua, committed back to main ([skip ci]) and packaged.
+# Tags the next version and cuts a GitHub Release on every push to dev.
+# The version is stamped into fxmanifest.lua, committed back to dev ([skip ci]) and packaged.
 
 on:
   push:
@@ -23,6 +23,30 @@ jobs:
         with:
           fetch-depth: 0
 
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Install Lua
+        run: command -v lua5.4 >/dev/null || sudo apt-get install -y lua5.4
+
+      # web/vite.config.ts imports ../../../[standalone]/kora_theme/vite-plugin.mjs, i.e. kora_theme sits in a
+      # [standalone] folder three levels above web/ (the server's resources/ tree). actions/checkout cannot write
+      # outside the workspace, so clone it to that exact spot. Used by the tests (tsc) and the UI build below.
+      - name: Checkout kora_theme next to the resource
+        run: |
+          theme_dir="$(cd "$GITHUB_WORKSPACE/../.." && pwd)/[standalone]/kora_theme"
+          rm -rf "$theme_dir"
+          git clone --depth 1 "https://x-access-token:${{ secrets.KORA_THEME_TOKEN || secrets.GITHUB_TOKEN }}@github.com/${{ github.repository_owner }}/kora_theme.git" "$theme_dir"
+
+      - name: Install dependencies
+        run: (cd sdk && npm ci) && (cd web && npm ci)
+
+      # Lua + Node contract tests, the print guard, SDK tests and the web typecheck. A failure stops the release
+      # before anything is tagged or packaged.
+      - name: Run tests
+        run: LUA=lua5.4 bash test/run.sh
+
       # Reads commit messages since the last tag to pick the next version
       # (#major / #minor bump it up; anything else is a patch bump) and tags this commit.
       - name: Tag next version
@@ -43,20 +67,16 @@ jobs:
             git push origin HEAD:dev
           fi
 
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 20
-
       - name: Build UI
         working-directory: web
-        run: npm ci && npm run build
+        run: npm run build
 
-      # Only what the server needs to run: no web source, node_modules, tests or docs.
+      # Only what the server needs (manifest scripts, config, locales, shared, local-media and the built UI) to run: no web source, node_modules, tests or docs.
       # The folder name is the resource name, so it unzips straight into resources/.
       - name: Package resource
         run: |
           mkdir -p pkg/kora_phone/web
-          cp -r fxmanifest.lua README.md client config server shared local-media integration pkg/kora_phone/
+          cp -r fxmanifest.lua README.md client config server shared locales local-media pkg/kora_phone/
           cp -r web/dist pkg/kora_phone/web/
           cd pkg && zip -r ../kora_phone-${{ steps.tag.outputs.new_tag }}.zip kora_phone
 

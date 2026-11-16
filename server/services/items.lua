@@ -27,7 +27,10 @@ function Items.save(source, payload)
     if not item then return invalid(validationError) end
     local repo = KoraPhone.Repositories.Items
     if not repo.exists(device.id, kind, item.id) and repo.count(device.id, kind) >= Config.Server.Items[kind] then
-        return PhoneError(PhoneConstants.Errors.CONFLICT, ('You can keep up to %d %s'):format(Config.Server.Items[kind], GROUP[kind]))
+        return PhoneError(
+            PhoneConstants.Errors.CONFLICT,
+            ('You can keep up to %d %s'):format(Config.Server.Items[kind], GROUP[kind])
+        )
     end
     if not repo.upsert(device.id, kind, item.id, json.encode(item)) then
         return PhoneError(PhoneConstants.Errors.INTERNAL, 'Unable to save')

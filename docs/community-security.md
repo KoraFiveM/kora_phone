@@ -28,7 +28,7 @@ The community module treats NUI and client payloads as untrusted requests. It de
 
 - Reports use allowlisted target types and reasons, bounded details, and a database uniqueness constraint against repeated reports of the same target by one device.
 - A sanitized snapshot is stored at report time so later deletion does not erase evidence.
-- Queue access and resolution require either the `kora.phone.moderate` ACE or QBCore `admin`/`god` permission. Opening a staff UI grants no authority.
+- Queue access and resolution require either the `kora.phone.moderate` ACE or the kora_core `admin` or `god` permission. Opening a staff UI grants no authority.
 - Resolution actions are allowlisted. Each successful action creates an append-only audit record containing actor, action, target, reason and report ID.
 - Configure ACE access explicitly, for example `add_ace group.admin kora.phone.moderate allow` (see [Permissions](./permissions.md)).
 

@@ -41,7 +41,7 @@ assert.match(moderation, /hasPermission/);
 assert.match(moderation, /Repositories\.Reports\.audit/);
 assert.match(moderation, /Repositories\.Reports\.claim/);
 assert.match(reports, /assigned_citizenid = \?/);
-assert.match(callbacks, /= KoraPhone\.registerCallback/);
+assert.match(callbacks, /local bind = KoraPhone\.Routes\.handle/, "callbacks bind through the route gateway");
 assert.match(read("server/callbacks.lua"), /RateLimits\.consume/);
 for (const callback of ["social:createPost", "social:report", "market:createListing", "market:contactSeller", "moderation:resolve"]) {
   assert.ok(callbacks.includes(callback), `missing callback ${callback}`);

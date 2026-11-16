@@ -1,0 +1,111 @@
+-- lua tests/sdk-manifest.test.lua  (from the resource root)
+local H = dofile((arg and arg[0] or 'tests/x'):gsub('[^/\\]+$', '') .. 'sdk-helper.lua')
+local test, equal = H.test, H.equal
+H.newServer()
+local Manifest = KoraPhone.SDK.Manifest
+
+local function rejected(overrides, fragment)
+    local manifest, err = Manifest.validate(H.manifest(overrides))
+    equal(manifest, nil)
+    assert(err:find('^INVALID_MANIFEST: '), err)
+    assert(err:find(fragment, 1, true), ('expected %q in %q'):format(fragment, err))
+end
+
+test('a complete manifest is accepted and normalised', function()
+    local manifest = assert(Manifest.validate(H.manifest({ price = 5, job = 'police' })))
+    equal(manifest.id, 'demo-app')
+    equal(manifest.price, 5)
+    equal(manifest.job[1].name, 'police')
+    equal(manifest.defaultInstalled, true)
+end)
+
+test('optional fields get defaults', function()
+    local manifest = assert(Manifest.validate({ id = 'ab', name = 'A', icon = 'star', entry = 'i.html', version = '1' }))
+    equal(manifest.description, '')
+    equal(#manifest.permissions, 0)
+    equal(manifest.defaultInstalled, false)
+    equal(manifest.job, nil)
+end)
+
+test('non-table manifest is rejected', function()
+    local manifest, err = Manifest.validate('nope')
+    equal(manifest, nil)
+    assert(err:find('INVALID_MANIFEST'))
+end)
+
+test('unknown fields are rejected', function() rejected({ hack = true }, 'unknown field hack') end)
+test('unknown permissions are rejected', function() rejected({ permissions = { 'root' } }, 'unknown permission root') end)
+test('permissions must be an array', function() rejected({ permissions = { storage = true } }, 'array') end)
+test('duplicate permissions collapse', function()
+    local manifest = assert(Manifest.validate(H.manifest({ permissions = { 'storage', 'storage' } })))
+    equal(#manifest.permissions, 1)
+end)
+
+test('id rules', function()
+    for _, bad in ipairs({ 'A', 'a', '-ab', 'has space', 'UPPER', ('x'):rep(33), 5 }) do
+        local manifest = Manifest.validate(H.manifest({ id = bad }))
+        equal(manifest, nil, tostring(bad))
+    end
+    assert(Manifest.validate(H.manifest({ id = ('x'):rep(32) })))
+end)
+
+test('name and description length limits', function()
+    rejected({ name = ('n'):rep(25) }, 'name must be at most 24')
+    rejected({ description = ('d'):rep(121) }, 'description must be at most 120')
+    rejected({ name = '' }, 'name must not be empty')
+    assert(Manifest.validate(H.manifest({ name = ('n'):rep(24), description = ('d'):rep(120) })))
+end)
+
+test('icon forms', function()
+    assert(Manifest.validate(H.manifest({ icon = 'map-pin' })))
+    assert(Manifest.validate(H.manifest({ icon = 'https://cdn.example.com/i.png' })))
+    assert(Manifest.validate(H.manifest({ icon = 'nui://demo/ui/icon.png' })))
+    rejected({ icon = 'http://insecure/i.png' }, 'icon must be')
+    rejected({ icon = 'javascript:alert(1)' }, 'icon must be')
+    rejected({ icon = 'nui://demo/../x.png' }, 'icon must be')
+    local raw = H.manifest()
+    raw.icon = nil
+    local _, err = Manifest.validate(raw)
+    assert(err:find('icon is required'), err)
+end)
+
+test('entry must be a relative html path', function()
+    rejected({ entry = '/abs.html' }, 'relative path')
+    rejected({ entry = '../x.html' }, 'relative path')
+    rejected({ entry = 'ui/app.js' }, '.html')
+    rejected({ entry = 'ui/a b.html' }, 'unsupported')
+    rejected({ entry = 'https://evil/x.html' }, 'unsupported')
+end)
+
+test('job shapes', function()
+    assert(Manifest.validate(H.manifest({ job = { name = 'police', grade = 2 } })))
+    local many = assert(Manifest.validate(H.manifest({ job = { 'police', { name = 'ems', grade = 1 } } })))
+    equal(#many.job, 2)
+    rejected({ job = { name = 'police', grade = -1 } }, 'grade')
+    rejected({ job = { name = 'police', extra = 1 } }, 'unknown job field')
+    rejected({ job = 42 }, 'job must be')
+end)
+
+test('defaultInstalled and price types', function()
+    rejected({ defaultInstalled = 'yes' }, 'defaultInstalled')
+    rejected({ price = -1 }, 'price')
+    rejected({ price = '5' }, 'price')
+end)
+
+test('the validated manifest does not alias the input', function()
+    local raw = H.manifest()
+    local manifest = assert(Manifest.validate(raw))
+    raw.permissions[1] = 'payments'
+    equal(manifest.permissions[1], 'storage')
+end)
+
+test('fileListed supports exact paths and globs', function()
+    assert(Manifest.fileListed({ 'ui/index.html' }, 'ui/index.html'))
+    assert(Manifest.fileListed({ 'ui/*' }, 'ui/index.html'))
+    assert(not Manifest.fileListed({ 'ui/*' }, 'ui/sub/index.html'))
+    assert(Manifest.fileListed({ 'ui/**' }, 'ui/sub/index.html'))
+    assert(not Manifest.fileListed({ 'other.html' }, 'ui/index.html'))
+    assert(not Manifest.fileListed({}, 'ui/index.html'))
+end)
+
+H.finish('sdk-manifest')

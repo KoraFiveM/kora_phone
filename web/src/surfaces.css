@@ -1,0 +1,240 @@
+/* Semantic surfaces shared by built-in apps. Keep embedded app styles isolated. */
+.phone-screen { background: var(--paper); color: var(--ink); border: 0; }
+.phone-screen :is(.page-header,.status-bar,.system-nav) { color: var(--ink); }
+.phone-screen .app-content { scroll-behavior: smooth; overscroll-behavior: contain; padding-bottom: 24px; }
+.phone-screen :is(.panel,.note-card,.vehicle-card,.property-card,.notification-card,.city-widget,.home-note,.row-icon,.segments,.bubble,.keypad button,.calc-keys button) { background: var(--panel); color: var(--ink); border-color: var(--line); }
+.phone-screen :is(input,textarea,select) { background: var(--field); color: var(--ink); border-color: var(--line); font-size: 13px; line-height: 1.5; }
+.phone-screen :is(input,textarea)::placeholder { color: var(--ink-muted); opacity: .85; }
+.phone-screen input[type=range] { background: transparent; min-height: 34px; }
+.phone-screen .dial-number { background: transparent; font-size: 26px; }
+.phone-screen :is(.form label,.muted,.row small,.section-label,.home-section,.page-top .eyebrow,.empty p,.text-button,.contact-actions button,.settings-footnote,.notification-card small,.city-widget span,.home-note small) { color: var(--ink-muted); }
+.phone-screen :is(.form label,.muted,.empty p,.text-button,.contact-actions button) { font-size: 12px; line-height: 1.55; }
+.phone-screen .form { gap: 16px; }
+.phone-screen .form label :is(input,select) { font-size: 13px; margin-top: 8px; }
+.phone-screen .panel { border-radius: 20px; padding: 17px; }
+.phone-screen .panel h3 { font-size: 15px; letter-spacing: -.2px; }
+.phone-screen :is(.primary,.small-primary,.round-button,.settings-widget,.bubble.sent,.segments .selected,.calc-keys .equals) { background: var(--action); color: var(--on-action); }
+.phone-screen .primary { min-height: 44px; font-size: 13px; font-weight: 600; border-radius: 14px; }
+.phone-screen .small-primary { min-height: 36px; font-size: 11px; }
+.phone-screen .icon-button { width: 36px; height: 36px; }
+.phone-screen button:disabled { cursor: default; opacity: .48; }
+.phone-screen button:focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; }
+.phone-screen :is(input,textarea,select):focus-visible { outline: 2px solid var(--ink); }
+.phone-screen :is(.primary,.small-primary,.app-icon,.row,.text-button):hover:not(:disabled) { filter: brightness(.94); }
+.phone-screen .row { padding: 15px 0; border-color: var(--line); }
+.phone-screen .row strong { font-size: 13px; line-height: 1.4; overflow-wrap: anywhere; }
+.phone-screen .row small { font-size: 11px; max-width: 100%; }
+.phone-screen .row-copy { overflow: hidden; }
+.phone-screen .section-label { font-size: 9px; line-height: 1.5; }
+.phone-screen .page-header h1 { font-size: 29px; letter-spacing: -.9px; }
+.phone-screen .page-header p { font-size: 12px; line-height: 1.45; }
+.phone-screen .page-top .eyebrow { font-size: 9px; }
+.phone-screen .contact-actions { margin-left: 0; gap: 4px; }
+.phone-screen .contact-actions button { min-height: 36px; padding: 6px 9px; border-radius: 10px; background: var(--panel); }
+.phone-screen .bubble p { font-size: 13px; }
+.phone-screen .bubble small { font-size: 10px; opacity: .8; }
+.phone-screen .composer { position: sticky; bottom: -24px; background: var(--paper); padding: 10px 0 16px; }
+.phone-screen :is(.call-button,.round-button.red,.dock-icon.app-phone > span) { background: hsl(var(--destructive)); color: var(--paper); }
+.phone-screen :is(.bank-card,.store-feature,.call-screen,.camera-viewfinder) { background: hsl(var(--background)); color: hsl(var(--foreground)); }
+.phone-screen :is(.bank-card,.store-feature,.call-screen,.camera-viewfinder) :is(p,small,.eyebrow,.muted,.call-status) { color: hsl(var(--foreground)); }
+.phone-screen .call-avatar { background: var(--shade-80); color: var(--shade-5); border-color: var(--shade-60); }
+.phone-screen .call-button.accept { background: hsl(var(--success)); }
+.phone-screen .toast { top: auto; bottom: 46px; background: var(--shade-85); color: var(--paper); border-color: var(--shade-60); box-shadow: 0 8px 25px color-mix(in srgb, var(--ink) 20%, transparent); }
+.phone-screen .toast > span { font-size: 12px; }
+.phone-screen .toast button { color: var(--paper); min-width: 32px; min-height: 32px; align-items: center; justify-content: center; }
+.phone-screen .notification-shade { background: var(--paper); }
+.phone-screen .notification-card strong { font-size: 13px; }
+.phone-screen .notification-card small { font-size: 12px; line-height: 1.5; overflow-wrap: anywhere; }
+.phone-screen :is(.load-error,.pin-error,.danger) { color: hsl(var(--destructive)); }
+.phone-screen.theme-dark :is(.load-error,.pin-error,.danger) { color: hsl(var(--destructive)); }
+.phone-screen .load-error { background: var(--panel); font-size: 12px; }
+.phone-screen .home-screen { background: transparent; }
+.phone-screen.show-wallpaper :is(.home-screen,.lock-screen,.status-bar) { background: transparent; }
+.phone-screen .status-bar { background: transparent; }
+.phone-screen .home-screen > .dot-clock { color: var(--ink); }
+.phone-screen .home-top .eyebrow { font-size: 9px; color: var(--ink-muted); }
+.phone-screen .camera-dot { background: hsl(var(--background)); box-shadow: inset 0 0 0 3px hsl(var(--background)); }
+.phone-screen .dock-icon.app-phone > span svg { color: var(--paper); }
+.phone-screen .home-section { font-size: 8px; }
+.phone-screen .app-icon > span { background: var(--panel); border-color: var(--line); color: var(--ink); }
+.phone-screen .app-icon small { color: var(--ink); font-size: 10px; line-height: 1.3; max-width: 70px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; padding-bottom: 2px; flex-shrink: 0; }
+.phone-screen .app-icon > span { flex-shrink: 0; }
+.phone-screen .app-grid { row-gap: 15px; grid-auto-rows: max-content; }
+.phone-screen .city-widget span { font-size: 10px; }
+.phone-screen .settings-widget span { font-size: 9px; }
+.phone-screen .home-note small { font-size: 10px; }
+.phone-screen .home-note strong { font-size: 12px; }
+.phone-screen .dock { background: var(--panel); border: 1px solid var(--line); padding: 9px 12px; }
+.phone-screen .dock-icon > span { background: var(--field); }
+.phone-screen .home-indicator span { background: var(--ink); }
+.phone-screen .system-nav button { height: 32px; opacity: .85; }
+.phone-screen .unlock-button { background: var(--panel); border-color: var(--line); color: var(--ink); min-height: 60px; }
+.phone-screen .unlock-button span { font-size: 13px; }
+.phone-screen .lock-bottom { font-size: 8px; color: var(--ink-muted); }
+.phone-screen .settings-footnote { font-size: 11px; line-height: 1.7; padding: 0 4px; }
+.theme-choices { display: grid; grid-template-columns: repeat(3,minmax(0,1fr)); gap: 8px; border: 0; padding: 0; margin: 0; }
+.theme-choices legend { font-size: 12px; margin-bottom: 10px; color: var(--ink-muted); }
+.theme-choice { display: flex; flex-direction: column; align-items: center; gap: 8px; padding: 12px 4px; border: 1px solid var(--line); border-radius: 14px; font-size: 11px; background: var(--field); }
+.theme-choice[aria-pressed=true] { border-color: var(--ink); box-shadow: inset 0 0 0 1px var(--ink); }
+.theme-swatch { height: 25px; width: 25px; border-radius: 50%; border: 1px solid color-mix(in srgb, var(--shade-45) 53%, transparent); box-shadow: inset 0 0 0 4px color-mix(in srgb, var(--paper) 7%, transparent); }
+.phone-screen .device-about { padding: 14px 0 24px; }
+.phone-screen .device-about p { color: var(--ink-muted); font-size: 13px; }
+.phone-screen .device-about small { color: var(--ink-muted); }
+.lock-brand { flex: 1; min-height: 150px; width: 100%; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 12px; padding: 16px 0; }
+.lock-logo { width: 210px; max-height: 100%; flex-shrink: 1; min-height: 100px; overflow: visible; color: var(--ink); }
+.logo-track,.logo-inner-track,.logo-arc,.logo-ticks { fill: none; stroke: currentColor; stroke-width: 1; }
+.logo-track { opacity: .18; }
+.logo-inner-track { opacity: .12; stroke-dasharray: 1 7; }
+.logo-arc { opacity: .55; stroke-width: 1.5; }
+.logo-ticks { opacity: .4; }
+.logo-mark { fill: currentColor; }
+.logo-satellite,.logo-period { fill: hsl(var(--destructive)); }
+.logo-orbit { transform-origin: 120px 120px; animation: logo-revolve 18s linear infinite; }
+.logo-period { animation: logo-breathe 4s ease-in-out infinite; }
+.lock-brand-label { font: 8px var(--font-mono); letter-spacing: 2px; color: var(--ink-muted); }
+.setup-mark .lock-brand { flex: none; min-height: 0; width: auto; gap: 5px; padding: 0; }
+.setup-mark .lock-logo { width: 116px; height: 116px; min-height: 0; }
+.setup-mark.small .lock-logo { width: 76px; height: 76px; }
+.phone-screen.show-wallpaper .lock-screen > .dot-clock { color: var(--ink); }
+.phone-screen.show-wallpaper .lock-screen > p { color: var(--ink-muted); }
+@keyframes logo-revolve { to { transform: rotate(360deg); } }
+@keyframes logo-breathe { 50% { opacity: .4; } }
+.phone-screen .app-content-flash { padding: 12px 14px 64px; scroll-snap-type: y proximity; }
+.phone-screen .flash-post { background: hsl(var(--background)); isolation: isolate; }
+.phone-screen .flash-post-media { height: 410px; min-height: 0; max-height: none; background: hsl(var(--background)); }
+.phone-screen .flash-post-overlay { top: 0; bottom: auto; height: 410px; background: linear-gradient(0deg, hsl(var(--background) / 87%), transparent 65%); }
+.phone-screen .flash-post-info p { max-height: 100px; overflow-y: auto; pointer-events: auto; }
+.phone-screen .flash-post-info small { color: hsl(var(--foreground)); }
+.phone-screen .flash-post-actions { gap: 12px; }
+.phone-screen .flash-post-actions button { min-width: 36px; min-height: 36px; }
+.phone-screen .flash-compose-button { position: absolute; right: 24px; bottom: 48px; z-index: 14; }
+.phone-screen .flash-composer { padding: 52px 20px 20px; background: var(--paper); }
+.phone-screen .flash-comments,.phone-screen .remove-confirm { background: var(--paper); color: var(--ink); }
+.phone-screen .chat-bubble { background: var(--panel); color: var(--ink); overflow-wrap: anywhere; }
+.phone-screen .chat-bubble.sent { background: var(--action); color: var(--on-action); }
+.phone-screen .chat-bubble p { font-size: 13px; line-height: 1.55; white-space: pre-wrap; }
+.phone-screen .chat-time { opacity: .8; color: inherit; }
+.phone-screen .chat-photo,.phone-screen .chat-video { width: 100%; max-height: 280px; object-fit: contain; border-radius: 12px; display: block; }
+@media (prefers-reduced-motion: reduce) {
+  .phone *, .phone *::before, .phone *::after { animation: none !important; transition: none !important; scroll-behavior: auto !important; }
+}
+
+/* Toasts clear the dock on home and the unlock button on the lock screen; the unread dot is visible at phone scale. */
+.toast.toast-home { bottom: 110px; }
+.toast.toast-top { top: 45px; bottom: auto; }
+.notification-dot { width: 6px; height: 6px; top: 3px; right: 3px; }
+/* Incoming notifications slide down from the top; status toasts stay at the bottom. */
+.heads-up { position: absolute; z-index: 60; top: 45px; left: 13px; right: 13px; display: flex; gap: 10px; align-items: center; text-align: left; padding: 11px 12px; border-radius: 18px; background: hsl(var(--background)); color: hsl(var(--foreground)); border: 1px solid hsl(var(--background)); box-shadow: 0 8px 25px hsl(var(--background) / 27%); animation: heads-up-in .28s cubic-bezier(.2, .8, .2, 1); }
+.heads-up-icon { width: 30px; height: 30px; border-radius: 50%; display: grid; place-items: center; background: hsl(var(--foreground) / 12%); flex-shrink: 0; }
+.heads-up-text { display: flex; flex-direction: column; min-width: 0; gap: 2px; }
+.heads-up-text strong { font-size: 12px; }
+.heads-up-text small { font-size: 11px; color: hsl(var(--foreground)); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+@keyframes heads-up-in { from { transform: translateY(-140%); opacity: 0; } to { transform: none; opacity: 1; } }
+.notification-card > span { flex: 1; min-width: 0; }
+.notification-card time { font: 8px var(--font-mono); letter-spacing: .6px; color: var(--ink-muted); flex-shrink: 0; }
+.heads-up { touch-action: none; user-select: none; }
+.shade-actions { display: flex; align-items: center; gap: 10px; }
+
+/* Settings: the auto-save status line and the phone-style label. */
+.settings-status { font: 9px var(--font-mono); letter-spacing: .8px; text-align: center; margin: 0 0 14px; color: var(--ink-muted); }
+.settings-status[data-status="error"] { color: hsl(var(--destructive)); }
+.settings-label { display: block; font-size: 12px; margin-bottom: 10px; color: var(--ink-muted); }
+.settings-heading { display: flex; align-items: center; justify-content: flex-start; gap: 8px; }
+.settings-state { margin-left: auto; font: 8px var(--font-mono); letter-spacing: 1px; padding: 3px 7px; border-radius: 10px; border: 1px solid currentColor; color: var(--ink-muted); }
+.settings-choices { gap: 6px; }
+.settings-choices .theme-choice { flex-direction: row; justify-content: flex-start; gap: 5px; padding: 8px 6px; font-size: 10px; min-width: 0; }
+.settings-choices .theme-choice { overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+.settings-choices .theme-swatch { width: 16px; height: 16px; flex-shrink: 0; }
+.logo-kora_mark { fill: hsl(var(--primary)); }
+.qb-mark { fill: hsl(var(--primary)); flex-shrink: 0; }
+.status-bar .status-time { display: inline-flex; align-items: center; gap: 6px; }
+.home-top .eyebrow { display: inline-flex; align-items: center; gap: 6px; }
+.cover-choices { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 6px; border: 0; padding: 0; margin: 0; }
+.cover-choices legend { font-size: 12px; margin-bottom: 10px; color: var(--ink-muted); }
+.cover-choice { display: flex; flex-direction: column; gap: 5px; align-items: stretch; font-size: 9px; text-align: center; padding: 0 0 5px; border: 1px solid var(--line); border-radius: 10px; overflow: hidden; background: var(--field); min-width: 0; }
+.cover-choice[aria-pressed=true] { border-color: var(--ink); box-shadow: inset 0 0 0 1px var(--ink); }
+.cover-thumb { display: block; height: 68px; overflow: hidden; }
+.cover-thumb svg, .cover-thumb i { display: block; width: 100%; height: 100%; }
+.cover-thumb-default { background: linear-gradient(145deg, var(--shade-15), var(--shade-80) 70%); }
+.cover-thumb-custom { background: repeating-linear-gradient(45deg, var(--shade-75) 0 6px, var(--shade-85) 6px 12px); }
+
+/* Icon styles (Settings > Icon style). The circle is the default and needs no rules. */
+.phone-screen.icons-squircle .app-icon > span { border-radius: 16px; }
+.phone-screen.icons-outline .app-icon > span { border: 2px solid var(--ink); }
+.phone-screen.icons-solid .app-icon > span { background: var(--ink); border-color: var(--ink); color: var(--panel); }
+
+/* Do Not Disturb */
+.quiet-hours { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.quiet-hours input { width: 100%; }
+
+/* Notification history */
+.earlier-heading { margin-top: 14px; }
+.notification-card.is-earlier { opacity: .62; }
+
+/* Wallet: ID card */
+.wallet-tabs { margin-bottom: 12px; }
+.id-card { border-radius: 18px; padding: 16px 16px 14px; background: var(--ink); color: var(--panel); margin-bottom: 4px; }
+.id-card-top { display: flex; justify-content: space-between; align-items: center; font-size: 9px; letter-spacing: .12em; opacity: .75; }
+.id-card h2 { margin: 10px 0 12px; font-size: 21px; font-weight: 500; }
+.id-card dl { display: grid; grid-template-columns: 1fr 1fr; gap: 10px 12px; margin: 0; }
+.id-card dt { font-size: 9px; letter-spacing: .08em; text-transform: uppercase; opacity: .65; }
+.id-card dd { margin: 2px 0 0; font-size: 13px; overflow-wrap: anywhere; }
+
+/* Chat: shared location / hidden photo cards, and the attach sheet */
+.pulse-loc { display: flex; gap: 10px; align-items: center; width: 100%; text-align: left; padding: 9px 10px; border-radius: 12px; border: 1px solid currentColor; background: transparent; color: inherit; }
+.pulse-loc span { display: grid; gap: 1px; min-width: 0; }
+.pulse-loc strong { font-weight: 500; overflow-wrap: anywhere; }
+.pulse-loc small { opacity: .75; font-size: 11px; }
+.pulse-attach { display: grid; gap: 8px; }
+.pulse-attach button { display: flex; gap: 12px; align-items: center; text-align: left; padding: 12px; border-radius: 14px; border: 1px solid var(--line); background: var(--panel); color: var(--ink); }
+.pulse-attach span { display: grid; gap: 1px; }
+.pulse-attach small { color: var(--ink-muted); font-size: 11px; }
+
+/* Unread count on a chat row */
+.pulse-unread { min-width: 18px; height: 18px; padding: 0 5px; border-radius: 9px; background: var(--brand); color: var(--on-brand,var(--paper)); font-size: 10px; font-weight: 700; display: inline-grid; place-items: center; }
+
+/* App-icon unread badge, group header actions, mail */
+.app-icon { position: relative; }
+.app-badge { position: absolute; top: -3px; left: calc(50% + 8px); min-width: 17px; height: 17px; padding: 0 4px; border-radius: 9px; background: var(--brand); color: var(--on-brand,var(--paper)); font-size: 10px; font-weight: 700; display: grid; place-items: center; border: 2px solid var(--panel); box-sizing: content-box; }
+.pulse-header-actions { display: inline-flex; gap: 2px; }
+.mail-dot { width: 9px; height: 9px; border-radius: 50%; background: var(--brand); display: inline-block; }
+.mail-read h3 { margin: 6px 0 2px; font-size: 20px; font-weight: 500; }
+.mail-body { white-space: pre-wrap; overflow-wrap: anywhere; line-height: 1.5; margin: 14px 0 18px; }
+
+/* Blocked numbers list in Settings */
+.blocked-row { display: flex; justify-content: space-between; align-items: center; gap: 10px; }
+.blocked-row span { display: grid; gap: 1px; min-width: 0; }
+.blocked-row small { color: var(--ink-muted); font-size: 11px; }
+
+/* Upload progress (Flash and chat clips) */
+.upload-progress { height: 6px; border-radius: 3px; background: var(--line); overflow: hidden; margin: 10px 0 2px; }
+.upload-progress i { display: block; height: 100%; background: var(--brand); transition: width .15s; }
+.flash-profile { margin: 12px 0; }
+
+
+/* Phone dock button keeps a call-red fill with an icon colour derived from it (see handsetThemeTokens); !important because per-handset/theme/icon-style rules re-colour dock icons and used to leave a white glyph on a light fill. */
+.phone-screen .dock .dock-icon.app-phone > span { background: hsl(var(--destructive)) !important; border-color: hsl(var(--destructive)) !important; color: hsl(var(--destructive-foreground)) !important; }
+.phone-screen .dock .dock-icon.app-phone > span svg { color: inherit !important; }
+
+/* Peek: phone slides up briefly when a text arrives while closed */
+.phone-peek { position: fixed; right: 28px; bottom: 20px; z-index: 200; pointer-events: none; animation: peekIn .4s cubic-bezier(.2,.8,.2,1), peekOut .4s 3s cubic-bezier(.4,0,1,1) forwards; }
+.peek-card { display: flex; gap: 10px; align-items: center; padding: 14px 16px; border-radius: 20px; background: color-mix(in srgb, var(--shade-90) 93%, transparent); color: var(--paper); border: 1px solid var(--shade-60); backdrop-filter: blur(12px); box-shadow: 0 12px 40px color-mix(in srgb, var(--ink) 67%, transparent); min-width: 220px; max-width: 300px; }
+.peek-card svg { flex-shrink: 0; color: var(--shade-35); }
+.peek-card div { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.peek-card strong { font: 600 12px/1.3 var(--font-sans); }
+.peek-card small { font: 400 11px/1.4 var(--font-sans); color: var(--shade-20); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 220px; }
+@keyframes peekIn { from { transform: translateY(120%); opacity: 0; } to { transform: none; opacity: 1; } }
+@keyframes peekOut { from { transform: none; opacity: 1; } to { transform: translateY(120%); opacity: 0; } }
+
+/* Share your number: the accept sheet shown inside the phone when someone nearby offers their number. */
+.share-request-sheet { position:absolute; inset:0; z-index:60; display:grid; place-items:end center; padding:14px; background:color-mix(in srgb, var(--ink) 40%, transparent); pointer-events:auto; }
+.share-request-sheet > div { width:100%; padding:20px 18px 16px; border-radius:22px; background:var(--panel,var(--paper)); color:var(--ink,var(--shade-90)); border:1px solid var(--line,var(--shade-15)); box-shadow:0 18px 50px color-mix(in srgb, var(--ink) 40%, transparent); }
+.share-request-sheet h2 { font-size:17px; line-height:1.3; margin:10px 0 4px; overflow-wrap:anywhere; }
+.share-request-sheet .share-request-number { font-family:var(--font-mono); font-size:15px; margin:0 0 14px; }
+.share-request-sheet label { display:block; font-size:11px; color:var(--ink-muted,var(--shade-60)); margin-bottom:10px; }
+.share-request-sheet label input:not([type=checkbox]) { display:block; width:100%; margin-top:5px; padding:10px 12px; border-radius:12px; border:1px solid var(--line,var(--shade-15)); background:var(--field,var(--shade-5)); color:var(--ink,var(--shade-90)); font:inherit; font-size:13px; }
+.share-request-sheet .share-request-back { display:flex; align-items:center; gap:8px; color:var(--ink,var(--shade-90)); font-size:12px; }
+.share-request-sheet .share-request-timer { font-size:10px; color:var(--ink-muted,var(--shade-60)); margin:4px 0 12px; }
+.share-request-sheet .share-request-actions { display:flex; justify-content:space-between; align-items:center; gap:10px; }
+.share-request-sheet .share-request-accept { padding:10px 16px; border-radius:999px; border:0; background:var(--action); color:var(--on-action); font-weight:600; }
+.share-request-sheet .share-request-accept:disabled { opacity:.5; }

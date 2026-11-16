@@ -16,8 +16,12 @@ function Blocking.set(source, payload)
     payload = type(payload) == 'table' and payload or {}
     local number, validationError = PhoneValidation.phoneNumber(payload.number)
     if not number then return PhoneError(PhoneConstants.Errors.INVALID_INPUT, validationError) end
-    if type(payload.blocked) ~= 'boolean' then return PhoneError(PhoneConstants.Errors.INVALID_INPUT, 'blocked must be a boolean') end
-    if number == device.phoneNumber then return PhoneError(PhoneConstants.Errors.INVALID_INPUT, 'You cannot block your own number') end
+    if type(payload.blocked) ~= 'boolean' then
+        return PhoneError(PhoneConstants.Errors.INVALID_INPUT, 'blocked must be a boolean')
+    end
+    if number == device.phoneNumber then
+        return PhoneError(PhoneConstants.Errors.INVALID_INPUT, 'You cannot block your own number')
+    end
     local target = KoraPhone.Repositories.Phones.findByNumber(number)
     if not target then return PhoneError(PhoneConstants.Errors.NOT_FOUND, 'That number was not found') end
     KoraPhone.Repositories.Blocks.set(device.id, target.id, payload.blocked)

@@ -1,25 +1,8 @@
-local function registerAsync(name, rateKey, handler)
-    Kora.callback.register('kora_phone:server:' .. name, function(source, payload)
-        if not KoraPhone.RateLimits.consume(source, rateKey) then
-            return PhoneError(PhoneConstants.Errors.RATE_LIMITED, 'Too many requests')
-        end
-        local response = promise.new()
-        local replied = false
-        local function reply(result)
-            if replied then return end
-            replied = true
-            response:resolve(result or PhoneError(PhoneConstants.Errors.INTERNAL, 'Empty service response'))
-        end
-        local ok, err = xpcall(function() handler(source, payload, reply) end, debug.traceback)
-        if not ok then
-            Kora.logging.error('media.callback_failed','Media callback failed',{callback=tostring(name),error=tostring(err)})
-            reply(PhoneError(PhoneConstants.Errors.INTERNAL, 'Request failed'))
-        end
-        return Citizen.Await(response)
-    end)
-end
+local bind = KoraPhone.Routes.handle
+local Media = KoraPhone.Services.Media
 
-registerAsync('requestMediaUpload', 'mediaUpload', KoraPhone.Services.Media.requestUpload)
-registerAsync('completeMediaUpload', 'mediaUpload', KoraPhone.Services.Media.completeUpload)
-KoraPhone.registerCallback('getGallery', 'read', KoraPhone.Services.Media.list)
-registerAsync('deleteMedia', 'mutation', KoraPhone.Services.Media.delete)
+-- Uploads and deletes answer later through `reply`, so they bind as async routes.
+bind('requestMediaUpload', Media.requestUpload, { async = true })
+bind('completeMediaUpload', Media.completeUpload, { async = true })
+bind('getGallery', Media.list)
+bind('deleteMedia', Media.delete, { async = true })

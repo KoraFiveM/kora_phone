@@ -15,6 +15,7 @@ local script = arg and arg[0] or 'tests/share.test.lua'
 local root = script:gsub('[\\/]tests[\\/]share%.test%.lua$', '')
 if root == script then root = '.' end
 
+dofile(root .. '/tests/config_shim.lua')
 dofile(root .. '/config/shared.lua')
 dofile(root .. '/config/handsets.lua')
 dofile(root .. '/shared/constants.lua')

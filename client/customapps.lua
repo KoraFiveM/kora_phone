@@ -13,117 +13,14 @@ KoraPhone = KoraPhone or {}
 -- resourceName/appName/settings) by adding web/public/compat.js as a script
 -- tag -- see that file. Full UI component libraries (popups, pickers, maps)
 -- are not reproduced; that's a much bigger, phone-specific surface.
-local apps = {}
-
--- Job gating is a display filter, same trust level as the rest of this NUI --
--- it decides what the App Store SHOWS, not a security boundary. Whatever the
--- app actually lets you do once open is still whatever its own resource
--- enforces server-side.
-local function jobMatches(job)
-    if job == nil then return true end
-    local player = exports.kora_core:getPlayerData()
-    local current = player and player.job
-    if not current then return false end
-    local function matchesOne(spec)
-        if type(spec) == 'string' then return current.name == spec end
-        if type(spec) ~= 'table' then return false end
-        if current.name ~= spec.name then return false end
-        if spec.grade == nil then return true end
-        local grade = type(current.grade) == 'table' and (current.grade.level and current.grade.level - 1 or current.grade.name) or current.grade
-        return type(grade) == 'number' and grade >= spec.grade
-    end
-    if type(job) == 'table' and job[1] ~= nil then
-        for _, spec in ipairs(job) do if matchesOne(spec) then return true end end
-        return false
-    end
-    return matchesOne(job)
-end
-
-local function list()
-    local result = {}
-    for _, app in pairs(apps) do
-        if jobMatches(app.job) then
-            result[#result + 1] = {
-                identifier = app.identifier, name = app.name, description = app.description,
-                resource = app.resource, ui = app.ui, icon = app.icon, defaultApp = app.defaultApp,
-                price = app.price,
-            }
-        end
-    end
-    return result
-end
-
--- A couple of ecosystems (e.g. High Phone's "@resource/path" convention) fold
--- the resource name into the ui path itself; our own frontend re-qualifies a
--- bare relative path against `resource` on its own, so a redundant prefix here
--- would double it up.
-local function stripResourcePrefix(ui, resource)
-    ui = ui:gsub('^@', '')
-    local prefix = resource .. '/'
-    if not ui:find('^https?://') and ui:sub(1, #prefix) == prefix then ui = ui:sub(#prefix + 1) end
-    return ui
-end
-
--- A function handed over through an export arrives as a callable funcref
--- table, not a Lua function, so lifecycle hooks are accepted when callable.
-local function callable(value)
-    if type(value) == 'function' then return value end
-    if type(value) ~= 'table' then return nil end
-    if type(rawget(value, '__cfx_functionReference')) == 'string' then return value end
-    local mt = getmetatable(value)
-    return type(mt) == 'table' and mt.__call ~= nil and value or nil
-end
+local Registry = KoraPhone.SDK.ClientRegistry
 
 local function register(app)
-    if type(app) ~= 'table' or type(app.identifier) ~= 'string' or app.identifier == '' then
-        return false, 'INVALID_APP'
-    end
-    if type(app.ui) ~= 'string' or app.ui == '' then return false, 'INVALID_UI' end
-    local resource = type(app.resource) == 'string' and app.resource ~= '' and app.resource or GetInvokingResource() or 'unknown'
-    apps[app.identifier] = {
-        identifier = app.identifier,
-        name = type(app.name) == 'string' and app.name ~= '' and app.name or app.identifier,
-        description = type(app.description) == 'string' and app.description or '',
-        resource = resource,
-        ui = stripResourcePrefix(app.ui, resource),
-        icon = type(app.icon) == 'string' and app.icon or nil,
-        defaultApp = app.defaultApp == true,
-        job = app.job,
-        -- Purchases aren't charged or persisted anywhere -- this is a display-only
-        -- price tag until a real payment/entitlement flow is asked for. Skipped
-        -- rather than half-built, since a price nobody actually collects is worse
-        -- than no price shown at all.
-        price = tonumber(app.price),
-        lifecycle = {
-            onOpen = callable(app.onOpen),
-            onClose = callable(app.onClose),
-            onInstall = callable(app.onInstall),
-            onDelete = callable(app.onDelete),
-        },
-    }
-    SendNUIMessage({ type = 'customRegistry' })
-    return true
+    return Registry.register(app, GetInvokingResource())
 end
 
-local function unregister(identifier)
-    if type(identifier) == 'table' then identifier = identifier.identifier or identifier.name end
-    if type(identifier) ~= 'string' or not apps[identifier] then return false, 'NOT_FOUND' end
-    apps[identifier] = nil
-    SendNUIMessage({ type = 'customRegistry' })
-    return true
-end
-
-local function sendMessage(identifier, data)
-    if type(identifier) ~= 'string' or not apps[identifier] then return false, 'NOT_FOUND' end
-    SendNUIMessage({ type = 'customMessage', app = identifier, data = data })
-    return true
-end
-
-local function fire(identifier, event)
-    local app = apps[identifier]
-    local callback = app and app.lifecycle[event]
-    if callback then callback() end
-end
+local unregister = Registry.unregister
+local sendMessage = Registry.sendMessage
 
 -- A few ecosystems also ship a general "send a phone notification" export, separate from
 -- the app-registration/messaging contract, that real custom apps call directly (e.g. to
@@ -222,9 +119,7 @@ alias('high-phone', 'sendAppNui', sendMessage)
 alias('high-phone', 'sendNotification', sendNotification)
 
 AddEventHandler('onResourceStop', function(resource)
-    for identifier, app in pairs(apps) do
-        if app.resource == resource then apps[identifier] = nil end
-    end
+    Registry.removeByResource(resource)
 end)
 
-KoraPhone.CustomApps = { List = list, Fire = fire }
+KoraPhone.CustomApps = { List = Registry.list, Fire = Registry.fire }

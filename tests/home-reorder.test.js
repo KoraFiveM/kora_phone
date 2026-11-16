@@ -9,6 +9,10 @@ const path = require("node:path");
 
 const root = path.resolve(process.argv[2] || path.join(__dirname, ".."));
 const read = file => fs.readFileSync(path.join(root, file), "utf8");
+const readApi = () => { // the web API layer is split across web/src/api/**
+  const walk = (dir) => fs.readdirSync(path.join(root, dir), { withFileTypes: true }).flatMap(e => e.isDirectory() ? walk(`${dir}/${e.name}`) : e.name.endsWith(".ts") ? [read(`${dir}/${e.name}`)] : []);
+  return [read("web/src/api.ts"), ...walk("web/src/api")].join("\n");
+};
 
 let ts;
 try { ts = require(path.join(root, "web/node_modules/typescript")); }
@@ -28,17 +32,22 @@ assert.deepEqual(moveItem(["a", "b"], "a", "a"), ["a", "b"], "dropping on itself
 assert.deepEqual(moveItem(["a", "b"], "a", "z"), ["a", "b"], "unknown target changes nothing");
 assert.ok(LONG_PRESS_MS >= 300 && LONG_PRESS_MS <= 800 && MOVE_TOLERANCE > 0, "long-press timing is sane");
 
-const app = read("web/src/App.tsx");
-assert.doesNotMatch(app, /onDragStart|onDragOver|onDrop|DragEvent/, "arranging must not rely on HTML5 drag events");
-assert.match(app, /onPointerDown=\{e => beginPress\(e, item\.id, 'grid'\)\}/, "grid icons start arranging from pointer events");
-assert.match(app, /onPointerDown=\{e => beginPress\(e, id, 'dock'\)\}/, "dock icons can be arranged too");
-assert.match(app, /Done<\/button>/, "arranging has a Done button");
-assert.match(app, /reorderAllowed &&/, "the arrange control follows Config.HomeScreen.allowReorder");
-assert.match(read("web/src/api.ts"), /homeReorder:raw\.features\?\.homeReorder!==false/, "bootstrap carries the server option");
+const home = [read("web/src/core/home/HomeScreen.tsx"), read("web/src/core/home/useHomeReorder.ts")].join("\n");
+assert.doesNotMatch(home, /onDragStart|onDragOver|onDrop|DragEvent/, "arranging must not rely on HTML5 drag events");
+assert.match(home, /onPointerDown=\{e => reorder\.beginPress\(e, id, dock \? 'dock' : 'grid'\)\}/, "grid and dock icons start arranging from pointer events");
+assert.match(home, /addEventListener\('pointermove'/, "arranging tracks the pointer");
+assert.match(home, /Done<\/button>/, "arranging has a Done button");
+assert.match(home, /reorderAllowed &&/, "the arrange control follows Config.HomeScreen.allowReorder");
+assert.match(readApi(), /homeReorder: features\?\.homeReorder !== false/, "bootstrap carries the server option");
 
 // shared/validation.lua keeps its own copy of the optional apps; it must match the catalog.
 const catalog = read("web/src/catalog.ts").match(/optionalApps = \[([^\]]*)\]/)[1].match(/'([a-z]+)'/g).map(v => v.slice(1, -1)).sort();
-const server = read("shared/validation.lua").match(/OPTIONAL_APPS = \{([^}]*)\}/)[1].match(/([a-z]+)=true/g).map(v => v.split("=")[0]).sort();
+const server = read("shared/validation.lua").match(/OPTIONAL_APPS = \{([^}]*)\}/)[1].match(/([a-z]+)\s*=\s*true/g).map(v => v.split("=")[0].trim()).sort();
 assert.deepEqual(server, catalog, "server OPTIONAL_APPS matches web/src/catalog.ts optionalApps");
+
+// The app registry (core/appRegistry.ts) is the one list of apps: its optional entries are the catalog.
+const registry = read("web/src/core/appRegistry.ts");
+const registered = [...registry.matchAll(/entry\('([a-z]+)',[^\n]*optional: \{/g)].map(m => m[1]).sort();
+assert.deepEqual(registered, catalog, "optional apps in core/appRegistry.ts match web/src/catalog.ts");
 
 console.log("PASS home-reorder");

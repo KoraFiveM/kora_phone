@@ -42,51 +42,14 @@ RegisterNetEvent('kora_phone:client:wallet:shown', function(card)
             parts[#parts + 1] = licence.label:sub(1, 30) .. (licence.valid and ' ✓' or ' ✗')
         end
     end
-    local body = ('Born %s · %s'):format(tostring(card.birthdate):sub(1, 20), table.concat(parts, ', '))
-    Notifications.Push({ title = card.name:sub(1, 45) .. ' showed you their ID', body = body, message = body, app = 'banking', urgent = true })
+    local body = Kora.lang('wallet.born', tostring(card.birthdate):sub(1, 20), table.concat(parts, ', '))
+    Notifications.Push({
+        title = Kora.lang('wallet.showed_id', card.name:sub(1, 45)),
+        body = body,
+        message = body,
+        app = 'banking',
+        urgent = true,
+    })
 end)
-
--- Named testphonenotify: kora_lib-playground registers a plain /testnotify,
--- and whichever resource starts last would silently own the shared name.
-RegisterCommand('testphonenotify', function(_, args)
-    local kind = args[1]
-    local samples = {
-        { title = 'Jules Chen', body = 'Are you still on for Pillbox tonight?', app = 'messages' },
-        { title = 'Missed call', body = '555-0109', app = 'phone' },
-        { title = 'Wallet', body = 'You received $2,500 from Maya.', app = 'banking' },
-        { title = 'New Mail', body = 'Your vehicle registration is ready.', app = 'mail' },
-        { title = 'Pulse', body = 'Kai posted a new update.', app = 'social' },
-        { title = 'Market', body = 'Your listing got a reply.', app = 'classifieds' },
-        { title = 'Maps', body = 'Waypoint set to Pillbox Medical.', app = 'gps' },
-        { title = 'Weather', body = 'Clear skies over Los Santos.', app = 'weather' },
-        { title = 'Flash', body = 'Someone liked your clip.', app = 'flash' },
-        { title = 'Clock', body = 'Alarm: Wake up.', app = 'clock' },
-        { title = 'System', body = 'Phone connected.', app = 'system' },
-    }
-    if kind == 'sms' then
-        TriggerEvent('kora_phone:client:messages:new', { id = 0, conversationId = 0, senderNumber = '5550109999', body = 'Test text from /testphonenotify', isMine = 0 })
-        return
-    end
-    if kind == 'all' then
-        for i, sample in ipairs(samples) do
-            SetTimeout((i - 1) * 800, function()
-                Notifications.Push({ title = sample.title, body = sample.body, message = sample.body, app = sample.app })
-            end)
-        end
-        return
-    end
-    if kind then
-        for _, sample in ipairs(samples) do
-            if sample.app == kind then
-                Notifications.Push({ title = sample.title, body = sample.body, message = sample.body, app = sample.app })
-                return
-            end
-        end
-        print('[kora_phone] /testphonenotify: unknown app "' .. kind .. '"')
-        return
-    end
-    Notifications.Push({ title = samples[1].title, body = samples[1].body, message = samples[1].body, app = samples[1].app })
-    print('[kora_phone] /testphonenotify [all|sms|messages|phone|banking|mail|social|classifieds|gps|weather|flash|clock|system]')
-end, false)
 
 KoraPhone.Notifications = Notifications

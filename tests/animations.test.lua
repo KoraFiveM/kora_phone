@@ -187,5 +187,79 @@ test("resource stop cleans up", function()
     equal(livingProps(), 0)
 end)
 
+-- Attach bone: Config.Animation.bone is text. Digits mean a bone index, anything else a bone name.
+local function boneCalls(bone)
+    setup({ bone = bone })
+    local calls = {}
+    _G.GetPedBoneIndex = function(_, index) calls[#calls + 1] = { "index", index }; return "idx:" .. tostring(index) end
+    _G.GetEntityBoneIndexByName = function(_, name) calls[#calls + 1] = { "name", name }; return "name:" .. name end
+    KoraPhone.Animations.Start()
+    return calls, props[1]
+end
+
+test("a numeric bone string attaches by index", function()
+    local calls, prop = boneCalls("28422")
+    equal(#calls, 1)
+    equal(calls[1][1], "index")
+    equal(calls[1][2], 28422)
+    equal(math.type(calls[1][2]), "integer")
+    equal(prop.bone, "idx:28422")
+end)
+
+test("a numeric bone value attaches by index", function()
+    local calls, prop = boneCalls(28422)
+    equal(#calls, 1)
+    equal(calls[1][1], "index")
+    equal(calls[1][2], 28422)
+    equal(prop.bone, "idx:28422")
+end)
+
+test("a bone name attaches by name", function()
+    local calls, prop = boneCalls("PH_R_Hand")
+    equal(#calls, 1)
+    equal(calls[1][1], "name")
+    equal(calls[1][2], "PH_R_Hand")
+    equal(prop.bone, "name:PH_R_Hand")
+end)
+
+-- Schema: tests/config_shim.lua does NOT validate, so this loads the REAL kora_lib consumer
+-- ([pre]/kora_lib/modules/config/consumer.lua) with stubbed natives and runs config/shared.lua through it.
+-- The bone field's default is swapped for each candidate; define() asserts on an invalid default.
+local function defineWithBone(candidate)
+    local saved = { Kora = _G.Kora, Config = _G.Config, name = _G.GetCurrentResourceName, dup = _G.IsDuplicityVersion,
+        load = _G.LoadResourceFile }
+    _G.GetCurrentResourceName = function() return "kora_phone" end
+    _G.IsDuplicityVersion = function() return true end
+    _G.LoadResourceFile = function() return nil end
+    local ok, err = pcall(function()
+        local consumer = assert(loadfile(root .. "/../../[pre]/kora_lib/modules/config/consumer.lua"))
+        local real = consumer()({ config_register = function() return true end })
+        local wrapped = setmetatable({}, { __index = real })
+        wrapped.string = function(value, options)
+            if options and options.label == "Attach bone (index or name)" then value = candidate end
+            return real.string(value, options)
+        end
+        _G.Kora = { config = wrapped }
+        dofile(root .. "/config/shared.lua")
+        assert(_G.Config.Animation.bone == candidate, "bone default was not applied")
+    end)
+    _G.Kora, _G.Config, _G.GetCurrentResourceName, _G.IsDuplicityVersion, _G.LoadResourceFile =
+        saved.Kora, saved.Config, saved.name, saved.dup, saved.load
+    return ok, err
+end
+
+test("config schema (real kora_lib validator) accepts '28422' and 'PH_R_Hand'", function()
+    local ok, err = defineWithBone("28422")
+    assert(ok, tostring(err))
+    ok, err = defineWithBone("PH_R_Hand")
+    assert(ok, tostring(err))
+end)
+
+test("config schema (real kora_lib validator) rejects 'bad bone!'", function()
+    local ok, err = defineWithBone("bad bone!")
+    assert(not ok, "expected the schema to reject 'bad bone!'")
+    assert(tostring(err):find("format", 1, true) or tostring(err):find("nvalid", 1, true), tostring(err))
+end)
+
 io.write(("animations: %d passed, %d failed\n"):format(passed, failed))
 os.exit(failed == 0 and 0 or 1)

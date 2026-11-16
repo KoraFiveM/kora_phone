@@ -1,0 +1,148 @@
+/*
+ * Colour scheme. kora_theme owns every colour: theme.js sets HSL triplets (--background, --foreground, --primary,
+ * --border, ...) on :root, and the phone only ever derives from them. Handsets define structure, never palette.
+ *
+ * Appearance: kora_theme ships one palette (dark by default) and no light mode, so the light appearance swaps
+ * the foreground and background roles. Everything else is a mix of those two roles plus the primary colour, so
+ * a server (or a player's /theme colour) restyles both appearances. Roles used by the CSS:
+ *   --ink / --paper   text-side and surface-side colours of the active appearance
+ *   --shade-N         a neutral ramp: N percent ink mixed into paper (the dim-to-bright steps of the UI)
+ *   --panel --field --line --ink-muted --brand --on-brand --action --on-action   cards, inputs, borders, secondary text, accent
+ */
+:root, :is(.phone-screen, .appearance-swatch).appearance-dark {
+  --ink: hsl(var(--foreground));
+  --paper: hsl(var(--background));
+  --panel: hsl(var(--card));
+  --field: hsl(var(--surface-raised));
+  --line: hsl(var(--border));
+  --ink-muted: hsl(var(--muted-foreground));
+  --brand: hsl(var(--primary));
+  --on-brand: hsl(var(--primary-foreground));
+  --action: var(--brand);
+  --on-action: var(--on-brand);
+}
+:is(.phone-screen, .appearance-swatch).appearance-light {
+  --ink: hsl(var(--background));
+  --paper: hsl(var(--foreground));
+  --panel: color-mix(in srgb, var(--ink) 4%, var(--paper));
+  --field: color-mix(in srgb, var(--ink) 8%, var(--paper));
+  --line: color-mix(in srgb, var(--ink) 16%, var(--paper));
+  --ink-muted: color-mix(in srgb, var(--ink) 62%, var(--paper));
+  --brand: color-mix(in srgb, hsl(var(--primary)) 72%, var(--ink));
+  --on-brand: hsl(var(--primary-foreground));
+  --action: var(--brand);
+  --on-action: var(--on-brand);
+}
+:is(.phone-screen, .appearance-swatch).appearance-dark { color-scheme: dark; }
+:is(.phone-screen, .appearance-swatch).appearance-light { color-scheme: light; }
+/* Declared on :root and .phone-screen so every consumer resolves them against its own --ink and --paper. */
+:root, .phone-screen, .appearance-swatch {
+  --shade-5: color-mix(in srgb, var(--ink) 5%, var(--paper));
+  --shade-10: color-mix(in srgb, var(--ink) 10%, var(--paper));
+  --shade-15: color-mix(in srgb, var(--ink) 15%, var(--paper));
+  --shade-20: color-mix(in srgb, var(--ink) 20%, var(--paper));
+  --shade-25: color-mix(in srgb, var(--ink) 25%, var(--paper));
+  --shade-30: color-mix(in srgb, var(--ink) 30%, var(--paper));
+  --shade-35: color-mix(in srgb, var(--ink) 35%, var(--paper));
+  --shade-40: color-mix(in srgb, var(--ink) 40%, var(--paper));
+  --shade-45: color-mix(in srgb, var(--ink) 45%, var(--paper));
+  --shade-50: color-mix(in srgb, var(--ink) 50%, var(--paper));
+  --shade-55: color-mix(in srgb, var(--ink) 55%, var(--paper));
+  --shade-60: color-mix(in srgb, var(--ink) 60%, var(--paper));
+  --shade-65: color-mix(in srgb, var(--ink) 65%, var(--paper));
+  --shade-70: color-mix(in srgb, var(--ink) 70%, var(--paper));
+  --shade-75: color-mix(in srgb, var(--ink) 75%, var(--paper));
+  --shade-80: color-mix(in srgb, var(--ink) 80%, var(--paper));
+  --shade-85: color-mix(in srgb, var(--ink) 85%, var(--paper));
+  --shade-90: color-mix(in srgb, var(--ink) 90%, var(--paper));
+  --shade-95: color-mix(in srgb, var(--ink) 95%, var(--paper));
+}
+/*
+ * Wallpapers. A wallpaper is a scene (--scene) plus the ink that reads on it (--wp-ink). Light scenes (orbit, slate)
+ * use the dark token and dark scenes (midnight, ember) the light token whatever the appearance is; the default,
+ * plain and photo wallpapers follow the appearance. Each handset tints its default scene (--handset-wallpaper)
+ * with the primary colour from a different corner.
+ */
+.phone-screen { --scene: var(--paper); --wp-ink: var(--ink); --wp-ink-muted: var(--ink-muted); }
+.phone-screen.wallpaper-kora_core { --scene: var(--handset-wallpaper, var(--paper)); }
+.phone-screen.wallpaper-custom { --scene: hsl(var(--background)); }
+.phone-screen.wallpaper-orbit { --scene: radial-gradient(ellipse at 95% 25%, color-mix(in srgb, hsl(var(--warning)) 22%, transparent), transparent 65%), linear-gradient(180deg, hsl(var(--foreground)), color-mix(in srgb, hsl(var(--foreground)) 88%, hsl(var(--warning)))); }
+.phone-screen.wallpaper-midnight { --scene: linear-gradient(180deg, color-mix(in srgb, hsl(var(--armour)) 32%, hsl(var(--background))), hsl(var(--background))); }
+.phone-screen.wallpaper-slate { --scene: linear-gradient(180deg, hsl(var(--foreground)), color-mix(in srgb, hsl(var(--foreground)) 55%, hsl(var(--muted-foreground)))); }
+.phone-screen.wallpaper-ember { --scene: linear-gradient(180deg, color-mix(in srgb, hsl(var(--warning)) 42%, hsl(var(--background))), hsl(var(--background))); }
+.phone-screen:is(.wallpaper-orbit, .wallpaper-slate) { --wp-ink: hsl(var(--background)); --wp-ink-muted: color-mix(in srgb, hsl(var(--background)) 70%, hsl(var(--foreground))); }
+.phone-screen:is(.wallpaper-midnight, .wallpaper-ember, .wallpaper-custom) { --wp-ink: hsl(var(--foreground)); --wp-ink-muted: color-mix(in srgb, hsl(var(--foreground)) 75%, hsl(var(--background))); }
+.phone-screen.show-wallpaper { background: var(--scene); }
+.phone-screen:is(.wallpaper-orbit, .wallpaper-midnight, .wallpaper-slate, .wallpaper-ember, .wallpaper-plain) .setup-screen { background: var(--scene); }
+.phone-screen.wallpaper-custom .custom-wallpaper { opacity: .3; }
+.phone-screen.show-wallpaper :is(.status-bar, .status-bar span, .home-screen .dot-clock, .app-icon:not(.dock-icon) small, .home-top button, .system-nav button, .lock-orbit span) { color: var(--wp-ink); }
+.phone-screen.show-wallpaper :is(.home-top .eyebrow, .home-section) { color: var(--wp-ink-muted); }
+.phone-screen.show-wallpaper .lock-screen :is(.dot-clock, p, svg, .lock-brand, .lock-bottom) { --ink: var(--wp-ink); --ink-muted: var(--wp-ink-muted); }
+.phone-screen.wallpaper-kora_core .lock-orbit span { color: var(--brand); }
+.phone.handset-standard .phone-screen { --handset-wallpaper: var(--paper); }
+.phone.handset-flip .phone-screen { --handset-wallpaper: radial-gradient(ellipse at top right, color-mix(in srgb, hsl(var(--primary)) 24%, transparent), transparent 65%), var(--paper); }
+.phone.handset-fold .phone-screen { --handset-wallpaper: radial-gradient(ellipse at top left, color-mix(in srgb, hsl(var(--primary)) 24%, transparent), transparent 65%), var(--paper); }
+
+.phone.handset-standard .phone-screen.show-wallpaper .home-screen { color:var(--wp-ink); }
+.phone .phone-screen .handset-panel {
+  --hs-line:var(--line); --hs-muted:var(--ink-muted);
+  --hs-surface:var(--panel); --hs-accent:var(--ink);
+}
+.phone .phone-screen .handset-panel[data-view]:not([data-view=all]) .hs-kicker,
+.phone .phone-screen .handset-panel[data-view]:not([data-view=all]) .hs-header h2,
+.phone .phone-screen .handset-panel[data-view]:not([data-view=all]) .hs-header p { display:none; }
+.phone .phone-screen .handset-panel[data-view]:not([data-view=all]) .hs-header { padding:0 0 8px; }
+.phone .phone-screen .handset-panel[data-view]:not([data-view=all]) .hs-header > div { justify-content:flex-end; margin:0; }
+.phone .phone-screen .handset-panel[data-view]:not([data-view=all]) .hs-grid { grid-template-columns:minmax(0,1fr); }
+.phone .phone-screen .handset-panel[data-view=connections] .hs-card:not([data-section=connections]),
+.phone .phone-screen .handset-panel[data-view=cloud] .hs-card:not([data-section=cloud]),
+.phone .phone-screen .handset-panel[data-view=security] .hs-card:not([data-section=security]),
+.phone .phone-screen .handset-panel[data-view=device] .hs-card:not([data-section=device]) { display:none; }
+.phone .phone-screen .hs-card { color:var(--ink); border-color:var(--line); background:var(--panel); }
+.phone .phone-screen :is(.hs-number,.hs-header h2) { color:var(--ink); }
+.phone .phone-screen .hs-primary { background:var(--action); color:var(--on-action); border-color:transparent; }
+.phone.handset-flip :is(.home-screen,.lock-screen),
+.phone.handset-fold :is(.home-screen,.lock-screen) { color:var(--wp-ink,var(--ink)); }
+.phone.handset-flip :is(.handset-clock,.home-top .eyebrow,.home-section),
+.phone.handset-fold :is(.handset-clock,.home-top .eyebrow,.home-section) { color:var(--wp-ink,var(--ink)); }
+.phone.handset-flip :is(.city-widget,.settings-widget,.home-note),
+.phone.handset-fold :is(.city-widget,.settings-widget,.home-note) { color:var(--ink); background:var(--panel); border:1px solid var(--line); }
+.phone.handset-flip :is(.city-widget span,.home-note small),
+.phone.handset-fold :is(.city-widget span,.home-note small) { color:var(--ink-muted); }
+.phone.handset-flip .app-icon > span,
+.phone.handset-fold .app-icon > span { color:var(--ink); background:var(--field); border:1px solid var(--line); box-shadow:none; }
+.phone.handset-flip .dock .app-icon svg,
+.phone.handset-fold .dock .app-icon svg { color:inherit; }
+.phone.handset-flip .phone-screen .dock .app-icon > span,
+.phone.handset-fold .phone-screen .dock .app-icon > span { color:var(--ink); background:var(--field); border-color:var(--line); }
+.phone:is(.handset-flip,.handset-fold) .phone-screen.icons-circle .app-icon > span { border-radius:50%; }
+.phone:is(.handset-flip,.handset-fold) .phone-screen.icons-squircle .app-icon > span { border-radius:16px; }
+.phone:is(.handset-flip,.handset-fold) .phone-screen.icons-outline .app-icon > span { background:transparent; border:1px solid var(--ink); color:var(--ink); }
+.phone:is(.handset-flip,.handset-fold) .phone-screen.icons-solid .app-icon > span { background:var(--ink); border-color:var(--ink); color:var(--paper); }
+.phone.handset-flip .app-icon small,
+.phone.handset-fold .app-icon small { color:var(--wp-ink,var(--ink)); }
+.phone.handset-flip .dock,
+.phone.handset-fold .dock { background:var(--panel); border-color:var(--line); }
+.phone.handset-flip .system-nav button,
+.phone.handset-fold .system-nav button { color:var(--ink); }
+.phone.handset-flip .home-indicator span,
+.phone.handset-fold .home-indicator span { background:var(--ink); }
+.phone.handset-flip .cover-display .handset-clock { color:hsl(var(--foreground)); }
+.phone.handset-flip .cover-display p { color:hsl(var(--foreground)); }
+.phone .phone-screen .call-screen { background:var(--paper); color:var(--ink); }
+.phone .phone-screen .notification-shade { background:var(--paper); color:var(--ink); }
+.phone .phone-screen .onboard,.phone .phone-screen .onboard-footer { background:var(--paper); color:var(--ink); }
+.phone .phone-screen .onboard :is(.onboard-top > span:last-child,.onboard-kicker,.onboard-heading p,.onboard-number > span,.onboard-number small,.onboard-field,.onboard-field-note,.onboard-skip,.onboard-footer-note,.onboard-ready > span,.onboard-summary dt) { color:var(--ink-muted); }
+.phone .phone-screen .onboard :is(.onboard-footer,.onboard-number,.onboard-summary > div,.onboard-back,.onboard-orbit,.onboard-orbit > div,.onboard-identity) { border-color:var(--line); }
+.phone .phone-screen .onboard-progress i { background:var(--line); }
+.phone .phone-screen .onboard-progress i.filled { background:var(--action); }
+.phone .phone-screen .onboard :is(.onboard-next,.onboard-ready > svg,.onboard-identity > span) { background:var(--action); color:var(--on-action); }
+.phone .phone-screen .onboard-identity { background:var(--panel); }
+.phone .phone-screen .onboard-identity small { color:var(--ink-muted); border-color:var(--line); }
+
+.chat-photo { display:block; width:100%; max-height:280px; object-fit:contain; border-radius:12px; margin-bottom:8px; }
+.chat-attachment { display:flex; align-items:center; gap:8px; padding:8px 0; }
+.chat-attachment img { width:70px; height:70px; object-fit:cover; border-radius:10px; }
+
+/* Appearance swatches (settings and setup previews) show a scheme outside the live .phone-screen. */
+.appearance-swatch { background:var(--paper); color:var(--ink); }

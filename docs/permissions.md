@@ -26,4 +26,5 @@ Other access rules (not ACE based):
 
 - Job actions need the configured job, minimum grade and duty state ([Banking and jobs](./banking-jobs.md)).
 - Business service counters can require `job` and `grade` from `Config.PhoneServices.shops`; private Wi-Fi can require `ownerJob`.
+- Third-party SDK apps are limited to the permissions in their registered manifest (`notify`, `storage`, `contacts.read`, `contacts.write`, plus `media.read`, `location` and `payments`, which are accepted but gate nothing yet). The phone checks them on the server for every `apps:*` call ([App SDK](./apps.md)).
 - Gateway calls to `kora_inventory` `PhoneItemTransaction` are accepted only from the resource named `kora_phone` (or the legacy `kora_phone-stevie`).

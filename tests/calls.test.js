@@ -6,7 +6,8 @@ const fs = require("node:fs");
 const path = require("node:path");
 
 const root = path.resolve(__dirname, "..");
-const read = (file) => fs.readFileSync(path.join(root, file), "utf8");
+const { resolveWeb } = require("./helpers/web-source");
+const read = (file) => fs.readFileSync(resolveWeb(root, file), "utf8");
 const service = read("server/services/calling.lua");
 const repository = read("server/repositories/calls.lua");
 const moduleSource = read("server/modules/call_callbacks.lua");
@@ -35,18 +36,25 @@ assert.doesNotMatch(service, /payload\.(?:citizenId|deviceId|source)/, "client i
 
 assert.match(client, /current\.id ~= call\.id/, "client must ignore cross-call state injection");
 assert.match(client, /Voice\.Leave\(\)/, "call end must leave voice routing");
-assert.match(voice, /GetResourceState\(name\) == 'started'/, "voice resource must be capability checked");
+assert.match(voice, /exports\.kora_voice\.getCallChannel/, "client voice reads call state from kora_voice");
+assert.doesNotMatch(voice, /GetResourceState|pma-voice/, "kora_voice is a hard dependency, no detection");
 assert.doesNotMatch(client, /Voice\.Join/, "clients must not assign themselves to call channels");
 assert.match(service, /Integrations\.Voice\.join/, "the server must assign voice call membership");
 assert.match(service, /Integrations\.Voice\.leave/, "the server must remove voice call membership");
-assert.match(serverVoice, /setPlayerCall/, "voice assignment must use the trusted server export");
-assert.match(serverVoice, /removePlayerFromCall/, "voice cleanup must use the trusted server export");
+assert.match(serverVoice, /exports\.kora_voice\.setPlayerCall/, "voice assignment must use the kora_voice trusted server export");
+assert.match(serverVoice, /exports\.kora_voice\.removePlayerFromCall/, "voice cleanup must use the kora_voice trusted server export");
+assert.doesNotMatch(serverVoice, /pma-voice/, "voice must not use pma-voice exports");
 assert.doesNotMatch(voice, /MumbleSetPlayerMuted/, "call mute must not misuse receive-side player muting");
+assert.match(voice, /exports\.kora_voice\.setCallMuted/, "call mute uses the kora_voice call-only mute export");
+assert.doesNotMatch(voice, /CALL_MUTE_UNSUPPORTED/, "mute is supported through kora_voice");
 
 console.log("PASS calls: server authority, persistence, routing and cleanup contracts verified");
 
 // Execute the actual Lua service/repositories with controlled yielding SQL.
 const { execFileSync } = require("node:child_process");
+// shared/routes.json rendered as a Lua table: the Lua harness has no JSON decoder.
+const luaRoutes = "{" + JSON.parse(fs.readFileSync(path.join(root, "shared/routes.json"), "utf8"))
+  .map(r => `{ nui = ${JSON.stringify(r.nui)}, server = ${JSON.stringify(r.server)}, rate = ${JSON.stringify(r.rate)}, app = ${r.app === null ? "nil" : JSON.stringify(r.app)} }`).join(",") + "}";
 const callingRegression = String.raw`local root = assert(arg[1], 'supply the phone resource root')
 local checks = 0
 local function equal(actual, expected, message)
@@ -61,15 +69,17 @@ end
 
 local function host()
     local state = { pending = {}, rows = {}, events = {}, timers = {}, callbacks = {}, handlers = {}, voice = {}, pause = nil }
-    KoraPhone, MySQL = {}, nil
+    KoraPhone = {}
+    dofile(root .. '/tests/config_shim.lua')
     dofile(root .. '/config/shared.lua')
+    dofile(root .. '/config/handsets.lua')
     dofile(root .. '/config/server.lua')
     dofile(root .. '/shared/constants.lua')
     dofile(root .. '/shared/validation.lua')
     local devices, byNumber, players = {}, {}, {}
     for i = 1, 4 do
         local citizenId, number = 'character-' .. i, '555000000' .. i
-        devices[citizenId] = { id = i, ownerCitizenId = citizenId, phoneNumber = number, isActive = 1 }
+        devices[citizenId] = { id = i, ownerCitizenId = citizenId, phoneNumber = number, isActive = 1, cellular = true }
         byNumber[number] = devices[citizenId]
         players[i] = { PlayerData = { source = i, citizenid = citizenId }, Functions = { GetItemByName = function() return { name = 'phone' } end } }
     end
@@ -77,6 +87,11 @@ local function host()
         GetPlayer = function(source) return players[source] end,
         CreateCallback = function(name, fn) state.callbacks[name] = fn end,
     } }
+    -- The session check asks the handset layer which device a player currently carries.
+    KoraPhone.Handsets = { selected = {}, clearReset = function() end, locked = function(source, fn, payload) return fn(source, payload) end, current = function(source)
+        local player = players[source]
+        return player and devices[player.PlayerData.citizenid] or nil
+    end }
     GetCurrentResourceName = function() return 'kora_phone-stevie' end
     GetNumResourceMetadata = function() return 0 end
     GetGameTimer = function() return 60000 end
@@ -90,14 +105,20 @@ local function host()
     end
     RegisterNetEvent = function() end
     local voice = {
-        setPlayerCall = function(source, channel) state.voice[#state.voice + 1] = { 'join', source, channel }; return true end,
-        removePlayerFromCall = function(source, channel) state.voice[#state.voice + 1] = { 'leave', source, channel }; return true end,
+        setPlayerCall = function(_, source, channel) state.voice[#state.voice + 1] = { 'join', source, channel }; return true end,
+        removePlayerFromCall = function(_, source, channel) state.voice[#state.voice + 1] = { 'leave', source, channel }; return true end,
     }
     exports = { kora_core = {
-        getPlayerData = function(_, src) return players[src] and players[src].PlayerData end,
+        getPlayer = function(_, src) return players[src] and players[src].PlayerData end,
+        getPlayerData = function(_, src, key)
+            local data = players[src] and players[src].PlayerData
+            if key == nil then return data end
+            return data and data[key]
+        end,
+        hasItem = function(_, src) return players[src] ~= nil end,
         getItemByName = function(_, src) return players[src] and { name = 'phone' } end,
         createCallback = function(_, name, fn) state.callbacks[name] = fn end,
-    }, ['pma-voice'] = voice }
+    }, kora_voice = voice }
     promise = { new = function()
         local p = {}
         p.resolve = function(_, value) p.done, p.value = true, value end
@@ -113,7 +134,7 @@ local function host()
     local function sql(method, query, params, cb)
         local phase
         if query:find('WHERE owner_citizenid', 1, true) then phase = 'caller'
-        elseif query:find('WHERE phone_number', 1, true) then phase = 'lookup'
+        elseif query:find('WHERE phone_number', 1, true) or query:find('WHERE s.phone_number', 1, true) then phase = 'lookup'
         elseif query:find('phone_blocks', 1, true) then phase = 'block'
         elseif query:find('INSERT INTO phone_calls', 1, true) then phase = 'create'
         elseif query:find('UPDATE phone_calls SET status', 1, true) then phase = 'transition'
@@ -140,25 +161,37 @@ local function host()
             state.pending[#state.pending + 1] = { phase = phase, complete = complete, params = params }
         else complete() end
     end
-    MySQL = {}
+    Kora = Kora or {}
+    -- Routes register through Kora.callback; the harness keeps the old (source, reply, payload) call shape.
+    Kora.callback = { register = function(name, fn)
+        state.callbacks[name] = function(source, reply, payload) reply(fn(source, payload)) end
+    end }
+    Kora.logging = Kora.logging or setmetatable({}, { __index = function(_, level)
+        return function(event, message, fields)
+            if os.getenv('KORA_TEST_LOG') and level == 'error' then io.stderr:write(('phone log %s: %s %s\n'):format(event, message, fields and tostring(fields.error) or '')) end
+        end
+    end })
+    LoadResourceFile = function() return 'routes' end
+    json = { decode = function() return ${luaRoutes} end }
+    Kora.sql = {}
     for _, method in ipairs({ 'single', 'scalar', 'update' }) do
-        MySQL[method] = { await = function(query, params)
+        Kora.sql[method] = function(query, params)
             local p = promise.new()
             sql(method, query, params, function(value, err) if err then p:reject(err) else p:resolve(value) end end)
             return Citizen.Await(p)
-        end }
+        end
     end
-    for _, file in ipairs({ 'server/integrations/kora_core.lua', 'server/repositories/phones.lua', 'server/repositories/blocks.lua',
+    for _, file in ipairs({ 'server/integrations/database.lua', 'server/integrations/kora_core.lua', 'server/repositories/phones.lua', 'server/repositories/blocks.lua',
         'server/repositories/calls.lua', 'server/services/phone.lua', 'server/rate_limits.lua', 'server/permissions.lua',
         'server/sessions.lua', 'server/integrations/voice.lua', 'server/services/calling.lua' }) do dofile(root .. '/' .. file) end
     local file = assert(io.open(root .. '/server/callbacks.lua')); local callbackSource = file:read('*a'); file:close()
     -- Use the real protected dispatcher, without registering unrelated phone services.
-    local boundary = assert(callbackSource:find("KoraPhone.registerCallback('getBootstrap'", 1, true))
+    local boundary = assert(callbackSource:find('local bind = Routes.handle', 1, true))
     assert(load(callbackSource:sub(1, boundary - 1), '@server/callbacks.lua'))()
     dofile(root .. '/server/modules/call_callbacks.lua')
     for i = 1, 4 do KoraPhone.Sessions.open(i, devices['character-' .. i]) end
     local mainFile = assert(io.open(root .. '/server/main.lua')); local mainSource = mainFile:read('*a'); mainFile:close()
-    local unloadStart = assert(mainSource:find("AddEventHandler('QBCore:Server:OnPlayerUnload'", 1, true))
+    local unloadStart = assert(mainSource:find("AddEventHandler('kora_core:server:playerUnloaded'", 1, true))
     local unloadEnd = assert(mainSource:find('\nend)', unloadStart, true))
     assert(load(mainSource:sub(unloadStart, unloadEnd + 4), '@server/main.lua:unload'))()
     function state.retire(src, dropped)
@@ -167,7 +200,7 @@ local function host()
             for _, fn in ipairs(state.handlers.playerDropped) do fn() end
             source = previous
         else
-            for _, fn in ipairs(state.handlers['QBCore:Server:OnPlayerUnload']) do fn(src) end
+            for _, fn in ipairs(state.handlers['kora_core:server:playerUnloaded']) do fn(src) end
         end
         -- Core logout removes its character after local unload handlers finish.
         players[src] = nil
@@ -195,9 +228,24 @@ local function host()
     return state
 end
 
+-- A request whose session moved mid-flight is refused either by the service (CONFLICT) or by the gateway's
+-- session-moved guard (FORBIDDEN); the side-effect checks that follow prove nothing was published.
+local function retired(response, message)
+    equal(response.ok, false, message)
+    assert(response.error.code == 'CONFLICT' or response.error.code == 'FORBIDDEN', message .. ': got ' .. tostring(response.error.code))
+    checks = checks + 1
+end
+
 local function conflict(response, message)
     equal(response.ok, false, message)
     equal(response.error.code, 'CONFLICT', message)
+end
+-- When a participant's session disappears mid-request, the gateway's session-changed guard answers
+-- FORBIDDEN before the service can answer CONFLICT. Either way the start is refused; the callers of this
+-- helper assert separately that no call was published.
+local function sessionRefused(response, message)
+    equal(response.ok, false, message)
+    assert(response.error.code == 'CONFLICT' or response.error.code == 'FORBIDDEN', message .. ': ' .. tostring(response.error.code))
 end
 
 for _, second in ipairs({ { 1, '5550000003' }, { 3, '5550000002' }, { 2, '5550000001' } }) do
@@ -286,7 +334,7 @@ for _, phase in ipairs({ 'caller', 'lookup', 'block', 'create' }) do
         h.retire(1)
         if replaced then h.reopen(1, 4) end
         h.complete(request)
-        conflict(request.result(), 'retired caller cannot continue after ' .. phase)
+        retired(request.result(), 'retired caller cannot continue after ' .. phase)
         equal(request.arity(), 1)
         equal(count(h.calling.activeById), 0)
         equal(h.calling.callByDevice[1], nil)
@@ -315,7 +363,7 @@ for _, participant in ipairs({ 1, 2 }) do
     local request = h.request('start', 1, { to = '5550000002' })
     h.retire(participant, true)
     h.complete(request)
-    conflict(request.result(), 'raw drop retires a pending participant')
+    sessionRefused(request.result(), 'raw drop retires a pending participant')
     equal(count(h.calling.activeById), 0)
     equal(count(h.calling.callByDevice), 0)
     equal(#h.events, 0)
@@ -327,7 +375,7 @@ local sessionlessRetired = host()
 KoraPhone.Sessions.close(1); sessionlessRetired.pause = 'create'
 local oldStart = sessionlessRetired.request('start', 1, { to = '5550000002' })
 sessionlessRetired.retire(1); sessionlessRetired.complete(oldStart)
-conflict(oldStart.result(), 'current-character check still protects an initially sessionless caller')
+sessionRefused(oldStart.result(), 'current-character check still protects an initially sessionless caller')
 equal(#sessionlessRetired.events, 0)
 for _, failure in ipairs({ 'false', 'error' }) do
     local h = host(); h.pause = 'create'
@@ -355,85 +403,130 @@ print(('PASS call-start retirement regression: %d checks'):format(checks - retir
 `;
 process.stdout.write(execFileSync(process.env.LUA || "lua", ["-", root], { input: callingRegression, encoding: "utf8" }));
 
-// Run the actual App callbacks with inert camera/RTC boundaries, never a camera device.
-async function videoConsentRegression() {
+// Run the real video code (web/src/core/useCallVideo.ts and web/src/gameVideo.ts) with inert camera/RTC boundaries.
+// The game camera is a canvas fed by the client (never getUserMedia), and video only starts after the server-issued
+// epoch is accepted through the host events.
+function loadTs(file, requires, globals = {}) {
   const ts = require(path.join(root, "web/node_modules/typescript"));
   const vm = require("node:vm");
-  const source = ts.createSourceFile("App.tsx", read("web/src/App.tsx"), ts.ScriptTarget.Latest, true, ts.ScriptKind.TSX);
-  const wanted = new Set(["stopVideo", "ensurePeer", "startVideo", "handleVideoSignal"]);
-  const declarations = [];
-  function visit(node) {
-    if (ts.isVariableDeclaration(node) && wanted.has(node.name.getText(source))) {
-      declarations.push(`const ${node.name.getText(source)} = ${node.initializer.getText(source)};`);
-      wanted.delete(node.name.getText(source));
-    }
-    ts.forEachChild(node, visit);
-  }
-  visit(source);
-  assert.equal(wanted.size, 0, "extract every actual video callback");
+  const out = ts.transpileModule(read(file), { compilerOptions: { target: ts.ScriptTarget.ES2022, module: ts.ModuleKind.CommonJS } }).outputText;
+  const module = { exports: {} };
+  vm.runInNewContext(out, { module, exports: module.exports, require: name => { if (!(name in requires)) throw new Error(`unexpected import ${name}`); return requires[name]; }, ...globals }, { filename: file });
+  return module.exports;
+}
+
+async function videoConsentRegression() {
   let checks = 0;
   const equal = (actual, expected, label) => { assert.deepEqual(actual, expected, label); checks++; };
-  const state = { cameraRequests: 0, videoOn: false, remoteVideo: false, stopped: 0, signals: [], connections: [] };
-  const track = { stop: () => { state.stopped++; } };
-  const stream = { getTracks: () => [track] };
-  const refs = { peerConnection: { current: undefined }, localStream: { current: undefined }, localVideoRef: { current: { srcObject: null } }, remoteVideoRef: { current: { srcObject: null } } };
+
+  // 1. The hook: signals, epochs, consent and cleanup, with GameVideo replaced by a recording stub.
+  const instances = [];
+  class FakeVideo {
+    constructor() { this.received = []; this.stopped = 0; this.paused = undefined; instances.push(this); }
+    async start(_ice, polite, onSignal, onStream) { if (FakeVideo.gate) await FakeVideo.gate; this.polite = polite; this.onSignal = onSignal; this.onStream = onStream; }
+    async receive(signal) { this.received.push(signal); }
+    setPaused(value) { this.paused = value; }
+    stop() { this.stopped++; }
+  }
+  const sent = [], nuiCalls = [], dispatched = [];
+  const hookModule = loadTs("web/src/core/useCallVideo.ts", {
+    react: { useCallback: fn => fn, useRef: value => ({ current: value }) },
+    "../api": { api: async () => ({}), isPreview: false, nui: async (route, body) => { nuiCalls.push([route, body]); return { ok: true }; }, sendSignal: value => { sent.push(value); } },
+    "../gameVideo": { GameVideo: FakeVideo },
+  });
+  const callRef = { current: { id: "call-1", status: "active", direction: "incoming" } };
+  const device = { video: { iceServers: [] } };
+  const video = hookModule.useCallVideo({ dispatch: action => dispatched.push(action), callRef, device, paused: false });
+  const offer = { id: "call-1", epoch: "e1", kind: "offer", sdp: { type: "offer", sdp: "remote-offer" } };
+
+  await video.handleVideoSignal(offer);
+  equal(instances.length, 0, "a remote offer alone cannot start the local camera");
+  video.videoEpoch.current = "e1";
+  await video.handleVideoSignal({ ...offer, id: "other-call" });
+  await video.handleVideoSignal({ ...offer, epoch: "stale" });
+  await video.handleVideoSignal(null);
+  equal(instances.length, 0, "signals for another call, a stale epoch or garbage are ignored");
+
+  let release; FakeVideo.gate = new Promise(resolve => { release = resolve; });
+  const starting = video.beginVideo();
+  await video.handleVideoSignal(offer);
+  release(); await starting; FakeVideo.gate = undefined;
+  equal(instances[0].received.length, 1, "a signal arriving while the session starts is queued, then delivered once");
+  equal(instances.length, 1, "an accepted epoch starts exactly one game video session");
+  equal(instances[0].polite, true, "the incoming side is the polite peer");
+  await video.beginVideo();
+  equal(instances.length, 1, "starting twice does not open a second camera");
+  await video.handleVideoSignal(offer);
+  equal(instances[0].received.length, 2, "once the session is ready a matching signal reaches the peer");
+  instances[0].onSignal({ kind: "answer", sdp: { type: "answer", sdp: "x" } });
+  equal(sent[0].id, "call-1"); equal(sent[0].epoch, "e1"); equal(sent[0].kind, "answer");
+
+  video.stopVideo();
+  equal(instances[0].stopped, 1, "stopping releases the game video session");
+  video.stopVideo(); equal(instances[0].stopped, 1, "cleanup releases the camera once");
+  equal(video.videoEpoch.current, undefined, "the epoch is cleared when video stops");
+  equal(dispatched.at(-1).patch.on, false);
+  await video.handleVideoSignal(offer); equal(instances.length, 1, "no signal restarts video after stop");
+  callRef.current = { id: "call-1", status: "ringing", direction: "incoming" };
+  video.videoEpoch.current = "e2"; await video.beginVideo();
+  equal(instances.length, 1, "video never begins before the call is active");
+
+  // 2. The real GameVideo: inert RTC/canvas/camera boundaries, perfect negotiation and teardown.
+  const state = { cameraCalls: [], signals: [], peers: [], streams: [], frames: 0 };
   class Peer {
-    constructor(config) { this.config = config; this.senders = []; this.ice = []; state.connections.push(this); }
-    getSenders() { return this.senders; }
-    addTrack(value, owner) { this.senders.push({ track: value, owner }); }
-    async setRemoteDescription(value) { this.remote = value; }
-    async setLocalDescription(value) { this.local = value; }
+    constructor(config) { this.config = config; this.senders = []; this.ice = []; this.signalingState = "stable"; state.peers.push(this); }
+    addTrack(track, owner) { this.senders.push({ track, owner }); }
+    async setRemoteDescription(value) { this.remote = value; this.remoteDescription = value; }
+    async setLocalDescription(value) { this.local = value; this.localDescription = { toJSON: () => value }; }
     async createAnswer() { return { type: "answer", sdp: "inert-answer" }; }
     async createOffer() { return { type: "offer", sdp: "inert-offer" }; }
     async addIceCandidate(value) { this.ice.push(value); }
     close() { this.closed = true; }
+    restartIce() {}
   }
-  const host = {
-    ...refs, device: { video: { iceServers: [] } }, callRef: { current: { id: "call-1" } },
-    useCallback: fn => fn, run: work => work(), RTCPeerConnection: Peer,
-    navigator: { mediaDevices: { getUserMedia: async options => { equal(options.video, true); state.cameraRequests++; return stream; } } },
-    setVideoOn: value => { state.videoOn = value; }, setRemoteVideo: value => { state.remoteVideo = value; },
-    sendSignal: value => { state.signals.push(value); },
+  class Stream { constructor() { this.tracks = []; } getTracks() { return this.tracks; } getVideoTracks() { return this.tracks; } addTrack(t) { this.tracks.push(t); } }
+  const track = { id: "t1", enabled: true, stop: () => { state.stopped = (state.stopped || 0) + 1; } };
+  const gl = new Proxy({}, { get: (_t, key) => key === "getShaderParameter" || key === "getProgramParameter" ? () => true : key === "getAttribLocation" ? () => 0 : key === "getExtension" ? () => null : () => ({}) });
+  const canvas = { addEventListener() {}, removeEventListener() {}, getContext: () => gl, captureStream: () => { const s = new Stream(); s.tracks.push(track); state.streams.push(s); return s; } };
+  const globals = {
+    window: { GetParentResourceName: () => "kora_phone", innerWidth: 360, innerHeight: 640 },
+    fetch: async (url, init) => { state.cameraCalls.push([url, JSON.parse(init.body)]); return { ok: true, json: async () => ({ ok: true }) }; },
+    crypto: { randomUUID: () => "camera-token" },
+    document: { createElement: () => canvas },
+    requestAnimationFrame: () => 1, cancelAnimationFrame: () => {},
+    RTCPeerConnection: Peer, MediaStream: Stream, setTimeout: () => 1, clearTimeout: () => {}, console,
+    Float32Array, Uint8Array, Promise, Error,
   };
-  const emitted = ts.transpileModule(declarations.join("\n") + "\n({ stopVideo, ensurePeer, startVideo, handleVideoSignal });", { compilerOptions: { target: ts.ScriptTarget.ES2022, module: ts.ModuleKind.None } }).outputText;
-  const callbacks = vm.runInNewContext(emitted, host, { filename: "App.tsx:video-callbacks" });
-  await callbacks.handleVideoSignal({ kind: "offer", sdp: { type: "offer", sdp: "remote-offer" } });
-  const connection = refs.peerConnection.current;
-  equal(state.cameraRequests, 0, "remote offer cannot request a previously permitted local camera");
-  equal(connection.senders.length, 0, "receive-only answer publishes no local track");
-  equal(refs.localStream.current, undefined);
-  equal(state.videoOn, false, "camera button remains Start video");
-  equal(state.signals[0].kind, "answer"); equal(state.signals[0].id, "call-1");
-  equal(connection.local.type, "answer"); equal(connection.remote.sdp, "remote-offer");
-  const remoteStream = { id: "remote-stream" };
-  connection.ontrack({ streams: [remoteStream] });
-  equal(state.remoteVideo, true); equal(refs.remoteVideoRef.current.srcObject, remoteStream);
-  await callbacks.startVideo();
-  equal(state.cameraRequests, 1, "only explicit Start video obtains local tracks");
-  equal(state.videoOn, true); equal(refs.localStream.current, stream);
-  equal(refs.localVideoRef.current.srcObject, stream); equal(connection.senders.length, 1);
-  equal(connection.senders[0].track, track); equal(connection.senders[0].owner, stream);
-  equal(state.signals[1].kind, "offer");
-  await callbacks.handleVideoSignal({ kind: "offer", sdp: { type: "offer", sdp: "renegotiation" } });
-  equal(state.cameraRequests, 1, "later offers reuse explicitly enabled local camera");
-  equal(connection.senders.length, 1, "renegotiation does not duplicate local tracks");
-  equal(state.videoOn, true); equal(state.signals[2].kind, "answer");
-  await callbacks.handleVideoSignal({ kind: "answer", sdp: { type: "answer", sdp: "remote-answer" } });
-  equal(connection.remote.sdp, "remote-answer");
-  await callbacks.handleVideoSignal({ kind: "ice", candidate: { candidate: "inert-ice" } });
-  equal(connection.ice[0].candidate, "inert-ice");
-  connection.onicecandidate({ candidate: { toJSON: () => ({ candidate: "local-ice" }) } });
-  equal(state.signals[3].kind, "ice"); equal(state.signals[3].id, "call-1");
-  callbacks.stopVideo();
-  equal(connection.closed, true); equal(state.stopped, 1);
-  equal(refs.peerConnection.current, undefined); equal(refs.localStream.current, undefined);
-  equal(refs.localVideoRef.current.srcObject, null); equal(refs.remoteVideoRef.current.srcObject, null);
-  equal(state.videoOn, false); equal(state.remoteVideo, false);
-  callbacks.stopVideo(); equal(state.stopped, 1, "cleanup releases local tracks once");
-  await callbacks.handleVideoSignal(null); equal(state.connections.length, 1);
-  host.device = undefined;
-  await callbacks.handleVideoSignal({ kind: "offer", sdp: { type: "offer", sdp: "ignored" } });
-  await callbacks.startVideo(); equal(state.connections.length, 1); equal(state.cameraRequests, 1);
-  console.log(`PASS video consent: ${checks} actual callback checks with inert camera/RTC boundaries`);
+  const { GameVideo } = loadTs("web/src/gameVideo.ts", {}, globals);
+  const game = new GameVideo();
+  const local = [];
+  await game.start([], false, signal => state.signals.push(signal), (stream, isLocal) => local.push([stream, isLocal]), message => { state.error = message; });
+  equal(state.cameraCalls[0][0], "https://kora_phone/camera:videoStart", "the client camera is started through the NUI route, not getUserMedia");
+  equal(state.cameraCalls[0][1].token, "camera-token");
+  const peer = state.peers[0];
+  equal(peer.senders.length, 1, "exactly one local video track is published"); equal(peer.senders[0].track, track);
+  equal(local[0][1], true, "the local stream is reported as local");
+  await expect_start_twice(game);
+  await game.receive({ kind: "offer", sdp: { type: "offer", sdp: "remote-offer" } });
+  equal(peer.remote.sdp, "remote-offer"); equal(peer.local.type, "answer");
+  equal(state.signals[0].kind, "answer");
+  await game.receive({ kind: "ice", candidate: { candidate: "inert-ice" } });
+  equal(peer.ice[0].candidate, "inert-ice");
+  await game.receive({ kind: "answer", sdp: { type: "offer", sdp: "mismatched" } });
+  equal(peer.remote.sdp, "remote-offer", "a description whose type disagrees with its kind is ignored");
+  peer.onicecandidate({ candidate: { toJSON: () => ({ candidate: "local-ice" }) } });
+  equal(state.signals.at(-1).kind, "ice");
+  game.setPaused(true); equal(track.enabled, false, "pausing disables the local track");
+  game.stop();
+  equal(peer.closed, true); equal(state.stopped, 1, "teardown releases the local tracks");
+  equal(state.cameraCalls.at(-1)[0], "https://kora_phone/camera:videoStop", "teardown stops the client camera");
+  game.stop(); equal(state.stopped, 1, "a second stop releases nothing again");
+  await game.receive({ kind: "ice", candidate: { candidate: "late" } }); equal(peer.ice.length, 1, "signals after stop are dropped");
+  console.log(`PASS video consent: ${checks} checks on the real call-video hook and GameVideo with inert camera/RTC boundaries`);
+
+  async function expect_start_twice(instance) {
+    await assert.rejects(() => instance.start([], false, () => {}, () => {}, () => {}), /already active/);
+    checks++;
+  }
 }
 videoConsentRegression().catch(error => { console.error(error); process.exitCode = 1; });

@@ -11,9 +11,17 @@ Share.pending = {}   -- id -> request
 Share.byTarget = {}  -- target source -> id (one open request per receiver)
 Share.cooldown = {}  -- 'sharer:target' -> os.time() the pair may share again
 
-local function cfg() return Config.ShareNumber or {} end
-local function fail(code, message) return PhoneError(PhoneConstants.Errors[code] or PhoneConstants.Errors.FORBIDDEN, message) end
-local function newId() return exports[GetCurrentResourceName()]:randomHex(16) end
+local function cfg()
+    return Config.ShareNumber or {}
+end
+
+local function fail(code, message)
+    return PhoneError(PhoneConstants.Errors[code] or PhoneConstants.Errors.FORBIDDEN, message)
+end
+
+local function newId()
+    return exports[GetCurrentResourceName()]:randomHex(16)
+end
 
 local function cellularNumber(device)
     if not device or device.cellular == false then return nil end
@@ -35,7 +43,12 @@ local function label(value, fallback)
 end
 
 local function notify(target, title, body)
-    TriggerClientEvent('kora_phone:client:notification', target, { app = 'contacts', title = title, body = body, message = body })
+    TriggerClientEvent('kora_phone:client:notification', target, {
+        app = 'contacts',
+        title = title,
+        body = body,
+        message = body,
+    })
 end
 
 local function forget(id)
@@ -53,7 +66,11 @@ end
 -- Saves number under name on deviceId unless that phone already has it. Returns 'saved' or 'exists'.
 local function saveContact(deviceId, name, number)
     if KoraPhone.Repositories.Contacts.findByNumber(deviceId, number) then return 'exists' end
-    local id = KoraPhone.Repositories.Contacts.upsert(deviceId, { displayName = name, phoneNumber = number, isFavorite = false })
+    local id = KoraPhone.Repositories.Contacts.upsert(deviceId, {
+        displayName = name,
+        phoneNumber = number,
+        isFavorite = false,
+    })
     return id and 'saved' or nil
 end
 
@@ -74,7 +91,9 @@ function Share.offer(source, payload)
 
     local pair = source .. ':' .. target
     local now = os.time()
-    if (Share.cooldown[pair] or 0) > now then return fail('RATE_LIMITED', 'Wait a moment before sharing with them again') end
+    if (Share.cooldown[pair] or 0) > now then
+        return fail('RATE_LIMITED', 'Wait a moment before sharing with them again')
+    end
     if Share.byTarget[target] then return fail('CONFLICT', 'They already have a request open') end
     if not KoraPhone.HasPhone(target) then return fail('NOT_FOUND', 'They cannot take your number right now') end
     local cooldown = math.max(0, tonumber(c.CooldownSeconds) or 20)
@@ -86,9 +105,15 @@ function Share.offer(source, payload)
     local expires = math.max(5, math.min(120, tonumber(c.ExpireSeconds) or 30))
     local id = newId()
     local request = {
-        id = id, sharer = source, sharerCitizenId = KoraPhone.GetCitizenId(source), sharerDeviceId = device.id,
-        target = target, targetCitizenId = KoraPhone.GetCitizenId(target),
-        label = label(payload.label, firstName(source)), number = number, expiresAt = now + expires,
+        id = id,
+        sharer = source,
+        sharerCitizenId = KoraPhone.GetCitizenId(source),
+        sharerDeviceId = device.id,
+        target = target,
+        targetCitizenId = KoraPhone.GetCitizenId(target),
+        label = label(payload.label, firstName(source)),
+        number = number,
+        expiresAt = now + expires,
     }
 
     -- Someone who blocked this number (or is blocked by it) never sees the request; to the sharer it simply
@@ -100,11 +125,17 @@ function Share.offer(source, payload)
     Share.byTarget[target] = id
     if not blocked then
         TriggerClientEvent('kora_phone:client:share:request', target, {
-            id = id, label = request.label, number = number, expiresIn = expires, shareBack = c.AllowShareBack == true,
+            id = id,
+            label = request.label,
+            number = number,
+            expiresIn = expires,
+            shareBack = c.AllowShareBack == true,
         })
     end
     SetTimeout((expires + 1) * 1000, function()
-        if forget(id) and GetPlayerName(source) then notify(source, 'Number not saved', 'They did not answer in time.') end
+        if forget(id) and GetPlayerName(source) then
+            notify(source, 'Number not saved', 'They did not answer in time.')
+        end
     end)
     return PhoneResult({ pending = true, expiresIn = expires })
 end
@@ -132,7 +163,9 @@ function Share.answer(source, payload)
     if not device then return err end
     -- The number must still be live on the sharer's handset (no SIM swap since the offer).
     local sharerDevice = KoraPhone.Repositories.Phones.findByNumber(request.number)
-    if not sharerDevice or sharerDevice.id ~= request.sharerDeviceId then return fail('NOT_FOUND', 'That number is no longer active') end
+    if not sharerDevice or sharerDevice.id ~= request.sharerDeviceId then
+        return fail('NOT_FOUND', 'That number is no longer active')
+    end
     if sharerDevice.id == device.id then return fail('INVALID_INPUT', 'That is your own number') end
 
     local name = label(payload.name, request.label)
@@ -144,8 +177,17 @@ function Share.answer(source, payload)
     if payload.shareBack == true and c.AllowShareBack == true and mine then
         sharedBack = saveContact(sharerDevice.id, label(payload.myLabel, firstName(source)), mine) ~= nil
     end
-    notify(sharer, 'Number shared', sharedBack and 'They saved your number and shared theirs back.' or 'They saved your number.')
-    return PhoneResult({ saved = saved == 'saved', existing = saved == 'exists', name = name, sharedBack = sharedBack })
+    notify(
+        sharer,
+        'Number shared',
+        sharedBack and 'They saved your number and shared theirs back.' or 'They saved your number.'
+    )
+    return PhoneResult({
+        saved = saved == 'saved',
+        existing = saved == 'exists',
+        name = name,
+        sharedBack = sharedBack,
+    })
 end
 
 AddEventHandler('playerDropped', function()
