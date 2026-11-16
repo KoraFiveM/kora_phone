@@ -1,7 +1,7 @@
 name: Release
 
-# Tags the next version and cuts a GitHub Release on every push to main.
-# The version is stamped into fxmanifest.lua, committed back to main ([skip ci]) and packaged.
+# Tags the next version and cuts a GitHub Release on every push to dev.
+# The version is stamped into fxmanifest.lua, committed back to dev ([skip ci]) and packaged.
 
 on:
   push:
@@ -37,7 +37,7 @@ jobs:
         run: |
           theme_dir="$(cd "$GITHUB_WORKSPACE/../.." && pwd)/[standalone]/kora_theme"
           rm -rf "$theme_dir"
-          git clone --depth 1 "https://x-access-token:${{ secrets.KORA_THEME_TOKEN || secrets.GITHUB_TOKEN }}@github.com/KoraFiveM/kora_theme.git" "$theme_dir"
+          git clone --depth 1 "https://x-access-token:${{ secrets.KORA_THEME_TOKEN || secrets.GITHUB_TOKEN }}@github.com/${{ github.repository_owner }}/kora_theme.git" "$theme_dir"
 
       - name: Install dependencies
         run: (cd sdk && npm ci) && (cd web && npm ci)
