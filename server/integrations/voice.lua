@@ -14,11 +14,10 @@ local function assign(source, channel)
     if type(source) ~= 'number' then return false end
     local ok, result = pcall(exports.kora_voice.setPlayerCall, exports.kora_voice, source, channel)
     if not ok then
-        Kora.logging.warn(
-            'voice.assign_failed',
-            'kora_voice setPlayerCall failed',
-            { source = source, error = tostring(result) }
-        )
+        Kora.logging.event('voice.assign_failed', source, {
+            level = 'warn', message = 'kora_voice setPlayerCall failed',
+            source = source, error = tostring(result),
+        })
         return false
     end
     return result ~= false
@@ -43,10 +42,9 @@ function Voice.leave(source, channel)
     if type(source) ~= 'number' then return end
     local ok, err = pcall(exports.kora_voice.removePlayerFromCall, exports.kora_voice, source, channel)
     if not ok then
-        Kora.logging.warn(
-            'voice.leave_failed',
-            'kora_voice removePlayerFromCall failed',
-            { source = source, error = tostring(err) }
-        )
+        Kora.logging.event('voice.leave_failed', source, {
+            level = 'warn', message = 'kora_voice removePlayerFromCall failed',
+            source = source, error = tostring(err),
+        })
     end
 end

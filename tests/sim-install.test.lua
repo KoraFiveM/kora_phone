@@ -30,7 +30,7 @@ local function fixture()
     end })
     env.AddEventHandler, env.RegisterNetEvent, env.RegisterCommand, env.CreateThread = function() end, function() end, function() end, function() end
     env.print = function() end
-    env.Kora = { logging = setmetatable({}, { __index = function() return function() return true end end }) }
+    env.Kora = { logging = { event = function() end } }
     for _, file in ipairs({ 'server/handsets/core.lua', 'server/handsets/sim.lua' }) do
         assert(loadfile(file, 't', env))()
     end

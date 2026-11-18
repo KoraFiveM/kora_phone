@@ -22,7 +22,7 @@ function Discovery.files(resource)
 end
 
 local function reject(resource, reason)
-    Kora.logging.warn('phone.sdk.manifest_rejected', 'App manifest rejected', { resource = resource, error = reason })
+    Kora.logging.event('phone.sdk.manifest_rejected', 0, { level = 'warn', message = 'App manifest rejected', resource = resource, error = reason })
     return false, reason
 end
 

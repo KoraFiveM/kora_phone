@@ -31,7 +31,7 @@ function H.accountLock(accountId, handler)
     local ok, result = xpcall(handler, debug.traceback)
     H.accountLocks[accountId] = nil
     if not ok then
-        Kora.logging.error('phone.cloud_operation_failed', 'Cloud operation failed', { error = tostring(result) })
+        Kora.logging.event('phone.cloud_operation_failed', 0, { level = 'error', message = 'Cloud operation failed', error = tostring(result) })
         return H.fail('Cloud operation failed')
     end
     return result

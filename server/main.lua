@@ -3,7 +3,7 @@ math.randomseed(os.time())
 local DATABASE_POLL_MS = 250
 
 local function stopResource(event, message, reason)
-    Kora.logging.error(event, message, reason and { error = tostring(reason) } or nil)
+    Kora.logging.event(event, 0, { level = 'error', message = message, error = reason and tostring(reason) or nil })
     StopResource(GetCurrentResourceName())
 end
 
@@ -29,7 +29,8 @@ CreateThread(function()
         KoraPhone.Handsets.ready = false
         return stopResource('phone.handset_setup_failed', 'Handset setup failed', startError)
     end
-    Kora.logging.info('phone.server_ready', 'Server foundation ready', {
+    Kora.logging.event('phone.server_ready', 0, {
+        level = 'info', message = 'Server foundation ready',
         version = GetResourceMetadata(GetCurrentResourceName(), 'version', 0) or 'unknown',
     })
 end)
@@ -47,7 +48,7 @@ end)
 RegisterCommand('phonereset', function(caller, args)
     local function reply(message)
         if caller == 0 then
-            Kora.logging.info('phone.reset_command', message)
+            Kora.print.info('phone.reset_command', message)
         else
             Kora.notify.send(caller, { title = 'Phone', message = message, type = 'info', duration = 4000 })
         end

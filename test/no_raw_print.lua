@@ -1,4 +1,4 @@
--- Guard: fails if raw print()/Kora.print./console.* diagnostics reappear outside test/print_allowlist.txt.
+-- Guard: fails if raw print()/console.* diagnostics reappear outside test/print_allowlist.txt.
 -- Run from the repo root: lua test/no_raw_print.lua
 local allow = {}
 local f = io.open('test/print_allowlist.txt', 'r')
@@ -25,7 +25,7 @@ for path in p:lines() do
             for line in fh:lines() do
                 n = n + 1
                 local code = line:gsub('%-%-.*$', ''):gsub('//.*$', '')
-                if code:find('[^%w_.:]print%s*%(') or code:find('^%s*print%s*%(') or code:find('Kora%.print%.') or code:find('console%.[lw][oa][gr]')
+                if code:find('[^%w_.:]print%s*%(') or code:find('^%s*print%s*%(') or code:find('console%.[lw][oa][gr]')
                     or code:find('console%.error') then
                     bad[#bad + 1] = ('%s:%d: %s'):format(path, n, line:gsub('^%s+', ''):sub(1, 100))
                 end

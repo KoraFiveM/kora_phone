@@ -142,12 +142,12 @@ function H.newServer(opts)
     end
     _G.GetResourceState = function(res) return env.resources[res] and env.resources[res].state or 'missing' end
 
-    local function logger(level)
-        return function(code, message, fields) env.logs[#env.logs + 1] = { level = level, code = code, fields = fields } end
+    local function logEvent(code, source, fields)
+        env.logs[#env.logs + 1] = { level = fields.level, code = code, fields = fields, source = source }
     end
     env.removedCallbacks = {}
     _G.Kora = {
-        logging = { error = logger('error'), warn = logger('warn'), info = logger('info') },
+        logging = { event = logEvent },
         callback = {
             register = function(name, fn, o) env.callbacks[name] = { fn = fn, opts = o } end,
             unregister = function(name)

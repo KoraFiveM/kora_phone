@@ -54,7 +54,7 @@ end }
 _G.Citizen = { Await = function(p) return p.value end }
 _G.Kora = {
     callback = { register = function(name, fn) callbacks[name] = fn end },
-    logging = { error = function(event) errors[#errors + 1] = event end },
+    logging = { event = function(event) errors[#errors + 1] = event end },
 }
 _G.Config = {
     Apps = {},

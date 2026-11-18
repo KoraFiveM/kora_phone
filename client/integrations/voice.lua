@@ -25,7 +25,7 @@ function Voice.SetMuted(value)
     local wanted = value == true
     local called, ok, reason = pcall(exports.kora_voice.setCallMuted, exports.kora_voice, wanted)
     if not called then
-        Kora.logging.warn('voice.mute_failed', 'kora_voice setCallMuted failed', { error = tostring(ok) })
+        Kora.print.warn('voice.mute_failed', 'kora_voice setCallMuted failed', { error = tostring(ok) })
         return false, 'CALL_MUTE_FAILED'
     end
     if ok ~= true then

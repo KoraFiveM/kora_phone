@@ -12,6 +12,7 @@ To run a single check:
 
 ```bash
 lua5.4 tests/schema.test.lua
+lua5.4 tests/call-startup.test.lua '../../[pre]/kora_lib' # optional startup check against real kora_lib exports
 node tests/routes-contract.test.js
 lua5.4 test/no_raw_print.lua
 cd sdk && npm test

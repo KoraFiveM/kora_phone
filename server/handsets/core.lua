@@ -164,7 +164,7 @@ function H.locked(src, handler, payload)
     local ok, result = xpcall(function() return handler(src, payload) end, debug.traceback)
     H.busy[src] = nil
     if not ok then
-        Kora.logging.error('phone.handset_operation_failed', 'Handset operation failed', { error = tostring(result) })
+        Kora.logging.event('phone.handset_operation_failed', src, { level = 'error', message = 'Handset operation failed', error = tostring(result) })
         return H.fail('Phone operation failed')
     end
     return result

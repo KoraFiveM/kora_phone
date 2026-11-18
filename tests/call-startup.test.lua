@@ -1,4 +1,34 @@
 -- Cold starts must recover calls only after schema setup finishes, even under load.
+local libRoot = arg and arg[1]
+local function installLoggingExports(env, log)
+    if not libRoot then
+        env.Kora = { logging = { event = log } }
+        return
+    end
+
+    local exports = {}
+    local lib = setmetatable({
+        exports = function(name, fn)
+            exports[name] = function(_, ...) return fn(...) end
+        end,
+        TriggerEvent = function() end,
+        GetConvar = function(_, default) return default end,
+        IsDuplicityVersion = function() return true end,
+    }, { __index = _G })
+    for _, path in ipairs({ 'build/initiate.lua', 'modules/util/shared.lua', 'modules/logging/server.lua', 'build/finalise.lua' }) do
+        assert(loadfile(libRoot .. '/' .. path, 't', lib))()
+    end
+    local handler = assert(exports.logging_event)
+    exports.logging_event = function(self, ...)
+        log(...)
+        return handler(self, ...)
+    end
+
+    env.exports = setmetatable({ kora_lib = exports }, { __call = function() end })
+    env.IsDuplicityVersion = lib.IsDuplicityVersion
+    assert(loadfile(libRoot .. '/init.lua', 't', env))()
+end
+
 local checks = 0
 local function check(value, message) assert(value, message); checks = checks + 1 end
 local function fixture(mode)
@@ -25,11 +55,9 @@ local function fixture(mode)
     env.GetCurrentResourceName = function() return 'kora_phone-stevie' end
     env.GetResourceMetadata = function() return 'test' end
     state.logs = {}
-    env.Kora = { logging = setmetatable({}, { __index = function(_, level) return function(event, message, fields)
-        state.logs[#state.logs + 1] = { level = level, event = event, message = message, fields = fields }
-        return true
-    end end }) }
-    env.print = function(message) state.messages[#state.messages + 1] = message end
+    installLoggingExports(env, function(event, source, fields)
+        state.logs[#state.logs + 1] = { level = fields.level, event = event, fields = fields, source = source }
+    end)
     env.StopResource = function()
         state.stopped = true
         for _, handler in ipairs(state.handlers.onResourceStop or {}) do handler('kora_phone-stevie') end
@@ -59,6 +87,11 @@ for _, mode in ipairs({ 'success', 'schema_failure', 'recovery_failure' }) do
     local ready = false
     for _, log in ipairs(state.logs) do if log.event == 'phone.server_ready' then ready = true end end
     check(ready == (mode == 'success'), 'misleading ready log')
+    if libRoot then
+        local expected = mode == 'success' and 'phone.server_ready'
+            or mode == 'schema_failure' and 'phone.database_setup_failed' or 'phone.handset_setup_failed'
+        check(env.Kora.logging.getStats().counts[expected] == 1, 'missing startup event in kora_lib')
+    end
 end
 -- Boot runs schema setup only: no legacy conversion, import or data preflight is wired in.
 local mainSource = assert(io.open('server/main.lua')):read('a')

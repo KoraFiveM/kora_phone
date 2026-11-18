@@ -46,7 +46,8 @@ function Callbacks.invoke(source, appId, name, payload)
 
     local ok, result = pcall(entry.handler, source, payload)
     if not ok then
-        Kora.logging.error('phone.sdk.callback_failed', 'App callback failed', {
+        Kora.logging.event('phone.sdk.callback_failed', source, {
+            level = 'error', message = 'App callback failed',
             app = app.id, callback = name, error = tostring(result),
         })
         return PhoneError(errors.INTERNAL, 'App callback failed')

@@ -14,13 +14,9 @@ function M.install(options)
     dofile(root .. '/tests/config_shim.lua')
     Kora = Kora or {}
 
-    local function log(level)
-        return function(event, message, fields)
-            mock.logs[#mock.logs + 1] = { level = level, event = event, message = message, fields = fields }
-            return true
-        end
-    end
-    Kora.logging = setmetatable({}, { __index = function(_, level) return log(level) end })
+    Kora.logging = { event = function(event, source, fields)
+        mock.logs[#mock.logs + 1] = { level = fields.level, event = event, message = fields.message, fields = fields, source = source }
+    end }
 
     Kora.callback = Kora.callback or {
         register = function(name, handler, opts) mock.callbacks[name] = { handler = handler, opts = opts } end,

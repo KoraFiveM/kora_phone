@@ -31,7 +31,7 @@ local RETRYABLE = { pending = true, indeterminate = true, unavailable = true }
 local MAX_OPERATION_KEY = 128
 
 --- Maps a kora_banking refusal code to a PhoneError. Ambiguous codes are never compensated.
-local function refusal(code, message)
+local function refusal(source, code, message)
     if code == 'insufficient_funds' then
         return PhoneError(PhoneConstants.Errors.CONFLICT, 'Insufficient funds')
     elseif code == 'conflict' then
@@ -40,8 +40,10 @@ local function refusal(code, message)
         return PhoneError(PhoneConstants.Errors.CONFLICT, 'Transfer is still being processed; retry with the same request ID',
             { retryable = true, code = code })
     end
-    Kora.logging.error('banking.transfer_refused', 'kora_banking refused a phone transfer',
-        { code = tostring(code), message = tostring(message) })
+    Kora.logging.event('banking.transfer_refused', source, {
+        level = 'error', message = 'kora_banking refused a phone transfer',
+        code = tostring(code), providerMessage = tostring(message),
+    })
     return PhoneError(PhoneConstants.Errors.INTERNAL, 'Transfer is not available')
 end
 
@@ -81,7 +83,7 @@ function BankingService.transfer(source, payload)
     local Transactions = KoraPhone.Repositories.Transactions
     local recorded = Transactions.findByKey(operationKey)
     if recorded then
-        if not sameTerms(recorded, recipientDevice, amount) then return refusal('conflict') end
+        if not sameTerms(recorded, recipientDevice, amount) then return refusal(source, 'conflict') end
         return PhoneResult({ transaction = Transactions.public(recorded), replayed = true })
     end
 
@@ -91,7 +93,7 @@ function BankingService.transfer(source, payload)
         reason = 'Phone transfer',
         statements = { Transactions.historyStatement(operationKey, senderDevice.id, recipientDevice.id, amount) },
     })
-    if not receipt then return refusal(code, message) end
+    if not receipt then return refusal(source, code, message) end
 
     local transaction = Transactions.findByKey(operationKey)
     return PhoneResult({

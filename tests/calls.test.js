@@ -166,11 +166,11 @@ local function host()
     Kora.callback = { register = function(name, fn)
         state.callbacks[name] = function(source, reply, payload) reply(fn(source, payload)) end
     end }
-    Kora.logging = Kora.logging or setmetatable({}, { __index = function(_, level)
-        return function(event, message, fields)
-            if os.getenv('KORA_TEST_LOG') and level == 'error' then io.stderr:write(('phone log %s: %s %s\n'):format(event, message, fields and tostring(fields.error) or '')) end
+    Kora.logging = { event = function(event, _, fields)
+        if os.getenv('KORA_TEST_LOG') and fields.level == 'error' then
+            io.stderr:write(('phone log %s: %s %s\n'):format(event, fields.message, tostring(fields.error or '')))
         end
-    end })
+    end }
     LoadResourceFile = function() return 'routes' end
     json = { decode = function() return ${luaRoutes} end }
     Kora.sql = {}

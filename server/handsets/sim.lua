@@ -83,7 +83,7 @@ function H.settleSimItem(src, op, request, info)
         if stillLoose then
             local removed, why = exports.kora_inventory:RemoveItem(src, Config.SimItem, 1, request.simSlot, 'phone-sim-install')
             if not removed then
-                Kora.logging.warn('phone.sim_install_consume_failed', 'SIM install could not consume the SIM item', { reason = tostring(why) })
+                Kora.logging.event('phone.sim_install_consume_failed', src, { level = 'warn', message = 'SIM install could not consume the SIM item', reason = tostring(why) })
                 return false, 'SIM item could not be moved into the phone'
             end
         end
@@ -95,7 +95,7 @@ function H.settleSimItem(src, op, request, info)
     if type(info) ~= 'table' or info.simId ~= request.simId then return false, 'SIM details are missing' end
     local added, why = exports.kora_inventory:AddItem(src, Config.SimItem, 1, nil, info, 'phone-sim-remove')
     if not added then
-        Kora.logging.warn('phone.sim_removal_return_failed', 'SIM removal could not return the SIM item', { reason = tostring(why) })
+        Kora.logging.event('phone.sim_removal_return_failed', src, { level = 'warn', message = 'SIM removal could not return the SIM item', reason = tostring(why) })
         return false, 'No room to return the SIM to your inventory'
     end
     return true

@@ -85,7 +85,7 @@ function H.current(src, provisionIfMissing)
     local ok, value = xpcall(function() return resolve(src, provisionIfMissing) end, debug.traceback)
     H.resolving[src] = nil
     if not ok then
-        Kora.logging.error('phone.handset_resolution_failed', 'Handset resolution failed', { error = tostring(value) })
+        Kora.logging.event('phone.handset_resolution_failed', src, { level = 'error', message = 'Handset resolution failed', error = tostring(value) })
         return nil
     end
     if value then

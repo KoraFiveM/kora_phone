@@ -53,7 +53,7 @@ PhoneValidation = {
 }
 GetResourceState = function() return 'started' end
 Kora = {
-    logging = setmetatable({}, { __index = function() return function() end end }),
+    logging = { event = function() end },
     sql = {
         single = function(_, params)
             for _, row in ipairs(history) do if row.operationKey == params[1] then return row end end

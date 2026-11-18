@@ -16,10 +16,10 @@ if root == script then root = "." end
 local stub = { calls = 0, spec = nil, reports = {}, err = nil, throw = nil }
 local printed = {}
 _G.print = function(...) printed[#printed + 1] = table.concat({ ... }, ' ') end
-Kora = { logging = setmetatable({}, { __index = function(_, level) return function(event, message, fields)
-    printed[#printed + 1] = level .. ' ' .. event .. ' ' .. message .. ' ' .. table.concat((function() local t = {} for k, v in pairs(fields or {}) do t[#t + 1] = k .. '=' .. tostring(v) end return t end)(), ' ')
+Kora = { logging = { event = function(event, _, fields)
+    printed[#printed + 1] = fields.level .. ' ' .. event .. ' ' .. fields.message .. ' ' .. table.concat((function() local t = {} for k, v in pairs(fields or {}) do t[#t + 1] = k .. '=' .. tostring(v) end return t end)(), ' ')
     return true
-end end }), sql = { NULL = '\0kora_sql:null\0', ensureTables = function(spec)
+end }, sql = { NULL = '\0kora_sql:null\0', ensureTables = function(spec)
     stub.calls = stub.calls + 1; stub.spec = spec
     if stub.throw then error(stub.throw) end
     if stub.err then return nil, stub.err end

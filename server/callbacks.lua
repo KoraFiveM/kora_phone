@@ -63,8 +63,10 @@ local function runAsync(bound, source, payload, route)
     end
     local ok, err = xpcall(function() bound.fn(source, payload, reply) end, debug.traceback)
     if not ok then
-        Kora.logging.error('phone.callback_failed', 'Phone callback failed',
-            { callback = route.name, playerId = source, error = tostring(err) })
+        Kora.logging.event('phone.callback_failed', source, {
+            level = 'error', message = 'Phone callback failed',
+            callback = route.name, playerId = source, error = tostring(err),
+        })
         reply(PhoneError(Errors.INTERNAL, 'Request failed'))
     end
     return Citizen.Await(response)
@@ -94,8 +96,10 @@ function Routes.invoke(route, source, payload)
     if denied then return denied end
     local bound = Routes.handlers[route.name]
     if not bound then
-        Kora.logging.error('phone.route_unbound', 'Phone route has no handler',
-            { callback = route.name, playerId = source })
+        Kora.logging.event('phone.route_unbound', source, {
+            level = 'error', message = 'Phone route has no handler',
+            callback = route.name, playerId = source,
+        })
         return PhoneError(Errors.INTERNAL, 'Request failed')
     end
     if bound.async then return runAsync(bound, source, payload, route) end
@@ -111,8 +115,10 @@ function Routes.invoke(route, source, payload)
         return bound.fn(source, payload)
     end, debug.traceback)
     if not ok then
-        Kora.logging.error('phone.callback_failed', 'Phone callback failed',
-            { callback = route.name, playerId = source, error = tostring(result) })
+        Kora.logging.event('phone.callback_failed', source, {
+            level = 'error', message = 'Phone callback failed',
+            callback = route.name, playerId = source, error = tostring(result),
+        })
         return PhoneError(Errors.INTERNAL, 'Request failed')
     end
 

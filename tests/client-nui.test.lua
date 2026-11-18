@@ -115,7 +115,7 @@ test('calls:setMuted drives kora_voice setCallMuted and passes the reason throug
         calls[#calls + 1] = muted
         return table.unpack(answer)
     end } }
-    _G.Kora.logging = { warn = function() end }
+    _G.Kora.print = { warn = function() end }
     dofile('client/integrations/voice.lua')
 
     local reply = call('calls:setMuted', { muted = true })
