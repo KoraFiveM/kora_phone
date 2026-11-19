@@ -2,7 +2,7 @@ KoraPhone.Services = KoraPhone.Services or {}
 local Mail = {}
 KoraPhone.Services.Mail = Mail
 
-local function invalid(message) return PhoneError(PhoneConstants.Errors.INVALID_INPUT, message) end
+local invalid = PhoneInvalid
 
 function Mail.list(source, payload)
     local device, err = KoraPhone.Permissions.requireDevice(source)

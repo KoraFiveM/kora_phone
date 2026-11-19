@@ -2,7 +2,7 @@ KoraPhone.Services = KoraPhone.Services or {}
 local Social = {}
 KoraPhone.Services.Social = Social
 
-local function invalid(message) return PhoneError(PhoneConstants.Errors.INVALID_INPUT, message) end
+local invalid = PhoneInvalid
 
 local function requestId(payload)
     return PhoneValidation.string(type(payload) == 'table' and payload.clientRequestId, 'clientRequestId', 8, 64)

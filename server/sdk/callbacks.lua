@@ -13,14 +13,6 @@ Callbacks.MAX_NAME = 48
 Callbacks.MAX_RESULT_BYTES = 64 * 1024
 Callbacks.DEFAULT_RATE_LIMIT = { max = 30, window = 10000 }
 
--- A function passed through an export arrives as a callable funcref table.
-function Callbacks.isCallable(value)
-    if type(value) == 'function' then return true end
-    if type(value) ~= 'table' then return false end
-    if type(rawget(value, '__cfx_functionReference')) == 'string' then return true end
-    local meta = getmetatable(value)
-    return type(meta) == 'table' and meta.__call ~= nil
-end
 
 function Callbacks.validName(name)
     return type(name) == 'string' and #name >= 1 and #name <= Callbacks.MAX_NAME and name:match(Callbacks.NAME_PATTERN) ~= nil
@@ -67,7 +59,7 @@ function Callbacks.register(appId, name, handler, resource)
     if not app then return false, 'NOT_FOUND: app is not registered' end
     if app.resource ~= resource then return false, 'FORBIDDEN: app belongs to another resource' end
     if not Callbacks.validName(name) then return false, 'INVALID_INPUT: callback name is invalid' end
-    if not Callbacks.isCallable(handler) then return false, 'INVALID_INPUT: handler must be a function' end
+    if not Kora.util.isCallable(handler) then return false, 'INVALID_INPUT: handler must be a function' end
 
     Callbacks.handlers[appId] = Callbacks.handlers[appId] or {}
     local replaced = Callbacks.handlers[appId][name] ~= nil

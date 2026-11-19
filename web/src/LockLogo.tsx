@@ -22,7 +22,7 @@ export function KoraMark({ size = 12 }: { size?: number }) {
 export function LockLogo({ brand = 'nothing' }: { brand?: 'nothing' | 'kora_core' }) {
   const qb = brand === 'kora_core';
   return <div className="lock-brand">
-    <svg className="lock-logo" viewBox="0 0 240 240" role="img" aria-label={qb ? 'QBCore logo' : 'Nothing Phone animated logo'}>
+    <svg className="lock-logo" viewBox="0 0 240 240" role="img" aria-label={qb ? 'QBCore logo' : 'Kora Phone animated logo'}>
       <circle className="logo-track" cx="120" cy="120" r="100" />
       <circle className="logo-inner-track" cx="120" cy="120" r="84" />
       <g className="logo-orbit">

@@ -22,7 +22,7 @@ export const appearanceLabel = (appearance: Appearance) => appearanceOptions.fin
 export type HandsetModel = 'standard' | 'flip' | 'fold';
 export const handsetIconStyle = (model: HandsetModel, stored?: 'circle' | 'squircle' | 'outline' | 'solid') => model === 'standard' ? 'circle' : stored || (model === 'flip' ? 'squircle' : 'outline');
 export const handsetIdentity = (model: HandsetModel) => ({
-  standard: { name: 'Orchard One', os: 'Nothing-inspired OS', subtitle: 'Quiet by design. Yours in every detail.' },
+  standard: { name: 'Orchard One', os: 'Kora OS', subtitle: 'Quiet by design. Yours in every detail.' },
   flip: { name: 'Circuit Flip', os: 'Circuit OS', subtitle: 'A little character. A more personal everyday.' },
   fold: { name: 'Atlas Fold', os: 'Atlas OS', subtitle: 'More room for what matters.' },
 })[model];

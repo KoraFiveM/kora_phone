@@ -41,19 +41,10 @@ function Wallet.show(source)
     if not device then return err end
     local mine = card(source)
     if not mine then return PhoneError(PhoneConstants.Errors.UNAUTHORIZED, 'Character is not loaded') end
-    local origin = GetEntityCoords(GetPlayerPed(source))
-    local nearest, best = nil, Config.Server.Wallet.ShowDistance
-    for _, id in ipairs(GetPlayers()) do
-        local target = tonumber(id)
-        if target and target ~= source and KoraPhone.GetPlayer(target) then
-            local ped = GetPlayerPed(target)
-            if ped ~= 0 then
-                local distance = #(GetEntityCoords(ped) - origin)
-                if distance <= best then nearest, best = target, distance end
-            end
-        end
+    local nearest = Kora.closest.player(source, nil, Config.Server.Wallet.ShowDistance).id
+    if not nearest or not KoraPhone.GetPlayer(nearest) then
+        return PhoneError(PhoneConstants.Errors.NOT_FOUND, 'No one is close enough')
     end
-    if not nearest then return PhoneError(PhoneConstants.Errors.NOT_FOUND, 'No one is close enough') end
     TriggerClientEvent('kora_phone:client:wallet:shown', nearest, mine)
     return PhoneResult({ shown = true })
 end

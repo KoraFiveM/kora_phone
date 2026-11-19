@@ -13,3 +13,7 @@ end
 function PhoneError(code, message, details)
     return { ok = false, error = { code = code, message = message, details = details } }
 end
+
+function PhoneInvalid(message)
+    return PhoneError(PhoneConstants.Errors.INVALID_INPUT, message)
+end

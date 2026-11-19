@@ -103,6 +103,7 @@ dependencies {
     'kora_sql',
     'kora_inventory',
     'kora_voice',
+    'kora_phone_props', -- in-hand handset models, a separate resource so restarting the phone cannot crash a holder
 }
 
 -- Custom-app compatibility only (no qb-phone): lets this resource answer as each aliased phone (client/customapps.lua) for real: many

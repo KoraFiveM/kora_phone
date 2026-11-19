@@ -3,7 +3,7 @@ local Market = {}
 KoraPhone.Services.Marketplace = Market
 
 local categories = { 'vehicle', 'property', 'electronics', 'services', 'other' }
-local function invalid(message) return PhoneError(PhoneConstants.Errors.INVALID_INPUT, message) end
+local invalid = PhoneInvalid
 
 local function publicListing(listing, viewerDeviceId)
     if not listing then return nil end

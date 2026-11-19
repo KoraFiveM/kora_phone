@@ -73,7 +73,7 @@ async function checkDeviceCache() {
   equal(locked.id, "202", "new-device ID is preserved");
   equal(locked.data, undefined, "locked devices still hide private collections");
   equal(locked.hasPin, true, "PIN metadata is preserved");
-  equal(locked.preferences, { name: "Nothing Phone", volume: 0, scale: 1, wallpaper: "kora_core", theme: "kora_core", setupComplete: false }, "a new locked phone uses its own partial settings and the existing defaults");
+  equal(locked.preferences, { name: "Kora Phone", volume: 0, scale: 1, wallpaper: "kora_core", theme: "kora_core", setupComplete: false }, "a new locked phone uses its own partial settings and the existing defaults");
   const second = await refresh(raw(202, { name: "Phone B", scale: .8 }, { contacts: [], items: { notes: [], alarms: [], stations: [] } }), failedGallery);
   equal(second.data.settings.name, "Phone B", "new-phone settings remain usable when gallery fails");
   equal(second.data.settings.volume, 0, "same-device partial settings retain zero values");
@@ -106,7 +106,7 @@ async function checkDeviceCache() {
   equal(newCollections.preferences.setupComplete, false, "new-device setup has the existing default");
   const fallback = adaptBootstrap({});
   equal(fallback.id, "kora_phone", "a missing device ID keeps the existing fallback");
-  equal(fallback.preferences.name, "Nothing Phone", "the fallback device does not inherit a previous name");
+  equal(fallback.preferences.name, "Kora Phone", "the fallback device does not inherit a previous name");
   equal(fallback.number, "", "missing phone numbers keep the existing empty-string contract");
   equal(fallback.locked, false, "missing security retains the existing unlocked contract");
   equal(replies.length, 0, "every expected NUI request was consumed");

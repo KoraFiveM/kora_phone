@@ -5,7 +5,7 @@ import type { RawBootstrap } from '../raw';
 import { mapContact } from './media';
 
 export const defaultData = (): DeviceData => normalizeData({
-    settings: { name: 'Nothing Phone', volume: .5, scale: 1, wallpaper: 'kora_core', theme: 'kora_core', setupComplete: false },
+    settings: { name: 'Kora Phone', volume: .5, scale: 1, wallpaper: 'kora_core', theme: 'kora_core', setupComplete: false },
     contacts: [], notes: [], photos: [], stations: [], alarms: [],
 });
 

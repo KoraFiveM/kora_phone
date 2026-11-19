@@ -4,8 +4,8 @@
 ---@class KoraPhoneHandsets
 ---@field selected table<integer, string> Handset id each player has selected.
 ---@field wifi table<integer, string> Wi-Fi hotspot id each player joined.
----@field busy table<integer, boolean> Players with a handset operation in flight.
----@field resolving table<integer, boolean> Players whose handset is being resolved right now.
+---@field busy table<integer, thread> The coroutine running each player's handset operation.
+---@field resolving table<integer, thread> The coroutine resolving each player's handset right now.
 ---@field accountLocks table<string, boolean> Cloud accounts with an operation in flight.
 ---@field purchaseCustomers table<integer, table> One-shot grants for a shop purchase made for a customer.
 ---@field serviceRequests table<string, table> Pending shop-service requests awaiting customer consent.
@@ -158,11 +158,21 @@ end
 ---@param handler fun(src: integer, payload: table): table
 ---@param payload table
 ---@return table
+-- Apps load several screens' data at once, so a second request waits its turn instead of failing; a nested call from
+-- the operation already holding the lock runs straight through.
+local LOCK_WAIT_MS = 5000
+
 function H.locked(src, handler, payload)
-    if H.busy[src] then return H.fail('Another phone operation is in progress') end
-    H.busy[src] = true
+    local me = coroutine.running()
+    local nested = H.busy[src] == me
+    if not nested and H.busy[src] then
+        local deadline = GetGameTimer() + LOCK_WAIT_MS
+        while H.busy[src] and GetGameTimer() < deadline do Wait(0) end
+        if H.busy[src] then return H.fail('Another phone operation is in progress') end
+    end
+    H.busy[src] = me
     local ok, result = xpcall(function() return handler(src, payload) end, debug.traceback)
-    H.busy[src] = nil
+    if not nested then H.busy[src] = nil end
     if not ok then
         Kora.logging.event('phone.handset_operation_failed', src, { level = 'error', message = 'Handset operation failed', error = tostring(result) })
         return H.fail('Phone operation failed')

@@ -128,8 +128,7 @@ function Calling.start(source, payload)
     if not device.cellular then
         return PhoneError(PhoneConstants.Errors.FORBIDDEN, 'An active SIM is required for calls')
     end
-    local caller, err = KoraPhone.Permissions.requireDevice(source)
-    if not caller then return err end
+    local caller = device
     local number, validationError = PhoneValidation.phoneNumber(type(payload) == 'table' and payload.to)
     if not number then return PhoneError(PhoneConstants.Errors.INVALID_INPUT, validationError) end
     if number == caller.phoneNumber then

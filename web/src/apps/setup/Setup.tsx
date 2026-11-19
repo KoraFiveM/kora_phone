@@ -83,7 +83,7 @@ export function SetupScreen() {
         </>}
         {step === 'name' && <>
           <div className="onboard-identity" aria-hidden="true"><span>HELLO, MY NAME IS</span><strong>{name.trim() || 'Your Nothing.'}</strong><small>ONE OF A KIND / 001</small></div>
-          <label className="onboard-field">Phone name<input required maxLength={32} value={name} onChange={event => setName(event.target.value)} placeholder="My Nothing Phone" autoComplete="off" /></label>
+          <label className="onboard-field">Phone name<input required maxLength={32} value={name} onChange={event => setName(event.target.value)} placeholder="My Kora Phone" autoComplete="off" /></label>
           <div className="onboard-field-note"><span>You can change this later.</span><span>{name.length}/32</span></div>
         </>}
         {step === 'theme' && <>{preview(false)}<fieldset className="onboard-colours"><legend>Choose an appearance</legend>{appearanceOptions.map(item => <button type="button" key={item.id} disabled={busy} aria-pressed={appearance === item.id} onClick={() => setAppearance(item.id)}><span className={`appearance-swatch appearance-${item.id}`}>{appearance === item.id && <Check size={18} />}</span>{item.label}</button>)}</fieldset><p className="onboard-field-note">The accent colour comes from the server theme. Use /theme to pick your own.</p></>}

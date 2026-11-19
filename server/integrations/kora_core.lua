@@ -12,7 +12,7 @@ end
 ---@return string|nil citizenid
 function KoraPhone.GetCitizenId(source)
     if type(source) ~= 'number' then return nil end
-    return exports.kora_core:getPlayerData(source, 'citizenid')
+    return exports.kora_core:getPlayerData(source, { 'citizenid' })
 end
 
 ---True when the player holds at least one handset item (or no item is required).

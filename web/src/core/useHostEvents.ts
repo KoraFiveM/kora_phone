@@ -8,6 +8,8 @@ import { parseShareRequest } from './ShareRequest';
 import type { PhoneStore } from './storeContext';
 
 type Message = { action?: unknown; type?: unknown; app?: unknown; hidden?: unknown; data?: unknown };
+/** Bumped on every open and close, so a refresh that resolves after the phone was closed cannot show it again. */
+let hostOpenSeq = 0;
 /** The union of fields the game client sends across all message types; each handler reads only its own. */
 interface HostData {
   id?: string; label?: string; operation?: string; status?: string; action?: string; epoch?: string; muted?: boolean;
@@ -36,6 +38,7 @@ export function useHostEvents({ state, dispatch, refs, video, actions }: PhoneSt
     };
     const sameDevice = (deviceId: unknown) => !(deviceId && refs.notificationDevice.current && String(deviceId) !== refs.notificationDevice.current);
     const closeFromHost = () => {
+      hostOpenSeq += 1;
       patch({ type: 'close', source: 'host' }); stopVideo();
       refs.coverAudio.current?.pause();
     };
@@ -60,7 +63,8 @@ export function useHostEvents({ state, dispatch, refs, video, actions }: PhoneSt
       if (type === 'customOpen' && !locked) navigate('custom', String(message.app));
       if (type === 'phone:open' || type === 'open') {
         const live = data?.state?.activeCall;
-        void api('refresh', {}).then(value => apply(live ? { ...value, call: adaptLiveCall(live) } : value)).catch(error => { void nui('close', { error: error instanceof Error ? error.message : 'Could not open phone' }); });
+        const seq = ++hostOpenSeq;
+        void api('refresh', {}).then(value => { if (seq === hostOpenSeq) apply(live ? { ...value, call: adaptLiveCall(live) } : value); }).catch(error => { if (seq === hostOpenSeq) void nui('close', { error: error instanceof Error ? error.message : 'Could not open phone' }); });
       } else if (type === 'bootstrap' && data) patch({ type: 'patch', patch: { device: adaptBootstrap(data as unknown as Parameters<typeof adaptBootstrap>[0]) } });
       else if (type === 'phone:close' || type === 'phone:reset' || type === 'close') {
         if (type === 'phone:reset') {
