@@ -173,6 +173,7 @@ function Camera.SetLooking(on)
     -- Keep-input stays on for the whole preview so the key mapping still fires while the phone has focus
     -- (NUI focus without keep-input swallows every key). Releasing the cursor is what hands the mouse to the game.
     SetNuiFocus(not on, not on)
+    KoraPhone.SendNui('camera:hint', { text = Camera.Hint() })
     return true
 end
 
@@ -296,13 +297,16 @@ function Camera.SetRecording(active)
     return true
 end
 
-local function lookHint()
-    local _, key = lookSettings()
+-- The help line shown on the Camera screen (nil when it is turned off); sent with camera:open and on every aim change.
+local KEY_NAMES = { LMENU = 'Left Alt', RMENU = 'Right Alt', LSHIFT = 'Left Shift', RSHIFT = 'Right Shift', LCONTROL = 'Left Ctrl', RCONTROL = 'Right Ctrl' }
+
+function Camera.Hint()
+    local mode, key, hint = lookSettings()
+    if not hint or not Camera.preview or mode == 'off' then return nil end
+    key = KEY_NAMES[key] or key
     local text = Camera.looking and Kora.lang('camera.hint_aiming', key) or Kora.lang('camera.hint_hold', key)
     if Camera.zoom and Camera.zoom.enabled then text = text .. Kora.lang('camera.hint_zoom') end
-    BeginTextCommandDisplayHelp('STRING')
-    AddTextComponentSubstringPlayerName(text)
-    EndTextCommandDisplayHelp(0, false, false, -1)
+    return text
 end
 
 -- Aiming key: held (or toggled) to release the cursor so the mouse aims the camera. Kora.keybind makes it rebindable.
@@ -359,8 +363,6 @@ function watchCamera()
                 local dir = wheelDirection()
                 if dir then Camera.Zoom(dir) end
             end
-            local mode, _, hint = lookSettings()
-            if hint and Camera.preview and mode ~= 'off' then lookHint() end
             -- With the phone cursor up the view is frozen: keep-input would otherwise let the mouse rotate the
             -- camera while the player is trying to reach the capture button. Only the look key unfreezes it.
             if Camera.preview and not Camera.looking then

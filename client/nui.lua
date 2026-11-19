@@ -91,6 +91,7 @@ route('camera:open', function(data)
         error = errorCode,
         zoom = opened == true and KoraPhone.Camera.ZoomEnabled() or nil,
         mic = opened == true and KoraPhone.Camera.MicSettings() or nil,
+        hint = opened == true and KoraPhone.Camera.Hint() or nil,
     }
 end)
 
