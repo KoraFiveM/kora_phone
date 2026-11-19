@@ -12,7 +12,7 @@ Kora Phone (folder `kora_phone`) is the server-authoritative in-game phone for t
 
 1. **Add the folder.** The resource folder must be named `kora_phone`. kora_inventory also still accepts the old folder name `kora_phone-stevie` for the `PhoneItemTransaction` gateway. The manifest `provide`s `lb-phone`, `sd-phone`, `17mov_Phone`, `yseries` and `high-phone` so `GetResourceState()` checks and dependency resolution for those ecosystems resolve to this resource. Run only one phone provider: stop any real lb-phone, sd-phone and so on, because two active providers of the same name race for the same registrations.
 
-2. **Start its dependencies first.** The manifest declares `kora_theme`, `kora_lib`, `kora_core`, `kora_sql`, `kora_inventory`, `kora_voice` and `kora_phone_props` (the in-hand handset models, kept in their own resource so restarting the phone cannot crash a player holding it) as dependencies. `kora_inventory` must export `PhoneItemTransaction`; it does so natively, so no companion file is needed. Start-up stops the resource if the export is missing.
+2. **Start its dependencies first.** The manifest declares `kora_theme`, `kora_lib`, `kora_core`, `kora_sql`, `kora_inventory` and `kora_voice` as dependencies. `kora_inventory` must export `PhoneItemTransaction`; it does so natively, so no companion file is needed. Start-up stops the resource if the export is missing.
 
    ```cfg title="server.cfg"
    set kora_phone_pin_pepper "REPLACE_WITH_A_LONG_RANDOM_SECRET"
@@ -25,7 +25,6 @@ Kora Phone (folder `kora_phone`) is the server-authoritative in-game phone for t
    ensure kora_inventory
    ensure kora_theme
    ensure kora_voice
-   ensure kora_phone_props
    ensure kora_banking
    ensure kora_phone
    ```
