@@ -110,10 +110,15 @@ local function host()
     }
     exports = { kora_core = {
         getPlayer = function(_, src) return players[src] and players[src].PlayerData end,
-        getPlayerData = function(_, src, key)
-            local data = players[src] and players[src].PlayerData
-            if key == nil then return data end
-            return data and data[key]
+        -- Mirrors kora_core: path is an array of keys; a plain string path finds nothing.
+        getPlayerData = function(_, src, path)
+            local node = players[src] and players[src].PlayerData
+            if path == nil then return node end
+            for i = 1, #path do
+                if type(node) ~= 'table' then return nil end
+                node = node[path[i]]
+            end
+            return node
         end,
         hasItem = function(_, src) return players[src] ~= nil end,
         getItemByName = function(_, src) return players[src] and { name = 'phone' } end,

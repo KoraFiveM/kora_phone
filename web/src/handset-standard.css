@@ -1,4 +1,4 @@
-/* The standard handset's Nothing-inspired OS. Model identity still comes from the item. */
+/* The standard handset's Kora OS. Model identity still comes from the item. */
 .phone.handset-standard {
   font-family:var(--font-sans);
   padding:8px;
@@ -93,7 +93,7 @@
 .phone.handset-standard .nothing-status { transform:none; animation:none; pointer-events:none; margin:0; padding:8px 10px; font:10px var(--font-mono); }
 .phone.handset-standard :is(.city-widget,.settings-widget,.panel,.home-note,.app-icon > span,.dock) { background-image:none; }
 .phone.handset-standard :is(strong,h1,h2,h3) { font-weight:500; }
-/* Nothing OS headings stay in the handset's body font rather than the shared heading font. */
+/* Kora OS headings stay in the handset's body font rather than the shared heading font. */
 .phone.handset-standard :is(h1,h2,h3,h4,h5,h6) { font-family:inherit; }
 .phone.handset-standard .onboard,.phone.handset-standard .onboard-footer { background:var(--paper); color:var(--ink); }
 .phone.handset-standard .onboard :is(.onboard-top > span:last-child,.onboard-kicker,.onboard-heading p,.onboard-number > span,.onboard-number small,.onboard-field,.onboard-field-note,.onboard-skip,.onboard-footer-note,.onboard-ready > span,.onboard-summary dt) { color:var(--ink-muted); }

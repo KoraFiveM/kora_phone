@@ -20,6 +20,8 @@ export function CameraScreen() {
   const [seconds, setSeconds] = useState(0);
   const [attempt, setAttempt] = useState(0);
   const [zoom, setZoom] = useState(false);
+  // How to aim, from the game (Config.Camera.hint): shown on the phone instead of a GTA help box.
+  const [hint, setHint] = useState('');
   // From Config.Camera.micAudio (client): record the player's own microphone, optionally only while they are talking in game.
   const [mic, setMic] = useState<{ enabled: boolean; followVoice: boolean }>({ enabled: false, followVoice: true });
 
@@ -32,9 +34,9 @@ export function CameraScreen() {
       if (isPreview) { setReady(true); return; }
       await closeRequest.current;
       if (cancelled) return;
-      const reply = await nui<{ok:boolean;error?:string;zoom?:boolean;mic?:{enabled?:boolean;followVoice?:boolean}}>('camera:open', { preview: true, front });
+      const reply = await nui<{ok:boolean;error?:string;zoom?:boolean;hint?:string;mic?:{enabled?:boolean;followVoice?:boolean}}>('camera:open', { preview: true, front });
       if (!reply.ok) throw new Error(reply.error || 'The game camera is unavailable.');
-      if (!cancelled) { setZoom(reply.zoom === true); setMic({ enabled: reply.mic?.enabled === true, followVoice: reply.mic?.followVoice !== false }); }
+      if (!cancelled) { setZoom(reply.zoom === true); setHint(reply.hint || ''); setMic({ enabled: reply.mic?.enabled === true, followVoice: reply.mic?.followVoice !== false }); }
       if (cancelled || !canvas.current) return;
       view = createGameView(canvas.current, { preserveDrawingBuffer: true, onContextLost: () => {
         recording.current?.cancel('The game camera stopped. Please reopen Camera.');
@@ -72,6 +74,15 @@ export function CameraScreen() {
     window.addEventListener('wheel', wheel, { passive: false });
     return () => window.removeEventListener('wheel', wheel);
   }, [ready, zoom]);
+
+  useEffect(() => {
+    const onHint = (event: MessageEvent) => {
+      if (!isHostMessage(event.source, window, window.parent) || event.data?.action !== 'camera:hint') return;
+      setHint(typeof event.data.data?.text === 'string' ? event.data.data.text : '');
+    };
+    window.addEventListener('message', onHint);
+    return () => window.removeEventListener('message', onHint);
+  }, []);
 
   useEffect(() => {
     if (!capturing) return;
@@ -147,6 +158,7 @@ export function CameraScreen() {
       })}><SwitchCamera size={22} /></button>
     </div>
     <p className="muted camera-caption">{mode === 'video' ? `${mic.enabled ? (mic.followVoice ? 'Records your voice while you talk' : 'Records your microphone') : 'Silent clips'} · up to ${device.flash ? device.flash.maxSeconds : 15}s` : front ? 'Selfie camera' : 'Rear camera'}</p>
+    {hint && <p className="muted camera-hint">{hint}</p>}
     <button className={`shutter ${mode === 'video' ? 'video-shutter' : ''}`} aria-label={capturing ? 'Stop recording' : mode === 'video' ? 'Record video' : 'Take photo'} disabled={!ready || (busy && !capturing)} onClick={() => {
       if (capturing) { recording.current?.stop(); return; }
       void (mode === 'video' ? takeVideo() : takePhoto());

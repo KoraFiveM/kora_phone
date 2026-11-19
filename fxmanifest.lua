@@ -93,8 +93,14 @@ files {
     'web/dist/map.jpg',
     'shared/routes.json',
     'locales/*.lua',
-    'local-media/*'
+    'local-media/*',
+    'stream/kora_phone_props.ytyp'
 }
+
+-- In-hand handset props (copies of the kora_phoneshop display models under kora_phone names). Restarting this
+-- resource while a player holds a phone unloads these archetypes under a live prop and crashes that client:
+-- restart it with the phone put away, or move stream/ into a resource that does not restart.
+data_file 'DLC_ITYP_REQUEST' 'stream/kora_phone_props.ytyp'
 
 dependencies {
     'kora_theme',

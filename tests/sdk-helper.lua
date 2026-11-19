@@ -156,6 +156,15 @@ function H.newServer(opts)
             end,
         },
         sql = { NULL = {} },
+        -- The real kora_lib helpers the SDK files call, same behaviour.
+        util = {
+            isCallable = function(v)
+                if type(v) == 'function' then return true end
+                local meta = type(v) == 'table' and getmetatable(v)
+                return type(v) == 'table' and (type(rawget(v, '__cfx_functionReference')) == 'string' or (type(meta) == 'table' and meta.__call ~= nil))
+            end,
+            tableContains = function(t, value) for _, v in pairs(t) do if v == value then return true end end return false end,
+        },
     }
 
     dofile(H.root .. '/shared/constants.lua')

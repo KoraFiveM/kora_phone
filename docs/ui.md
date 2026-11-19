@@ -11,7 +11,7 @@ The NUI is a React, TypeScript and Vite app in `web/src`, built into `web/dist` 
 
 | Handset | Model | Experience |
 | --- | --- | --- |
-| Orchard One | `standard` | Nothing-inspired Android styling, monochrome icons, dot-matrix clock, light and dark |
+| Orchard One | `standard` | Kora OS styling, monochrome icons, dot-matrix clock, light and dark |
 | Circuit Flip | `flip` | Tall inner display and a closed cover screen (clock, notifications, voice calls, music controls, camera preview) |
 | Atlas Fold | `fold` | Complete outer phone that unfolds into larger layouts, with conversations beside the open chat |
 

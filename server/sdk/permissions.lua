@@ -6,13 +6,6 @@ KoraPhone.SDK = KoraPhone.SDK or {}
 local Permissions = {}
 KoraPhone.SDK.Permissions = Permissions
 
-function Permissions.has(app, permission)
-    for _, granted in ipairs(app.permissions or {}) do
-        if granted == permission then return true end
-    end
-    return false
-end
-
 ---@param source integer
 ---@param appId any
 ---@param permission? string manifest permission the call needs
@@ -28,7 +21,7 @@ function Permissions.gate(source, appId, permission)
     if not KoraPhone.SDK.Install.isInstalled(device, app) then
         return nil, nil, PhoneError(errors.FORBIDDEN, 'App is not installed')
     end
-    if permission and not Permissions.has(app, permission) then
+    if permission and not Kora.util.tableContains(app.permissions or {}, permission) then
         return nil, nil, PhoneError(errors.FORBIDDEN, ('App lacks the %s permission'):format(permission))
     end
     return device, app

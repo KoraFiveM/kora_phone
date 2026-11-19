@@ -14,9 +14,7 @@ local function payloadOf(value)
     return type(value) == 'table' and value or {}
 end
 
-local function invalid(message)
-    return PhoneError(errors.INVALID_INPUT, message)
-end
+local invalid = PhoneInvalid
 
 local function view(app, device)
     return {

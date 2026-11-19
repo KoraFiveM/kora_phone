@@ -82,7 +82,7 @@ export function asList<T>(value: unknown): T[] { return Array.isArray(value) ? v
 export function normalizeData(value?: DeviceData): DeviceData {
   // Stored settings may predate the Flip color theme's removal.
   type Stored = Omit<Settings, 'theme'> & { theme?: Theme | 'flip' };
-  const settings: Stored = { name: 'Nothing Phone', volume: 0.5, scale: 1, wallpaper: 'kora_core', ...value?.settings };
+  const settings: Stored = { name: 'Kora Phone', volume: 0.5, scale: 1, wallpaper: 'kora_core', ...value?.settings };
   // The old default id "qbcore" was renamed "kora_core"; saved handsets may still carry it.
   const legacy = settings as { wallpaper: string; theme?: string; phoneCase?: string };
   if (legacy.wallpaper === 'qbcore') legacy.wallpaper = 'kora_core';

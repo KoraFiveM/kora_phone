@@ -57,6 +57,8 @@ KoraPhone.Routes = loadRoutes()
 for _, entry in ipairs(KoraPhone.Routes) do
     KoraPhone.RegisterNui(entry.nui, function(data, reply)
         KoraPhone.ServerCallback(entry.server, data, function(result)
+            -- The UI's own bootstrap carries the held handset's model, which picks the in-hand prop.
+            if entry.nui == 'bootstrap' and type(result) == 'table' and result.ok then KoraPhone.State.initialData = result.data end
             safeReply(reply, result)
         end)
     end)
@@ -89,6 +91,7 @@ route('camera:open', function(data)
         error = errorCode,
         zoom = opened == true and KoraPhone.Camera.ZoomEnabled() or nil,
         mic = opened == true and KoraPhone.Camera.MicSettings() or nil,
+        hint = opened == true and KoraPhone.Camera.Hint() or nil,
     }
 end)
 

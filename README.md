@@ -8,7 +8,7 @@ A FiveM phone system with distinct Standard, Flip and Fold interfaces, physical 
 
 | Handset | Inventory item | Experience |
 |---|---|---|
-| **Orchard One** | `phone_standard` | Nothing-inspired Android styling, monochrome icons, dot-matrix clock, dark and light appearances. |
+| **Orchard One** | `phone_standard` | Kora OS styling, monochrome icons, dot-matrix clock, dark and light appearances. |
 | **Circuit Flip** | `phone_flip` | A tall inner display and a closed cover screen for the clock, notifications, voice calls, local music controls and camera preview. |
 | **Atlas Fold** | `phone_fold` | A complete outer phone that unfolds into larger app layouts, including conversations beside the selected chat and expanded Settings. |
 

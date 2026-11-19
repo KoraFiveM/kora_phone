@@ -43,7 +43,7 @@ assert.match(nui, /math\.abs\(x\) > MAX_WORLD/, "waypoint coordinates must be bo
 
 // The ID card is built from the server's copy of the character and shown only to a nearby player.
 assert.match(wallet, /KoraPhone.GetPlayer/, "the card must come from server-side player data");
-assert.match(wallet, /GetEntityCoords\(GetPlayerPed\(source\)\)/, "distance must use server-side positions");
+assert.match(wallet, /Kora\.closest\.player\(source,/, "distance must use server-side positions (kora_lib reads the server peds)");
 assert.match(wallet, /ShowDistance/, "the show distance must be configurable");
 assert.match(wallet, /requireDevice\(source\)/, "a locked phone must not show an ID");
 assert.doesNotMatch(wallet, /payload/, "the ID card must not read any client-supplied field");

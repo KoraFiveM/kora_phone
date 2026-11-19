@@ -304,8 +304,9 @@ export function createGameView(
         onContextRestored as EventListener,
         false,
       )
+      // Resources are freed; the context itself stays with the canvas. Losing it here would leave the next view
+      // on the same canvas (Camera reopening after a photo) with a dead context and a failed shader compile.
       if (!lost) releaseResources()
-      gl.getExtension('WEBGL_lose_context')?.loseContext()
     },
     isLost: () => lost,
     render() {

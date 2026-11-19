@@ -42,6 +42,15 @@ local function setup(config)
     _G.GetEntityBoneIndexByName = function(_, name) return name end
     _G.SetEntityCollision = function() end
     _G.DetachEntity = function() end
+    _G.SetEntityAsMissionEntity = function() end
+    -- Objects already in the world when animations.lua loads: { id, script, attached }.
+    _G.worldObjects = _G.worldObjects or {}
+    _G.PlayerPedId = function() return 1 end
+    _G.GetGamePool = function() local ids = {}; for _, o in ipairs(worldObjects) do ids[#ids + 1] = o.id end; return ids end
+    _G.IsEntityAttachedToEntity = function(e) for _, o in ipairs(worldObjects) do if o.id == e then return o.attached end end; return false end
+    _G.GetEntityScript = function(e) for _, o in ipairs(worldObjects) do if o.id == e then return o.script end end end
+    _G.GetEntityModel = function(e) for _, o in ipairs(worldObjects) do if o.id == e then return o.model end end end
+    _G.joaat = function(name) return name end
     _G.DeleteEntity = function(e) ent[e] = nil; deleted[#deleted + 1] = e end
     _G.CreateObject = function(hash) local id = 100 + #props + 1; ent[id] = true; props[#props + 1] = { id = id, hash = hash }; return id end
     _G.AttachEntityToEntity = function(e, _, bone, ox, oy, oz) props[#props].bone, props[#props].ox = bone, ox end
@@ -119,6 +128,44 @@ test("an active call switches to the call pose without a second prop", function(
     KoraPhone.State.activeCall = nil
     tick()
     equal(played[3].clip, "cellphone_text_read_base")
+end)
+
+test("the held handset model picks its prop, and a late bootstrap swaps it", function()
+    setup({ model = "prop_npc_phone_02" })
+    KoraPhone.Animations.Start()
+    equal(props[1].hash, "prop_npc_phone_02")
+    KoraPhone.State.initialData = { device = { model = "flip" } }
+    tick()
+    equal(props[2].hash, "kora_phone_flip")
+    equal(livingProps(), 1)
+    equal(KoraPhone.State.phoneObject, props[2].id)
+    KoraPhone.State.initialData = { device = { model = "fold" } }
+    tick()
+    equal(props[3].hash, "kora_phone_fold")
+    KoraPhone.State.initialData = { device = { model = "standard" } }
+    tick()
+    equal(props[4].hash, "kora_phone_standard")
+    equal(livingProps(), 1)
+end)
+
+test("closing the phone while the prop model loads leaves no prop behind", function()
+    setup({})
+    Kora.stream.loadModel = function(model, cb) KoraPhone.Animations.Stop(); cb(model); return true end
+    KoraPhone.Animations.Start()
+    equal(#props, 0)
+    equal(livingProps(), 0)
+end)
+
+test("a restart clears a prop the previous instance left in the hand, and only that", function()
+    _G.worldObjects = {
+        { id = 900, script = nil, attached = true, model = "kora_phone_flip" },           -- orphaned by the old instance
+        { id = 901, script = "emotes", attached = true, model = "prop_npc_phone_02" },   -- another resource's phone
+        { id = 902, script = nil, attached = false, model = "kora_phone_standard" },    -- not in the hand
+        { id = 903, script = nil, attached = true, model = "prop_cs_burger_01" },       -- not a phone
+    }
+    setup({})
+    _G.worldObjects = {}
+    equal(table.concat(deleted, ","), "900")
 end)
 
 test("an incoming ringing call keeps the text pose", function()

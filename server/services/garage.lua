@@ -30,7 +30,9 @@ function Garage.list(source)
     local device, err = KoraPhone.Permissions.requireDevice(source)
     if not device then return err end
     if not Garage.available() then return PhoneError(PhoneConstants.Errors.CONFLICT, 'Garage is not available') end
-    local owned = exports.kora_garages:getOwnedVehicles(device.ownerCitizenId)
+    -- An older kora_garages without the export must read as unavailable, not as a phone failure.
+    local called, owned = pcall(function() return exports.kora_garages:getOwnedVehicles(device.ownerCitizenId) end)
+    if not called then return PhoneError(PhoneConstants.Errors.CONFLICT, 'Garage is not available') end
     if type(owned) ~= 'table' then return PhoneError(PhoneConstants.Errors.INTERNAL, 'Unable to load vehicles') end
     local useLabels = Config.Server.Garage.UseGarageLabels == true
     local vehicles = {}

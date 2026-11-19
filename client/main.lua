@@ -218,7 +218,15 @@ local function unavailableMessage()
     return Kora.lang('notify.phone_unavailable')
 end
 
+-- Players keep key bindings from older builds (an `rbind kora_phone M "phone"` next to the current keybind), so one key
+-- press can toggle twice in the same frame: open, then close at once. A second toggle this soon is that echo.
+local TOGGLE_DEBOUNCE_MS = 250
+local lastToggle = -TOGGLE_DEBOUNCE_MS
+
 local function togglePhone()
+    local now = GetGameTimer()
+    if now - lastToggle < TOGGLE_DEBOUNCE_MS then return end
+    lastToggle = now
     if KoraPhone.State.open then
         KoraPhone.Close(false)
     elseif not KoraPhone.Open() and KoraPhone.Unavailable() then

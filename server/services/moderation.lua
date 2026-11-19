@@ -5,7 +5,7 @@ KoraPhone.Services.Moderation = Moderation
 local targetTypes = { 'profile', 'post', 'comment', 'listing' }
 local reasons = { 'spam', 'harassment', 'scam', 'illegal', 'other' }
 
-local function invalid(message) return PhoneError(PhoneConstants.Errors.INVALID_INPUT, message) end
+local invalid = PhoneInvalid
 
 local function moderator(source)
     local citizenId = KoraPhone.GetCitizenId(source)

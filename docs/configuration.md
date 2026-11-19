@@ -78,7 +78,7 @@ Keep each counter several metres away from other interactions (bank teller, shop
 | `Config.Client.NotificationSound` | `true` | live | Game text tone for closed-phone notifications |
 | `Config.Client.UiBlockBag` | `'koraUiBlocked'` | restart | Player state bag that keeps the phone shut while `true`. Empty disables |
 | `Config.Camera` | see below | live | Camera controls, zoom and microphone |
-| `Config.Animation` | enabled, prop `prop_npc_phone_02`, bone '28422' | live | Prop and animation while the phone is open. `anims` sets text, call, in-car text and in-car call clips |
+| `Config.Animation` | enabled, prop `prop_npc_phone_02`, bone '28422' | live | Prop and animation while the phone is open. The held prop follows the handset model (`kora_phone_standard`, `kora_phone_flip`, `kora_phone_fold`, streamed from `stream/`); `model` is the fallback for any other handset. `anims` sets text, call, in-car text and in-car call clips |
 
 `Config.Camera`: `lookMode` (`hold`, `toggle`, `off`) and `lookKey` (`LMENU`), both read once at start because the aiming keybind is registered then (not live), `hint`, `zoom` (`enabled`, `minFov` 10, `maxFov` 60, `defaultFov` 60, `step` 5, `smooth`, `smoothSpeed` 10, `selfie` overrides) and `micAudio` (`enabled`, `followVoice`). See [Features](./features.md).
 

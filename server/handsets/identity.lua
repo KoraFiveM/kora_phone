@@ -79,9 +79,15 @@ end
 ---@param provisionIfMissing? boolean Create a handset for an unbound phone item.
 ---@return table|nil device
 function H.current(src, provisionIfMissing)
+    local me = coroutine.running()
+    -- Re-entry from inside the running resolution stays refused; a parallel request (apps load several screens at
+    -- once) waits for it instead of reading as "no handset".
+    if H.resolving[src] == me then return nil end
+    local deadline = GetGameTimer() + 5000
+    while H.resolving[src] and GetGameTimer() < deadline do Wait(0) end
     if H.resolving[src] then return nil end
     local expectedCharacter = H.citizenId(src)
-    H.resolving[src] = true
+    H.resolving[src] = me
     local ok, value = xpcall(function() return resolve(src, provisionIfMissing) end, debug.traceback)
     H.resolving[src] = nil
     if not ok then

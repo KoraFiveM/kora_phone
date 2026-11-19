@@ -35,14 +35,14 @@ local generation = 0
 -- Mirror of Kora.cache.ped() so the 250 ms watcher reads an upvalue instead of making an export call per tick.
 local cachedPed
 Kora.cache.onChange('ped', function(ped) cachedPed = ped end)
-local handle, currentKey, prop
+local handle, currentKey, prop, propName
 
 local function removeProp()
     if prop and DoesEntityExist(prop) then
         DetachEntity(prop, true, false)
         DeleteEntity(prop)
     end
-    prop = nil
+    prop, propName = nil, nil
     if KoraPhone.State then KoraPhone.State.phoneObject = nil end
 end
 
@@ -70,6 +70,15 @@ local function onCall()
     return call.status == 'active' or (call.status == 'ringing' and call.direction ~= 'incoming')
 end
 
+-- Streamed from stream/ (kora_phone_props.ytyp); a handset model without an entry uses the configured prop.
+local HANDSET_PROPS = { standard = 'kora_phone_standard', flip = 'kora_phone_flip', fold = 'kora_phone_fold' }
+
+local function propModel()
+    local data = KoraPhone.State and KoraPhone.State.initialData
+    local handset = type(data) == 'table' and type(data.device) == 'table' and data.device.model
+    return HANDSET_PROPS[handset] or option('model')
+end
+
 local function createProp(ped)
     -- Config stores the bone as text: digits mean a bone index, anything else is a bone name.
     local bone = option('bone')
@@ -77,7 +86,11 @@ local function createProp(ped)
     local boneIndex = boneNumber and GetPedBoneIndex(ped, boneNumber) or GetEntityBoneIndexByName(ped, bone)
     local offset, rotation = option('offset'), option('rotation')
     local created
-    Kora.stream.loadModel(option('model'), function(hash)
+    propName = propModel()
+    -- loadModel waits for the model; a Stop() during that wait must not leave an untracked prop in the hand.
+    local mine = generation
+    Kora.stream.loadModel(propName, function(hash)
+        if mine ~= generation or not wanted then return end
         created = CreateObject(hash, 0.0, 0.0, 0.0, false, false, false)
         if created == 0 or not DoesEntityExist(created) then created = nil; return end
         SetEntityCollision(created, false, false)
@@ -90,7 +103,9 @@ end
 local function apply(ped)
     local inVehicle = IsPedInAnyVehicle(ped, false)
     local key = onCall() and (inVehicle and 'vehicleCall' or 'call') or (inVehicle and 'vehicleText' or 'text')
-    if key == currentKey and handle and Kora.anim.isPlaying(ped) then return true end
+    -- The bootstrap that names the handset can land after the phone opened; swap to the right prop then.
+    if prop and propName ~= propModel() then removeProp() end
+    if key == currentKey and handle and Kora.anim.isPlaying(ped) and prop then return true end
     local clip = animation(key)
     local started = Kora.anim.play(ped, clip.dict, clip.clip, {
         flag = clip.flag or 50,
@@ -136,6 +151,23 @@ end
 
 AddEventHandler('onClientResourceStop', function(resource)
     if resource == GetCurrentResourceName() then Animations.Stop() end
+end)
+
+-- A restart does not reliably run the stop handler above before the old scripts are torn down, so a phone held at
+-- that moment stays in the hand, orphaned (no owning script). A fresh instance owns no prop yet, so one of our prop
+-- models attached to the player and owned by no running script (or by us) is stale. Other resources' props are kept.
+CreateThread(function()
+    local ped, resource = PlayerPedId(), GetCurrentResourceName()
+    local ours = { [joaat(option('model'))] = true }
+    for _, name in pairs(HANDSET_PROPS) do ours[joaat(name)] = true end
+    for _, object in ipairs(GetGamePool('CObject')) do
+        local owner = GetEntityScript(object)
+        if IsEntityAttachedToEntity(object, ped) and ours[GetEntityModel(object)] and (owner == nil or owner == resource) then
+            DetachEntity(object, true, false)
+            SetEntityAsMissionEntity(object, true, true)
+            DeleteEntity(object)
+        end
+    end
 end)
 
 KoraPhone.Animations = Animations

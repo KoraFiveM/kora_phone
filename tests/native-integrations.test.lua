@@ -12,9 +12,15 @@ local function player(src)
 end
 exports = { kora_core = {
     getPlayer = function(_, src) return player(src) end,
-    getPlayerData = function(_, src, key)
-        local data = player(src)
-        return data and key and data[key] or nil
+    -- Mirrors kora_core: path is an array of keys; a plain string path finds nothing.
+    getPlayerData = function(_, src, path)
+        local node = player(src)
+        if not path then return nil end
+        for i = 1, #path do
+            if type(node) ~= 'table' then return nil end
+            node = node[path[i]]
+        end
+        return node
     end,
     getPlayerByCitizenId = function(_, citizenid) return citizenid == 'CID' and player(12) or nil end,
     getJob = function(_, src)

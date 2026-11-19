@@ -4,7 +4,7 @@ KoraPhone.Services.Items = Items
 
 local GROUP = { note = 'notes', alarm = 'alarms', station = 'stations' }
 
-local function invalid(message) return PhoneError(PhoneConstants.Errors.INVALID_INPUT, message) end
+local invalid = PhoneInvalid
 
 -- Everything a phone keeps, grouped for the bootstrap: { notes = {}, alarms = {}, stations = {} }.
 function Items.forDevice(deviceId)
