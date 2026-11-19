@@ -334,8 +334,15 @@ function Calling.videoControl(source, payload)
         if call.video and payload.epoch ~= call.video.epoch then
             return PhoneError(PhoneConstants.Errors.FORBIDDEN, 'Video session changed')
         end
+        local declined = action == 'decline' and call.video and not call.video.accepted and call.video.requester ~= device.id
         call.video = nil
-        notify(call, 'kora_phone:client:calls:videoControl', { id = call.id, action = 'stop' })
+        if declined then
+            -- The requester learns why the invitation went away; the one who declined just closes it.
+            TriggerClientEvent('kora_phone:client:calls:videoControl', target, { id = call.id, action = 'decline' })
+            TriggerClientEvent('kora_phone:client:calls:videoControl', source, { id = call.id, action = 'stop' })
+        else
+            notify(call, 'kora_phone:client:calls:videoControl', { id = call.id, action = 'stop' })
+        end
     else
         return PhoneError(PhoneConstants.Errors.INVALID_INPUT, 'Invalid call control')
     end

@@ -329,6 +329,23 @@ equal(h.voice[3][1], 'leave')
 equal(h.voice[4][1], 'leave')
 equal(h.request('start', 1, { to = '5550000001' }).result().error.code, 'INVALID_INPUT')
 equal(h.request('start', 1, { to = '5550000099' }).result().error.code, 'NOT_FOUND')
+do -- a declined video invitation tells the requester, and only closes it for the one who declined
+    local v = host()
+    exports['kora_phone-stevie'] = { randomHex = function() return 'video-epoch' end }
+    local call = v.request('start', 1, { to = '5550000002' }).result().data
+    equal(v.request('accept', 2, { id = call.id }).result().ok, true)
+    local before = #v.events
+    equal(v.request('videoControl', 1, { id = call.id, action = 'request' }).result().ok, true)
+    local decline = v.request('videoControl', 2, { id = call.id, action = 'decline', epoch = 'video-epoch' }).result()
+    equal(decline.ok, true)
+    local sent = {}
+    for i = before + 1, #v.events do
+        local e = v.events[i]
+        if e.name == 'kora_phone:client:calls:videoControl' then sent[e.source] = (sent[e.source] or '') .. e.args[1].action .. ' ' end
+    end
+    equal(sent[1], 'pending decline ', 'requester hears the decline')
+    equal(sent[2], 'request stop ', 'decliner just closes the invitation')
+end
 print(('PASS call-start coroutine regression: %d checks'):format(checks))
 local retirementChecks = checks
 for _, phase in ipairs({ 'caller', 'lookup', 'block', 'create' }) do
