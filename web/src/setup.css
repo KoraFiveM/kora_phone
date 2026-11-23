@@ -36,5 +36,3 @@
 
 .onboard-colours { grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 6px; }
 .onboard-wallpapers { grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 6px; }
-/* Setup uses the QBCore palette, so the status bar and nav bar match it instead of the phone theme. */
-.phone-screen.in-setup.in-setup { --ink: var(--shade-10); background: var(--shade-95); }
