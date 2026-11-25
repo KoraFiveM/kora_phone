@@ -6,6 +6,5 @@ const en: AppCopy = {
   social: { label: 'Pulse', subtitle: 'The city, in conversation.' },
   flash: { label: 'Flash', subtitle: 'Your city, in short clips.' },
   camera: { label: 'Camera', subtitle: 'See something. Keep it.' },
-  settings: { label: 'Settings', subtitle: 'Unmistakably yours.' },
 };
 export const appCopy = (id: AppId) => id === 'home' ? { label: 'Home', subtitle: '' } : en[id];

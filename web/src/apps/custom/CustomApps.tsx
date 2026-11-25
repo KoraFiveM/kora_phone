@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Blocks } from 'lucide-react';
 import { api, nui } from '../../api';
 import { usePhone } from '../../core/PhoneContext';
+import { usePhoneStore } from '../../core/storeContext';
 import { isSdkInstalled, refreshSdkApps, useRuntimeApps } from '../../core/runtimeApps';
 import type { SdkApp } from '../../core/runtimeApps';
 import { isHostMessage } from '../../nuiEvents';
@@ -55,6 +56,7 @@ interface HostMessage { type?: unknown; app?: unknown; name?: unknown; data?: un
 export function CustomAppScreen({ id, hint, transport = hostTransport }: { id: string; hint?: string; transport?: HostTransport }) {
   const { apps, loaded } = useCustomApps(); const definition = apps.find(app => app.identifier === id);
   const { data, device, run, setCall, navigate, updateData, setHasPin } = usePhone();
+  const { actions: { reloadHandset } } = usePhoneStore();
   const frame = useRef<HTMLIFrameElement>(null);
   const [authorized, setAuthorized] = useState(false); const [error, setError] = useState('');
   const [state, setState] = useState<HostState>('loading'); const [title, setTitle] = useState(''); const [attempt, setAttempt] = useState(0);
@@ -67,7 +69,12 @@ export function CustomAppScreen({ id, hint, transport = hostTransport }: { id: s
     setPin: async (currentPin, pin) => { const result = await api('pin', { currentPin, pin }); setHasPin(result.hasPin); return result; },
     listBlocked: () => api('blocked', {}),
     setBlocked: (number, blocked) => api('setBlocked', { number, blocked }),
-    handset: async payload => unwrap(await nui('handset:action', payload)),
+    handset: async payload => {
+      const result = unwrap(await nui('handset:action', payload));
+      // Selecting a handset, a SIM, a restore or a reset changes which handset the phone is showing: reload it.
+      if (payload.op !== 'status') await reloadHandset();
+      return result;
+    },
   });
   const resource = definition?.resource ?? '';
   // lb-phone style apps (registered from a resource's client script) get the compatibility layer injected into their own

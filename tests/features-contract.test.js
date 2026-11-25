@@ -114,6 +114,18 @@ const hostApps = read("web/src/apps/custom/CustomApps.tsx");
 assert.match(hostApps, /onSystem: definition\.source === 'server' && definition\.system === true && resource === location\.hostname\.replace\(\/\^cfx-nui-\/, ''\)/, "the system handler must be gated on source, system flag and own resource");
 assert.doesNotMatch(read("web/src/sdk/system.ts"), /installedApps|customApps/, "the system service must not write install state");
 
+// Settings is a system folder app. Everything that changes the phone goes through phone.system (validated routes); its own server
+// file only lists the caller's photos, and the page never calls a NUI or server route by itself.
+const settingsApp = read("apps/settings/app.lua"), settingsServer = read("apps/settings/server.lua");
+assert.match(settingsApp, /system = true/, "settings must be a system app, or phone.system is refused");
+assert.deepEqual([...settingsServer.matchAll(/app\.callback\('(\w+)'/g)].map(match => match[1]), ["photos"], "settings has no server callbacks beyond the photo list");
+for (const file of ["app.js", "handset.js"]) {
+  const source = read(`apps/settings/ui/${file}`);
+  assert.doesNotMatch(source, /fetch\(|XMLHttpRequest|handset:action/, `${file} must reach the phone only through phone.system`);
+}
+assert.match(read("apps/settings/ui/handset.js"), /phone\.system\('handset'/, "handset operations go through phone.system");
+assert.match(read("apps/settings/ui/app.js"), /phone\.system\('settings\.save'/, "settings are saved through phone.system");
+
 // Sound is a folder app: stations are validated phone items for the caller's own device, and its page may only embed
 // the hosts declared in app.lua (the CSP in index.html repeats them).
 const musicServer = read("apps/music/server.lua");

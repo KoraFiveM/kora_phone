@@ -2,11 +2,10 @@ import { lazy } from 'react';
 import type { ComponentType, LazyExoticComponent } from 'react';
 import {
   Aperture, Blocks, Camera,
-  Phone, Radio, Settings as SettingsIcon, Store as StoreIcon,
+  Phone, Radio, Store as StoreIcon,
 } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import { CustomAppRoute } from '../apps/custom/CustomApps';
-import { SettingsHost } from './SettingsHost';
 import { appCopy } from '../locales';
 import { optionalApps } from '../catalog';
 import { recall } from '../lastScreen';
@@ -51,7 +50,6 @@ export const appRegistry: readonly AppDefinition[] = [
   entry('social', Radio, PulseApp, 'grid', { fullBleed: true, optional: { category: 'Social', description: 'Message your people, one-on-one or in a group.' } }),
   entry('flash', Aperture, FlashApp, 'grid', { fullBleed: true, optional: { category: 'Social', description: 'Short videos and photos from around the city, for everyone to see.' } }),
   entry('camera', Camera, CameraApp, 'dock'),
-  entry('settings', SettingsIcon, SettingsHost, 'system'),
   // Third-party SDK apps (apps:list) are not entries: they all render through this host, with the SDK app id as the
 // route target. Their runtime list lives in runtimeApps.ts and feeds the App Store and the host.
   entry('custom', Blocks, CustomAppRoute, 'hidden', { fullBleed: true }),
