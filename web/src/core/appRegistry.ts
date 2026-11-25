@@ -1,14 +1,13 @@
 import { lazy } from 'react';
 import type { ComponentType, LazyExoticComponent } from 'react';
 import {
-  AlarmClock, Aperture, Blocks, Camera, Image, MapPin,
+  AlarmClock, Aperture, Blocks, Camera, MapPin,
   MessageCircle, Music, Phone, Radio, Settings as SettingsIcon, Store as StoreIcon,
 } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import { ClockScreen } from '../apps/clock/ClockScreen';
 import { MessagesScreen } from '../apps/communication/Communication';
 import { CustomAppRoute } from '../apps/custom/CustomApps';
-import { GalleryScreen } from '../apps/gallery/GalleryScreen';
 import { GPSScreen } from '../apps/maps/GPSScreen';
 import { MusicScreen } from '../apps/music/MusicScreen';
 import { SettingsHost } from './SettingsHost';
@@ -54,7 +53,6 @@ const entry = (
 export const appRegistry: readonly AppDefinition[] = [
   entry('store', StoreIcon, StoreApp, 'grid'),
   entry('social', Radio, PulseApp, 'grid', { fullBleed: true, optional: { category: 'Social', description: 'Message your people, one-on-one or in a group.' } }),
-  entry('gallery', Image, GalleryScreen, 'grid'),
   entry('gps', MapPin, GPSScreen, 'grid', { optional: { category: 'Tools', description: 'Familiar places. New directions. Your city, mapped.' } }),
   entry('flash', Aperture, FlashApp, 'grid', { fullBleed: true, optional: { category: 'Social', description: 'Short videos and photos from around the city, for everyone to see.' } }),
   entry('music', Music, MusicScreen, 'grid', { optional: { category: 'Tools', description: 'Save YouTube, SoundCloud, or stream links and play them from your phone.' } }),
@@ -68,7 +66,7 @@ export const appRegistry: readonly AppDefinition[] = [
 ];
 
 const byId = new Map<string, AppDefinition>(appRegistry.map(item => [item.id, item]));
-export const appDefinition = (id: AppId): AppDefinition | undefined => byId.get(id);
+export const appDefinition = (id: string): AppDefinition | undefined => byId.get(id);
 /** Icon and copy for any app id, with a safe fallback for ids that are not registered. */
 export const iconOf = (id: AppId): LucideIcon => byId.get(id)?.icon ?? Phone;
 
@@ -84,12 +82,12 @@ const isOptionalApp = (id: AppId): boolean => !!byId.get(id)?.optional;
  * Whether an app can open on this handset: registered, not switched off by the server (`capabilities`),
  * passing its own gate, and installed when it is an optional app.
  */
-export function canLaunch(id: AppId, device?: Bootstrap): boolean {
+export function canLaunch(id: string, device?: Bootstrap): boolean {
   if (id === 'home') return true;
   const definition = byId.get(id);
   if (!definition || id === 'custom' || definition.placement === 'hidden') return false;
   if (device?.capabilities[id] === false || (device && definition.gate && !definition.gate(device))) return false;
-  return !isOptionalApp(id) || device?.data?.installedApps?.includes(id) === true;
+  return !isOptionalApp(id as AppId) || device?.data?.installedApps?.includes(id as AppId) === true;
 }
 
 /** The screen the phone reopens on: the last one used, if it still exists and may open. */

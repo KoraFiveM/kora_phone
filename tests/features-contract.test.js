@@ -95,6 +95,13 @@ assert.match(mailRepo, /INSERT IGNORE INTO phone_mail/, "a retried mail request 
 assert.match(mailRepo, /recipient_device_id = \?/, "mail is only read or deleted by its own sender or recipient");
 assert.match(read("server/repositories/external.lua"), /External\.isIdentifier\(name\)/, "housing table and column names must be checked before they go into SQL");
 assert.match(property, /device\.ownerCitizenId/, "homes must be looked up by the caller's own character");
+// Gallery is a folder app: listing and deleting run the media service for the caller's own device, by item id only.
+const galleryApp = read("apps/gallery/server.lua");
+for (const [callback, service] of [["list", "Media.list"], ["delete", "Media.delete"]])
+  assert.match(galleryApp, new RegExp(`app\\.callback\\('${callback}'[\\s\\S]*?Services\\.${service.replace(".", "\\.")}\\(source`), `gallery ${callback} must call ${service}(source`);
+assert.doesNotMatch(galleryApp, /payload\.(?:deviceId|ownerDeviceId|url)/, "the UI must only name an item id");
+assert.match(read("server/services/media.lua"), /Media\.findOwned\(device\.id, mediaId\)/, "a delete must only reach the caller's own media");
+
 // Phone is a folder app: the recent calls come from the call service for the caller's own device; starting a call is
 // the phone's own `call` request, never a number or caller chosen by the app on the server.
 const phoneApp = read("apps/phone/server.lua");

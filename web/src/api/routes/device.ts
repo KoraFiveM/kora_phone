@@ -26,7 +26,7 @@ const itemRoute = (collection: Collection) => async (payload: Item & { remove?: 
 
 export const deviceRoutes: HandlerSet<
     'refresh' | 'unlock' | 'lock' | 'pin' | 'settings' | 'installApp' | 'appsList' | 'appsInstall' | 'appsUninstall' | 'customApp' | 'contactSave'
-    | 'alarms' | 'stations' | 'capture' | 'deletePhoto'
+    | 'alarms' | 'stations' | 'capture'
 > = {
     refresh: () => reload(),
     unlock: async ({ pin }) => { await server('security:unlock', { pin }); return reload(); },
@@ -108,11 +108,6 @@ export const deviceRoutes: HandlerSet<
         await new Promise(resolve => setTimeout(resolve, 400));
         await server('camera:capture');
         await loadGallery();
-        return device.cache;
-    },
-    deletePhoto: async ({ id }) => {
-        await server('gallery:delete', { id: Number(id) });
-        device.cache = { ...device.cache, photos: device.cache.photos.filter(x => x.id !== String(id)) };
         return device.cache;
     },
 };

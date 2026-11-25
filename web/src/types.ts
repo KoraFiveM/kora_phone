@@ -1,6 +1,8 @@
 import type { Theme } from './themes';
 import { installedApps } from './catalog';
-export type AppId = `app:${string}` | 'custom' | 'store' | 'home' | 'messages' | 'camera' | 'gallery' | 'social' | 'gps' | 'flash' | 'music' | 'clock' | 'settings';
+export type AppId = `app:${string}` | 'custom' | 'store' | 'home' | 'messages' | 'camera' | 'social' | 'gps' | 'flash' | 'music' | 'clock' | 'settings';
+/** Where navigate() may go: a built-in app, or the id of a folder app (which opens through the app host). */
+export type AppTarget = AppId | (string & {});
 export interface Settings { name: string; volume: number; scale: number; wallpaper: 'orbit' | 'plain' | 'midnight' | 'slate' | 'ember' | 'kora_core' | 'custom'; wallpaperUrl?: string; theme?: Theme; setupComplete?: boolean; phoneStyle?: 'classic' | 'standard' | 'flip' | 'fold'; phoneCase?: 'default' | 'nightdrive' | 'citypop' | 'sakura' | 'touge' | 'garage' | 'kora_core' | 'arcade' | 'space' | 'palms' | 'skyline' | 'custom'; phoneCaseUrl?: string; iconStyle?: 'circle' | 'squircle' | 'outline' | 'solid'; dnd?: boolean; dndFrom?: string; dndTo?: string; installedApps?: AppId[]; appOrder?: AppId[]; dockOrder?: AppId[] }
 export interface MapBlip { id: number; x: number; y: number; sprite: number; label: string; street?: string; zone?: string; colour: string }
 export interface Contact { id?: number; name: string; number: string; photo?: string; favorite?: boolean }
@@ -17,7 +19,7 @@ export interface SdkApp {
 export interface MailItem { hasAction?: boolean; id: number; peer: string; subject: string; body: string; created_at: string; unread: boolean }
 export interface Location { label: string; x: number; y: number }
 export interface Service { label: string; description: string; numbers: string[] }
-export interface Bootstrap { homeReorder?: boolean; galleryViewer?: boolean; model?: 'standard' | 'flip' | 'fold'; characterName?: string; transfers?: boolean; moderator?: boolean; id: string; number: string; locked: boolean; hasPin: boolean; data?: DeviceData; preferences?: Settings; capabilities: Partial<Record<AppId | 'weather', boolean>>; unavailable: Record<string, string>; locations: Location[]; services: Service[]; call?: Call; video: { iceServers: RTCIceServer[] } | false; flash: { maxSeconds: number; maxBytes?: number } | false; admin: boolean }
+export interface Bootstrap { homeReorder?: boolean; galleryViewer?: boolean; model?: 'standard' | 'flip' | 'fold'; characterName?: string; transfers?: boolean; moderator?: boolean; id: string; number: string; locked: boolean; hasPin: boolean; data?: DeviceData; preferences?: Settings; capabilities: Partial<Record<string, boolean>>; unavailable: Record<string, string>; locations: Location[]; services: Service[]; call?: Call; video: { iceServers: RTCIceServer[] } | false; flash: { maxSeconds: number; maxBytes?: number } | false; admin: boolean }
 export type MediaKind = 'photo' | 'video';
 export interface Message { id: number; sender: string; recipient: string; kind: 'sms' | 'mail'; subject: string; body: string; created_at: string }
 export interface Post { id: number; number: string; body: string; price: number; media_url?: string; media_kind?: MediaKind; created_at: string; likes: number; comments: number; liked: boolean | number; mine: boolean | number }
@@ -52,7 +54,7 @@ export type Api = {
   deleteChatMessage: [{ messageId: number }, boolean];
   shareToChat: [{ conversationId: number; postId: number; body?: string; mediaUrl?: string; mediaKind?: MediaKind }, boolean];
   leaveGroup: [{ id: number }, boolean]; addMember: [{ id: number; number: string }, boolean];
-  capture: [{ front?: boolean }, DeviceData]; deletePhoto: [{ id: string }, DeviceData];
+  capture: [{ front?: boolean }, DeviceData];
   blocked: [Record<string, never>, string[]]; setBlocked: [{ number: string; blocked: boolean }, boolean];
   mailList: [{ box: 'inbox' | 'sent'; before?: number }, MailItem[]]; mailSend: [{ to: string; subject: string; body: string }, boolean]; mailRead: [{ id: number }, boolean]; mailDelete: [{ id: number }, boolean];
   myLocation: [Record<string, never>, { x: number; y: number; label: string; heading?: number; waypoint?: { x: number; y: number } }];

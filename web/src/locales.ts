@@ -4,7 +4,6 @@ const en: AppCopy = {
   custom: { label: 'Community app', subtitle: 'Made for your server.' },
   store: { label: 'App Store', subtitle: 'A little more you.' },
   social: { label: 'Pulse', subtitle: 'The city, in conversation.' },
-  gallery: { label: 'Gallery', subtitle: 'The moments you keep.' },
   gps: { label: 'Maps', subtitle: 'Find your own way.' },
   flash: { label: 'Flash', subtitle: 'Your city, in short clips.' },
   music: { label: 'Sound', subtitle: 'Something to listen to.' },

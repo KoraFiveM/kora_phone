@@ -54,7 +54,7 @@ Every NUI route that forwards to a server callback is listed once in `shared/rou
 | Messages | `sendMessage`, `getMessages`, `getConversations`, `startDirectConversation`, `markConversationRead`, `deleteMessageForSelf`, `createGroup`, `leaveGroup`, `addGroupMember`, `getBlocked`, `setBlocked` |
 | Calls | `calls:start`, `calls:accept`, `calls:reject`, `calls:hangup`, `calls:signal`, `calls:videoControl` |
 | Mail | `getMail`, `sendMail`, `readMail`, `deleteMail` |
-| Media | `requestMediaUpload`, `completeMediaUpload`, `getGallery`, `deleteMedia` |
+| Media | `requestMediaUpload`, `completeMediaUpload`, `getGallery` |
 | Utilities | `saveItem`, `removeItem` |
 | Apps (SDK) | `apps:list`, `apps:install`, `apps:uninstall`, `apps:call`, `apps:storage:get`, `apps:storage:list`, `apps:storage:set`, `apps:storage:remove`, `apps:contacts:list`, `apps:contacts:save`, `apps:notify` (see [App SDK API](./api/apps.md)) |
 | Community | `social:createAccount`, `getFeed`, `getProfile`, `createPost`, `deletePost`, `toggleLike`, `follow`, `unfollow`, `createComment`, `deleteComment`, `getComments`, `block`, `report` (each prefixed with its group, for example `social:getFeed`) |

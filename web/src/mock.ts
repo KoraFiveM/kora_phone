@@ -119,7 +119,6 @@ export async function mockRequest<K extends keyof Api>(action: K, payload: Api[K
       const svg = '<svg xmlns="http://www.w3.org/2000/svg" width="600" height="800"><rect width="600" height="800" fill="#c7c4b8"/><circle cx="420" cy="230" r="85" fill="#ede8d8"/><path d="M0 650 180 400 300 530 440 350 600 600V800H0" fill="#434844"/><path d="M0 760 220 600 420 670 600 510V800H0" fill="#262c29"/></svg>';
       store.data.photos.push({ id, url: `data:image/svg+xml,${encodeURIComponent(svg)}`, created_at: Date.now() / 1000 }); result = store.data; break;
     }
-    case 'deletePhoto': store.data.photos = store.data.photos.filter(photo => photo.id !== p.id); result = store.data; break;
     case 'weather': result = { condition: 'EXTRASUNNY', hour: 10, minute: 8, rain: 0 }; break;
     case 'waypoint': break;
     case 'videoSignal': break;

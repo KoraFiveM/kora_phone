@@ -236,8 +236,8 @@ test('async routes reply through the callback and skip the handset lock', functi
     local result = call('requestMediaUpload', {})
     equal(result.ok, true)
     equal(lockCalls, 0)
-    Routes.handle('deleteMedia', function() error('boom') end, { async = true })
-    equal(call('deleteMedia', {}).error.code, PhoneConstants.Errors.INTERNAL)
+    Routes.handle('completeMediaUpload', function() error('boom') end, { async = true })
+    equal(call('completeMediaUpload', {}).error.code, PhoneConstants.Errors.INTERNAL)
 end)
 
 test('sdk routes bind lazily to their module tables', function()

@@ -1,0 +1,4 @@
+.gallery-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(96px, 1fr)); gap: 6px; }
+.gallery-grid button { padding: 0; border: 0; background: none; cursor: pointer; border-radius: var(--kp-radius-sm); overflow: hidden; }
+.gallery-grid img, .gallery-grid video { width: 100%; aspect-ratio: 1; object-fit: cover; display: block; background: var(--kp-surface-raised); }
+.gallery-view img, .gallery-view video { width: 100%; max-height: 60vh; object-fit: contain; }

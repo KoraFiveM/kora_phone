@@ -1,8 +1,8 @@
 import { createContext, useContext, useEffect, useState } from 'react';
-import type { AppId, Bootstrap, Call, DeviceData } from '../types';
+import type { AppTarget, Bootstrap, Call, DeviceData } from '../types';
 export interface PhoneContextValue {
   device: Bootstrap; data: DeviceData; updateData: (data: DeviceData) => void;
-  navigate: (app: AppId, target?: string) => void; notify: (message: string) => void;
+  navigate: (app: AppTarget, target?: string) => void; notify: (message: string) => void;
   run: (work: () => Promise<void>) => Promise<void>; busy: boolean;
   setCall: (call?: Call) => void; setHasPin: (value: boolean) => void; revision: number;
 }

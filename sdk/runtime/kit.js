@@ -26,6 +26,7 @@ const ICONS = {
     more: 'M12 12h.01M19 12h.01M5 12h.01',
     bell: 'M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9M10.3 21a1.9 1.9 0 0 0 3.4 0',
     clock: 'M12 6v6l4 2M12 22a10 10 0 1 0 0-20 10 10 0 0 0 0 20z',
+    camera: 'M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3zM12 17a4 4 0 1 0 0-8 4 4 0 0 0 0 8z',
     home: 'M15 21v-8a1 1 0 0 0-1-1h-4a1 1 0 0 0-1 1v8M3 10a2 2 0 0 1 .7-1.5l7-6a2 2 0 0 1 2.6 0l7 6A2 2 0 0 1 21 10v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z',
     sun: 'M12 8a4 4 0 1 0 0 8 4 4 0 0 0 0-8zM12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41',
     play: 'M6 4l14 8-14 8z',
@@ -222,4 +223,13 @@ export function emojiPicker() {
         h('div', { style: 'display:grid;grid-template-columns:repeat(6,1fr);gap:8px;font-size:1.6rem' },
             EMOJI.map(emoji => h('button', { class: 'kp-icon-btn', 'aria-label': emoji, onclick: () => close({ emoji }) }, emoji))),
         h('button', { class: 'kp-btn', 'data-variant': 'ghost', onclick: () => close(undefined) }, 'Cancel')));
+}
+
+/** Full-screen photo or video. `kind` is 'video' for a clip. */
+export function viewMedia({ src, kind = 'photo' }) {
+    return overlay((dialog, close) => dialog.append(
+        kind === 'video'
+            ? h('video', { src, controls: true, autoplay: true, playsinline: true, style: 'max-width:100%;max-height:70vh' })
+            : h('img', { src, alt: '', style: 'max-width:100%;max-height:70vh;object-fit:contain' }),
+        h('button', { class: 'kp-btn', onclick: () => close(undefined) }, 'Close')), { centered: true });
 }
