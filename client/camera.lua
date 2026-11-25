@@ -106,6 +106,12 @@ local function finishMode()
     KoraPhone.SendNui('camera:closed')
 end
 
+-- The Camera folder app listens for these (apps/camera/client.lua); the phone's own NUI messages above keep working beside them.
+local function pushToApp(name, data)
+    local events = KoraPhone.SDK and KoraPhone.SDK.Events
+    if events then events.deliver('camera', name, data) end
+end
+
 function Camera.Open(options)
     options = type(options) == 'table' and options or {}
     if KoraPhone.State.cameraMode then return true end
@@ -174,6 +180,7 @@ function Camera.SetLooking(on)
     -- (NUI focus without keep-input swallows every key). Releasing the cursor is what hands the mouse to the game.
     SetNuiFocus(not on, not on)
     KoraPhone.SendNui('camera:hint', { text = Camera.Hint() })
+    pushToApp('hint', { text = Camera.Hint() })
     return true
 end
 
@@ -292,6 +299,7 @@ function Camera.SetRecording(active)
         if talking ~= last then
             last = talking
             KoraPhone.SendNui('camera:talking', { talking = talking })
+            pushToApp('talking', { talking = talking })
         end
     end, TALK_POLL_MS)
     return true

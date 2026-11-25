@@ -5,7 +5,7 @@ import { mergeOrder } from '../../homeReorder';
 import type { AppId } from '../../types';
 import { AppIcon, SdkAppIcon } from '../AppIcon';
 import { isSdkInstalled, sdkHomeId, sdkIdOf, useRuntimeApps } from '../runtimeApps';
-import { appDefinition, defaultDock, DOCK_IDS, homeGridIds } from '../appRegistry';
+import { appDefinition, defaultDock, homeGridIds } from '../appRegistry';
 import { senderName } from '../NotificationShade';
 import { usePhoneStore } from '../storeContext';
 import { useHomeReorder } from './useHomeReorder';
@@ -21,14 +21,14 @@ export function HomeScreen() {
 
   const { apps: runtimeApps } = useRuntimeApps();
   const installedSdk = runtimeApps.filter(app => isSdkInstalled(app, data.customApps));
-  const gridIds = mergeOrder<AppId>(data.settings.appOrder as AppId[] | undefined, [...homeGridIds(device), ...installedSdk.filter(app => !DOCK_IDS.includes(app.identifier)).map(sdkHomeId)]);
   // A default dock entry that is a folder app (Contacts, later Phone and the rest) shows as that app's `app:<id>` icon.
-  const dockDefaults = defaultDock(device).flatMap((id): AppId[] => {
+  const dockDefaults = defaultDock(device, installedSdk.map(app => app.identifier)).flatMap((id): AppId[] => {
     if (appDefinition(id as AppId)) return [id as AppId];
     const app = installedSdk.find(item => item.identifier === id);
     return app ? [sdkHomeId(app)] : [];
   });
   const dockIds = mergeOrder<AppId>(data.settings.dockOrder as AppId[] | undefined, dockDefaults);
+  const gridIds = mergeOrder<AppId>(data.settings.appOrder as AppId[] | undefined, [...homeGridIds(device), ...installedSdk.filter(app => !dockDefaults.includes(sdkHomeId(app))).map(sdkHomeId)]);
   // Server turns this off with Config.HomeScreen.allowReorder; the preview and older servers leave it on.
   const reorderAllowed = device?.homeReorder !== false;
   const reorder = useHomeReorder({ grid: gridIds, dock: dockIds }, reorderAllowed);

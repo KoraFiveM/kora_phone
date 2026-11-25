@@ -122,7 +122,8 @@ export function CustomAppScreen({ id, hint, transport = hostTransport }: { id: s
       // The permission check in the router runs first, so these only ever answer an app that declared media.write or camera.
       onUpload: async blob => { const saved = await uploadMedia({ blob }); void api('refresh', {}).then(next => { if (next.data) updateData(next.data); }).catch(() => undefined); return saved; },
       onCapture: async front => {
-        const next = await api('capture', { front });
+        let next;
+        try { next = await api('capture', { front }); } finally { await nui('captureDone'); }   // gives the phone back after the shot
         updateData(next);
         const shot = next.photos[0];
         if (!shot) throw new Error('The photo was not saved');

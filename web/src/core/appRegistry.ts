@@ -1,7 +1,7 @@
 import { lazy } from 'react';
 import type { ComponentType, LazyExoticComponent } from 'react';
 import {
-  Blocks, Camera,
+  Blocks, 
   Phone, Store as StoreIcon,
 } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
@@ -35,7 +35,6 @@ const screen = (load: () => Promise<ComponentType<ScreenProps>>) => lazy(async (
 // Heavy apps are split into their own chunks and loaded the first time they open.
 // The App Store reads this registry for its listings, so it loads lazily to keep the module graph acyclic.
 const StoreApp = screen(async () => (await import('../apps/store/Store')).StoreScreen);
-const CameraApp = screen(async () => (await import('../apps/camera/CameraScreen')).CameraScreen);
 
 const entry = (
   id: AppDefinition['id'], icon: LucideIcon, component: AppComponent,
@@ -45,7 +44,6 @@ const entry = (
 /** One entry per built-in app. Adding an app is adding a line here (plus its server-side id). Order is the home-screen order. */
 export const appRegistry: readonly AppDefinition[] = [
   entry('store', StoreIcon, StoreApp, 'grid'),
-  entry('camera', Camera, CameraApp, 'dock'),
   // Third-party SDK apps (apps:list) are not entries: they all render through this host, with the SDK app id as the
 // route target. Their runtime list lives in runtimeApps.ts and feeds the App Store and the host.
   entry('custom', Blocks, CustomAppRoute, 'hidden', { fullBleed: true }),
@@ -86,6 +84,4 @@ export const homeGridIds = (device?: Bootstrap): AppId[] =>
   appRegistry.filter(item => item.placement === 'grid' && canLaunch(item.id, device)).map(item => item.id);
 
 /** Default dock; the gallery stands in when the camera is unavailable. */
-export const defaultDock = (device?: Bootstrap): string[] => ['phone', 'messages', 'contacts', canLaunch('camera', device) ? 'camera' : 'gallery'];
-/** Every id that can sit in the default dock, so a folder app with one of these ids is shown there instead of in the grid. */
-export const DOCK_IDS: readonly string[] = ['phone', 'messages', 'contacts', 'camera', 'gallery'];
+export const defaultDock = (_device?: Bootstrap, installedIds: readonly string[] = []): string[] => ['phone', 'messages', 'contacts', installedIds.includes('camera') ? 'camera' : 'gallery'];

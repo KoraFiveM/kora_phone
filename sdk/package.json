@@ -27,7 +27,7 @@
   "scripts": {
     "build": "tsc -p tsconfig.json",
     "test": "npm run build && npm run build:runtime && node --test test/*.test.mjs",
-    "build:runtime": "esbuild src/index.ts --bundle --format=esm --target=es2020 --outfile=runtime/phone.js"
+    "build:runtime": "esbuild src/index.ts --bundle --format=esm --target=es2020 --outfile=runtime/phone.js && esbuild game-entry.ts --bundle --format=esm --target=es2020 --outfile=runtime/game.js"
   },
   "peerDependencies": {
     "react": ">=18"

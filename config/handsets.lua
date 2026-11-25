@@ -80,7 +80,6 @@ Kora.config.extend({
     }),
 
     LaunchApps = C.object(apps({
-        camera = true,
         store = true,
     }), {
         live = true, advanced = true,

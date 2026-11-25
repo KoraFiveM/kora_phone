@@ -128,6 +128,15 @@ for (const file of ["app.js", "handset.js"]) {
 assert.match(read("apps/settings/ui/handset.js"), /phone\.system\('handset'/, "handset operations go through phone.system");
 assert.match(read("apps/settings/ui/app.js"), /phone\.system\('settings\.save'/, "settings are saved through phone.system");
 
+// Camera is a system folder app: the page draws the game texture and records; the native camera is driven only through the client handlers,
+// and a photo taken through the service always gives the phone back (captureDone).
+const cameraClient = read("apps/camera/client.lua");
+for (const [name, call] of [["open", "KoraPhone.Camera.Open"], ["zoom", "KoraPhone.Camera.Zoom"], ["facing", "KoraPhone.Camera.SetFacing"], ["recording", "KoraPhone.Camera.SetRecording"], ["close", "KoraPhone.Camera.Close"]])
+  assert.match(cameraClient, new RegExp(`app\\.client\\('${name}'[\\s\\S]*?${call.replace(/\./g, "\\.")}\\(`), `camera ${name} must call ${call}`);
+assert.match(read("apps/camera/app.lua"), /permissions = \{ 'camera', 'media\.write', 'record' \}/, "camera declares exactly the permissions it uses");
+assert.match(read("web/src/apps/custom/CustomApps.tsx"), /finally \{ await nui\('captureDone'\); \}/, "camera.capture must hand the phone back after the shot");
+assert.match(read("apps/camera/ui/app.js"), /window\.top/, "the game view is sized from the phone page, not the frame");
+
 // Sound is a folder app: stations are validated phone items for the caller's own device, and its page may only embed
 // the hosts declared in app.lua (the CSP in index.html repeats them).
 const musicServer = read("apps/music/server.lua");
