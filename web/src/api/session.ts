@@ -23,7 +23,6 @@ export function adaptBootstrap(raw: RawBootstrap): Bootstrap {
             ...(unlocked ? {
                 photos: previous.photos,
                 contacts: Array.isArray(raw.contacts) ? mapped.contacts : previous.contacts,
-                notes: raw.items?.notes ? mapped.notes : previous.notes,
                 alarms: raw.items?.alarms ? mapped.alarms : previous.alarms,
                 stations: raw.items?.stations ? mapped.stations : previous.stations,
             } : {}),

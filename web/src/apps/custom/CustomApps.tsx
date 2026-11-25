@@ -1,8 +1,8 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Blocks } from 'lucide-react';
-import { api, isPreview, nui } from '../../api';
+import { api, nui } from '../../api';
 import { usePhone } from '../../core/PhoneContext';
-import { setSdkApps, useSdkApps } from '../../core/runtimeApps';
+import { isSdkInstalled, refreshSdkApps, useRuntimeApps } from '../../core/runtimeApps';
 import type { SdkApp } from '../../core/runtimeApps';
 import { isHostMessage } from '../../nuiEvents';
 import '../../CustomApps.css';
@@ -10,27 +10,33 @@ import { SETTINGS_EVENT, legacyEvent } from '../../sdk/legacy';
 import { appUrl, createRouter, buildTheme, permissionsOf, sameTheme, originOf, push, isRecord } from '../../sdk';
 import type { HostTransport, Handset, ThemePayload } from '../../sdk';
 type CustomApp = SdkApp;
-function useCustomApps() {
-  const apps = useSdkApps(); const [loaded, setLoaded] = useState(isPreview);
-  useEffect(() => {
-    if (isPreview) return;
-    let mounted = true;
-    const refresh = () => { void nui<CustomApp[]>('customList').then(list => { if (mounted) setSdkApps(Array.isArray(list) ? list : []); setLoaded(true); }).catch(() => { if (mounted) { setSdkApps([]); setLoaded(true); } }); };
-    const handler = (e: MessageEvent) => { if (isHostMessage(e.source, window, window.parent) && e.data?.type === 'customRegistry') refresh(); };
-    refresh(); window.addEventListener('message', handler);
-    return () => { mounted = false; window.removeEventListener('message', handler); };
-  }, []);
-  return { apps, loaded };
+function useCustomApps() { return useRuntimeApps(); }
+const maskUrl = (icon: string) => `url("${icon.replace(/^nui:\/\//, 'https://cfx-nui-')}")`;
+
+/** An app's icon: a themed mask for an .svg shipped with the app, an image for other URLs, a generic block otherwise. */
+export function SdkIcon({ icon, size = 25 }: { icon?: string; size?: number }) {
+  if (icon && /^(nui:\/\/|https:\/\/)/.test(icon) && /\.svg(\?|$)/.test(icon)) return <span className="sdk-icon" style={{ width: size, height: size, maskImage: maskUrl(icon), WebkitMaskImage: maskUrl(icon) }} aria-hidden="true" />;
+  if (icon && /^https:\/\//.test(icon)) return <img src={icon} alt="" width={size} height={size} />;
+  return <Blocks size={size} strokeWidth={1.5} />;
 }
-export function CustomAppStore({ search, installedOnly }: { search: string; installedOnly: boolean }) {
+
+const CATEGORY_LABEL: Record<string, string> = { tools: 'Tools', life: 'Life', social: 'Social' };
+
+export function CustomAppStore({ search, installedOnly, category = 'All' }: { search: string; installedOnly: boolean; category?: string }) {
   const { apps } = useCustomApps(); const { data, updateData, run, busy, navigate } = usePhone();
-  const isInstalled = (app: CustomApp) => data.customApps?.[app.identifier] ?? app.defaultApp === true;
-  const visible = apps.filter(app => (!installedOnly || isInstalled(app)) && `${app.name} ${app.description}`.toLowerCase().includes(search.toLowerCase()));
+  const isInstalled = (app: CustomApp) => isSdkInstalled(app, data.customApps);
+  const visible = apps.filter(app => (!installedOnly || isInstalled(app))
+    && (category === 'All' || CATEGORY_LABEL[app.category ?? 'tools'] === category)
+    && `${app.name} ${app.description}`.toLowerCase().includes(search.toLowerCase()));
   if (!visible.length) return null;
-  return <section><p className="section-label">COMMUNITY APPS</p>{visible.map(app => {
+  return <section><p className="section-label">MORE APPS</p>{visible.map(app => {
     const installed = isInstalled(app);
-    const change = (value: boolean) => run(async () => { updateData(await api('customApp', { app: app.identifier, installed: value })); await nui('customLifecycle', { app: app.identifier, event: value ? 'onInstall' : 'onDelete' }); });
-    return <article className="store-app" key={app.identifier}><div className="store-app-icon">{app.icon ? <img src={app.icon} alt="" /> : <Blocks size={22} strokeWidth={1.5} />}</div><div className="store-app-copy"><h3>{app.name}</h3><small>Community · Free</small><p>{app.description}</p>{installed && <button disabled={busy} className="store-remove" onClick={() => change(false)}>Remove</button>}</div><button className={`store-get ${installed ? 'installed' : ''}`} disabled={busy} onClick={() => installed ? navigate('custom', app.identifier) : change(true)}>{installed ? 'Open' : 'Get'}</button></article>;
+    const change = (value: boolean) => run(async () => {
+      updateData(await api('customApp', { app: app.identifier, installed: value }));
+      await nui('customLifecycle', { app: app.identifier, event: value ? 'onInstall' : 'onDelete' });
+      await refreshSdkApps();
+    });
+    return <article className="store-app" key={app.identifier}><div className="store-app-icon"><SdkIcon icon={app.icon} size={22} /></div><div className="store-app-copy"><h3>{app.name}</h3><small>{app.source === 'server' ? (CATEGORY_LABEL[app.category ?? 'tools'] ?? 'Apps') : 'Community'} · Free</small><p>{app.description}</p>{installed && !app.system && <button disabled={busy} className="store-remove" onClick={() => change(false)}>Remove</button>}</div><button className={`store-get ${installed ? 'installed' : ''}`} disabled={busy} onClick={() => installed ? navigate('custom', app.identifier) : change(true)}>{installed ? 'Open' : 'Get'}</button></article>;
   })}</section>;
 }
 const hostTransport: HostTransport = { request: (route, payload) => nui<unknown>(route, payload) };

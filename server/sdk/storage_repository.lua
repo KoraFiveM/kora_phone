@@ -30,6 +30,15 @@ function Repository.usage(deviceId, appId)
     return { keys = tonumber(row and row.keyCount) or 0, bytes = tonumber(row and row.totalBytes) or 0 }
 end
 
+--- Every key and raw JSON value one app keeps on one device, optionally limited to keys starting with `prefix`.
+function Repository.list(deviceId, appId, prefix)
+    local rows = Kora.sql.query(
+        'SELECT `key`, `value` FROM phone_app_storage WHERE device_id = ? AND app_id = ? AND `key` LIKE ? ORDER BY `key`',
+        { deviceId, appId, (prefix or ''):gsub('[%%_\\]', '\\%0') .. '%' }
+    )
+    return rows or {}
+end
+
 function Repository.set(deviceId, appId, key, encodedValue)
     local result = Kora.sql.execute(
         'INSERT INTO phone_app_storage (device_id, app_id, `key`, `value`) VALUES (?, ?, ?, ?) '

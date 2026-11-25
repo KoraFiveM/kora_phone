@@ -10,7 +10,7 @@ const routes = JSON.parse(fs.readFileSync(path.join(root, 'shared/routes.json'),
 
 // Handled by the phone's client script only (never a server callback), so they are not in routes.json.
 const CLIENT_ONLY = new Set(['phone:ready', 'phone:close', 'camera:close', 'camera:open', 'camera:capture',
-    'customList', 'customLifecycle', 'alarm', 'camera:coverStart', 'camera:facing', 'camera:recording', 'camera:zoom',
+    'customList', 'customLifecycle', 'apps:client', 'alarm', 'camera:coverStart', 'camera:facing', 'camera:recording', 'camera:zoom',
     'location:mine', 'map:blips', 'notify', 'quiet', 'waypoint', 'weather:get',
     // UI-side aliases for client callbacks (see routeAliases in web/src/api/transport.ts).
     'close', 'captureDone']);

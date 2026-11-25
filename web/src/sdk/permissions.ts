@@ -5,6 +5,7 @@ import type { Permission, RequestType } from './protocol';
 export const REQUIRED_PERMISSION: Partial<Record<RequestType, Permission>> = {
     notify: 'notify',
     'storage.get': 'storage',
+    'storage.list': 'storage',
     'storage.set': 'storage',
     'storage.remove': 'storage',
     'contacts.list': 'contacts.read',

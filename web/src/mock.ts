@@ -14,7 +14,7 @@ const seed: DeviceData = {
   // the Midnight wallpaper before the user has made a choice.
   settings: { name: 'Kora Phone', volume: 0.5, scale: 1, wallpaper: 'kora_core' },
   contacts: [{ name: 'Alex Morgan', number: '5550192042' }, { name: 'Jules Chen', number: '5550178031' }, { name: 'Los Santos Customs', number: '5550103000' }],
-  notes: [{ id: 'first-note', title: 'A fresh start', body: 'Pick up the car. Meet Jules at the pier.\nFind a little room for something new.' }], photos: [],
+  photos: [],
   stations: [{ id: 'first-station', label: 'Lo-fi beats', url: 'https://www.youtube.com/watch?v=jfKfPfyJRdk' }],
   alarms: [{ id: 'first-alarm', label: 'Wake up', time: '08:00', days: [1, 2, 3, 4, 5], enabled: true }],
 };
@@ -109,7 +109,6 @@ export async function mockRequest<K extends keyof Api>(action: K, payload: Api[K
     }
     case 'answer': if (activeCall) { activeCall = { ...activeCall, status: 'active' }; result = activeCall; } break;
     case 'hangup': activeCall = undefined; store.history = store.history.map(h => h.id === p.id ? { ...h, status: 'ended' } : h); break;
-    case 'notes': store.data.notes = store.data.notes.filter(n => n.id !== p.id); if (!p.remove) store.data.notes.unshift({ id: String(p.id), title: String(p.title), body: String(p.body) }); result = store.data; break;
     case 'stations': store.data.stations = store.data.stations.filter(s => s.id !== p.id); if (!p.remove) store.data.stations.unshift({ id: String(p.id), label: String(p.label), url: String(p.url) }); result = store.data; break;
     case 'alarms': store.data.alarms = store.data.alarms.filter(a => a.id !== p.id); if (!p.remove) store.data.alarms.unshift({ id: String(p.id), label: String(p.label), time: String(p.time), days: Array.isArray(p.days) ? p.days as number[] : [], enabled: !!p.enabled }); result = store.data; break;
     case 'feed': result = feed.filter(post => !p.before || post.id < Number(p.before)); break;

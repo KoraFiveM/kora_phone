@@ -2,13 +2,13 @@ KoraPhone.Services = KoraPhone.Services or {}
 local Items = {}
 KoraPhone.Services.Items = Items
 
-local GROUP = { note = 'notes', alarm = 'alarms', station = 'stations' }
+local GROUP = { alarm = 'alarms', station = 'stations' }
 
 local invalid = PhoneInvalid
 
--- Everything a phone keeps, grouped for the bootstrap: { notes = {}, alarms = {}, stations = {} }.
+-- Everything a phone keeps, grouped for the bootstrap: { alarms = {}, stations = {} }. Notes live in the Notes app's own storage.
 function Items.forDevice(deviceId)
-    local out = { notes = {}, alarms = {}, stations = {} }
+    local out = { alarms = {}, stations = {} }
     for _, row in ipairs(KoraPhone.Repositories.Items.list(deviceId)) do
         local ok, decoded = pcall(json.decode, row.payload)
         local group = out[GROUP[row.kind]]

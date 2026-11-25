@@ -76,6 +76,7 @@
     {"nui": "apps:uninstall", "server": "kora_phone:server:apps:uninstall", "rate": "sdk", "app": null},
     {"nui": "apps:call", "server": "kora_phone:server:apps:call", "rate": "sdk", "app": null},
     {"nui": "apps:storage:get", "server": "kora_phone:server:apps:storage:get", "rate": "sdk", "app": null},
+    {"nui": "apps:storage:list", "server": "kora_phone:server:apps:storage:list", "rate": "sdk", "app": null},
     {"nui": "apps:storage:set", "server": "kora_phone:server:apps:storage:set", "rate": "sdk", "app": null},
     {"nui": "apps:storage:remove", "server": "kora_phone:server:apps:storage:remove", "rate": "sdk", "app": null},
     {"nui": "apps:contacts:list", "server": "kora_phone:server:apps:contacts:list", "rate": "sdk", "app": null},

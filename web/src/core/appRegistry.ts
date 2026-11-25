@@ -1,25 +1,22 @@
 import { lazy } from 'react';
 import type { ComponentType, LazyExoticComponent } from 'react';
 import {
-  AlarmClock, Aperture, Blocks, Calculator, Camera, Car, CloudSun, ContactRound, CreditCard, House, Image, Mail, MapPin,
+  AlarmClock, Aperture, Blocks, Camera, Car, ContactRound, CreditCard, House, Image, Mail, MapPin,
   MessageCircle, Music, Phone, Radio, Settings as SettingsIcon, ShieldAlert, ShieldCheck, Store as StoreIcon,
-  StickyNote, Tag,
+  Tag,
 } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import { ClockScreen } from '../apps/clock/ClockScreen';
-import { CalculatorScreen } from '../apps/calculator/CalculatorScreen';
 import { ContactsScreen, MessagesScreen, PhoneScreen } from '../apps/communication/Communication';
 import { CustomAppRoute } from '../apps/custom/CustomApps';
 import { GalleryScreen } from '../apps/gallery/GalleryScreen';
 import { GPSScreen } from '../apps/maps/GPSScreen';
 import { MailScreen } from '../apps/mail/MailScreen';
 import { MusicScreen } from '../apps/music/MusicScreen';
-import { NotesScreen } from '../apps/notes/NotesScreen';
 import { PropertyScreen } from '../apps/property/PropertyScreen';
 import { ServicesScreen } from '../apps/services/ServicesScreen';
 import { VehiclesScreen } from '../apps/vehicles/VehiclesScreen';
 import { BankScreen } from '../apps/wallet/BankScreen';
-import { WeatherScreen } from '../apps/weather/WeatherScreen';
 import { SettingsHost } from './SettingsHost';
 import { appCopy } from '../locales';
 import { optionalApps } from '../catalog';
@@ -70,10 +67,7 @@ export const appRegistry: readonly AppDefinition[] = [
   entry('classifieds', Tag, MarketApp, 'grid', { optional: { category: 'Life', description: 'Buy, sell, and find something worth keeping.' } }),
   entry('gps', MapPin, GPSScreen, 'grid', { optional: { category: 'Tools', description: 'Familiar places. New directions. Your city, mapped.' } }),
   entry('services', ShieldCheck, ServicesScreen, 'grid', { optional: { category: 'Life', description: 'Get in touch with the people who keep the city moving.' } }),
-  entry('notes', StickyNote, NotesScreen, 'grid', { optional: { category: 'Tools', description: 'A home for your plans, ideas, and little reminders.' } }),
   entry('mail', Mail, MailScreen, 'grid', { optional: { category: 'Social', description: 'For the things that deserve more than a text.' } }),
-  entry('weather', CloudSun, WeatherScreen, 'grid', { optional: { category: 'Life', description: 'A look outside before you head out.' } }),
-  entry('calculator', Calculator, CalculatorScreen, 'grid', { optional: { category: 'Tools', description: 'Everyday numbers, made a little simpler.' } }),
   entry('property', House, PropertyScreen, 'grid', { optional: { category: 'Life', description: 'Your properties and a shortcut home.' } }),
   entry('vehicles', Car, VehiclesScreen, 'grid', { optional: { category: 'Life', description: 'Your vehicles, fuel, and last registered garage.' } }),
   entry('flash', Aperture, FlashApp, 'grid', { fullBleed: true, optional: { category: 'Social', description: 'Short videos and photos from around the city, for everyone to see.' } }),
@@ -87,7 +81,7 @@ export const appRegistry: readonly AppDefinition[] = [
   entry('moderation', ShieldAlert, ModerationApp, 'grid'),
   // Third-party SDK apps (apps:list) are not entries: they all render through this host, with the SDK app id as the
 // route target. Their runtime list lives in runtimeApps.ts and feeds the App Store and the host.
-  entry('custom', Blocks, CustomAppRoute, 'hidden'),
+  entry('custom', Blocks, CustomAppRoute, 'hidden', { fullBleed: true }),
 ];
 
 const byId = new Map<string, AppDefinition>(appRegistry.map(item => [item.id, item]));

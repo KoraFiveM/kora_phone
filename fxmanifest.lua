@@ -17,7 +17,10 @@ shared_scripts {
     'config/handsets.lua',
     'shared/constants.lua',
     'shared/validation.lua',
-    'shared/contracts.lua'
+    'shared/contracts.lua',
+    -- Folder apps: the Phone.app API first, then every apps/<id>/app.lua definition (both realms).
+    'shared/apps.lua',
+    'apps/*/app.lua'
 }
 
 client_scripts {
@@ -30,6 +33,7 @@ client_scripts {
     'client/camera.lua',
     'client/sdk/registry.lua',
     'client/sdk/events.lua',
+    'client/sdk/apps.lua',
     'client/customapps.lua',
     'client/integrations/voice.lua',
     'client/main.lua',
@@ -39,7 +43,9 @@ client_scripts {
     'client/phone_state.lua',
     'client/services.lua',
     'client/share.lua',
-    'client/video.lua'
+    'client/video.lua',
+    -- Folder apps' client code runs last so every KoraPhone client module exists.
+    'apps/*/client.lua'
 }
 
 server_scripts {
@@ -75,6 +81,8 @@ server_scripts {
     'server/sdk/routes.lua',
     'server/sdk/discovery.lua',
     'server/sdk/exports.lua',
+    'server/sdk/apps.lua',
+    'apps/*/server.lua',
     -- Gateway: registers every callback from shared/routes.json; handlers bind lazily.
     'server/callbacks.lua',
     'server/modules/call_callbacks.lua',
@@ -92,6 +100,10 @@ files {
     'web/dist/assets/*',
     'web/dist/compat.js',
     'web/dist/map.jpg',
+    -- Folder apps: UI pages and assets, plus the no-build runtime (kit and client) they import.
+    'apps/*/ui/*',
+    'apps/*/ui/**/*',
+    'sdk/runtime/*',
     'shared/routes.json',
     'locales/*.lua',
     'local-media/*',

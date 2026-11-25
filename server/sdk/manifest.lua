@@ -15,7 +15,11 @@ Manifest.PERMISSIONS = {
 local FIELDS = {
     id = true, name = true, description = true, icon = true, entry = true, version = true,
     permissions = true, job = true, defaultInstalled = true, price = true,
+    category = true, system = true, storage = true,
 }
+
+Manifest.STORAGE_MAX = { keys = 512, totalBytes = 1024 * 1024 }
+Manifest.CATEGORIES = { tools = true, life = true, social = true, games = true, system = true }
 
 Manifest.ID_PATTERN = '^[a-z0-9][a-z0-9_-]+$'
 Manifest.LIMITS = { id = 32, name = 24, description = 120, version = 32, icon = 256, entry = 200 }
@@ -156,6 +160,25 @@ function Manifest.validate(raw)
         return fail('defaultInstalled must be a boolean')
     end
     manifest.defaultInstalled = raw.defaultInstalled == true
+
+    if raw.category ~= nil and (type(raw.category) ~= 'string' or not Manifest.CATEGORIES[raw.category]) then
+        return fail('category must be one of tools, life, social, games, system')
+    end
+    manifest.category = raw.category or 'tools'
+    if raw.storage ~= nil then
+        if type(raw.storage) ~= 'table' then return fail('storage must be a table') end
+        manifest.storage = {}
+        for key, value in pairs(raw.storage) do
+            local max = Manifest.STORAGE_MAX[key]
+            if not max then return fail(('unknown storage field %s'):format(tostring(key))) end
+            if type(value) ~= 'number' or value ~= math.floor(value) or value < 1 or value > max then
+                return fail(('storage.%s must be an integer from 1 to %d'):format(key, max))
+            end
+            manifest.storage[key] = value
+        end
+    end
+    if raw.system ~= nil and type(raw.system) ~= 'boolean' then return fail('system must be a boolean') end
+    manifest.system = raw.system == true
 
     if raw.price ~= nil then
         if type(raw.price) ~= 'number' or raw.price ~= raw.price or raw.price < 0 or raw.price == math.huge then

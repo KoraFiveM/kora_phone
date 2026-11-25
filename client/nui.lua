@@ -122,6 +122,11 @@ route('customList', function()
     return KoraPhone.CustomApps.List()
 end)
 
+-- Folder apps: the UI's `phone.client(name, payload)` reaches apps/<id>/client.lua handlers here.
+route('apps:client', function(data)
+    return KoraPhone.Apps.invokeClient(data.app, data.name, data.payload)
+end)
+
 route('customLifecycle', function(data)
     if type(data.app) == 'string' and type(data.event) == 'string' then
         KoraPhone.CustomApps.Fire(data.app, data.event)
@@ -201,16 +206,21 @@ local function currentWeather()
     return 'CLEAR'
 end
 
-route('weather:get', function()
+-- World services every app may use (the Weather app's client.lua, the home screen widget).
+KoraPhone.World = KoraPhone.World or {}
+
+---@return { condition: string, hour: integer, minute: integer, rain: number }
+function KoraPhone.World.Weather()
     return {
-        ok = true,
-        data = {
-            condition = currentWeather(),
-            hour = GetClockHours(),
-            minute = GetClockMinutes(),
-            rain = math.max(0.0, GetRainLevel() + 0.0),
-        },
+        condition = currentWeather(),
+        hour = GetClockHours(),
+        minute = GetClockMinutes(),
+        rain = math.max(0.0, GetRainLevel() + 0.0),
     }
+end
+
+route('weather:get', function()
+    return { ok = true, data = KoraPhone.World.Weather() }
 end)
 
 -- An alarm went off in the UI. With the phone closed the player still needs to notice it.

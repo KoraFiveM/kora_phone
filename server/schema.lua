@@ -336,7 +336,7 @@ KoraPhoneSchema = {
         name = 'phone_items', collate = COLLATE,
         columns = {
             idRef('device_id'),
-            { name = 'kind', type = 'enum', values = { 'note', 'alarm', 'station' } },
+            { name = 'kind', type = 'enum', values = { 'alarm', 'station' } },
             { name = 'item_key', type = 'varchar(64)' },
             { name = 'payload', type = 'text' },
             updatedAt(),

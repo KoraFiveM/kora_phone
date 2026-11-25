@@ -1,14 +1,13 @@
 import type { Theme } from './themes';
 import { installedApps } from './catalog';
-export type AppId = 'custom' | 'store' | 'home' | 'phone' | 'contacts' | 'messages' | 'banking' | 'camera' | 'gallery' | 'social' | 'classifieds' | 'gps' | 'services' | 'mail' | 'notes' | 'weather' | 'calculator' | 'property' | 'vehicles' | 'flash' | 'music' | 'clock' | 'settings' | 'moderation';
+export type AppId = `app:${string}` | 'custom' | 'store' | 'home' | 'phone' | 'contacts' | 'messages' | 'banking' | 'camera' | 'gallery' | 'social' | 'classifieds' | 'gps' | 'services' | 'mail' | 'property' | 'vehicles' | 'flash' | 'music' | 'clock' | 'settings' | 'moderation';
 export interface Settings { name: string; volume: number; scale: number; wallpaper: 'orbit' | 'plain' | 'midnight' | 'slate' | 'ember' | 'kora_core' | 'custom'; wallpaperUrl?: string; theme?: Theme; setupComplete?: boolean; phoneStyle?: 'classic' | 'standard' | 'flip' | 'fold'; phoneCase?: 'default' | 'nightdrive' | 'citypop' | 'sakura' | 'touge' | 'garage' | 'kora_core' | 'arcade' | 'space' | 'palms' | 'skyline' | 'custom'; phoneCaseUrl?: string; iconStyle?: 'circle' | 'squircle' | 'outline' | 'solid'; dnd?: boolean; dndFrom?: string; dndTo?: string; installedApps?: AppId[]; appOrder?: AppId[]; dockOrder?: AppId[] }
 export interface MapBlip { id: number; x: number; y: number; sprite: number; label: string; street?: string; zone?: string; colour: string }
 export interface Contact { id?: number; name: string; number: string; photo?: string; favorite?: boolean }
-export interface Note { id: string; title: string; body: string }
 export interface Photo { id: string; url: string; created_at: number; kind?: MediaKind }
 export interface Station { id: string; label: string; url: string }
 export interface Alarm { id: string; label: string; time: string; days: number[]; enabled: boolean }
-export interface DeviceData { contacts: Contact[]; notes: Note[]; photos: Photo[]; stations: Station[]; alarms: Alarm[]; settings: Settings; installedApps?: AppId[]; customApps?: Record<string, boolean> }
+export interface DeviceData { contacts: Contact[]; photos: Photo[]; stations: Station[]; alarms: Alarm[]; settings: Settings; installedApps?: AppId[]; customApps?: Record<string, boolean> }
 export interface Call { id: string; status: 'ringing' | 'active' | 'busy' | 'missed' | 'ended' | 'declined' | 'cancelled' | 'failed'; number: string; direction: 'incoming' | 'outgoing'; deviceId: string; volume?: number }
 export interface WalletCard { name: string; citizenId: string; birthdate: string; gender: string; nationality: string; job: string; licences: { id: string; label: string; valid: boolean }[] }
 /** A server-registered SDK app as `apps:list` returns it. */
@@ -23,7 +22,7 @@ export interface Location { label: string; x: number; y: number }
 export interface Service { label: string; description: string; numbers: string[] }
 export interface JobData { job: { name: string; label: string; grade: number | { name: string; label?: string; level?: number }; gradeLabel: string; onDuty: boolean }; actions: { id: string; label: string }[] }
 export interface ModerationReport { id: number; targetType: 'profile' | 'post' | 'comment' | 'listing'; targetId: number; reason: string; details: string; status: string; createdAt: string; snapshot?: Record<string, unknown> }
-export interface Bootstrap { homeReorder?: boolean; galleryViewer?: boolean; model?: 'standard' | 'flip' | 'fold'; characterName?: string; transfers?: boolean; moderator?: boolean; id: string; number: string; locked: boolean; hasPin: boolean; data?: DeviceData; preferences?: Settings; capabilities: Partial<Record<AppId, boolean>>; unavailable: Record<string, string>; locations: Location[]; services: Service[]; call?: Call; video: { iceServers: RTCIceServer[] } | false; flash: { maxSeconds: number; maxBytes?: number } | false; admin: boolean }
+export interface Bootstrap { homeReorder?: boolean; galleryViewer?: boolean; model?: 'standard' | 'flip' | 'fold'; characterName?: string; transfers?: boolean; moderator?: boolean; id: string; number: string; locked: boolean; hasPin: boolean; data?: DeviceData; preferences?: Settings; capabilities: Partial<Record<AppId | 'weather', boolean>>; unavailable: Record<string, string>; locations: Location[]; services: Service[]; call?: Call; video: { iceServers: RTCIceServer[] } | false; flash: { maxSeconds: number; maxBytes?: number } | false; admin: boolean }
 export type MediaKind = 'photo' | 'video';
 export interface Message { id: number; sender: string; recipient: string; kind: 'sms' | 'mail'; subject: string; body: string; created_at: string }
 export interface CallHistory { id: string; caller: string; recipient: string; status: string; created_at: string }
@@ -47,7 +46,6 @@ export type Api = {
   sendMessage: [{ recipient: string; kind: 'sms' | 'mail'; subject: string; body: string }, { sent: boolean }];
   history: [Record<string, never>, CallHistory[]]; dial: [{ number: string }, Call];
   answer: [{ id: string }, Call]; hangup: [{ id: string; reject?: boolean }, boolean];
-  notes: [Note & { remove?: boolean }, DeviceData];
   stations: [Station & { remove?: boolean }, DeviceData];
   alarms: [Alarm & { remove?: boolean }, DeviceData];
   feed: [{ kind: 'classifieds' | 'flash'; before?: number }, Post[]];
@@ -90,5 +88,5 @@ export function normalizeData(value?: DeviceData): DeviceData {
   if (legacy.phoneCase === 'qbcore') legacy.phoneCase = 'kora_core';
   // The Flip color theme is retired: legacy devices map to a real theme, keeping the flip style.
   if (settings.theme === 'flip') { settings.theme = 'dark'; settings.phoneStyle ??= 'flip'; }
-  return { customApps: value?.customApps || {}, contacts: asList(value?.contacts), notes: asList(value?.notes), photos: asList(value?.photos), stations: asList(value?.stations), alarms: asList(value?.alarms), installedApps: installedApps(value?.installedApps), settings: settings as Settings };
+  return { customApps: value?.customApps || {}, contacts: asList(value?.contacts), photos: asList(value?.photos), stations: asList(value?.stations), alarms: asList(value?.alarms), installedApps: installedApps(value?.installedApps), settings: settings as Settings };
 }

@@ -1,0 +1,5 @@
+.weather { align-items: center; text-align: center; }
+.weather-condition { margin: 0; font-family: var(--kp-font-heading); font-size: 1.8rem; }
+.weather-time { font-family: var(--kp-font-mono); font-size: 2.2rem; }
+.weather .kp-icon { width: 96px; height: 96px; stroke-width: 0.8; }
+.weather .kp-card { align-self: stretch; }

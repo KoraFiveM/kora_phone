@@ -49,7 +49,10 @@ test('the manifest lists scripts', function() assert(#entries > 20, 'only ' .. #
 test('every manifest entry exists on disk (globs match at least one file)', function()
     for _, entry in ipairs(entries) do
         if entry:sub(1, 1) ~= '@' and entry:match('%.lua$') then
-            if entry:find('*', 1, true) then
+            -- apps/*/<file>.lua globs load whatever folder apps exist; a phone with none is valid.
+            if entry:sub(1, 5) == 'apps/' then
+                -- skipped
+            elseif entry:find('*', 1, true) then
                 local pattern, found = globToPattern(entry), false
                 for _, file in ipairs(listLua(entry:match('^(.-)/[^/]*$') or '.')) do
                     if file:match(pattern) then found = true break end

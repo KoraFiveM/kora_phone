@@ -136,4 +136,34 @@ test('the schema declares phone_app_storage with the contract primary key and ca
     equal(spec.foreign[1].on_delete, 'CASCADE')
 end)
 
+test('an app with a raised manifest quota may keep more keys than the default', function()
+    resetSql()
+    local ok = KoraPhone.SDK.Registry.register(H.manifest({ id = 'bigapp', storage = { keys = 70 } }), 'app_res', {})
+    equal(ok, true)
+    for i = 1, 70 do equal(select(2, Storage.set(7, 'bigapp', 'k' .. i, i)), nil, 'key ' .. i) end
+    local _, err = Storage.set(7, 'bigapp', 'k71', 71)
+    equal(err.error.code, 'CONFLICT')
+    assert(err.error.message:find('%(70%)'), err.error.message)
+    KoraPhone.SDK.Registry.register(H.manifest({ id = 'plainapp' }), 'app_res', {})
+    for i = 1, 64 do Storage.set(7, 'plainapp', 'k' .. i, i) end
+    equal(select(2, Storage.set(7, 'plainapp', 'k65', 65)).error.code, 'CONFLICT')
+end)
+
+test('list escapes LIKE wildcards in the prefix and decodes values', function()
+    resetSql()
+    local captured
+    Kora.sql.query = function(sql, p)
+        captured = { sql = sql, params = p }
+        return { { key = 'note:1', value = '{"t":"a"}' }, { key = 'note:bad', value = 'not json' } }
+    end
+    local values = Storage.list(7, 'demo-app', 'note:')
+    equal(values['note:1'].t, 'a')
+    equal(values['note:bad'], nil)
+    equal(captured.params[3], 'note:%')
+    Storage.list(7, 'demo-app', nil)
+    equal(captured.params[3], '%')
+    local _, err = Storage.list(7, 'demo-app', 'a%b')
+    equal(err.error.code, 'INVALID_INPUT')
+end)
+
 H.finish('sdk-storage')

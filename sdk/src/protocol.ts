@@ -40,7 +40,9 @@ export interface InitPayload {
 export interface RequestMap {
     ready: { payload: Record<string, never> | undefined; result: unknown };
     callback: { payload: { name: string; payload?: unknown }; result: unknown };
+    client: { payload: { name: string; payload?: unknown }; result: unknown };
     notify: { payload: { title: string; body: string }; result: unknown };
+    'storage.list': { payload: { prefix?: string }; result: Record<string, Json> };
     'storage.get': { payload: { key: string }; result: Json | null };
     'storage.set': { payload: { key: string; value: Json }; result: unknown };
     'storage.remove': { payload: { key: string }; result: unknown };

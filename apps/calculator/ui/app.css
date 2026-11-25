@@ -1,0 +1,8 @@
+.calc { display: flex; flex-direction: column; height: 100%; padding: 16px; gap: var(--kp-gap); }
+.calc-display { flex: 1; display: flex; flex-direction: column; justify-content: flex-end; align-items: flex-end; min-height: 90px; overflow: hidden; }
+.calc-display small { color: var(--kp-muted); letter-spacing: 0.08em; text-transform: uppercase; }
+.calc-display output { font-family: var(--kp-font-mono); font-size: 2.4rem; word-break: break-all; text-align: right; }
+.calc-keys { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
+.calc-keys .kp-btn { min-height: 56px; font-size: 1.15rem; }
+.calc-keys .zero { grid-column: span 2; }
+.calc-keys .equals { grid-row: span 2; }

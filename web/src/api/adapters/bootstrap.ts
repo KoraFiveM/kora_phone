@@ -6,13 +6,13 @@ import { mapContact } from './media';
 
 export const defaultData = (): DeviceData => normalizeData({
     settings: { name: 'Kora Phone', volume: .5, scale: 1, wallpaper: 'kora_core', theme: 'kora_core', setupComplete: false },
-    contacts: [], notes: [], photos: [], stations: [], alarms: [],
+    contacts: [], photos: [], stations: [], alarms: [],
 });
 
 /** What a bootstrap adds to the device cache, and what the shell gets back. */
 export interface BootstrapResult { bootstrap: Bootstrap; cache: DeviceData }
 
-type Collection<K extends 'notes' | 'alarms' | 'stations'> = DeviceData[K];
+type Collection<K extends 'alarms' | 'stations'> = DeviceData[K];
 
 /** Server bootstrap -> shell model. Pure: the caller decides where the cache lives. */
 export function mapBootstrap(raw: RawBootstrap, customApps: Record<string, boolean>): BootstrapResult {
@@ -24,7 +24,6 @@ export function mapBootstrap(raw: RawBootstrap, customApps: Record<string, boole
     let cache = normalizeData({
         ...blank,
         contacts: Array.isArray(raw.contacts) ? raw.contacts.map(mapContact) : blank.contacts,
-        notes: (raw.items?.notes ?? blank.notes) as Collection<'notes'>,
         alarms: (raw.items?.alarms ?? blank.alarms) as Collection<'alarms'>,
         stations: (raw.items?.stations ?? blank.stations) as Collection<'stations'>,
         settings: { ...blank.settings, ...(settings || {}) },
@@ -59,12 +58,10 @@ export function mapBootstrap(raw: RawBootstrap, customApps: Record<string, boole
             social: apps.social !== false,
             classifieds: apps.classifieds !== false,
             services: apps.services !== false,
-            calculator: apps.calculator !== false,
             clock: apps.clock !== false,
             moderation: apps.moderation !== false && raw.moderator === true,
             gps: apps.gps !== false && features?.maps === true,
             mail: apps.mail !== false,
-            notes: apps.notes !== false,
             weather: apps.weather !== false,
             property: apps.property !== false && features?.property === true,
             vehicles: apps.vehicles !== false && features?.garage === true,

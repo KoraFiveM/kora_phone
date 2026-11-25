@@ -57,9 +57,13 @@ export interface PhoneClient {
     readonly theme: ThemeState | null;
     readonly init: InitPayload | null;
     callback<TIn = unknown, TOut = unknown>(name: string, payload?: TIn): Promise<TOut>;
+    /** Calls a handler the app registered in its own client.lua with `app.client(name, fn)`. */
+    client<TIn = unknown, TOut = unknown>(name: string, payload?: TIn): Promise<TOut>;
     notify(title: string, body: string): Promise<void>;
     storage: {
         get<T extends Json = Json>(key: string): Promise<T | null>;
+        /** Every value whose key starts with `prefix` (all keys when omitted). */
+        list<T extends Json = Json>(prefix?: string): Promise<Record<string, T>>;
         set<T extends Json = Json>(key: string, value: T): Promise<void>;
         remove(key: string): Promise<void>;
     };
@@ -225,6 +229,9 @@ export function createPhoneClient(options: PhoneClientOptions = {}): PhoneClient
         async callback<TIn = unknown, TOut = unknown>(name: string, payload?: TIn): Promise<TOut> {
             return (await request('callback', { name, payload })) as TOut;
         },
+        async client<TIn = unknown, TOut = unknown>(name: string, payload?: TIn): Promise<TOut> {
+            return (await request('client', { name, payload })) as TOut;
+        },
         async notify(title, body) {
             await request('notify', { title, body });
         },
@@ -232,6 +239,9 @@ export function createPhoneClient(options: PhoneClientOptions = {}): PhoneClient
             async get<T extends Json = Json>(key: string) {
                 const value = await request('storage.get', { key });
                 return (value ?? null) as T | null;
+            },
+            async list<T extends Json = Json>(prefix?: string) {
+                return ((await request('storage.list', prefix === undefined ? {} : { prefix })) ?? {}) as Record<string, T>;
             },
             async set(key, value) {
                 await request('storage.set', { key, value });

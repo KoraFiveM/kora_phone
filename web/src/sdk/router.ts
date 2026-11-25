@@ -91,6 +91,11 @@ export function createRouter(options: RouterOptions) {
             if (!name) throw new RouteError('INVALID_PAYLOAD', 'Invalid callback name');
             return call('apps:call', { name, payload: payload.payload });
         },
+        client: payload => {
+            const name = typeof payload.name === 'string' && /^[a-zA-Z0-9_:.-]{1,48}$/.test(payload.name) ? payload.name : undefined;
+            if (!name) throw new RouteError('INVALID_PAYLOAD', 'Invalid client callback name');
+            return call('apps:client', { name, payload: payload.payload });
+        },
         notify: async payload => {
             const title = str(payload.title, 64);
             if (!title) throw new RouteError('INVALID_PAYLOAD', 'A title is required');
@@ -101,6 +106,11 @@ export function createRouter(options: RouterOptions) {
         'storage.get': async payload => {
             const data = await call('apps:storage:get', { key: requireKey(payload) });
             return isRecord(data) && data.value !== undefined ? data.value : null;
+        },
+        'storage.list': async payload => {
+            const prefix = typeof payload.prefix === 'string' ? payload.prefix.slice(0, 64) : undefined;
+            const data = await call('apps:storage:list', { prefix });
+            return isRecord(data) && isRecord(data.values) ? data.values : {};
         },
         'storage.set': async payload => {
             await call('apps:storage:set', { key: requireKey(payload), value: payload.value });
