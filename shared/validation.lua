@@ -98,7 +98,6 @@ end
 -- so the stored JSON can never grow arbitrary client-controlled fields.
 -- Apps a player installs from the store; they only appear in the home order while installed.
 local OPTIONAL_APPS = {
-    banking = true,
     social = true,
     classifieds = true,
     gps = true,

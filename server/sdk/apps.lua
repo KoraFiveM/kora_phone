@@ -28,8 +28,9 @@ function Apps.registerAll()
 end
 
 ---Registers the server callback `name` for the app. The handler receives (source, payload).
-function methods.callback(id, name, handler)
-    local ok, err = SDK.Callbacks.register(id, name, handler, SELF)
+---@param options? { rate?: string } a Config.Server.RateLimits bucket to charge (for example 'bankTransfer')
+function methods.callback(id, name, handler, options)
+    local ok, err = SDK.Callbacks.register(id, name, handler, SELF, options)
     if not ok then error(('Phone.app(%q).callback(%q): %s'):format(id, tostring(name), tostring(err)), 2) end
 end
 

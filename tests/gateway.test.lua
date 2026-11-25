@@ -175,10 +175,8 @@ test('app gate from routes.json blocks a disabled app before the handler runs', 
     local result = call('social:getFeed', {})
     equal(result.error.code, PhoneConstants.Errors.FORBIDDEN)
     equal(ran, false)
-    Config.Apps = { social = true, banking = false }
+    Config.Apps = { social = true, flash = false }
     equal(call('social:getFeed', {}).ok, true)
-    Routes.handle('transferBankMoney', function() ran = true return PhoneResult({}) end)
-    equal(call('transferBankMoney', {}).error.code, PhoneConstants.Errors.FORBIDDEN)
 end)
 
 test('ordinary routes run inside the handset lock; handsetAction and lock=false do not', function()

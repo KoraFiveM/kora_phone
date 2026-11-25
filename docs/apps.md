@@ -54,6 +54,7 @@ The first argument must equal the folder name; a mismatch stops the phone loadin
 local app = Phone.app('notes')
 app.callback('save', function(source, payload) return { saved = true } end)   -- UI: phone.callback('save', data)
 app.callback('list', function(source) return Phone.unwrap(KoraPhone.Services.Garage.list(source)) end)  -- raises a failed service result as the UI error
+app.callback('pay', handler, { rate = 'bankTransfer' })                         -- also charge a strict Config.Server.RateLimits bucket
 app.send(source, 'refresh', { n = 1 })                                         -- UI: phone.on('refresh', fn)
 app.notify(source, 'Title', 'Body')
 local value = app.getStorage(source, 'key')   -- also setStorage, removeStorage, listStorage
@@ -88,7 +89,7 @@ Folder apps are trusted code. Their Lua runs in this resource's VM, and their pa
 
 ### Built-in apps
 
-Notes, Calculator, Weather, Garage (`vehicles`), Home (`property`) and Work (`services`) ship as folder apps and are the reference implementations: `notes` for storage, `calculator` for pure UI, `weather` and `property` for `client.lua`, and `vehicles`, `property` and `services` for wrapping an existing server service with `Phone.unwrap`. The remaining built-in apps (Phone, Messages, Contacts, Camera, Gallery, Settings, Wallet, Maps, Mail, Market, Pulse, Flash, Clock, Sound, Moderation) are still compiled into the host UI and move into `apps/` one at a time as they gain the services they need; see `patchnotes.md`.
+Notes, Calculator, Weather, Wallet (`banking`), Garage (`vehicles`), Home (`property`) and Work (`services`) ship as folder apps and are the reference implementations: `notes` for storage, `calculator` for pure UI, `weather` and `property` for `client.lua`, and `vehicles`, `property` and `services` for wrapping an existing server service with `Phone.unwrap`. The remaining built-in apps (Phone, Messages, Contacts, Camera, Gallery, Settings, Maps, Mail, Market, Pulse, Flash, Clock, Sound, Moderation) are still compiled into the host UI and move into `apps/` one at a time as they gain the services they need; see `patchnotes.md`.
 
 ## Other ways to register an app
 

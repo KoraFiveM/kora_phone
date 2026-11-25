@@ -52,7 +52,6 @@ export function mapBootstrap(raw: RawBootstrap, customApps: Record<string, boole
             : false,
         capabilities: {
             store: raw.appStore !== false,
-            banking: apps.banking !== false,
             camera: apps.camera !== false && features?.media === true,
             gallery: true,
             social: apps.social !== false,

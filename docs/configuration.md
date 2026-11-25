@@ -47,7 +47,7 @@ Lua tests run without FiveM, so `tests/config_shim.lua` stands in for `Kora.conf
 | `Config.HomeScreen.allowReorder` | `true` | shared, live | Let players drag home-screen icons; `false` hides the controls and the server ignores order changes |
 | `Config.Gallery.fullscreenViewer` | `true` | server, live | Large full-screen photo and video viewer |
 | `Config.AppStore` | `true` | server, live | `false` hides the App Store icon |
-| `Config.Apps` | all `true` except `moderation = false` | server, live | Per-app switches sent to the UI at bootstrap: `banking`, `social`, `classifieds`, `flash`, `moderation`, `gps`, `mail`, `clock`, `music`. For folder apps (`notes`, `weather`, `calculator`, `services`, `property`, `vehicles` and any app you add under `apps/`) `false` stops the app registering, so it disappears from the store and the home screen |
+| `Config.Apps` | all `true` except `moderation = false` | server, live | Per-app switches sent to the UI at bootstrap: `social`, `classifieds`, `flash`, `moderation`, `gps`, `mail`, `clock`, `music`. For folder apps (`notes`, `weather`, `calculator`, `banking`, `services`, `property`, `vehicles` and any app you add under `apps/`) `false` stops the app registering, so it disappears from the store and the home screen |
 
 `Config.ShareNumber`: `Enabled = true`, `Distance = 3.0` m (server-measured, 1 to 15), `AnswerDistance = 10.0` m, `ExpireSeconds = 30` (5 to 120), `CooldownSeconds = 20` per pair, `AskForName = true`, `AllowShareBack = true`, `AllowWhileLocked = true`.
 

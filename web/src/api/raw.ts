@@ -14,8 +14,6 @@ export interface RawConversation {
 export interface RawMessage {
     senderNumber?: string; createdAt?: number | string; mediaUrl?: string | null; mediaMime?: string | null; [key: string]: unknown;
 }
-export interface RawTransaction { id: number | string; direction: string; peer?: string; amount: number | string; status: string; createdAt?: number | string }
-export interface RawBalance { balance: number; number?: string; account?: string; holder?: string }
 export interface RawListing { id: number; sellerHandle?: string; sellerName?: string; title: string; description?: string; price: number; createdAt?: number | string; isOwner?: boolean }
 export interface RawPost {
     id: number; handle?: string; displayName?: string; body: string; createdAt?: number | string; likeCount?: number;

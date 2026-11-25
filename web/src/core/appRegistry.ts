@@ -1,7 +1,7 @@
 import { lazy } from 'react';
 import type { ComponentType, LazyExoticComponent } from 'react';
 import {
-  AlarmClock, Aperture, Blocks, Camera, ContactRound, CreditCard, Image, Mail, MapPin,
+  AlarmClock, Aperture, Blocks, Camera, ContactRound, Image, Mail, MapPin,
   MessageCircle, Music, Phone, Radio, Settings as SettingsIcon, ShieldAlert, Store as StoreIcon,
   Tag,
 } from 'lucide-react';
@@ -13,7 +13,6 @@ import { GalleryScreen } from '../apps/gallery/GalleryScreen';
 import { GPSScreen } from '../apps/maps/GPSScreen';
 import { MailScreen } from '../apps/mail/MailScreen';
 import { MusicScreen } from '../apps/music/MusicScreen';
-import { BankScreen } from '../apps/wallet/BankScreen';
 import { SettingsHost } from './SettingsHost';
 import { appCopy } from '../locales';
 import { optionalApps } from '../catalog';
@@ -58,7 +57,6 @@ const entry = (
 /** One entry per built-in app. Adding an app is adding a line here (plus its server-side id). Order is the home-screen order. */
 export const appRegistry: readonly AppDefinition[] = [
   entry('store', StoreIcon, StoreApp, 'grid'),
-  entry('banking', CreditCard, BankScreen, 'grid', { optional: { category: 'Life', description: 'Your balance, transfers, and everyday peace of mind.' } }),
   entry('social', Radio, PulseApp, 'grid', { fullBleed: true, optional: { category: 'Social', description: 'Message your people, one-on-one or in a group.' } }),
   entry('gallery', Image, GalleryScreen, 'grid'),
   entry('classifieds', Tag, MarketApp, 'grid', { optional: { category: 'Life', description: 'Buy, sell, and find something worth keeping.' } }),

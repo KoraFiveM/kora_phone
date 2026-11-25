@@ -84,16 +84,18 @@ The app only appears when every configured table and column exists (checked once
 
 ## Callback contract
 
-| Callback suffix | Purpose |
-|---|---|
-| `getBankBalance` | Current authoritative account balance |
-| `getBankHistory` | Cursor-paginated phone transfer history |
-| `transferBankMoney` | Idempotent bounded transfer request |
-| `getJob` | Current job snapshot and permitted actions |
-| `setJobDuty` | Boolean duty-state request |
-| `runJobAction` | Execute one configured, grade-checked action |
+Wallet (`apps/banking`) and Work (`apps/services`) are folder apps. Their callbacks run behind the SDK gate (character loaded, phone held, PIN unlocked, app installed) and call the validated services with the caller's own source; the UI never names an account, sender, job or grade.
 
-`server/modules/economy_callbacks.lua` registers these callbacks. The `phone_bank_history` table (`server/schema.lua`) is created automatically at start.
+| App | Callback | Purpose |
+|---|---|---|
+| Wallet | `overview` | Authoritative balance, account, recent phone transfers and whether transfers are enabled |
+| Wallet | `transfer` | Idempotent bounded transfer request (`to`, `amount`, `clientRequestId`) |
+| Wallet | `idCard`, `showId` | The character ID card, and showing it to the person next to you |
+| Work | `get` | Current job snapshot and permitted actions |
+| Work | `setDuty` | Boolean duty-state request |
+| Work | `runAction` | Execute one configured, grade-checked action |
+
+The services live in `server/services/banking.lua`, `wallet.lua` and `jobs.lua`. The `phone_bank_history` table (`server/schema.lua`) is created automatically at start.
 
 ## Operational checks
 

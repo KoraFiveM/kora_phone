@@ -24,7 +24,7 @@ const compile = (rel) => {
 };
 // Pure modules only: no DOM, no mock, no transport.
 ["types.ts", "catalog.ts", "themes.ts", "api/adapters/common.ts", "api/adapters/messages.ts", "api/adapters/social.ts",
-  "api/adapters/mail.ts", "api/adapters/apps.ts", "api/adapters/bank.ts", "api/adapters/media.ts", "api/adapters/bootstrap.ts", "api/raw.ts",
+  "api/adapters/mail.ts", "api/adapters/apps.ts", "api/adapters/media.ts", "api/adapters/bootstrap.ts", "api/raw.ts",
   "api/errors.ts"].forEach(compile);
 fs.writeFileSync(path.join(out, "package.json"), "{}");
 const load = (rel) => require(path.join(out, rel));
@@ -77,22 +77,14 @@ try {
   equal(mail.mapMailAccept(undefined), { accepted: false, dispatched: false }, "empty accept result is a refusal");
   const sdk = load("api/adapters/apps.js").mapSdkApp({ id: "demo", name: "Demo", entry: "ui/index.html", resource: "demo_res", permissions: ["notify", 3], installed: 1 });
   equal([sdk.id, sdk.permissions, sdk.installed, sdk.defaultInstalled], ["demo", ["notify"], true, false], "SDK app listing is typed and filtered");
-  const bank = load("api/adapters/bank.js").mapBank({ balance: 90, number: "111" }, [
-    { id: 1, direction: "incoming", peer: "222", amount: "10", status: "ok", createdAt: "t" },
-    { id: 2, direction: "outgoing", amount: 5, status: "ok", createdAt: "t" },
-  ]);
-  equal([bank.account, bank.name, bank.balance], ["111", "Personal", 90], "bank summary");
-  equal([bank.history[0].citizenid, bank.history[0].recipient, bank.history[0].amount], ["222", "111", 10], "incoming transfer");
-  equal([bank.history[1].citizenid, bank.history[1].recipient], ["111", "Phone transfer"], "outgoing transfer falls back to a label");
-
   const media = load("api/adapters/media.js");
   equal(media.mapPhoto({ id: 5, publicUrl: "https://x/p.jpg", createdAt: 9 }), { id: "5", url: "https://x/p.jpg", created_at: 9, kind: "photo" }, "gallery photos");
   equal(media.mapContact({ id: "7", displayName: "Al", phoneNumber: "555", isFavorite: 1 }), { id: 7, name: "Al", number: "555", photo: undefined, favorite: true }, "contacts");
 
   const { mapBootstrap } = load("api/adapters/bootstrap.js");
-  const open = mapBootstrap({ device: { id: 12, phoneNumber: 555 }, features: { media: true, maps: false, video: { iceServers: [] }, flash: { maxSeconds: "20" } }, apps: { banking: false }, moderator: true }, { a: true });
+  const open = mapBootstrap({ device: { id: 12, phoneNumber: 555 }, features: { media: true, maps: false, video: { iceServers: [] }, flash: { maxSeconds: "20" } }, apps: { social: false }, moderator: true }, { a: true });
   equal([open.bootstrap.id, open.bootstrap.number, open.bootstrap.locked, open.bootstrap.model], ["12", "555", false, "standard"], "bootstrap identity");
-  equal([open.bootstrap.capabilities.banking, open.bootstrap.capabilities.camera, open.bootstrap.capabilities.gps, open.bootstrap.capabilities.moderation],
+  equal([open.bootstrap.capabilities.social, open.bootstrap.capabilities.camera, open.bootstrap.capabilities.gps, open.bootstrap.capabilities.moderation],
     [false, true, false, true], "capabilities combine app switches and server features");
   equal(open.bootstrap.flash, { maxSeconds: 20, maxBytes: undefined }, "flash limits");
   equal(open.cache.customApps, { a: true }, "custom app preferences are carried into the cache");

@@ -13,8 +13,11 @@ const dialCall = (number: string) => api('dial', { number });
 /** lb-phone app names the host can open, lower-cased. Anything else is an app registered through the SDK. */
 const APP_NAMES: Record<string, AppId> = {
   phone: 'phone', messages: 'messages', contacts: 'contacts', camera: 'camera', photos: 'gallery', gallery: 'gallery',
-  settings: 'settings', maps: 'gps', mail: 'mail', clock: 'clock', wallet: 'banking', 'app store': 'store', appstore: 'store',
+  settings: 'settings', maps: 'gps', mail: 'mail', clock: 'clock', 'app store': 'store', appstore: 'store',
 };
+
+/** lb-phone names of apps that are folder apps here. */
+const FOLDER_ALIASES: Record<string, string> = { wallet: 'banking' };
 
 /** The actions an lb-phone page can ask of the phone through the injected shim. */
 export async function lbAction(action: string, payload: Record<string, unknown>, host: LbHost): Promise<unknown> {
@@ -31,8 +34,9 @@ export async function lbAction(action: string, payload: Record<string, unknown>,
     }
     case 'openApp': {
       const name = typeof payload.app === 'string' ? payload.app : '';
-      const builtIn = APP_NAMES[name.toLowerCase()];
-      if (builtIn) host.navigate(builtIn); else if (name) host.navigate('custom', name);
+      const key = name.toLowerCase();
+      const builtIn = APP_NAMES[key];
+      if (builtIn) host.navigate(builtIn); else if (name) host.navigate('custom', FOLDER_ALIASES[key] ?? name);
       return true;
     }
     default:

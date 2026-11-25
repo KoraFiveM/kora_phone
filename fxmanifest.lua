@@ -88,7 +88,6 @@ server_scripts {
     -- Gateway: registers every callback from shared/routes.json; handlers bind lazily.
     'server/callbacks.lua',
     'server/modules/call_callbacks.lua',
-    'server/modules/economy_callbacks.lua',
     'server/modules/media_callbacks.lua',
     'server/modules/community_callbacks.lua',
     'server/handset_callbacks.lua',

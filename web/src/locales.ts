@@ -3,7 +3,6 @@ type AppCopy = Record<Exclude<AppId, 'home'>, { label: string; subtitle: string 
 const en: AppCopy = {
   custom: { label: 'Community app', subtitle: 'Made for your server.' },
   store: { label: 'App Store', subtitle: 'A little more you.' },
-  banking: { label: 'Wallet', subtitle: 'A little peace of mind.' },
   social: { label: 'Pulse', subtitle: 'The city, in conversation.' },
   gallery: { label: 'Gallery', subtitle: 'The moments you keep.' },
   classifieds: { label: 'Market', subtitle: 'Good things. New beginnings.' },

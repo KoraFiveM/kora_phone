@@ -7,8 +7,8 @@ end)
 
 app.callback('setDuty', function(source, payload)
     return Phone.unwrap(KoraPhone.Services.Jobs.setDuty(source, payload))
-end)
+end, { rate = 'jobMutation' })
 
 app.callback('runAction', function(source, payload)
     return Phone.unwrap(KoraPhone.Services.Jobs.runAction(source, payload))
-end)
+end, { rate = 'jobMutation' })

@@ -1,29 +1,10 @@
-import type { MapBlip, Weather, WalletCard } from '../../types';
-import { items } from '../adapters/common';
-import { mapBank } from '../adapters/bank';
-import type { RawBalance, RawTransaction } from '../raw';
+import type { MapBlip, Weather } from '../../types';
 import type { HandlerSet, Routes } from '../routeTypes';
 import { server } from '../transport';
 
-export const serviceRoutes: HandlerSet<
-    'bank' | 'transfer' | 'weather'
-    | 'waypoint' | 'wallet' | 'showWallet' | 'myLocation' | 'mapBlips'
-> = {
-    bank: async () => {
-        const [balance, history] = await Promise.all([
-            server<RawBalance>('bank:getData'),
-            server<{ items?: RawTransaction[] }>('bank:getTransactions', { limit: 50 }),
-        ]);
-        return mapBank(balance, items(history));
-    },
-    transfer: async (p, { id }) => {
-        const result = await server<{ transaction?: { status?: string } }>('bank:transfer', { to: p.recipient, amount: p.amount, clientRequestId: id });
-        return { status: result.transaction?.status || 'completed' };
-    },
+export const serviceRoutes: HandlerSet<'weather' | 'waypoint' | 'myLocation' | 'mapBlips'> = {
     weather: () => server<Weather>('weather:get'),
     waypoint: async p => { await server('waypoint', { x: p.x, y: p.y }); return true; },
-    wallet: () => server<WalletCard>('wallet:get'),
-    showWallet: () => server<{ shown: boolean }>('wallet:show'),
     myLocation: () => server<Routes['myLocation']['out']>('location:mine'),
     mapBlips: () => server<MapBlip[]>('map:blips'),
 };

@@ -2,7 +2,7 @@ import { normalizeData } from './types';
 import { isOptional, starterApps } from './catalog';
 import { blobToDataUrl } from './useClipRecorder';
 import type { AppId } from './types';
-import type { Api, Bootstrap, Bank, Call, CallHistory, ChatMessage, Comment, Conversation, DeviceData, SystemActivity, MailItem, Message, ModerationReport, Post } from './types';
+import type { Api, Bootstrap, Call, CallHistory, ChatMessage, Comment, Conversation, DeviceData, SystemActivity, MailItem, Message, ModerationReport, Post } from './types';
 const key = 'nothing-phone-preview-v1';
 export const isDemo = new URLSearchParams(window.location?.search).has('demo');
 const timestamp = () => new Date().toISOString();
@@ -19,7 +19,7 @@ const seed: DeviceData = {
   alarms: [{ id: 'first-alarm', label: 'Wake up', time: '08:00', days: [1, 2, 3, 4, 5], enabled: true }],
 };
 const sampleFlashPhoto = () => `data:image/svg+xml,${encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" width="600" height="800"><rect width="600" height="800" fill="#e8a15c"/><circle cx="300" cy="320" r="110" fill="#fff3e0"/><path d="M0 620 200 480 340 560 460 420 600 560V800H0" fill="#8a5a2b"/></svg>')}`;
-interface Store { systemMail?: MailItem[]; systemActivity?: SystemActivity[]; data: DeviceData; pin: string; messages: Message[]; posts: Post[]; flash: Post[]; comments: (Comment & { postId: number })[]; bank: Bank; history: CallHistory[]; conversations: Conversation[]; chatMessages: Record<number, ChatMessage[]> }
+interface Store { systemMail?: MailItem[]; systemActivity?: SystemActivity[]; data: DeviceData; pin: string; messages: Message[]; posts: Post[]; flash: Post[]; comments: (Comment & { postId: number })[]; history: CallHistory[]; conversations: Conversation[]; chatMessages: Record<number, ChatMessage[]> }
 function initial(): Store {
   return { data: structuredClone(seed), pin: '', messages: [
     { id: 1, sender: '5550192042', recipient: number, body: 'You around? Coffee at the usual spot.', kind: 'sms', subject: '', created_at: timestamp() },
@@ -30,7 +30,7 @@ function initial(): Store {
     { id: 2, number: '5550192042', body: 'Fresh coffee. Good company. Now open on the corner of Alta Street. â˜•', price: 0, created_at: timestamp(), likes: 12, comments: 0, liked: false, mine: false },
   ], flash: [
     { id: 1, number: '5550178031', body: 'Golden hour on Alta Street.', price: 0, media_kind: 'photo', media_url: sampleFlashPhoto(), created_at: timestamp(), likes: 41, comments: 0, liked: false, mine: false },
-  ], comments: [], bank: { balance: 24850, account: 'LS-1048', name: 'Charlie Parker', history: [] }, history: [],
+  ], comments: [], history: [],
     conversations: [{ id: 1, kind: 'direct', name: null, members: '5550192042', last_body: 'On my way. Give me five.', last_kind: null, last_number: number, last_at: timestamp() }],
     chatMessages: { 1: [
       { id: 1, sender_number: '5550192042', body: 'You around? Coffee at the usual spot.', created_at: timestamp() },
@@ -53,7 +53,7 @@ const completed = new Map<string, unknown>();
 function save() { if (isDemo) return; localStorage.setItem(key, JSON.stringify(store)); }
 export function previewBootstrap(): Bootstrap {
   return { id: 'preview-device', number, locked: !!store.pin, hasPin: !!store.pin, data: store.pin ? undefined : structuredClone(store.data), preferences: structuredClone(store.data.settings),
-    transfers: true, capabilities: { banking: true, camera: true, weather: true, moderation: true }, unavailable: {}, admin: true, moderator: true, video: { iceServers: [] },
+    transfers: true, capabilities: { camera: true, weather: true, moderation: true }, unavailable: {}, admin: true, moderator: true, video: { iceServers: [] },
     locations: [{ label: 'Legion Square', x: 195.2, y: -933.8 }, { label: 'Pillbox Medical', x: 298.5, y: -584.4 }, { label: 'Mission Row Police', x: 425.1, y: -979.5 }], services: [], call: activeCall,
     flash: { maxSeconds: 12 } };
 }
@@ -137,13 +137,6 @@ export async function mockRequest<K extends keyof Api>(action: K, payload: Api[K
     case 'comments': result = store.comments.filter(c => c.postId === p.id); break;
     case 'comment': store.comments.push({ id: Date.now(), postId: Number(p.id), number, body: String(p.body), created_at: timestamp() }); for (const post of [...store.posts, ...classifieds, ...store.flash]) if (post.id === p.id) post.comments++; break;
     case 'removeComment': store.comments = store.comments.filter(c => c.id !== p.id); break;
-    case 'bank': result = store.bank; break;
-    case 'transfer': {
-      const amount = Number(p.amount);
-      if (!Number.isInteger(amount) || amount <= 0 || amount > 100000 || amount > store.bank.balance) throw new Error('Invalid amount or insufficient funds');
-      if (p.recipient !== '5550192042') throw new Error('Demo recipient: 5550192042');
-      store.bank.balance -= amount; store.bank.history.unshift({ id, citizenid: store.bank.account, recipient: String(p.recipient), amount, status: 'completed', created_at: timestamp() }); result = { status: 'completed' }; break;
-    }
     case 'capture': {
       const svg = '<svg xmlns="http://www.w3.org/2000/svg" width="600" height="800"><rect width="600" height="800" fill="#c7c4b8"/><circle cx="420" cy="230" r="85" fill="#ede8d8"/><path d="M0 650 180 400 300 530 440 350 600 600V800H0" fill="#434844"/><path d="M0 760 220 600 420 670 600 510V800H0" fill="#262c29"/></svg>';
       store.data.photos.push({ id, url: `data:image/svg+xml,${encodeURIComponent(svg)}`, created_at: Date.now() / 1000 }); result = store.data; break;
@@ -152,8 +145,6 @@ export async function mockRequest<K extends keyof Api>(action: K, payload: Api[K
     case 'weather': result = { condition: 'EXTRASUNNY', hour: 10, minute: 8, rain: 0 }; break;
     case 'waypoint': break;
     case 'videoSignal': break;
-    case 'wallet': result = { name: 'Charlie Parker', citizenId: 'ABC12345', birthdate: '1994-03-12', gender: 'Male', nationality: 'American', job: 'Police', licences: [{ id: 'driver', label: 'Driver licence', valid: true }, { id: 'weapon', label: 'Firearms licence', valid: false }, { id: 'business', label: 'Business licence', valid: false }] }; break;
-    case 'showWallet': result = { shown: true }; break;
     case 'mapBlips': result = [{ id: 1, x: 215.2, y: -810.5, sprite: 280, label: 'Elgin Avenue', colour: '#f0c850' }]; break;
     case 'myLocation': result = { x: 195.2, y: -933.8, label: 'Legion Square, Downtown Vinewood', heading: 45 }; break;
     case 'conversations': result = store.conversations.map(c=>({...c,sortId:c.sortId??c.id})).filter(c=>!p.before || c.sortId<Number(p.before) || (p.cursorId && c.sortId===Number(p.before)&&c.id<Number(p.cursorId))).sort((a,b)=>b.sortId-a.sortId||b.id-a.id).slice(0,50); break;

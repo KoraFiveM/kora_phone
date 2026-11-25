@@ -140,4 +140,21 @@ test('an .svg icon becomes a nui:// URL inside the app folder; Config.Apps.<id> 
     _G.Config = nil
 end)
 
+test('a callback can charge a strict rate bucket and is refused with RATE_LIMITED when it is empty', function()
+    local env = boot({ NOTES })
+    local charged = {}
+    KoraPhone.RateLimits.consume = function(source, bucket) charged[#charged + 1] = bucket return #charged <= 2 end
+    Phone.app('notes').callback('pay', function() return { paid = true } end, { rate = 'bankTransfer' })
+    Phone.app('notes').callback('free', function() return { free = true } end)
+    equal(KoraPhone.SDK.Callbacks.invoke(5, 'notes', 'pay', {}).ok, true)
+    equal(KoraPhone.SDK.Callbacks.invoke(5, 'notes', 'free', {}).ok, true)
+    equal(#charged, 1, 'a callback without a rate does not charge a bucket')
+    equal(KoraPhone.SDK.Callbacks.invoke(5, 'notes', 'pay', {}).ok, true)
+    local refused = KoraPhone.SDK.Callbacks.invoke(5, 'notes', 'pay', {})
+    equal(refused.ok, false)
+    equal(refused.error.code, PhoneConstants.Errors.RATE_LIMITED)
+    equal(charged[1], 'bankTransfer')
+    assert(env)
+end)
+
 H.finish('apps-platform')

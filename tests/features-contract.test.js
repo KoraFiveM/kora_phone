@@ -19,18 +19,16 @@ const { bound } = require("./helpers/bound");
 const notifications = read("client/notifications.lua");
 const calls = read("client/calls.lua");
 const wallet = read("server/services/wallet.lua");
-const economy = read("server/modules/economy_callbacks.lua");
 const api = readApi();
 const background = read("web/src/core/useBackgroundEffects.ts");
 const actions = read("web/src/core/usePhoneActions.ts");
 const hostEvents = read("web/src/core/useHostEvents.ts");
 
 // Every new NUI route the UI calls exists on the client and reaches a registered server callback.
-for (const [route, callback] of [["wallet:get", "getWallet"], ["wallet:show", "showWalletId"]]) {
-  assert.match(nui, new RegExp(`\\['${route}'\\] = 'kora_phone:server:${callback}'`), `${route} must map to ${callback}`);
-  assert.match(economy, bound(callback), `${callback} must be registered on the server`);
-  assert.match(api, new RegExp(`server(?:<.*?>)?\\('${route}'[,)]`), `the UI must call ${route}`);
-}
+// Wallet is a folder app: ID card and "show my ID" run the validated wallet service for the caller's own source.
+const walletApp = read("apps/banking/server.lua");
+for (const [callback, service] of [["idCard", "Wallet.get"], ["showId", "Wallet.show"]])
+  assert.match(walletApp, new RegExp(`app\\.callback\\('${callback}'[\\s\\S]*?Services\\.${service.replace(".", "\\.")}\\(source\\)`), `${callback} must call ${service}(source)`);
 for (const route of ["location:mine", "waypoint", "quiet"]) {
   assert.match(nui, new RegExp(`RegisterNUICallback\\('${route}'`), `${route} must be registered on the client`);
 }
@@ -132,7 +130,7 @@ assert.match(txRepo, /AND t\.id < \?/, "the history cursor must be qualified now
 assert.match(txRepo, /entry\.peer =/, "history must say who the other person was");
 assert.match(bankSvc, /holder = holder, number = player\.citizenid/, "the wallet must show the holder and account number");
 assert.match(phoneSvc, /transfers = KoraPhone\.Integrations\.Banking\.canTransfer\(\)/, "the UI must know whether transfers are on");
-assert.match(read("web/src/apps/wallet/BankScreen.tsx"), /!device\.transfers/, "the Send money form must be hidden when transfers are off");
+assert.match(read("apps/banking/ui/app.js"), /bank\.transfers \?/, "the Send money form must be hidden when transfers are off");
 assert.match(api, /isFavorite: p\.favorite === true/, "saving a contact must not wipe its favourite flag");
 
 // Flash and chat clips: the upload pipeline and where its trust boundaries are.
