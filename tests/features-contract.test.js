@@ -68,7 +68,11 @@ for (const [route, callback] of [["items:save", "saveItem"], ["items:remove", "r
   assert.match(api, new RegExp(`'${route}'`), `the UI must call ${route}`);
 }
 assert.match(nui, /route\('weather:get'/);
-assert.match(nui, /route\('alarm'/);
+// Clock is a folder app: its client script rings the alarms, its server callbacks store them as validated phone items.
+const clockServer = read("apps/clock/server.lua");
+for (const [callback, service] of [["save", "Items.save"], ["remove", "Items.remove"]])
+  assert.match(clockServer, new RegExp(`app\\.callback\\('${callback}'[\\s\\S]*?Services\\.${service.replace(".", "\\.")}\\(source, \\{ kind = 'alarm'`), `clock ${callback} must run ${service} for kind alarm`);
+assert.match(read("apps/clock/client.lua"), /Kora\.timers\.setInterval\(tick, 1000\)/, "alarms must be checked from the client script so they ring with the phone closed");
 assert.match(items, /PhoneValidation\.item\(/, "items must be validated on the server");
 assert.match(items, /Config\.Server\.Items\[kind\]/, "items must be limited per phone");
 assert.match(migration9, /primary = \{ 'device_id', 'kind', 'item_key' \}/, "an item is unique per device, kind and key");

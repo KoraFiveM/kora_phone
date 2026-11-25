@@ -16,7 +16,7 @@ async function checkDeviceCache() {
   const equal = (actual, expected, message) => { assert.deepEqual(actual, expected, message); checks++; };
   const replies = [];
   const storage = new Map([
-    ["kora_phone:installed", JSON.stringify(["music", "clock"])],
+    ["kora_phone:installed", JSON.stringify(["music"])],
     ["kora_phone:customApps", JSON.stringify({ "test-addon": true })],
   ]);
   const transport = async (url, options) => {
@@ -59,7 +59,7 @@ async function checkDeviceCache() {
   const privateSettings = { name: "Phone A", volume: .9, scale: 1.1, wallpaper: "custom", wallpaperUrl: "https://example.invalid/private.jpg", theme: "dark", setupComplete: true, dnd: true };
   const first = await refresh(raw(101, privateSettings, {
     contacts: [{ id: 1, displayName: "A contact", phoneNumber: "555001", isFavorite: 1 }],
-    items: { alarms: [{ id: "a", label: "Alarm", time: "07:00", days: [], enabled: true }], stations: [{ id: "a", label: "Station", url: "https://example.invalid/radio" }] },
+    items: { stations: [{ id: "a", label: "Station", url: "https://example.invalid/radio" }] },
   }), gallery(1));
   equal(first.id, "101", "the existing string device ID contract is retained");
   equal(first.data.photos, [{ id: "1", url: "https://example.invalid/1.jpg", created_at: 123, kind: 'photo' }], "gallery fields retain their public mapping");
@@ -68,17 +68,17 @@ async function checkDeviceCache() {
   equal(same.preferences.name, "Renamed A", "same-device partial settings are applied");
   equal(same.preferences.volume, .9, "numeric and string IDs identify the same device");
   equal(same.data.photos, first.data.photos, "same-device direct bootstrap retains its gallery");
-  equal(same.data.alarms, first.data.alarms, "same-device omitted collections retain existing values");
+  equal(same.data.stations, first.data.stations, "same-device omitted collections retain existing values");
   const locked = adaptBootstrap(raw(202, { volume: 0 }, { security: { locked: true, hasPin: true } }));
   equal(locked.id, "202", "new-device ID is preserved");
   equal(locked.data, undefined, "locked devices still hide private collections");
   equal(locked.hasPin, true, "PIN metadata is preserved");
   equal(locked.preferences, { name: "Kora Phone", volume: 0, scale: 1, wallpaper: "kora_core", theme: "kora_core", setupComplete: false }, "a new locked phone uses its own partial settings and the existing defaults");
-  const second = await refresh(raw(202, { name: "Phone B", scale: .8 }, { contacts: [], items: { alarms: [], stations: [] } }), failedGallery);
+  const second = await refresh(raw(202, { name: "Phone B", scale: .8 }, { contacts: [], items: { stations: [] } }), failedGallery);
   equal(second.data.settings.name, "Phone B", "new-phone settings remain usable when gallery fails");
   equal(second.data.settings.volume, 0, "same-device partial settings retain zero values");
-  for (const key of ["contacts", "alarms", "stations", "photos"]) equal(second.data[key], [], `phone B has no phone A ${key}`);
-  equal(second.data.installedApps, ["music", "clock"], "a phone with no saved installs starts with the starter apps (install lists live in device settings, not NUI storage)");
+  for (const key of ["contacts", "stations", "photos"]) equal(second.data[key], [], `phone B has no phone A ${key}`);
+  equal(second.data.installedApps, ["music"], "a phone with no saved installs starts with the starter apps (install lists live in device settings, not NUI storage)");
   equal(second.data.customApps, { "test-addon": true }, "the existing shared addon preferences are preserved");
   equal(first.data.settings, privateSettings, "resetting another device does not mutate an earlier returned snapshot");
   equal(first.data.photos.length, 1, "an earlier returned gallery remains intact");
@@ -98,10 +98,10 @@ async function checkDeviceCache() {
   completeGallery(gallery(4));
   equal((await loading).data.photos[0].id, "4", "the pending gallery still publishes a successful result");
   const settings = { name: "Saved B", volume: 0, scale: 1, wallpaper: "kora_core" };
-  ok("settings:save", settings, { ...settings, installedApps: ["music", "clock"], expectedDeviceId: "202" });
+  ok("settings:save", settings, { ...settings, installedApps: ["music"], expectedDeviceId: "202" });
   equal((await api("settings", settings)).settings, settings, "saving settings keeps its existing request and return shape");
   const newCollections = adaptBootstrap(raw(303, { name: "Phone C" }));
-  for (const key of ["contacts", "alarms", "stations", "photos"]) equal(newCollections.data[key], [], `omitted new-device ${key} starts empty`);
+  for (const key of ["contacts", "stations", "photos"]) equal(newCollections.data[key], [], `omitted new-device ${key} starts empty`);
   equal(newCollections.preferences.theme, "kora_core", "new-device theme has the existing default");
   equal(newCollections.preferences.setupComplete, false, "new-device setup has the existing default");
   const fallback = adaptBootstrap({});

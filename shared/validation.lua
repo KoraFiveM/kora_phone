@@ -101,7 +101,6 @@ local OPTIONAL_APPS = {
     social = true,
     flash = true,
     music = true,
-    clock = true,
 }
 
 -- Read at use time so a config change applies without touching callers.

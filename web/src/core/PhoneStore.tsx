@@ -13,7 +13,7 @@ import { restoreApp } from './appRegistry';
 import { initialPhoneState, phoneReducer } from './phoneState';
 import { PhoneStoreContext } from './storeContext';
 import type { PhoneRefs, PhoneStore } from './storeContext';
-import { storedAlarms, useBackgroundEffects } from './useBackgroundEffects';
+import { useBackgroundEffects } from './useBackgroundEffects';
 import { useCallVideo } from './useCallVideo';
 import { useHostEvents } from './useHostEvents';
 import { usePhoneActions } from './usePhoneActions';
@@ -39,7 +39,7 @@ export function PhoneStoreProvider({ children }: { children: ReactNode }) {
   const [refs] = useState<PhoneRefs>(() => ({
     call: { current: undefined }, shown: { current: state.shown }, app: { current: state.app }, busy: { current: false },
     notificationDevice: { current: device?.id }, quietConfig: { current: storedQuiet() },
-    contactNames: { current: new Map<string, string>() }, alarms: { current: storedAlarms() }, firedAlarms: { current: new Set<string>() },
+    contactNames: { current: new Map<string, string>() },
     audio: { current: undefined }, coverAudio: { current: undefined }, peekTimer: { current: undefined },
     phone: { current: null }, screen: { current: null },
   }));

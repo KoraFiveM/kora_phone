@@ -31,7 +31,7 @@ export interface RawSavedMedia { id: number | string; publicUrl: string; mimeTyp
 export interface RawBootstrap {
     device?: { id?: string | number; model?: 'standard' | 'flip' | 'fold'; phoneNumber?: string | number; settings?: Record<string, unknown> };
     contacts?: RawContact[];
-    items?: { alarms?: unknown[]; stations?: unknown[] };
+    items?: { stations?: unknown[] };
     apps?: Record<string, boolean>;
     appStore?: boolean;
     security?: { locked?: boolean; hasPin?: boolean };

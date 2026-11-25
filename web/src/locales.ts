@@ -6,7 +6,6 @@ const en: AppCopy = {
   social: { label: 'Pulse', subtitle: 'The city, in conversation.' },
   flash: { label: 'Flash', subtitle: 'Your city, in short clips.' },
   music: { label: 'Sound', subtitle: 'Something to listen to.' },
-  clock: { label: 'Clock', subtitle: 'Right on time.' },
   camera: { label: 'Camera', subtitle: 'See something. Keep it.' },
   settings: { label: 'Settings', subtitle: 'Unmistakably yours.' },
 };

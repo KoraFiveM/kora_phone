@@ -1,0 +1,4 @@
+.now { text-align: center; font-family: var(--kp-font-mono); font-size: 2.6rem; margin: 0; }
+.days { display: flex; gap: 6px; flex-wrap: wrap; }
+.days button { min-width: 44px; }
+.alarm-actions { display: flex; gap: 4px; }

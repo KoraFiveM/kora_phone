@@ -1,14 +1,13 @@
 import type { Theme } from './themes';
 import { installedApps } from './catalog';
-export type AppId = `app:${string}` | 'custom' | 'store' | 'home' | 'camera' | 'social' | 'flash' | 'music' | 'clock' | 'settings';
+export type AppId = `app:${string}` | 'custom' | 'store' | 'home' | 'camera' | 'social' | 'flash' | 'music' | 'settings';
 /** Where navigate() may go: a built-in app, or the id of a folder app (which opens through the app host). */
 export type AppTarget = AppId | (string & {});
 export interface Settings { name: string; volume: number; scale: number; wallpaper: 'orbit' | 'plain' | 'midnight' | 'slate' | 'ember' | 'kora_core' | 'custom'; wallpaperUrl?: string; theme?: Theme; setupComplete?: boolean; phoneStyle?: 'classic' | 'standard' | 'flip' | 'fold'; phoneCase?: 'default' | 'nightdrive' | 'citypop' | 'sakura' | 'touge' | 'garage' | 'kora_core' | 'arcade' | 'space' | 'palms' | 'skyline' | 'custom'; phoneCaseUrl?: string; iconStyle?: 'circle' | 'squircle' | 'outline' | 'solid'; dnd?: boolean; dndFrom?: string; dndTo?: string; installedApps?: AppId[]; appOrder?: AppId[]; dockOrder?: AppId[] }
 export interface Contact { id?: number; name: string; number: string; photo?: string; favorite?: boolean }
 export interface Photo { id: string; url: string; created_at: number; kind?: MediaKind }
 export interface Station { id: string; label: string; url: string }
-export interface Alarm { id: string; label: string; time: string; days: number[]; enabled: boolean }
-export interface DeviceData { contacts: Contact[]; photos: Photo[]; stations: Station[]; alarms: Alarm[]; settings: Settings; installedApps?: AppId[]; customApps?: Record<string, boolean> }
+export interface DeviceData { contacts: Contact[]; photos: Photo[]; stations: Station[]; settings: Settings; installedApps?: AppId[]; customApps?: Record<string, boolean> }
 export interface Call { id: string; status: 'ringing' | 'active' | 'busy' | 'missed' | 'ended' | 'declined' | 'cancelled' | 'failed'; number: string; direction: 'incoming' | 'outgoing'; deviceId: string; volume?: number }
 /** A server-registered SDK app as `apps:list` returns it. */
 export interface SdkApp {
@@ -37,7 +36,6 @@ export type Api = {
   dial: [{ number: string }, Call];
   answer: [{ id: string }, Call]; hangup: [{ id: string; reject?: boolean }, boolean];
   stations: [Station & { remove?: boolean }, DeviceData];
-  alarms: [Alarm & { remove?: boolean }, DeviceData];
   feed: [{ kind?: 'flash'; before?: number }, Post[]];
   post: [{ kind?: 'flash'; body: string; price?: number; mediaKind?: MediaKind; media?: string; mediaId?: number }, boolean];
   uploadMedia: [{ blob: Blob; onProgress?: (fraction: number) => void }, { id: number; url: string; kind: MediaKind }]; createProfile: [{ handle: string; displayName: string }, boolean];
@@ -72,5 +70,5 @@ export function normalizeData(value?: DeviceData): DeviceData {
   if (legacy.phoneCase === 'qbcore') legacy.phoneCase = 'kora_core';
   // The Flip color theme is retired: legacy devices map to a real theme, keeping the flip style.
   if (settings.theme === 'flip') { settings.theme = 'dark'; settings.phoneStyle ??= 'flip'; }
-  return { customApps: value?.customApps || {}, contacts: asList(value?.contacts), photos: asList(value?.photos), stations: asList(value?.stations), alarms: asList(value?.alarms), installedApps: installedApps(value?.installedApps), settings: settings as Settings };
+  return { customApps: value?.customApps || {}, contacts: asList(value?.contacts), photos: asList(value?.photos), stations: asList(value?.stations), installedApps: installedApps(value?.installedApps), settings: settings as Settings };
 }

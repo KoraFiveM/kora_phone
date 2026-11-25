@@ -1,18 +1,16 @@
 import { useEffect } from 'react';
-import { api, isDemo, isEmbed, demoModel, isPreview, nui } from '../api';
-import { alarmTone } from '../apps/clock/ClockScreen';
-import { recall, remember } from '../lastScreen';
+import { isDemo, isEmbed, demoModel, isPreview, nui } from '../api';
+import { remember } from '../lastScreen';
 import { currentAppId } from './phoneState';
-import type { Alarm } from '../types';
 import type { PhoneStore } from './storeContext';
 
 /** Timers and persistence that must keep running whether or not a screen is mounted. */
 export function useBackgroundEffects({ state, dispatch, refs, video, actions, view }: PhoneStore) {
   const { device, call, alert, toast, notifications, earlier, shown } = state;
   const app = currentAppId(state.app, state.target);
-  const { data, quiet, date, flip } = view;
+  const { data, quiet, flip } = view;
   const { stopVideo, gameVideo, localVideoRef, remoteVideoRef, localStream, remoteStream } = video;
-  const { markRead, updateData, choosePreviewModel } = actions;
+  const { markRead, choosePreviewModel } = actions;
   const { dnd, dndFrom, dndTo } = data.settings;
 
   // The phone screen is unmounted while closed, so the last-known Do Not Disturb setting lives in a ref (and storage).
@@ -40,26 +38,6 @@ export function useBackgroundEffects({ state, dispatch, refs, video, actions, vi
 
   useEffect(() => { if (device) refs.contactNames.current = new Map(data.contacts.map(c => [c.number, c.name])); }, [device, data.contacts, refs]);
 
-  // Alarms are checked here, not inside the Clock screen, so they still ring with the phone closed.
-  useEffect(() => { if (!device) return; refs.alarms.current = data.alarms; remember('alarms', JSON.stringify(data.alarms)); }, [device, data.alarms, refs]);
-  useEffect(() => {
-    const at = `${String(date.getHours()).padStart(2, '0')}:${String(date.getMinutes()).padStart(2, '0')}`;
-    for (const alarm of refs.alarms.current) {
-      if (!alarm.enabled || alarm.time !== at || (alarm.days.length && !alarm.days.includes(date.getDay()))) continue;
-      const key = `${alarm.id}-${date.toDateString()}-${at}`;
-      if (refs.firedAlarms.current.has(key)) continue;
-      refs.firedAlarms.current.add(key);
-      window.dispatchEvent(new MessageEvent('message', { data: { type: 'notification', data: { title: 'Alarm', body: alarm.label || 'Untitled', app: 'clock', urgent: true } } }));
-      alarmTone(); void nui('alarm', { label: alarm.label });
-      if (!alarm.days.length) {
-        // A one-time alarm turns itself off after ringing.
-        refs.alarms.current = refs.alarms.current.map(a => a.id === alarm.id ? { ...a, enabled: false } : a);
-        void api('alarms', { ...alarm, enabled: false }).then(value => { if (device) updateData(value); }).catch(() => undefined);
-      }
-    }
-    // Runs once a second with the clock; the handlers read everything else through refs.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [date]);
 
   // Being in an app means you've seen its notifications.
   useEffect(() => {
@@ -122,9 +100,4 @@ export function useBackgroundEffects({ state, dispatch, refs, video, actions, vi
     choosePreviewModel(isEmbed ? 'fold' : demoModel);
     dispatch({ type: 'patch', patch: { folded: false } });
   }, [choosePreviewModel, dispatch]);
-}
-
-/** Last-known alarms, restored before the first render so a closed phone can still ring. */
-export function storedAlarms(): Alarm[] {
-  try { const value = JSON.parse(recall('alarms') ?? '[]'); return Array.isArray(value) ? value : []; } catch { return []; }
 }

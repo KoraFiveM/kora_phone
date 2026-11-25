@@ -241,20 +241,6 @@ route('weather:get', function()
     return { ok = true, data = KoraPhone.World.Weather() }
 end)
 
--- An alarm went off in the UI. With the phone closed the player still needs to notice it.
-route('alarm', function(data)
-    if not KoraPhone.State.open then
-        local label = stringField(data.label, 60) or ''
-        Kora.notify.send({
-            title = Kora.lang('title.alarm'),
-            message = label ~= '' and label or Kora.lang('notify.alarm_untitled'),
-            type = 'info',
-            duration = 8000,
-        })
-        Kora.sound.playFrontend('Beep_Green', 'DLC_HEIST_HACKING_SNAKE_SOUNDS', { network = true })
-    end
-    return { ok = true }
-end)
 
 -- Do Not Disturb: the UI owns the setting and schedule and tells the client whether it is quiet now.
 route('quiet', function(data)

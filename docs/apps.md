@@ -97,7 +97,7 @@ Folder apps are trusted code. Their Lua runs in this resource's VM, and their pa
 
 ### Built-in apps
 
-Notes, Calculator, Weather, Wallet (`banking`), Mail (`mail`), Moderation (`moderation`, a `staff` app), Market (`classifieds`), Contacts, Phone, Messages and Gallery (in the dock), Maps (`gps`), Garage (`vehicles`), Home (`property`) and Work (`services`) ship as folder apps and are the reference implementations: `notes` for storage, `calculator` for pure UI, `weather` and `property` for `client.lua`, and `vehicles`, `property` and `services` for wrapping an existing server service with `Phone.unwrap`. The remaining built-in apps (Camera, Settings, Pulse, Flash, Clock, Sound) are still compiled into the host UI and move into `apps/` one at a time as they gain the services they need; see `patchnotes.md`.
+Notes, Calculator, Weather, Wallet (`banking`), Mail (`mail`), Moderation (`moderation`, a `staff` app), Market (`classifieds`), Contacts, Phone, Messages and Gallery (in the dock), Maps (`gps`), Clock (`clock`, a `client.lua` that rings alarms with the phone closed), Garage (`vehicles`), Home (`property`) and Work (`services`) ship as folder apps and are the reference implementations: `notes` for storage, `calculator` for pure UI, `weather` and `property` for `client.lua`, and `vehicles`, `property` and `services` for wrapping an existing server service with `Phone.unwrap`. The remaining built-in apps (Camera, Settings, Pulse, Flash, Sound) are still compiled into the host UI and move into `apps/` one at a time as they gain the services they need; see `patchnotes.md`.
 
 ## Other ways to register an app
 

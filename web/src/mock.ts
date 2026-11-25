@@ -16,7 +16,6 @@ const seed: DeviceData = {
   contacts: [{ name: 'Alex Morgan', number: '5550192042' }, { name: 'Jules Chen', number: '5550178031' }, { name: 'Los Santos Customs', number: '5550103000' }],
   photos: [],
   stations: [{ id: 'first-station', label: 'Lo-fi beats', url: 'https://www.youtube.com/watch?v=jfKfPfyJRdk' }],
-  alarms: [{ id: 'first-alarm', label: 'Wake up', time: '08:00', days: [1, 2, 3, 4, 5], enabled: true }],
 };
 const sampleFlashPhoto = () => `data:image/svg+xml,${encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" width="600" height="800"><rect width="600" height="800" fill="#e8a15c"/><circle cx="300" cy="320" r="110" fill="#fff3e0"/><path d="M0 620 200 480 340 560 460 420 600 560V800H0" fill="#8a5a2b"/></svg>')}`;
 interface Store { data: DeviceData; pin: string; messages: Message[]; posts: Post[]; flash: Post[]; comments: (Comment & { postId: number })[]; conversations: Conversation[]; chatMessages: Record<number, ChatMessage[]> }
@@ -101,7 +100,6 @@ export async function mockRequest<K extends keyof Api>(action: K, payload: Api[K
     case 'answer': if (activeCall) { activeCall = { ...activeCall, status: 'active' }; result = activeCall; } break;
     case 'hangup': activeCall = undefined; break;
     case 'stations': store.data.stations = store.data.stations.filter(s => s.id !== p.id); if (!p.remove) store.data.stations.unshift({ id: String(p.id), label: String(p.label), url: String(p.url) }); result = store.data; break;
-    case 'alarms': store.data.alarms = store.data.alarms.filter(a => a.id !== p.id); if (!p.remove) store.data.alarms.unshift({ id: String(p.id), label: String(p.label), time: String(p.time), days: Array.isArray(p.days) ? p.days as number[] : [], enabled: !!p.enabled }); result = store.data; break;
     case 'feed': result = feed.filter(post => !p.before || post.id < Number(p.before)); break;
     case 'post': {
       const post: Post = { id: Date.now(), number, body: String(p.body || ''), price: Number(p.price) || 0, created_at: timestamp(), likes: 0, comments: 0, liked: false, mine: true };

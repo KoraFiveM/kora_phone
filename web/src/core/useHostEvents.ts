@@ -69,8 +69,8 @@ export function useHostEvents({ state, dispatch, refs, video, actions }: PhoneSt
       else if (type === 'phone:close' || type === 'phone:reset' || type === 'close') {
         if (type === 'phone:reset') {
           refs.notificationDevice.current = undefined; patch({ type: 'reset' });
-          refs.alarms.current = []; refs.quietConfig.current = {}; refs.contactNames.current.clear();
-          remember('alarms', '[]'); remember('quiet', '{}');
+          refs.quietConfig.current = {}; refs.contactNames.current.clear();
+          remember('quiet', '{}');
         }
         closeFromHost();
       }

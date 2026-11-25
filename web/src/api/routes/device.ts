@@ -1,5 +1,5 @@
 import { isOptional } from '../../catalog';
-import type { Alarm, DeviceData, Station } from '../../types';
+import type { DeviceData, Station } from '../../types';
 import { normalizeData } from '../../types';
 import type { HandlerSet } from '../routeTypes';
 import { loadGallery, reload } from '../session';
@@ -9,9 +9,9 @@ import type { Page, RawSdkApp } from '../raw';
 import { nui, server } from '../transport';
 import { remember } from '../../lastScreen';
 
-type Item = Alarm | Station;
-type Collection = 'alarms' | 'stations';
-const itemKind: Record<Collection, string> = { alarms: 'alarm', stations: 'station' };
+type Item = Station;
+type Collection = 'stations';
+const itemKind: Record<Collection, string> = { stations: 'station' };
 
 /** Notes, alarms and stations are one shape of action: save or remove an item, mirror it in the cache. */
 const itemRoute = (collection: Collection) => async (payload: Item & { remove?: boolean }): Promise<DeviceData> => {
@@ -26,7 +26,7 @@ const itemRoute = (collection: Collection) => async (payload: Item & { remove?: 
 
 export const deviceRoutes: HandlerSet<
     'refresh' | 'unlock' | 'lock' | 'pin' | 'settings' | 'installApp' | 'appsList' | 'appsInstall' | 'appsUninstall' | 'customApp' | 'contactSave'
-    | 'alarms' | 'stations' | 'capture'
+    | 'stations' | 'capture'
 > = {
     refresh: () => reload(),
     unlock: async ({ pin }) => { await server('security:unlock', { pin }); return reload(); },
@@ -100,7 +100,6 @@ export const deviceRoutes: HandlerSet<
         }
         return (await reload()).data as DeviceData;
     },
-    alarms: itemRoute('alarms'),
     stations: itemRoute('stations'),
     capture: async ({ front }) => {
         await server('camera:open', { front });

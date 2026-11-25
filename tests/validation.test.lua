@@ -118,7 +118,7 @@ test("settings rejects bad appOrder entries", function()
     equal(PhoneValidation.settings(okSettings({ appOrder = "social" })), nil)
 end)
 test("settings accepts a good appOrder", function()
-    equal(PhoneValidation.settings(okSettings({ appOrder = { "social", "clock" } })).appOrder[2], "clock")
+    equal(PhoneValidation.settings(okSettings({ appOrder = { "social", "music" } })).appOrder[2], "music")
 end)
 test("settings rejects non-table", function() equal(PhoneValidation.settings("x"), nil) end)
 test("settings accepts the kora_core theme and wallpaper", function()
@@ -364,7 +364,7 @@ end)
 local function joined(list) return list and table.concat(list, ",") or "nil" end
 local function withHome(allow, fn)
     local oldApps, oldHome = Config.LaunchApps, Config.HomeScreen
-    Config.LaunchApps = { social = true, clock = true, music = true, camera = true }
+    Config.LaunchApps = { social = true, flash = true, music = true, camera = true }
     Config.HomeScreen = { allowReorder = allow }
     local ok, err = pcall(fn)
     Config.LaunchApps, Config.HomeScreen = oldApps, oldHome
@@ -378,8 +378,8 @@ test("appOrder keeps a valid order and drops repeated and unknown apps", functio
 end)
 test("appOrder follows installedApps: removed apps drop out, new apps append", function()
     withHome(true, function()
-        local out = PhoneValidation.settings(okSettings({ appOrder = { "music", "camera", "social" }, installedApps = { "social", "clock" } }))
-        equal(joined(out.appOrder), "camera,social,clock")
+        local out = PhoneValidation.settings(okSettings({ appOrder = { "music", "camera", "social" }, installedApps = { "social", "flash" } }))
+        equal(joined(out.appOrder), "camera,social,flash")
     end)
 end)
 test("folder apps keep their place in a saved home order", function()
@@ -392,7 +392,7 @@ test("folder apps keep their place in a saved home order", function()
 end)
 test("dockOrder is cleaned the same way", function()
     withHome(true, function()
-        equal(joined(PhoneValidation.settings(okSettings({ dockOrder = { "clock", "camera", "clock", "bogus" } })).dockOrder), "clock,camera")
+        equal(joined(PhoneValidation.settings(okSettings({ dockOrder = { "flash", "camera", "flash", "bogus" } })).dockOrder), "flash,camera")
         equal(PhoneValidation.settings(okSettings({ dockOrder = { "Bad Id" } })), nil)
     end)
 end)

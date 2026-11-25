@@ -6,13 +6,13 @@ import { mapContact } from './media';
 
 export const defaultData = (): DeviceData => normalizeData({
     settings: { name: 'Kora Phone', volume: .5, scale: 1, wallpaper: 'kora_core', theme: 'kora_core', setupComplete: false },
-    contacts: [], photos: [], stations: [], alarms: [],
+    contacts: [], photos: [], stations: [],
 });
 
 /** What a bootstrap adds to the device cache, and what the shell gets back. */
 export interface BootstrapResult { bootstrap: Bootstrap; cache: DeviceData }
 
-type Collection<K extends 'alarms' | 'stations'> = DeviceData[K];
+type Collection<K extends 'stations'> = DeviceData[K];
 
 /** Server bootstrap -> shell model. Pure: the caller decides where the cache lives. */
 export function mapBootstrap(raw: RawBootstrap, customApps: Record<string, boolean>): BootstrapResult {
@@ -24,7 +24,6 @@ export function mapBootstrap(raw: RawBootstrap, customApps: Record<string, boole
     let cache = normalizeData({
         ...blank,
         contacts: Array.isArray(raw.contacts) ? raw.contacts.map(mapContact) : blank.contacts,
-        alarms: (raw.items?.alarms ?? blank.alarms) as Collection<'alarms'>,
         stations: (raw.items?.stations ?? blank.stations) as Collection<'stations'>,
         settings: { ...blank.settings, ...(settings || {}) },
         installedApps: (settings?.installedApps ?? starterApps) as AppId[],
@@ -55,7 +54,6 @@ export function mapBootstrap(raw: RawBootstrap, customApps: Record<string, boole
             camera: apps.camera !== false && features?.media === true,
             gallery: true,
             social: apps.social !== false,
-            clock: apps.clock !== false,
             weather: apps.weather !== false,
             flash: apps.flash !== false && !!features?.flash,
             music: apps.music !== false,
