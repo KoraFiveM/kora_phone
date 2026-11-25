@@ -11,7 +11,7 @@ export const PERMISSIONS = [
 export type Permission = typeof PERMISSIONS[number];
 
 export const REQUEST_TYPES = [
-    'ready', 'callback', 'client', 'open', 'refresh', 'call', 'lb', 'notify', 'storage.get', 'storage.list', 'storage.set', 'storage.remove',
+    'ready', 'callback', 'client', 'open', 'refresh', 'call', 'lb', 'system', 'notify', 'storage.get', 'storage.list', 'storage.set', 'storage.remove',
     'contacts.list', 'contacts.save', 'close', 'setTitle', 'haptic', 'getContext',
 ] as const;
 export type RequestType = typeof REQUEST_TYPES[number];

@@ -366,6 +366,46 @@ test('call starts a call only with a valid number and only when the host provide
     assert.deepEqual(dialled, ['5550001']);
 });
 
+test('system actions: only the listed settings change, a PIN and a handset operation pass through, anything else is refused', async () => {
+    const { runSystemAction, SETTING_KEYS } = sdk;
+    const calls = [];
+    const deps = {
+        snapshot: () => ({ settings: { name: 'A', volume: 0.5, theme: 'dark' }, model: 'fold', hasPin: false, number: '5550001' }),
+        saveSettings: async next => { calls.push(['save', next]); return next; },
+        setPin: async (current, pin) => { calls.push(['pin', current, pin]); return { hasPin: true }; },
+        listBlocked: async () => ['5550002'],
+        setBlocked: async (number, blocked) => { calls.push(['block', number, blocked]); return true; },
+        handset: async payload => { calls.push(['handset', payload]); return { ok: true }; },
+    };
+    assert.equal((await runSystemAction(deps, 'settings.get', {})).model, 'fold');
+    assert.deepEqual(await runSystemAction(deps, 'settings.save', { patch: { volume: 0.9 } }), { name: 'A', volume: 0.9, theme: 'dark' });
+    await assert.rejects(runSystemAction(deps, 'settings.save', { patch: { pinHash: 'x' } }), /Unknown setting: pinHash/);
+    await assert.rejects(runSystemAction(deps, 'settings.save', {}), e => e.code === 'INVALID_PAYLOAD');
+    assert.ok(SETTING_KEYS.includes('dnd') && !SETTING_KEYS.includes('installedApps'), 'install state is not a setting an app may write here');
+    assert.deepEqual(await runSystemAction(deps, 'pin.set', { currentPin: '1234', pin: '5678' }), { hasPin: true });
+    await assert.rejects(runSystemAction(deps, 'pin.set', { pin: 12345 }), e => e.code === 'INVALID_PAYLOAD');
+    assert.deepEqual(await runSystemAction(deps, 'blocks.list', {}), ['5550002']);
+    await runSystemAction(deps, 'blocks.set', { number: '5550002', blocked: false });
+    await assert.rejects(runSystemAction(deps, 'blocks.set', { number: '5550002', blocked: 'no' }), e => e.code === 'INVALID_PAYLOAD');
+    await runSystemAction(deps, 'handset', { action: 'system', op: 'status' });
+    assert.deepEqual(calls.at(-1), ['handset', { op: 'status' }], 'the routing key is stripped, the operation is forwarded');
+    await assert.rejects(runSystemAction(deps, 'handset', {}), e => e.code === 'INVALID_PAYLOAD');
+    await assert.rejects(runSystemAction(deps, 'wipe', {}), /Unknown system action/);
+});
+
+test('the system request is refused unless the host gave this app the handler', async () => {
+    const plain = setup();
+    await plain.send(env('system', { action: 'settings.get' }, 'y1'));
+    assert.equal(plain.posted.at(-1).error.code, 'PERMISSION_DENIED');
+    const seen = [];
+    const trusted = setup({ router: { onSystem: (action, payload) => { seen.push([action, payload.pin]); return { fine: 1 }; } } });
+    await trusted.send(env('system', { action: 'pin.set', pin: '1' }, 'y2'));
+    assert.deepEqual(seen, [['pin.set', '1']]);
+    assert.deepEqual(trusted.posted.at(-1).payload, { fine: 1 });
+    await trusted.send(env('system', {}, 'y3'));
+    assert.equal(trusted.posted.at(-1).error.code, 'INVALID_PAYLOAD');
+});
+
 (async () => {
     for (const [name, fn] of queue) {
         try { await fn(); console.log(`ok - ${name}`); } catch (e) { failures++; console.error(`not ok - ${name}\n${e.stack}`); }

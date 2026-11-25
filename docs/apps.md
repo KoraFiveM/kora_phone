@@ -70,6 +70,10 @@ app.push('refresh', data)                   -- Lua to the open UI
 
 `app.callback` handlers run behind the same gate as every SDK callback (character loaded, phone held, PIN unlocked, app installed). `app.client` handlers have no server gate: they run on the player's own client.
 
+### System services
+
+`phone.system(action, payload)` reaches the phone's own settings: `settings.get`, `settings.save` (a patch of `name`, `volume`, `scale`, `wallpaper`, `wallpaperUrl`, `theme`, `phoneStyle`, `phoneCase`, `phoneCaseUrl`, `iconStyle`, `dnd`, `dndFrom`, `dndTo`, `setupComplete`, `appOrder`, `dockOrder`; the server validates the values again), `pin.set`, `blocks.list`, `blocks.set` and `handset` (one handset operation: SIM, cloud, Face ID, Wi-Fi). The phone only offers it to an app that sets `system = true` and is served by this resource; every other app, including lb-phone pages and apps from other resources, gets `PERMISSION_DENIED`.
+
 ### The dock
 
 If a folder app's id is one of the dock ids (`phone`, `messages`, `contacts`, `camera`, `gallery`) the phone shows it in the dock instead of the grid, in the default dock order. An app opened with `phone.open('phone', number)` receives that target as `init.target` (`phone.init.target` after `ready()`).

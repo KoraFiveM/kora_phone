@@ -63,6 +63,8 @@ export interface PhoneClient {
     refresh(): Promise<void>;
     /** Starts a voice call to a phone number through the phone's call service (the call screen belongs to the phone). */
     call(number: string): Promise<void>;
+    /** Settings, PIN, blocked numbers and handset controls. Only the phone's own system apps may use it; every other app gets PERMISSION_DENIED. */
+    system<TOut = unknown>(action: string, payload?: Record<string, unknown>): Promise<TOut>;
     /** Calls a handler the app registered in its own client.lua with `app.client(name, fn)`. */
     client<TIn = unknown, TOut = unknown>(name: string, payload?: TIn): Promise<TOut>;
     notify(title: string, body: string): Promise<void>;
@@ -237,6 +239,9 @@ export function createPhoneClient(options: PhoneClientOptions = {}): PhoneClient
         },
         async open(app, target) {
             await request('open', target === undefined ? { app } : { app, target });
+        },
+        async system<TOut = unknown>(action: string, payload?: Record<string, unknown>): Promise<TOut> {
+            return (await request('system', { ...(payload ?? {}), action })) as TOut;
         },
         async call(number) {
             await request('call', { number });

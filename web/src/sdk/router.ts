@@ -23,6 +23,8 @@ export interface RouterOptions {
     onSetTitle?: (title: string) => void;
     /** Opens another app. Receives a validated app id and an optional short target (a number, a thread). */
     onOpen?: (app: string, target?: string) => void;
+    /** Settings, PIN, blocked numbers and handset controls. Only ever set for a system app that lives in this resource. */
+    onSystem?: (action: string, payload: Record<string, unknown>) => Promise<unknown> | unknown;
     /** Starts a call. Receives a validated number (7 to 16 digits). */
     onCall?: (number: string) => Promise<unknown> | unknown;
     /** Reloads the data the host keeps for other screens (contacts and the like). */
@@ -118,6 +120,12 @@ export function createRouter(options: RouterOptions) {
             return null;
         },
         refresh: async () => { await options.onRefresh?.(); return null; },
+        system: payload => {
+            if (!options.onSystem) throw new RouteError('PERMISSION_DENIED', 'Not available to this app');
+            const action = str(payload.action, 32);
+            if (!action) throw new RouteError('INVALID_PAYLOAD', 'An action is required');
+            return options.onSystem(action, payload);
+        },
         lb: payload => {
             if (!options.onLb) throw new RouteError('PERMISSION_DENIED', 'Not available to this app');
             const action = str(payload.action, 32);

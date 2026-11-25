@@ -8,7 +8,8 @@ import { isHostMessage } from '../../nuiEvents';
 import '../../CustomApps.css';
 import { SETTINGS_EVENT, legacyEvent } from '../../sdk/legacy';
 import { appUrl, createRouter, buildTheme, permissionsOf, sameTheme, originOf, push, isRecord } from '../../sdk';
-import { buildLbDocument } from '../../sdk';
+import { buildLbDocument, runSystemAction, unwrap } from '../../sdk';
+import type { SystemDeps } from '../../sdk';
 import type { HostTransport, Handset, ThemePayload } from '../../sdk';
 import { lbAction } from './lbActions';
 import type { AppId } from '../../types';
@@ -53,12 +54,21 @@ interface HostMessage { type?: unknown; app?: unknown; name?: unknown; data?: un
 
 export function CustomAppScreen({ id, hint, transport = hostTransport }: { id: string; hint?: string; transport?: HostTransport }) {
   const { apps, loaded } = useCustomApps(); const definition = apps.find(app => app.identifier === id);
-  const { data, device, run, setCall, navigate, updateData } = usePhone();
+  const { data, device, run, setCall, navigate, updateData, setHasPin } = usePhone();
   const frame = useRef<HTMLIFrameElement>(null);
   const [authorized, setAuthorized] = useState(false); const [error, setError] = useState('');
   const [state, setState] = useState<HostState>('loading'); const [title, setTitle] = useState(''); const [attempt, setAttempt] = useState(0);
   const settings = useRef(data.settings); settings.current = data.settings;
   const dataRef = useRef(data); dataRef.current = data;
+  const deviceRef = useRef(device); deviceRef.current = device;
+  const systemDeps = (): SystemDeps => ({
+    snapshot: () => ({ settings: dataRef.current.settings as unknown as Record<string, unknown>, model: deviceRef.current.model, hasPin: deviceRef.current.hasPin, number: deviceRef.current.number, characterName: deviceRef.current.characterName, deviceId: deviceRef.current.id }),
+    saveSettings: async next => { const saved = await api('settings', { ...(next as unknown as Parameters<typeof api<'settings'>>[1]), expectedDeviceId: deviceRef.current.id }); updateData(saved); return saved.settings as unknown as Record<string, unknown>; },
+    setPin: async (currentPin, pin) => { const result = await api('pin', { currentPin, pin }); setHasPin(result.hasPin); return result; },
+    listBlocked: () => api('blocked', {}),
+    setBlocked: (number, blocked) => api('setBlocked', { number, blocked }),
+    handset: async payload => unwrap(await nui('handset:action', payload)),
+  });
   const resource = definition?.resource ?? '';
   // lb-phone style apps (registered from a resource's client script) get the compatibility layer injected into their own
   // page, which the phone then loads as a document of its own origin. null = not loaded yet, '' = load it plainly.
@@ -101,6 +111,9 @@ export function CustomAppScreen({ id, hint, transport = hostTransport }: { id: s
       onClose: () => navigate('home'),
       onSetTitle: setTitle,
       target: hint || undefined,
+      // Settings, PIN and handset controls: only for a system app that is served by this very resource.
+      onSystem: definition.source === 'server' && definition.system === true && resource === location.hostname.replace(/^cfx-nui-/, '')
+        ? (action, payload) => runSystemAction(systemDeps(), action, payload) : undefined,
       getVolume: () => typeof settings.current?.volume === 'number' ? settings.current.volume : undefined,
       onCall: async number => { setCall(await api('dial', { number })); },
       onOpen: (app, to) => navigate(app as AppId, to),

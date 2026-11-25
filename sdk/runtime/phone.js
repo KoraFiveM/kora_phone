@@ -147,6 +147,9 @@ function createPhoneClient(options = {}) {
     async open(app, target) {
       await request("open", target === void 0 ? { app } : { app, target });
     },
+    async system(action, payload) {
+      return await request("system", { ...payload ?? {}, action });
+    },
     async call(number) {
       await request("call", { number });
     },

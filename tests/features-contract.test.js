@@ -108,6 +108,12 @@ for (const [name, service] of [["blips", "KoraPhone.Map.Blips"], ["here", "KoraP
 assert.doesNotMatch(read("apps/gps/ui/app.js"), /https?:\/\//, "the map page must not load anything from outside");
 assert.ok(fs.existsSync(path.join(root, "apps/gps/ui/map.jpg")), "the map image ships inside the app");
 
+// The `system` request (settings, PIN, blocked numbers, handset controls) is handed only to a `system` app served by
+// this very resource: never to another resource's app, an lb-phone page, or a folder app that is not marked system.
+const hostApps = read("web/src/apps/custom/CustomApps.tsx");
+assert.match(hostApps, /onSystem: definition\.source === 'server' && definition\.system === true && resource === location\.hostname\.replace\(\/\^cfx-nui-\/, ''\)/, "the system handler must be gated on source, system flag and own resource");
+assert.doesNotMatch(read("web/src/sdk/system.ts"), /installedApps|customApps/, "the system service must not write install state");
+
 // Sound is a folder app: stations are validated phone items for the caller's own device, and its page may only embed
 // the hosts declared in app.lua (the CSP in index.html repeats them).
 const musicServer = read("apps/music/server.lua");
