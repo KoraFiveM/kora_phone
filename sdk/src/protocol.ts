@@ -34,6 +34,8 @@ export interface InitPayload {
     locale: string;
     theme: ThemeState;
     permissions: Permission[];
+    /** Where the app was asked to open (a number to call, a thread to show). Absent for a plain launch. */
+    target?: string;
 }
 
 /** iframe -> host requests: payload and response types per request type. */
@@ -41,7 +43,8 @@ export interface RequestMap {
     ready: { payload: Record<string, never> | undefined; result: unknown };
     callback: { payload: { name: string; payload?: unknown }; result: unknown };
     client: { payload: { name: string; payload?: unknown }; result: unknown };
-    open: { payload: { app: string }; result: unknown };
+    open: { payload: { app: string; target?: string }; result: unknown };
+    refresh: { payload: Record<string, never>; result: unknown };
     notify: { payload: { title: string; body: string }; result: unknown };
     'storage.list': { payload: { prefix?: string }; result: Record<string, Json> };
     'storage.get': { payload: { key: string }; result: Json | null };

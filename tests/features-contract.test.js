@@ -95,6 +95,14 @@ assert.match(mailRepo, /INSERT IGNORE INTO phone_mail/, "a retried mail request 
 assert.match(mailRepo, /recipient_device_id = \?/, "mail is only read or deleted by its own sender or recipient");
 assert.match(read("server/repositories/external.lua"), /External\.isIdentifier\(name\)/, "housing table and column names must be checked before they go into SQL");
 assert.match(property, /device\.ownerCitizenId/, "homes must be looked up by the caller's own character");
+// Contacts is a folder app: each callback runs the validated contact service for the caller's own device, and the
+// contact photo can only be one of the caller's own gallery items.
+const contactsApp = read("apps/contacts/server.lua");
+for (const [callback, service] of [["list", "Contacts.list"], ["save", "Contacts.save"], ["delete", "Contacts.delete"], ["photos", "Media.list"]])
+  assert.match(contactsApp, new RegExp(`app\\.callback\\('${callback}'[\\s\\S]*?Services\\.${service.replace(".", "\\.")}\\(source`), `contacts ${callback} must call ${service}(source`);
+assert.doesNotMatch(contactsApp, /payload\.(?:deviceId|ownerDeviceId|citizenId)/, "the UI must not choose the device or owner");
+assert.match(read("server/services/contacts.lua"), /Media\.findOwned\(device\.id, contact\.avatarMediaId\)/, "a contact photo must belong to the caller");
+
 // Garage and Home are folder apps: their callbacks run the validated services with the caller's source, nothing the UI sends.
 for (const [app, service] of [["vehicles", "Garage.list"], ["property", "Property.list"]]) {
   assert.match(read(`apps/${app}/server.lua`), new RegExp(`app\\.callback\\('list'[\\s\\S]*?Services\\.${service.replace(".", "\\.")}\\(source\\)`), `${app} list must call ${service}(source)`);

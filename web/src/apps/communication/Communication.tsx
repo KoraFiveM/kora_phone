@@ -1,6 +1,6 @@
-import { ArrowDownLeft,ArrowUpRight,Delete,ImagePlus,MessageCircle,Phone,Plus,Send,Star,Trash2,X } from 'lucide-react';
+import { ArrowDownLeft,ArrowUpRight,Delete,ImagePlus,Phone,Plus,Send,Trash2,X } from 'lucide-react';
 import { useEffect,useState } from 'react';
-import { api,isPreview } from '../../api';
+import { api } from '../../api';
 import { mergeChatMessages,mergeConversations } from '../../chatMessages';
 import { previewText } from '../../chatTokens';
 import { dateLabel,Empty,Row } from '../../components';
@@ -17,20 +17,6 @@ export function PhoneScreen({ target }: { target: string }) {
   return <><div className="segments"><button className={tab === 'keypad' ? 'selected' : ''} onClick={() => setTab('keypad')}>Keypad</button><button className={tab === 'recent' ? 'selected' : ''} onClick={() => { setTab('recent'); history.refresh(); }}>Recent</button></div>
     {tab === 'keypad' ? <div className="dialer"><input className="dial-number" aria-label="Phone number" inputMode="tel" value={number} maxLength={16} placeholder="Enter number" onChange={e => setNumber(e.target.value.replace(/\D/g, ''))} /><p className="muted">{data.contacts.find(c => c.number === number)?.name || 'A little closer. One call away.'}</p><div className="keypad">{'123456789*0#'.split('').map((digit, i) => <button key={digit} onClick={() => setNumber(n => (n + digit).slice(0, 16))}><span>{digit}</span><small>{['', 'ABC', 'DEF', 'GHI', 'JKL', 'MNO', 'PQRS', 'TUV', 'WXYZ', '', '+', ''][i]}</small></button>)}</div><div className="dial-actions"><span /><button className="call-button" aria-label="Call number" disabled={busy || !/^\d{7,16}$/.test(number)} onClick={() => run(async () => setCall(await api('dial', { number })))}><Phone size={25} /></button><button className="icon-button" aria-label="Delete last digit" onClick={() => setNumber(n => n.slice(0, -1))}><Delete size={23} /></button></div></div>
       : <><LoadState {...history} retry={history.refresh} />{asList<CallHistory>(history.value).map(call => { const incoming = call.recipient === device.number; const peer = incoming ? call.caller : call.recipient; return <Row key={call.id} title={data.contacts.find(c => c.number === peer)?.name || peer} detail={`${call.status} · ${dateLabel(call.created_at)}`} icon={incoming ? <ArrowDownLeft size={19} /> : <ArrowUpRight size={19} />} onClick={() => { setNumber(peer); setTab('keypad'); }} />; })}{!history.loading && !asList(history.value).length && <Empty title="Your first hello" detail="Your recent calls will appear here." />}</>}
-  </>;
-}
-export function ContactsScreen() {
-  const { data, updateData, navigate, run, busy } = usePhone();
-  const [search, setSearch] = useState('');
-  const [editing, setEditing] = useState(false);
-  const [contactId, setContactId] = useState<number>();
-  const [photo, setPhoto] = useState('');
-  const [name, setName] = useState(''); const [number, setNumber] = useState('');
-  return <><div className="search-row"><input aria-label="Search contacts" placeholder="Find your people" value={search} onChange={e => setSearch(e.target.value)} /><button className="round-button" aria-label="Add contact" onClick={() => { setContactId(undefined); setName(''); setNumber(''); setPhoto(''); setEditing(!editing); }}><Plus size={20} /></button></div>
-    {editing && <form className="panel form" onSubmit={e => { e.preventDefault(); run(async () => { updateData(await api('contactSave', { id: contactId, name, number, photo, favorite: data.contacts.find(c => contactId ? c.id === contactId : c.number === number)?.favorite })); setEditing(false); setContactId(undefined); setName(''); setNumber(''); }); }}><label>Name<input required maxLength={60} value={name} onChange={e => setName(e.target.value)} /></label><label>Number<input required inputMode="tel" pattern="[0-9]{7,16}" maxLength={16} value={number} onChange={e => setNumber(e.target.value)} /></label><ImagePicker label="Contact photo" value={photo} onChange={setPhoto} photos={data.photos} galleryOnly={!isPreview} /><button className="primary" disabled={busy}>Save contact</button></form>}
-    <p className="section-label">YOUR CIRCLE / {data.contacts.length.toString().padStart(2, '0')}</p>
-    {data.contacts.filter(c => `${c.name} ${c.number}`.toLowerCase().includes(search.toLowerCase())).sort((a, b) => Number(!!b.favorite) - Number(!!a.favorite) || a.name.localeCompare(b.name)).map(contact => <div key={contact.number} className="contact-card"><Row title={contact.name} detail={contact.number} icon={<PhotoImage src={contact.photo} className="contact-photo" alt={contact.name} />} /><div className="contact-actions"><button aria-label={contact.favorite ? `Remove ${contact.name} from favourites` : `Add ${contact.name} to favourites`} aria-pressed={!!contact.favorite} disabled={busy} onClick={() => run(async () => updateData(await api('contactSave', { ...contact, favorite: !contact.favorite })))}><Star size={16} fill={contact.favorite ? 'currentColor' : 'none'} /></button><button aria-label={`Call ${contact.name}`} onClick={() => navigate('phone', contact.number)}><Phone size={16} />Call</button><button aria-label={`Message ${contact.name}`} onClick={() => navigate('messages', contact.number)}><MessageCircle size={16} />Message</button><button aria-label={`Edit ${contact.name}`} onClick={() => { setContactId(contact.id); setName(contact.name); setNumber(contact.number); setPhoto(contact.photo || ''); setEditing(true); }}>Edit</button><button aria-label={`Delete ${contact.name}`} disabled={busy} onClick={() => run(async () => updateData(await api('contactSave', { ...contact, remove: true })))}><Trash2 size={16} /></button></div></div>)}
-    {!data.contacts.length && <Empty title="Make a connection" detail="Add a number to start building your circle." />}
   </>;
 }
 export function MessagesScreen({ target }: { target: string }) {

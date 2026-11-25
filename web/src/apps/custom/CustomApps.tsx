@@ -51,9 +51,9 @@ type HostState = 'loading' | 'ready' | 'error';
 
 interface HostMessage { type?: unknown; app?: unknown; name?: unknown; data?: unknown }
 
-export function CustomAppScreen({ id, transport = hostTransport }: { id: string; transport?: HostTransport }) {
+export function CustomAppScreen({ id, hint, transport = hostTransport }: { id: string; hint?: string; transport?: HostTransport }) {
   const { apps, loaded } = useCustomApps(); const definition = apps.find(app => app.identifier === id);
-  const { data, device, run, setCall, navigate } = usePhone();
+  const { data, device, run, setCall, navigate, updateData } = usePhone();
   const frame = useRef<HTMLIFrameElement>(null);
   const [authorized, setAuthorized] = useState(false); const [error, setError] = useState('');
   const [state, setState] = useState<HostState>('loading'); const [title, setTitle] = useState(''); const [attempt, setAttempt] = useState(0);
@@ -100,7 +100,9 @@ export function CustomAppScreen({ id, transport = hostTransport }: { id: string;
       },
       onClose: () => navigate('home'),
       onSetTitle: setTitle,
-      onOpen: app => navigate(app as AppId),
+      target: hint || undefined,
+      onOpen: (app, to) => navigate(app as AppId, to),
+      onRefresh: async () => { const next = await api('refresh', {}); if (next.data) updateData(next.data); },
       onLb: compat ? (action, payload) => lbAction(action, payload, { data: dataRef.current, navigate, run: work => run(work), setCall }) : undefined,
     });
     const onMessage = (e: MessageEvent) => {
@@ -133,7 +135,7 @@ export function CustomAppScreen({ id, transport = hostTransport }: { id: string;
       router.dispose(); observer.disconnect(); window.clearTimeout(timer);
       document.removeEventListener('visibilitychange', onVisibility); window.removeEventListener('message', onMessage);
     };
-  }, [authorized, definition, compat, compatDoc, origin, id, resource, permissions, transport, post, model, navigate, run, setCall]);
+  }, [authorized, definition, compat, compatDoc, origin, id, resource, permissions, transport, post, model, navigate, run, setCall, hint, updateData]);
 
   useEffect(() => {
     if (state === 'ready' && frame.current?.contentWindow) post(push('event', { name: SETTINGS_EVENT, data: data.settings }));
@@ -151,4 +153,5 @@ export function CustomAppScreen({ id, transport = hostTransport }: { id: string;
   </div>;
 }
 
-export function CustomAppRoute({ target }: { target: string }) { return <CustomAppScreen id={target} />; }
+/** The route target is the app id, optionally followed by `#` and an opening hint for the app. */
+export function CustomAppRoute({ target }: { target: string }) { const [id, hint] = target.split('#'); return <CustomAppScreen id={id} hint={hint} />; }

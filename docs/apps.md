@@ -70,6 +70,10 @@ app.push('refresh', data)                   -- Lua to the open UI
 
 `app.callback` handlers run behind the same gate as every SDK callback (character loaded, phone held, PIN unlocked, app installed). `app.client` handlers have no server gate: they run on the player's own client.
 
+### The dock
+
+If a folder app's id is one of the dock ids (`phone`, `messages`, `contacts`, `camera`, `gallery`) the phone shows it in the dock instead of the grid, in the default dock order. An app opened with `phone.open('phone', number)` receives that target as `init.target` (`phone.init.target` after `ready()`).
+
 ### The UI kit
 
 An app page loads the kit from the phone, with no build step:
@@ -81,7 +85,7 @@ An app page loads the kit from the phone, with no build step:
 </script>
 ```
 
-`phone` is the SDK client (`phone.callback`, `phone.client`, `phone.storage.get/list/set/remove`, `phone.contacts`, `phone.notify`). `h` builds elements without `innerHTML`. See the [style guide](./style-guide.md) for the CSS classes.
+`phone` is the SDK client (`phone.callback`, `phone.client`, `phone.open(app, target)` to open another app, `phone.refresh()` to make the phone reload its own copy of shared data such as contacts,  `phone.storage.get/list/set/remove`, `phone.contacts`, `phone.notify`). `h` builds elements without `innerHTML`. See the [style guide](./style-guide.md) for the CSS classes.
 
 ### Trust
 
@@ -89,7 +93,7 @@ Folder apps are trusted code. Their Lua runs in this resource's VM, and their pa
 
 ### Built-in apps
 
-Notes, Calculator, Weather, Wallet (`banking`), Mail (`mail`), Moderation (`moderation`, a `staff` app), Market (`classifieds`), Garage (`vehicles`), Home (`property`) and Work (`services`) ship as folder apps and are the reference implementations: `notes` for storage, `calculator` for pure UI, `weather` and `property` for `client.lua`, and `vehicles`, `property` and `services` for wrapping an existing server service with `Phone.unwrap`. The remaining built-in apps (Phone, Messages, Contacts, Camera, Gallery, Settings, Maps, Pulse, Flash, Clock, Sound) are still compiled into the host UI and move into `apps/` one at a time as they gain the services they need; see `patchnotes.md`.
+Notes, Calculator, Weather, Wallet (`banking`), Mail (`mail`), Moderation (`moderation`, a `staff` app), Market (`classifieds`), Contacts (in the dock), Garage (`vehicles`), Home (`property`) and Work (`services`) ship as folder apps and are the reference implementations: `notes` for storage, `calculator` for pure UI, `weather` and `property` for `client.lua`, and `vehicles`, `property` and `services` for wrapping an existing server service with `Phone.unwrap`. The remaining built-in apps (Phone, Messages, Camera, Gallery, Settings, Maps, Pulse, Flash, Clock, Sound) are still compiled into the host UI and move into `apps/` one at a time as they gain the services they need; see `patchnotes.md`.
 
 ## Other ways to register an app
 

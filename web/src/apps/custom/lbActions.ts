@@ -11,7 +11,7 @@ interface LbHost {
 const dialCall = (number: string) => api('dial', { number });
 
 /** lb-phone app names the host can open, lower-cased. Anything else is an app registered through the SDK. */
-const APP_NAMES: Record<string, AppId> = {
+const APP_NAMES: Record<string, string> = {
   phone: 'phone', messages: 'messages', contacts: 'contacts', camera: 'camera', photos: 'gallery', gallery: 'gallery',
   settings: 'settings', maps: 'gps', clock: 'clock', 'app store': 'store', appstore: 'store',
 };
@@ -36,7 +36,7 @@ export async function lbAction(action: string, payload: Record<string, unknown>,
       const name = typeof payload.app === 'string' ? payload.app : '';
       const key = name.toLowerCase();
       const builtIn = APP_NAMES[key];
-      if (builtIn) host.navigate(builtIn); else if (name) host.navigate('custom', FOLDER_ALIASES[key] ?? name);
+      if (builtIn) host.navigate(builtIn as AppId); else if (name) host.navigate('custom', FOLDER_ALIASES[key] ?? name);
       return true;
     }
     default:

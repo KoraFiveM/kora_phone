@@ -37,7 +37,7 @@ export function usePhoneActions({ state, dispatch, refs, video }: ActionInput) {
 
   const navigate = useCallback((requested: AppId, destination = '') => {
     // The id of a folder app (a Mail notification, the weather shortcut) opens through the app host.
-    if (requested !== 'home' && requested !== 'custom' && !appDefinition(requested) && sdkApp(requested)) { destination = requested; requested = 'custom'; }
+    if (requested !== 'home' && requested !== 'custom' && !appDefinition(requested) && sdkApp(requested)) { destination = destination ? `${requested}#${destination}` : requested; requested = 'custom'; }
     const customAllowed = requested === 'custom' && destination !== '' && device?.capabilities.store !== false;
     dispatch({ type: 'navigate', app: customAllowed || canLaunch(requested, device) ? requested : 'home', target: destination });
   }, [device, dispatch]);

@@ -11,7 +11,6 @@ const en: AppCopy = {
   clock: { label: 'Clock', subtitle: 'Right on time.' },
   phone: { label: 'Phone', subtitle: 'A voice on the other end.' },
   messages: { label: 'Messages', subtitle: 'Stay a little closer.' },
-  contacts: { label: 'Contacts', subtitle: 'Good people. One place.' },
   camera: { label: 'Camera', subtitle: 'See something. Keep it.' },
   settings: { label: 'Settings', subtitle: 'Unmistakably yours.' },
 };

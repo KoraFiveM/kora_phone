@@ -1,0 +1,6 @@
+.contact-photo { width: 40px; height: 40px; border-radius: var(--radius-full, 999px); object-fit: cover; background: var(--kp-surface-raised); flex: none; }
+.contact-actions { display: flex; gap: 4px; flex-wrap: wrap; padding: 0 16px 12px; }
+.photo-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
+.photo-grid button { padding: 0; border: 2px solid transparent; border-radius: var(--kp-radius-sm); background: none; cursor: pointer; }
+.photo-grid button[aria-pressed="true"] { border-color: var(--kp-accent); }
+.photo-grid img { width: 100%; aspect-ratio: 1; object-fit: cover; border-radius: var(--kp-radius-sm); }

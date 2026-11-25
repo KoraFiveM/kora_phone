@@ -1,12 +1,12 @@
 import { lazy } from 'react';
 import type { ComponentType, LazyExoticComponent } from 'react';
 import {
-  AlarmClock, Aperture, Blocks, Camera, ContactRound, Image, MapPin,
+  AlarmClock, Aperture, Blocks, Camera, Image, MapPin,
   MessageCircle, Music, Phone, Radio, Settings as SettingsIcon, Store as StoreIcon,
 } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import { ClockScreen } from '../apps/clock/ClockScreen';
-import { ContactsScreen, MessagesScreen, PhoneScreen } from '../apps/communication/Communication';
+import { MessagesScreen, PhoneScreen } from '../apps/communication/Communication';
 import { CustomAppRoute } from '../apps/custom/CustomApps';
 import { GalleryScreen } from '../apps/gallery/GalleryScreen';
 import { GPSScreen } from '../apps/maps/GPSScreen';
@@ -61,7 +61,6 @@ export const appRegistry: readonly AppDefinition[] = [
   entry('clock', AlarmClock, ClockScreen, 'grid', { optional: { category: 'Tools', description: 'Set alarms that ring on your local clock, even with the phone closed.' } }),
   entry('phone', Phone, PhoneScreen, 'dock'),
   entry('messages', MessageCircle, MessagesScreen, 'dock'),
-  entry('contacts', ContactRound, ContactsScreen, 'dock'),
   entry('camera', Camera, CameraApp, 'dock'),
   entry('settings', SettingsIcon, SettingsHost, 'system'),
   // Third-party SDK apps (apps:list) are not entries: they all render through this host, with the SDK app id as the
@@ -104,4 +103,6 @@ export const homeGridIds = (device?: Bootstrap): AppId[] =>
   appRegistry.filter(item => item.placement === 'grid' && canLaunch(item.id, device)).map(item => item.id);
 
 /** Default dock; the gallery stands in when the camera is unavailable. */
-export const defaultDock = (device?: Bootstrap): AppId[] => ['phone', 'messages', 'contacts', canLaunch('camera', device) ? 'camera' : 'gallery'];
+export const defaultDock = (device?: Bootstrap): string[] => ['phone', 'messages', 'contacts', canLaunch('camera', device) ? 'camera' : 'gallery'];
+/** Every id that can sit in the default dock, so a folder app with one of these ids is shown there instead of in the grid. */
+export const DOCK_IDS: readonly string[] = ['phone', 'messages', 'contacts', 'camera', 'gallery'];

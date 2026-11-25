@@ -21,8 +21,12 @@ export interface RouterOptions {
     onReady?: () => void;
     onClose?: () => void;
     onSetTitle?: (title: string) => void;
-    /** Opens another app. Receives a validated app id. */
-    onOpen?: (app: string) => void;
+    /** Opens another app. Receives a validated app id and an optional short target (a number, a thread). */
+    onOpen?: (app: string, target?: string) => void;
+    /** Reloads the data the host keeps for other screens (contacts and the like). */
+    onRefresh?: () => Promise<unknown> | unknown;
+    /** Opening hint for this app (see InitPayload.target). */
+    target?: string;
     /** lb-phone compatibility actions (contacts, gallery, call, openApp). Absent for every other app, which then cannot use the `lb` request. */
     onLb?: (action: string, payload: Record<string, unknown>) => Promise<unknown> | unknown;
     timeoutMs?: number;
@@ -98,9 +102,11 @@ export function createRouter(options: RouterOptions) {
         open: payload => {
             const app = typeof payload.app === 'string' && /^[a-z0-9][a-z0-9_-]{1,31}$/.test(payload.app) ? payload.app : undefined;
             if (!app) throw new RouteError('INVALID_PAYLOAD', 'Invalid app id');
-            options.onOpen?.(app);
+            const target = typeof payload.target === 'string' && payload.target.length <= 64 ? payload.target : undefined;
+            options.onOpen?.(app, target);
             return null;
         },
+        refresh: async () => { await options.onRefresh?.(); return null; },
         lb: payload => {
             if (!options.onLb) throw new RouteError('PERMISSION_DENIED', 'Not available to this app');
             const action = str(payload.action, 32);
@@ -165,6 +171,7 @@ export function createRouter(options: RouterOptions) {
             locale: options.locale,
             theme: options.getTheme(),
             permissions: [...options.permissions],
+            ...(options.target ? { target: options.target } : {}),
         };
     }
 
