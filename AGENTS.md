@@ -8,6 +8,8 @@ Stack rules: Kora-only. Use `kora_lib` (`Kora.callback`, `Kora.keybind`, `Kora.l
 
 Every app under `apps/` must pass `node tools/check-app.mjs` (it runs in `test/run.sh`): kora_theme tokens only, no hard-coded colours, fonts or radii, no external URLs, all of loading, empty and error states. New app UI uses the kit in `sdk/runtime/` (docs/style-guide.md). Do not add an app by editing `web/src/core/appRegistry.ts`: that registry is for the host's own system screens and is shrinking.
 
+Raw natives need a reason: see docs/kora-stack.md (use `KoraPhone.After`, not `SetTimeout`; `Kora.entities`, not `CreateObject`).
+
 ## Documentation
 
 User-facing documentation lives in `docs/` (Markdown, published via the Kora Docusaurus site, kora_docs_next). Read `docs/index.md` first for an overview and the documentation map. Layout: `index.md` (hub), `installation.md` (install steps, dependencies, optional resources, convars, updating), `how-to-use.md` (request pipeline, Wallet, Banking transfers, Marketplace, shops, custom apps), `commands.md` (commands, key mappings, interactions), `apps.md` (app SDK developer guide, sidebar position 5.5), `api/` (`index.md`, `exports-events.md`: client and server exports and phone-alias exports, and `apps.md`: SDK exports, routes and iframe protocol), and topic pages (`configuration.md`, `features.md`, `ui.md`, `three-handsets.md`, `events.md`, `permissions.md`, `items.md`, `database.md`, `media-storage.md`, `banking-jobs.md`, `community-security.md`, `system-mail.md`, `security.md`, `troubleshooting.md`, `acceptance-tests.md`, `roadmap.md`). `docs/api/_category_.json` positions the API folder at 5 in the sidebar; every page carries a unique `sidebar_position`. Update the page that owns the topic you changed.

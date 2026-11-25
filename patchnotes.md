@@ -5,6 +5,7 @@
   - Notes, Calculator, Weather, Wallet, Mail, Moderation (new `staff` manifest flag: moderators only), Market, Maps, Clock (alarms ring from its client script), Sound (manifest `embeds` for player hosts), Contacts, Phone, Messages and Gallery (dock; `phone.open`, `phone.refresh`, `phone.call`), Garage, Home and Work are folder apps (their old `bank:*`, `wallet:*`, `garage:list`, `property:list` and `jobs:*` routes are gone; a callback can charge a strict rate bucket with `{ rate = ... }`, which Wallet transfers and Work actions use); apps from every source now appear on the home screen and in the App Store (server SDK apps were not shown before)
   - SDK: `storage.list`, per-app storage quota (manifest `storage`), `category` and `system` manifest fields, `client` callbacks to an app's `client.lua`
   - lb-phone: all 60 documented server exports answered, lb-phone page globals and `components` injected into custom app pages (see docs/lb-phone.md)
+  - kora stack: delayed server work uses `KoraPhone.After` (Kora.timers), the handset prop uses `Kora.entities.create`; docs/kora-stack.md records usage and the raw natives kept on purpose
   - removed: the `note` item kind and `Config.Server.Items.note` (notes live in the Notes app's storage; a fresh schema is expected)
 - 0.0.1-dev.3
   - added version check

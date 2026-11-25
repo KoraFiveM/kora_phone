@@ -156,7 +156,7 @@ local function requestConsent(actor, target, payload, shop)
         expires = os.time() + REQUEST_TTL_SECONDS,
         character = H.citizenId(target),
     }
-    SetTimeout(REQUEST_CLEANUP_MS, function() H.serviceRequests[requestId] = nil end)
+    KoraPhone.After(REQUEST_CLEANUP_MS, function() H.serviceRequests[requestId] = nil end)
     TriggerClientEvent('kora_phone:client:serviceRequest', target, {
         id = requestId, label = shop.label, operation = payload.op,
     })

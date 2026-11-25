@@ -31,6 +31,7 @@ Current version: see `version` in `fxmanifest.lua`.
 | [Banking and jobs](./banking-jobs.md) | kora_banking transfers, jobs and duty, Garage and Property sources |
 | [Community security](./community-security.md) | Pulse, Market and moderation controls |
 | [App style guide](./style-guide.md) | The rules every app follows, and the linter that checks them |
+| [Kora stack usage](./kora-stack.md) | Which kora_lib and kora_core modules the phone uses, and the few raw natives it keeps on purpose |
 | [lb-phone apps](./lb-phone.md) | What of lb-phone's apps, page globals and server exports is supported |
 | [System mail](./system-mail.md) | Server-delivered mail and activity notes, plus the custom-app alias note |
 | [Security checklist](./security.md) | Security rules the code follows |

@@ -110,7 +110,7 @@ function H.revoke(src, reason)
     TriggerClientEvent('kora_phone:client:sessionRevoked', src)
     -- Item observers run inside inventory commits; retire SQL call state outside that lock.
     if callId then
-        SetTimeout(0, function()
+        KoraPhone.After(0, function()
             calling.disconnectDevice(deviceId, reason or 'handset_changed', callId)
         end)
     end

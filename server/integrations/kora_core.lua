@@ -27,3 +27,12 @@ function KoraPhone.HasPhone(source)
     end
     return false
 end
+
+---Runs `fn` once after `ms` milliseconds. Kora.timers.setTimeout instead of the raw native: the timer can be cancelled
+---and is dropped with this resource, so nothing fires into a stopped phone.
+---@param ms number
+---@param fn fun()
+---@return integer id
+function KoraPhone.After(ms, fn)
+    return Kora.timers.setTimeout(fn, math.max(0, math.floor(ms)))
+end

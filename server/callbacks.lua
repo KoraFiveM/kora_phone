@@ -77,7 +77,7 @@ local function afterMutation(source)
     local H = handsets()
     local device = H.current(source, false)
     if device then H.clearReset(device.handsetId) end
-    SetTimeout(BACKUP_DELAY_MS, function()
+    KoraPhone.After(BACKUP_DELAY_MS, function()
         if H.selected[source] then H.locked(source, H.backup, {}) end
     end)
 end

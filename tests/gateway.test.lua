@@ -43,6 +43,9 @@ local callbacks = {}
 local citizen = 'CID1'
 _G.GetGameTimer = function() return now end
 _G.SetTimeout = function(_, fn) timeouts[#timeouts + 1] = fn end
+-- The server schedules through KoraPhone.After (Kora.timers.setTimeout); the test drives the same queue.
+KoraPhone = KoraPhone or {}
+KoraPhone.After = function(ms, fn) _G.SetTimeout(ms, fn) end
 _G.GetCurrentResourceName = function() return 'kora_phone' end
 _G.LoadResourceFile = function(_, path) return readFile(path) end
 _G.json = { decode = function() return decodeRoutes(readFile('shared/routes.json')) end }
@@ -70,6 +73,7 @@ dofile(root .. '/shared/constants.lua')
 local lockCalls, clears, backups = 0, {}, 0
 local selected = { [1] = 'h1' }
 _G.KoraPhone = {
+    After = function(ms, fn) _G.SetTimeout(ms, fn) end,
     Services = setmetatable({}, { __index = function() return setmetatable({}, { __index = function() return function() end end }) end }),
     GetCitizenId = function() return citizen end,
     Handsets = {

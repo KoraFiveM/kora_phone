@@ -46,6 +46,8 @@ os.time = function() return now end
 function GetPlayerName(src) return players[src] and ('p' .. src) or nil end
 function GetCurrentResourceName() return 'kora_phone' end
 function SetTimeout(ms, fn) timers[#timers + 1] = { at = ms, fn = fn } end
+KoraPhone = KoraPhone or {}
+KoraPhone.After = function(ms, fn) SetTimeout(ms, fn) end
 function TriggerClientEvent(name, target, data) events[#events + 1] = { name = name, target = target, data = data } end
 local handlers = {}
 function AddEventHandler(name, fn) handlers[name] = fn end
@@ -55,6 +57,7 @@ Kora = { world = { resolveNearbyPlayer = function(a, b, opts)
     return math.abs(positions[a] - positions[b]) <= opts.maxDistance and 1 or nil
 end } }
 KoraPhone = {
+    After = function(ms, fn) SetTimeout(ms, fn) end,
     GetPlayer = function(src) return players[src] end,
     GetCitizenId = function(src) return players[src] and players[src].citizenid end,
     HasPhone = function(src) return devices[src] ~= nil end,
