@@ -59,8 +59,6 @@
     {"nui": "market:removeListing", "server": "kora_phone:server:market:removeListing", "rate": "community.listing", "app": "classifieds"},
     {"nui": "market:markSold", "server": "kora_phone:server:market:markSold", "rate": "community.listing", "app": "classifieds"},
     {"nui": "market:contactSeller", "server": "kora_phone:server:market:contactSeller", "rate": "community.contact", "app": "classifieds"},
-    {"nui": "moderation:getQueue", "server": "kora_phone:server:moderation:getQueue", "rate": "community.moderation", "app": "moderation"},
-    {"nui": "moderation:resolve", "server": "kora_phone:server:moderation:resolve", "rate": "community.moderation", "app": "moderation"},
     {"nui": "apps:list", "server": "kora_phone:server:apps:list", "rate": "sdk", "app": null},
     {"nui": "apps:install", "server": "kora_phone:server:apps:install", "rate": "sdk", "app": null},
     {"nui": "apps:uninstall", "server": "kora_phone:server:apps:uninstall", "rate": "sdk", "app": null},

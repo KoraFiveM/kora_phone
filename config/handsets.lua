@@ -83,7 +83,7 @@ Kora.config.extend({
         phone = true, contacts = true, messages = true, camera = true, gallery = true, gps = true,
         settings = true, clock = true, music = true,
         store = true, social = true, classifieds = true,
-        flash = true, moderation = true,
+        flash = true,
     }), {
         live = true, advanced = true,
         description = 'Which apps the server accepts in saved settings (installedApps, home order). An id set to false or missing is rejected or dropped. Use Apps to hide an app from players.',

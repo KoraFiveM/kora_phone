@@ -43,7 +43,14 @@ assert.match(moderation, /Repositories\.Reports\.claim/);
 assert.match(reports, /assigned_citizenid = \?/);
 assert.match(callbacks, /local bind = KoraPhone\.Routes\.handle/, "callbacks bind through the route gateway");
 assert.match(read("server/callbacks.lua"), /RateLimits\.consume/);
-for (const callback of ["social:createPost", "social:report", "market:createListing", "market:contactSeller", "moderation:resolve"]) {
+for (const callback of ["social:createPost", "social:report", "market:createListing", "market:contactSeller"]) {
   assert.ok(callbacks.includes(callback), `missing callback ${callback}`);
 }
+// Moderation is a staff-only folder app: both callbacks run the moderation service (which re-checks the moderator)
+// and charge its strict bucket; the manifest marks it staff so the phone refuses everyone else.
+const moderationApp = read("apps/moderation/server.lua");
+for (const [callback, service] of [["queue", "getQueue"], ["resolve", "resolve"]])
+  assert.match(moderationApp, new RegExp(`app\\.callback\\('${callback}'[\\s\\S]*?Services\\.Moderation\\.${service}\\(source`), `moderation ${callback} must call the service with the caller's source`);
+assert.equal((moderationApp.match(/rate = 'community\.moderation'/g) || []).length, 2, "moderation callbacks must charge community.moderation");
+assert.match(read("apps/moderation/app.lua"), /staff = true/, "moderation must be a staff app");
 console.log("PASS community-contract: schema, authorization and callback contracts present");

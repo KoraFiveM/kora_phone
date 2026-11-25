@@ -157,4 +157,26 @@ test('a callback can charge a strict rate bucket and is refused with RATE_LIMITE
     assert(env)
 end)
 
+test('a staff app is invisible to, and refused for, everyone but moderators', function()
+    local env = boot({ { 'apps/mod/app.lua', "Phone.app('mod', { name = 'Mod', icon = 'star', staff = true, defaultInstalled = true })" } })
+    local moderators = { [5] = true }
+    KoraPhone.Services = KoraPhone.Services or {}
+    KoraPhone.Services.Moderation = { isModerator = function(source) return moderators[source] == true end }
+    KoraPhone.GetPlayer = function() return {} end
+    Phone.app('mod').callback('queue', function() return { items = {} } end)
+    equal(KoraPhone.SDK.Registry.get('mod').staff, true)
+    equal(KoraPhone.SDK.Callbacks.invoke(5, 'mod', 'queue', {}).ok, true)
+    local refused = KoraPhone.SDK.Callbacks.invoke(6, 'mod', 'queue', {})
+    equal(refused.ok, false)
+    equal(refused.error.code, PhoneConstants.Errors.FORBIDDEN)
+    local function ids(source)
+        local out = {}
+        for _, app in ipairs(KoraPhone.SDK.routes['apps:list'](source, {}).data.apps) do out[#out + 1] = app.id end
+        return table.concat(out, ',')
+    end
+    equal(ids(5), 'mod')
+    equal(ids(6), '')
+    assert(env)
+end)
+
 H.finish('apps-platform')

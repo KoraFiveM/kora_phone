@@ -35,7 +35,9 @@ function routes.list(source)
     local apps = {}
     for _, app in ipairs(KoraPhone.SDK.Registry.list()) do
         local entry = view(app, device)
-        if entry.installed or KoraPhone.SDK.Registry.jobMatches(app, job) then apps[#apps + 1] = entry end
+        if not KoraPhone.SDK.Registry.visibleTo(app, source) then
+            -- staff apps are invisible to everyone else
+        elseif entry.installed or KoraPhone.SDK.Registry.jobMatches(app, job) then apps[#apps + 1] = entry end
     end
     return PhoneResult({ apps = apps })
 end

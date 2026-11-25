@@ -2,7 +2,7 @@ import { normalizeData } from './types';
 import { isOptional, starterApps } from './catalog';
 import { blobToDataUrl } from './useClipRecorder';
 import type { AppId } from './types';
-import type { Api, Bootstrap, Call, CallHistory, ChatMessage, Comment, Conversation, DeviceData, Message, ModerationReport, Post } from './types';
+import type { Api, Bootstrap, Call, CallHistory, ChatMessage, Comment, Conversation, DeviceData, Message, Post } from './types';
 const key = 'nothing-phone-preview-v1';
 export const isDemo = new URLSearchParams(window.location?.search).has('demo');
 const timestamp = () => new Date().toISOString();
@@ -46,12 +46,11 @@ store.conversations = Array.isArray(store.conversations) ? store.conversations :
 store.chatMessages = store.chatMessages && typeof store.chatMessages === 'object' ? store.chatMessages : initial().chatMessages;
 let activeCall: Call | undefined;
 let classifieds: Post[] = [{ id: 99, number: '5550192042', body: 'Karin Sultan Â· Great condition, low miles. Ready for its next adventure.', price: 18000, created_at: timestamp(), likes: 0, comments: 0, liked: false, mine: false }];
-let reports: (ModerationReport & { targetId: number })[] = [{ id: 1, targetType: 'listing', targetId: 99, reason: 'scam', details: 'The price seems too good to be true.', status: 'open', createdAt: timestamp(), snapshot: { title: 'Karin Sultan', description: 'Great condition, low miles. Ready for its next adventure.', price: 18000 } }];
 const completed = new Map<string, unknown>();
 function save() { if (isDemo) return; localStorage.setItem(key, JSON.stringify(store)); }
 export function previewBootstrap(): Bootstrap {
   return { id: 'preview-device', number, locked: !!store.pin, hasPin: !!store.pin, data: store.pin ? undefined : structuredClone(store.data), preferences: structuredClone(store.data.settings),
-    transfers: true, capabilities: { camera: true, weather: true, moderation: true }, unavailable: {}, admin: true, moderator: true, video: { iceServers: [] },
+    transfers: true, capabilities: { camera: true, weather: true }, unavailable: {}, admin: true, moderator: true, video: { iceServers: [] },
     locations: [{ label: 'Legion Square', x: 195.2, y: -933.8 }, { label: 'Pillbox Medical', x: 298.5, y: -584.4 }, { label: 'Mission Row Police', x: 425.1, y: -979.5 }], services: [], call: activeCall,
     flash: { maxSeconds: 12 } };
 }
@@ -114,20 +113,7 @@ export async function mockRequest<K extends keyof Api>(action: K, payload: Api[K
       if (p.kind === 'flash') { post.media_kind = p.mediaKind as Post['media_kind']; post.media_url = p.mediaKind === 'photo' ? sampleFlashPhoto() : String(p.media); }
       feed.unshift(post); break;
     }
-    case 'reportListing': {
-      const listing = classifieds.find(item => item.id === p.id);
-      const [title, ...rest] = (listing?.body ?? '').split('\n');
-      reports.unshift({ id: Date.now(), targetType: 'listing', targetId: Number(p.id), reason: String(p.reason), details: String(p.details || ''), status: 'open', createdAt: timestamp(), snapshot: { title, description: rest.join('\n'), price: listing?.price ?? 0 } });
-      break;
-    }
-    case 'moderationQueue': result = reports.filter(report => report.status === (p.status || 'open')); break;
-    case 'moderationResolve': {
-      const report = reports.find(item => item.id === p.reportId);
-      if (!report) throw new Error('Open report was not found');
-      if (p.action === 'remove_content') classifieds = classifieds.filter(item => item.id !== report.targetId);
-      report.status = p.action === 'dismiss' ? 'dismissed' : 'resolved';
-      break;
-    }
+    case 'reportListing': break;
     case 'markSold': classifieds = classifieds.filter(post => post.id !== p.id); break;
     case 'contactSeller': break;
     case 'removePost': store.posts = store.posts.filter(post => post.id !== p.id); classifieds = classifieds.filter(post => post.id !== p.id); store.flash = store.flash.filter(post => post.id !== p.id); break;

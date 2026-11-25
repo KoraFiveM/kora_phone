@@ -74,6 +74,13 @@ function Registry.url(app)
     return ('https://cfx-nui-%s/%s'):format(app.resource, app.entry)
 end
 
+--- Whether `source` may see and use the app. A `staff` app is for moderators only (server-side, not a display filter).
+function Registry.visibleTo(app, source)
+    if not app.staff then return true end
+    local moderation = KoraPhone.Services and KoraPhone.Services.Moderation
+    return moderation ~= nil and type(source) == 'number' and moderation.isModerator(source) == true
+end
+
 -- Job gating is a display filter only: it decides what the store shows.
 function Registry.jobMatches(app, job)
     if not app.job then return true end

@@ -15,6 +15,5 @@ const en: AppCopy = {
   contacts: { label: 'Contacts', subtitle: 'Good people. One place.' },
   camera: { label: 'Camera', subtitle: 'See something. Keep it.' },
   settings: { label: 'Settings', subtitle: 'Unmistakably yours.' },
-  moderation: { label: 'Moderation', subtitle: 'Keep the city civil.' },
 };
 export const appCopy = (id: AppId) => id === 'home' ? { label: 'Home', subtitle: '' } : en[id];

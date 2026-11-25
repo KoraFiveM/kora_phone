@@ -2,7 +2,7 @@ import { lazy } from 'react';
 import type { ComponentType, LazyExoticComponent } from 'react';
 import {
   AlarmClock, Aperture, Blocks, Camera, ContactRound, Image, MapPin,
-  MessageCircle, Music, Phone, Radio, Settings as SettingsIcon, ShieldAlert, Store as StoreIcon,
+  MessageCircle, Music, Phone, Radio, Settings as SettingsIcon, Store as StoreIcon,
   Tag,
 } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
@@ -45,7 +45,6 @@ const StoreApp = screen(async () => (await import('../apps/store/Store')).StoreS
 const PulseApp = screen(async () => (await import('../apps/pulse/Pulse')).PulseScreen);
 const FlashApp = screen(async () => (await import('../apps/flash/Flash')).FlashScreen);
 const MarketApp = screen(async () => (await import('../apps/market/MarketScreen')).FeedScreen);
-const ModerationApp = screen(async () => (await import('../apps/moderation/Moderation')).ModerationScreen);
 const CameraApp = screen(async () => (await import('../apps/camera/CameraScreen')).CameraScreen);
 
 const entry = (
@@ -68,7 +67,6 @@ export const appRegistry: readonly AppDefinition[] = [
   entry('contacts', ContactRound, ContactsScreen, 'dock'),
   entry('camera', Camera, CameraApp, 'dock'),
   entry('settings', SettingsIcon, SettingsHost, 'system'),
-  entry('moderation', ShieldAlert, ModerationApp, 'grid'),
   // Third-party SDK apps (apps:list) are not entries: they all render through this host, with the SDK app id as the
 // route target. Their runtime list lives in runtimeApps.ts and feeds the App Store and the host.
   entry('custom', Blocks, CustomAppRoute, 'hidden', { fullBleed: true }),

@@ -1,8 +1,8 @@
 import type { Post } from '../../types';
 import { items } from '../adapters/common';
-import { mapComment, mapListing, mapPost, mapReport, splitListing } from '../adapters/social';
+import { mapComment, mapListing, mapPost, splitListing } from '../adapters/social';
 import { mapMail } from '../adapters/mail';
-import type { RawComment, RawListing, RawMail, RawPost, RawReport } from '../raw';
+import type { RawComment, RawListing, RawMail, RawPost } from '../raw';
 import type { HandlerSet } from '../routeTypes';
 import { server } from '../transport';
 import { uploadMedia } from '../upload';
@@ -10,8 +10,8 @@ import { uploadMedia } from '../upload';
 const done = async (work: Promise<unknown>): Promise<true> => { await work; return true; };
 
 const mailAndCommunity: HandlerSet<
-    'feed' | 'post' | 'uploadMedia' | 'createProfile' | 'removePost' | 'reportListing' | 'moderationQueue'
-    | 'moderationResolve' | 'markSold' | 'contactSeller' | 'like' | 'comments' | 'comment' | 'removeComment'
+    'feed' | 'post' | 'uploadMedia' | 'createProfile' | 'removePost' | 'reportListing'
+    | 'markSold' | 'contactSeller' | 'like' | 'comments' | 'comment' | 'removeComment'
     | 'mailList' | 'mailSend' | 'mailRead' | 'mailDelete'
 > = {
     feed: async (p): Promise<Post[]> => p.kind === 'classifieds'
@@ -24,10 +24,6 @@ const mailAndCommunity: HandlerSet<
     createProfile: p => done(server('social:createAccount', { handle: p.handle, displayName: p.displayName })),
     removePost: p => done(server(p.kind === 'flash' ? 'social:deletePost' : 'market:removeListing', { id: p.id })),
     reportListing: p => done(server('social:report', { targetType: 'listing', targetId: p.id, reason: p.reason, details: p.details })),
-    moderationQueue: async p => items(await server<{ items?: RawReport[] }>('moderation:getQueue', {
-        status: p.status || 'open', limit: 50,
-    })).map(mapReport),
-    moderationResolve: p => done(server('moderation:resolve', { reportId: p.reportId, action: p.action, note: p.note })),
     markSold: p => done(server('market:markSold', { id: p.id })),
     contactSeller: (p, { id }) => done(server('market:contactSeller', { id: p.id, message: p.message, clientRequestId: id })),
     like: p => done(server('social:toggleLike', { postId: p.id, liked: p.liked })),

@@ -1,5 +1,5 @@
-import type { Comment, ModerationReport, Post } from '../../types';
-import type { RawComment, RawListing, RawPost, RawReport } from '../raw';
+import type { Comment, Post } from '../../types';
+import type { RawComment, RawListing, RawPost } from '../raw';
 import { isFlag } from '../raw';
 import { kindOf, stamp } from './common';
 
@@ -34,17 +34,6 @@ export const mapComment = (x: RawComment): Comment => ({
     number: x.handle || x.displayName || '',
     body: x.body,
     created_at: stamp(x.createdAt),
-});
-
-export const mapReport = (x: RawReport): ModerationReport => ({
-    id: x.id,
-    targetType: x.targetType,
-    targetId: x.targetId,
-    reason: x.reason,
-    details: x.details || '',
-    status: x.status,
-    createdAt: stamp(x.createdAt),
-    snapshot: x.snapshot || {},
 });
 
 /** A classified is posted as one text box: the first line is the title, the rest the description. */

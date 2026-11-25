@@ -15,7 +15,7 @@ Manifest.PERMISSIONS = {
 local FIELDS = {
     id = true, name = true, description = true, icon = true, entry = true, version = true,
     permissions = true, job = true, defaultInstalled = true, price = true,
-    category = true, system = true, storage = true,
+    category = true, system = true, storage = true, staff = true,
 }
 
 Manifest.STORAGE_MAX = { keys = 512, totalBytes = 1024 * 1024 }
@@ -179,6 +179,8 @@ function Manifest.validate(raw)
     end
     if raw.system ~= nil and type(raw.system) ~= 'boolean' then return fail('system must be a boolean') end
     manifest.system = raw.system == true
+    if raw.staff ~= nil and type(raw.staff) ~= 'boolean' then return fail('staff must be a boolean') end
+    manifest.staff = raw.staff == true
 
     if raw.price ~= nil then
         if type(raw.price) ~= 'number' or raw.price ~= raw.price or raw.price < 0 or raw.price == math.huge then

@@ -63,7 +63,6 @@ try {
   const post = social.mapPost({ id: 2, handle: "@a", body: "b", likeCount: 3, liked: 1, mine: 1, createdAt: "t", mediaUrl: "https://x/i", mediaMime: "image/png" });
   equal([post.number, post.likes, post.liked, post.mine, post.media_kind], ["@a", 3, true, true, "photo"], "social posts");
   equal(social.mapComment({ id: 3, displayName: "Dee", body: "ok", createdAt: "t" }).number, "Dee", "comment author falls back to display name");
-  equal(social.mapReport({ id: 4, targetType: "post", targetId: 5, reason: "spam", status: "open", createdAt: "t" }).snapshot, {}, "reports default their snapshot");
   equal(social.splitListing(`${"x".repeat(100)}\nline two\nline three`), { title: "x".repeat(80), description: "line two\nline three" }, "listing text splits into title and description");
 
   const mail = load("api/adapters/mail.js");
@@ -79,8 +78,8 @@ try {
   const { mapBootstrap } = load("api/adapters/bootstrap.js");
   const open = mapBootstrap({ device: { id: 12, phoneNumber: 555 }, features: { media: true, maps: false, video: { iceServers: [] }, flash: { maxSeconds: "20" } }, apps: { social: false }, moderator: true }, { a: true });
   equal([open.bootstrap.id, open.bootstrap.number, open.bootstrap.locked, open.bootstrap.model], ["12", "555", false, "standard"], "bootstrap identity");
-  equal([open.bootstrap.capabilities.social, open.bootstrap.capabilities.camera, open.bootstrap.capabilities.gps, open.bootstrap.capabilities.moderation],
-    [false, true, false, true], "capabilities combine app switches and server features");
+  equal([open.bootstrap.capabilities.social, open.bootstrap.capabilities.camera, open.bootstrap.capabilities.gps],
+    [false, true, false], "capabilities combine app switches and server features");
   equal(open.bootstrap.flash, { maxSeconds: 20, maxBytes: undefined }, "flash limits");
   equal(open.cache.customApps, { a: true }, "custom app preferences are carried into the cache");
   const locked = mapBootstrap({ security: { locked: true, hasPin: true } }, {});

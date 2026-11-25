@@ -20,10 +20,6 @@ export interface RawPost {
     commentCount?: number; liked?: Flag; mine?: Flag; mediaUrl?: string | null; mediaMime?: string | null;
 }
 export interface RawComment { id: number; handle?: string; displayName?: string; body: string; createdAt?: number | string }
-export interface RawReport {
-    id: number; targetType: 'profile' | 'post' | 'comment' | 'listing'; targetId: number; reason: string; details?: string;
-    status: string; createdAt?: number | string; snapshot?: Record<string, unknown>;
-}
 export interface RawMail { id: number; peer: string; subject: string; body: string; hasAction?: Flag; unread?: Flag; createdAt?: number | string }
 export interface RawSdkApp {
     id: string; name?: string; description?: string; icon?: string; entry?: string; version?: string; resource?: string; url?: string;

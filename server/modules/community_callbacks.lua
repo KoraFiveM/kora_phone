@@ -25,5 +25,3 @@ bind('market:removeListing', function(source, payload) return Marketplace.setSta
 bind('market:markSold', function(source, payload) return Marketplace.setStatus(source, payload, 'sold') end)
 bind('market:contactSeller', Marketplace.contactSeller)
 
-bind('moderation:getQueue', Moderation.getQueue)
-bind('moderation:resolve', Moderation.resolve)

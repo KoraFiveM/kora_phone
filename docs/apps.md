@@ -89,7 +89,7 @@ Folder apps are trusted code. Their Lua runs in this resource's VM, and their pa
 
 ### Built-in apps
 
-Notes, Calculator, Weather, Wallet (`banking`), Mail (`mail`), Garage (`vehicles`), Home (`property`) and Work (`services`) ship as folder apps and are the reference implementations: `notes` for storage, `calculator` for pure UI, `weather` and `property` for `client.lua`, and `vehicles`, `property` and `services` for wrapping an existing server service with `Phone.unwrap`. The remaining built-in apps (Phone, Messages, Contacts, Camera, Gallery, Settings, Maps, Market, Pulse, Flash, Clock, Sound, Moderation) are still compiled into the host UI and move into `apps/` one at a time as they gain the services they need; see `patchnotes.md`.
+Notes, Calculator, Weather, Wallet (`banking`), Mail (`mail`), Moderation (`moderation`, a `staff` app), Garage (`vehicles`), Home (`property`) and Work (`services`) ship as folder apps and are the reference implementations: `notes` for storage, `calculator` for pure UI, `weather` and `property` for `client.lua`, and `vehicles`, `property` and `services` for wrapping an existing server service with `Phone.unwrap`. The remaining built-in apps (Phone, Messages, Contacts, Camera, Gallery, Settings, Maps, Market, Pulse, Flash, Clock, Sound) are still compiled into the host UI and move into `apps/` one at a time as they gain the services they need; see `patchnotes.md`.
 
 ## Other ways to register an app
 
@@ -124,6 +124,7 @@ Rules for both:
 | `defaultInstalled` | boolean | no | Whether the app counts as installed until the player installs or removes it. `false` when omitted |
 | `price` | number | no | Non-negative number. Display only: nothing charges it |
 | `category` | string | no | `tools` (default), `life`, `social`, `games` or `system`. Used by the App Store filters |
+| `staff` | boolean | no | `true` shows and serves the app to moderators only (the same check as the moderation queue), enforced on the server for every call. `false` when omitted |
 | `system` | boolean | no | `true` hides the Remove button in the App Store. `false` when omitted |
 | `storage` | table | no | Raises the storage quota: `keys` up to 512 and `totalBytes` up to 1048576 (1 MB). Defaults are 64 keys and 128 KB |
 
