@@ -69,6 +69,8 @@ server_scripts {
     'server/handsets/lifecycle.lua',
     'server/mailboxes.lua',
     'server/mail/system.lua',
+    -- lb-phone server exports (exports['lb-phone']:...), answered through the phone's own services.
+    'server/compat/lbphone.lua',
     'server/phone_commerce.lua',
     -- App SDK: needs server/permissions.lua, rate_limits.lua and shared/constants.lua above.
     'server/sdk/manifest.lua',
@@ -99,6 +101,7 @@ files {
     'web/dist/index.html',
     'web/dist/assets/*',
     'web/dist/compat.js',
+    'web/dist/lb-shim.js',
     'web/dist/map.jpg',
     -- Folder apps: UI pages and assets, plus the no-build runtime (kit and client) they import.
     'apps/*/ui/*',

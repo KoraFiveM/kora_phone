@@ -21,6 +21,8 @@ export interface RouterOptions {
     onReady?: () => void;
     onClose?: () => void;
     onSetTitle?: (title: string) => void;
+    /** lb-phone compatibility actions (contacts, gallery, call, openApp). Absent for every other app, which then cannot use the `lb` request. */
+    onLb?: (action: string, payload: Record<string, unknown>) => Promise<unknown> | unknown;
     timeoutMs?: number;
     /** Allowed overrides for tests/legacy hosts that hand back a fully qualified entry URL. */
     origin?: string;
@@ -90,6 +92,12 @@ export function createRouter(options: RouterOptions) {
             const name = typeof payload.name === 'string' && /^[a-zA-Z0-9_:.-]{1,48}$/.test(payload.name) ? payload.name : undefined;
             if (!name) throw new RouteError('INVALID_PAYLOAD', 'Invalid callback name');
             return call('apps:call', { name, payload: payload.payload });
+        },
+        lb: payload => {
+            if (!options.onLb) throw new RouteError('PERMISSION_DENIED', 'Not available to this app');
+            const action = str(payload.action, 32);
+            if (!action) throw new RouteError('INVALID_PAYLOAD', 'An action is required');
+            return options.onLb(action, payload);
         },
         client: payload => {
             const name = typeof payload.name === 'string' && /^[a-zA-Z0-9_:.-]{1,48}$/.test(payload.name) ? payload.name : undefined;

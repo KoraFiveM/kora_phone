@@ -8,7 +8,9 @@ import { isHostMessage } from '../../nuiEvents';
 import '../../CustomApps.css';
 import { SETTINGS_EVENT, legacyEvent } from '../../sdk/legacy';
 import { appUrl, createRouter, buildTheme, permissionsOf, sameTheme, originOf, push, isRecord } from '../../sdk';
+import { buildLbDocument } from '../../sdk';
 import type { HostTransport, Handset, ThemePayload } from '../../sdk';
+import { lbAction } from './lbActions';
 type CustomApp = SdkApp;
 function useCustomApps() { return useRuntimeApps(); }
 const maskUrl = (icon: string) => `url("${icon.replace(/^nui:\/\//, 'https://cfx-nui-')}")`;
@@ -55,9 +57,14 @@ export function CustomAppScreen({ id, transport = hostTransport }: { id: string;
   const [authorized, setAuthorized] = useState(false); const [error, setError] = useState('');
   const [state, setState] = useState<HostState>('loading'); const [title, setTitle] = useState(''); const [attempt, setAttempt] = useState(0);
   const settings = useRef(data.settings); settings.current = data.settings;
+  const dataRef = useRef(data); dataRef.current = data;
   const resource = definition?.resource ?? '';
+  // lb-phone style apps (registered from a resource's client script) get the compatibility layer injected into their own
+  // page, which the phone then loads as a document of its own origin. null = not loaded yet, '' = load it plainly.
+  const compat = definition?.source === 'client' && !/^https?:\/\//.test(definition.ui);
+  const [compatDoc, setCompatDoc] = useState<string | null>(null);
   const url = useMemo(() => definition ? appUrl(resource, definition.ui, { npParent: location.origin, npResource: resource, npApp: id }) : '', [definition, resource, id]);
-  const origin = useMemo(() => definition ? (/^https?:\/\//.test(definition.ui) ? originOf(definition.ui) : `https://cfx-nui-${resource}`) : '', [definition, resource]);
+  const origin = useMemo(() => definition ? (compat && compatDoc ? location.origin : /^https?:\/\//.test(definition.ui) ? originOf(definition.ui) : `https://cfx-nui-${resource}`) : '', [definition, resource, compat, compatDoc]);
   const permissions = useMemo(() => permissionsOf(definition), [definition]);
   const post = useCallback((message: unknown) => { frame.current?.contentWindow?.postMessage(message, origin); }, [origin]);
   const model = device?.model;
@@ -69,7 +76,16 @@ export function CustomAppScreen({ id, transport = hostTransport }: { id: string;
   }, [id, attempt]);
 
   useEffect(() => {
-    if (!authorized || !definition) return;
+    if (!authorized || !definition || !compat) { setCompatDoc(compat ? null : ''); return; }
+    let mounted = true; setCompatDoc(null);
+    Promise.all([nui<{ html?: string }>('apps:html', { app: id }), fetch('lb-shim.js').then(response => response.text())])
+      .then(([page, shim]) => { if (mounted) setCompatDoc(page?.html ? buildLbDocument(page.html, { resource, ui: definition.ui, app: id, name: definition.name, hostOrigin: location.origin }, shim) : ''); })
+      .catch(() => { if (mounted) setCompatDoc(''); });
+    return () => { mounted = false; };
+  }, [authorized, definition, compat, id, resource, attempt]);
+
+  useEffect(() => {
+    if (!authorized || !definition || compatDoc === null) return;
     let lastTheme: ThemePayload | null = null;
     const currentTheme = () => { lastTheme = buildTheme(readRoot); return lastTheme; };
     const router = createRouter({
@@ -83,6 +99,7 @@ export function CustomAppScreen({ id, transport = hostTransport }: { id: string;
       },
       onClose: () => navigate('home'),
       onSetTitle: setTitle,
+      onLb: compat ? (action, payload) => lbAction(action, payload, { data: dataRef.current, navigate, run: work => run(work), setCall }) : undefined,
     });
     const onMessage = (e: MessageEvent) => {
       const win = frame.current?.contentWindow;
@@ -98,7 +115,7 @@ export function CustomAppScreen({ id, transport = hostTransport }: { id: string;
       if (!isHostMessage(e.source, window, window.parent) || !isRecord(e.data)) return;
       const msg: HostMessage = e.data;
       if (msg.type === 'app:event' && msg.app === id && typeof msg.name === 'string') post(push('event', { name: msg.name, data: msg.data }));
-      else if (msg.type === 'customMessage' && msg.app === id) { const ev = legacyEvent(msg.data); post(push('event', ev ?? { name: 'message', data: msg.data })); }
+      else if (msg.type === 'customMessage' && msg.app === id) { const ev = legacyEvent(msg.data); post(push('event', ev ?? { name: 'message', data: msg.data })); if (compat) post(push('event', { name: 'kora:raw', data: msg.data })); }
       else if (msg.type === 'customClose' && msg.app === id) navigate('home');
     };
     const observer = new MutationObserver(() => {
@@ -114,7 +131,7 @@ export function CustomAppScreen({ id, transport = hostTransport }: { id: string;
       router.dispose(); observer.disconnect(); window.clearTimeout(timer);
       document.removeEventListener('visibilitychange', onVisibility); window.removeEventListener('message', onMessage);
     };
-  }, [authorized, definition, origin, id, resource, permissions, transport, post, model, navigate, run, setCall]);
+  }, [authorized, definition, compat, compatDoc, origin, id, resource, permissions, transport, post, model, navigate, run, setCall]);
 
   useEffect(() => {
     if (state === 'ready' && frame.current?.contentWindow) post(push('event', { name: SETTINGS_EVENT, data: data.settings }));
@@ -122,10 +139,10 @@ export function CustomAppScreen({ id, transport = hostTransport }: { id: string;
 
   if (error) return <p role="alert">{error}</p>;
   if (loaded && !definition) return <div className="app-host"><div className="app-host-state" role="status"><p>This app is offline. Its resource may have stopped.</p><button onClick={() => navigate('home')}>Home</button></div></div>;
-  if (!definition || !authorized) return <div className="app-host"><div className="app-host-state" role="status"><p>Opening app…</p></div></div>;
+  if (!definition || !authorized || compatDoc === null) return <div className="app-host"><div className="app-host-state" role="status"><p>Opening app…</p></div></div>;
   return <div className="app-host">
     {title && <div className="app-host-title">{title}</div>}
-    <iframe key={attempt} ref={frame} className="app-host-frame" data-ready={state === 'ready'} title={definition.name} src={url}
+    <iframe key={attempt} ref={frame} className="app-host-frame" data-ready={state === 'ready'} title={definition.name} {...(compat && compatDoc ? { srcDoc: compatDoc } : { src: url })}
       sandbox="allow-scripts allow-same-origin allow-forms" referrerPolicy="no-referrer" />
     {state === 'loading' && <div className="app-host-state" role="status"><p>Opening {definition.name}…</p></div>}
     {state === 'error' && <div className="app-host-state" data-tone="error" role="alert"><p>{definition.name} did not respond.</p><button onClick={() => setAttempt(n => n + 1)}>Try again</button></div>}

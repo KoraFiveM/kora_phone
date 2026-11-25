@@ -294,6 +294,51 @@ test('end to end: built SDK client against the host router', async () => {
     client.destroy();
 });
 
+test('client requests reach the app client.lua route, lb requests only work when the host enables them', async () => {
+    const t = setup({ reply: { ok: true, data: { x: 1 } } });
+    await t.send(env('client', { name: 'get', payload: { a: 1 } }, 'c1'));
+    assert.deepEqual(t.calls.at(-1), ['apps:client', { app: 'demo', name: 'get', payload: { a: 1 } }]);
+    assert.deepEqual(t.posted.at(-1).payload, { x: 1 });
+    await t.send(env('client', { name: 'bad name!' }, 'c2'));
+    assert.equal(t.posted.at(-1).error.code, 'INVALID_PAYLOAD');
+    await t.send(env('lb', { action: 'contacts' }, 'c3'));
+    assert.equal(t.posted.at(-1).error.code, 'PERMISSION_DENIED');
+    const seen = [];
+    const enabled = setup({ router: { onLb: (action, payload) => { seen.push([action, payload.number]); return [{ number: '1' }]; } } });
+    await enabled.send(env('lb', { action: 'call', number: '5550001' }, 'c4'));
+    assert.deepEqual(seen, [['call', '5550001']]);
+    assert.deepEqual(enabled.posted.at(-1).payload, [{ number: '1' }]);
+    await enabled.send(env('lb', {}, 'c5'));
+    assert.equal(enabled.posted.at(-1).error.code, 'INVALID_PAYLOAD');
+});
+
+test('storage.list forwards the prefix and returns the values object', async () => {
+    const t = setup({ reply: { ok: true, data: { values: { 'note:1': { t: 'a' } } } } });
+    await t.send(env('storage.list', { prefix: 'note:' }, 's1'));
+    assert.deepEqual(t.calls.at(-1), ['apps:storage:list', { app: 'demo', prefix: 'note:' }]);
+    assert.deepEqual(t.posted.at(-1).payload, { 'note:1': { t: 'a' } });
+    const denied = setup({ permissions: [] });
+    await denied.send(env('storage.list', {}, 's2'));
+    assert.equal(denied.posted.at(-1).error.code, 'PERMISSION_DENIED');
+});
+
+test('buildLbDocument injects base, config and shim ahead of the app scripts', () => {
+    const { buildLbDocument, baseUrl } = sdk;
+    const config = { resource: 'my_app', ui: 'ui/index.html', app: 'my', name: 'My App', hostOrigin: 'https://cfx-nui-kora_phone' };
+    assert.equal(baseUrl('my_app', 'ui/index.html'), 'https://cfx-nui-my_app/ui/');
+    assert.equal(baseUrl('my_app', 'index.html'), 'https://cfx-nui-my_app/');
+    const page = '<!doctype html><html><head><title>x</title><script src="app.js"></script></head><body></body></html>';
+    const doc = buildLbDocument(page, config, 'window.SHIM=1;');
+    const shimAt = doc.indexOf('window.SHIM=1;');
+    assert.ok(shimAt > doc.indexOf('<head>') && shimAt < doc.indexOf('<script src="app.js">'), 'shim runs first');
+    assert.ok(doc.includes('<base href="https://cfx-nui-my_app/ui/">'));
+    assert.ok(doc.includes('"resource":"my_app"'));
+    assert.ok(buildLbDocument('<html><body>hi</body></html>', config, 's').includes('<head><base'));
+    assert.ok(buildLbDocument('<p>fragment</p>', config, 's').startsWith('<!doctype html><html><head><base'));
+    const hostile = buildLbDocument(page, { ...config, name: '</script><img src=x onerror=alert(1)>' }, 'a</script><b>');
+    assert.ok(!/<\/script><img/.test(hostile) && !hostile.includes('a</script><b>'), 'script end tags are escaped');
+});
+
 (async () => {
     for (const [name, fn] of queue) {
         try { await fn(); console.log(`ok - ${name}`); } catch (e) { failures++; console.error(`not ok - ${name}\n${e.stack}`); }

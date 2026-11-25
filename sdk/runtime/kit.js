@@ -153,3 +153,71 @@ export function i18n(tables) {
         return vars ? text.replace(/\{(\w+)\}/g, (_, name) => (name in vars ? vars[name] : '')) : text;
     };
 }
+
+// Richer dialogs. The lb-phone compatibility layer (web/public/lb-shim.js) renders its `components.*` through these, and
+// native apps can use them too. Button colours are semantic, never CSS colours: 'blue' is the primary action, 'red' the
+// destructive one, anything else a plain button.
+const variantOf = color => (color === 'red' ? 'danger' : color === 'blue' ? 'primary' : undefined);
+
+/** Message with buttons. `buttons` are { title, color?, cb? }; a missing list shows a single OK. */
+export function popup({ title = '', description = '', attachment, buttons }) {
+    const list = Array.isArray(buttons) && buttons.length ? buttons : [{ title: 'OK', color: 'blue' }];
+    return overlay((dialog, close) => dialog.append(
+        title && h('h2', null, title), description && h('p', null, description),
+        attachment && attachment.src && h('img', { src: attachment.src, alt: '', style: 'max-width:100%' }),
+        h('div', { class: 'kp-dialog-actions' }, list.map(button => h('button', {
+            class: 'kp-btn', 'data-variant': variantOf(button.color),
+            onclick: () => { close(button.title); if (typeof button.cb === 'function') button.cb(); },
+        }, button.title)))), { centered: true });
+}
+
+/** Bottom action sheet with callbacks: contextMenu({ title, buttons: [{ title, color?, cb? }] }). */
+export function contextMenu({ title = '', buttons = [] }) {
+    return overlay((dialog, close) => dialog.append(
+        title && h('h2', null, title),
+        h('div', { class: 'kp-dialog-actions' },
+            buttons.map(button => h('button', {
+                class: 'kp-btn', 'data-variant': variantOf(button.color),
+                onclick: () => { close(button.title); if (typeof button.cb === 'function') button.cb(); },
+            }, button.title)),
+            h('button', { class: 'kp-btn', 'data-variant': 'ghost', onclick: () => close(undefined) }, 'Cancel'))));
+}
+
+/** Choose one of `items` ({ key, title, detail? }). Resolves with the chosen item or undefined. */
+export function pick({ title, items, empty = 'Nothing to choose from' }) {
+    return overlay((dialog, close) => dialog.append(
+        h('h2', null, title),
+        items.length
+            ? h('ul', { class: 'kp-list' }, items.map(item => h('li', null, h('button', { class: 'kp-row', onclick: () => close(item) },
+                h('span', { class: 'kp-row-main' }, h('span', { class: 'kp-row-title' }, item.title), item.detail && h('span', { class: 'kp-row-sub' }, item.detail))))))
+            : h('p', null, empty),
+        h('button', { class: 'kp-btn', 'data-variant': 'ghost', onclick: () => close(undefined) }, 'Cancel')));
+}
+
+/** Native colour input in a sheet. Resolves with "#rrggbb" or undefined. */
+export function colorPicker({ value = '#000000' } = {}) {
+    return overlay((dialog, close) => {
+        const input = h('input', { type: 'color', class: 'kp-input', value, 'aria-label': 'Colour' });
+        dialog.append(h('h2', null, 'Choose a colour'), input, h('div', { class: 'kp-dialog-actions' },
+            h('button', { class: 'kp-btn', 'data-variant': 'primary', onclick: () => close(input.value) }, 'Select'),
+            h('button', { class: 'kp-btn', 'data-variant': 'ghost', onclick: () => close(undefined) }, 'Cancel')));
+    }, { centered: true });
+}
+
+/** Full-screen view of one image. */
+export function fullscreenImage(src) {
+    return overlay((dialog, close) => dialog.append(
+        h('img', { src, alt: '', style: 'max-width:100%;max-height:70vh;object-fit:contain' }),
+        h('button', { class: 'kp-btn', onclick: () => close(undefined) }, 'Close')), { centered: true });
+}
+
+const EMOJI = '😀 😂 😍 😎 🤔 😢 😡 👍 👎 🙏 👏 🔥 ❤️ 💯 🎉 🚗 🏠 💰 📍 ⭐ ✅ ❌ 🍕 ☕'.split(' ');
+
+/** A small emoji grid. Resolves with { emoji } or undefined. */
+export function emojiPicker() {
+    return overlay((dialog, close) => dialog.append(
+        h('h2', null, 'Emoji'),
+        h('div', { style: 'display:grid;grid-template-columns:repeat(6,1fr);gap:8px;font-size:1.6rem' },
+            EMOJI.map(emoji => h('button', { class: 'kp-icon-btn', 'aria-label': emoji, onclick: () => close({ emoji }) }, emoji))),
+        h('button', { class: 'kp-btn', 'data-variant': 'ghost', onclick: () => close(undefined) }, 'Cancel')));
+}

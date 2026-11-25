@@ -127,6 +127,11 @@ route('apps:client', function(data)
     return KoraPhone.Apps.invokeClient(data.app, data.name, data.payload)
 end)
 
+-- Only the page of an app that registered itself; the UI never names a file.
+route('apps:html', function(data)
+    return { html = KoraPhone.SDK.ClientRegistry.html(data.app) }
+end)
+
 route('customLifecycle', function(data)
     if type(data.app) == 'string' and type(data.event) == 'string' then
         KoraPhone.CustomApps.Fire(data.app, data.event)

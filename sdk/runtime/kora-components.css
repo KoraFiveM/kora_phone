@@ -1,0 +1,77 @@
+/* Kora phone UI kit: components. Needs kora-tokens.css. */
+/* Layout ---------------------------------------------------------------------------------------- */
+.kp-app { display: flex; flex-direction: column; height: 100%; min-height: 0; container-type: inline-size; }
+.kp-header { display: flex; align-items: center; gap: var(--kp-gap); min-height: var(--kp-target); padding: 8px 16px; border-bottom: 1px solid var(--kp-border); }
+.kp-title { flex: 1; margin: 0; font-family: var(--kp-font-heading); font-size: 1.15rem; font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.kp-content { flex: 1; min-height: 0; overflow-y: auto; padding: 16px; display: flex; flex-direction: column; gap: var(--kp-gap); }
+.kp-content.kp-flush { padding: 0; gap: 0; }
+.kp-footer { display: flex; gap: var(--kp-gap); padding: 12px 16px; border-top: 1px solid var(--kp-border); }
+.kp-section-label { margin: 8px 0 0; color: var(--kp-muted); font-size: 0.75rem; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; }
+.kp-grow { flex: 1; min-width: 0; }
+.kp-row-flex { display: flex; align-items: center; gap: var(--kp-gap); }
+
+/* Two panes when the app area is wide (Fold unfolded); one pane otherwise. */
+.kp-split { display: grid; grid-template-columns: 1fr; flex: 1; min-height: 0; }
+.kp-split > * { min-height: 0; overflow-y: auto; }
+.kp-split > [data-pane="detail"] { display: none; }
+.kp-split[data-detail="open"] > [data-pane="list"] { display: none; }
+.kp-split[data-detail="open"] > [data-pane="detail"] { display: block; }
+@container (min-width: 560px) {
+    .kp-split { grid-template-columns: minmax(220px, 38%) 1fr; }
+    .kp-split > [data-pane="list"], .kp-split[data-detail="open"] > [data-pane="list"] { display: block; border-right: 1px solid var(--kp-border); }
+    .kp-split > [data-pane="detail"], .kp-split[data-detail="open"] > [data-pane="detail"] { display: block; }
+}
+
+/* Lists ----------------------------------------------------------------------------------------- */
+.kp-list { margin: 0; padding: 0; list-style: none; display: flex; flex-direction: column; }
+.kp-row { display: flex; align-items: center; gap: var(--kp-gap); min-height: var(--kp-target); padding: 10px 16px; border: 0; border-bottom: 1px solid var(--kp-border); background: transparent; text-align: left; width: 100%; cursor: pointer; transition: background var(--kp-fast); }
+.kp-row:hover { background: var(--kp-surface-hover); }
+.kp-row[aria-selected="true"] { background: var(--kp-accent-soft); }
+.kp-row-main { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+.kp-row-title { font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.kp-row-sub { color: var(--kp-muted); font-size: 0.85rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.kp-row-end { color: var(--kp-muted); font-size: 0.85rem; }
+
+/* Surfaces -------------------------------------------------------------------------------------- */
+.kp-card { background: var(--kp-surface); border: 1px solid var(--kp-border); border-radius: var(--kp-radius); padding: 14px 16px; }
+.kp-badge { display: inline-flex; align-items: center; padding: 2px 8px; border-radius: var(--radius-full, 999px); background: var(--kp-accent-soft); color: var(--kp-accent); font-size: 0.75rem; font-weight: 600; }
+.kp-badge[data-tone="danger"] { background: hsl(var(--destructive, 0 80% 55%) / 0.16); color: var(--kp-danger); }
+.kp-badge[data-tone="success"] { background: hsl(var(--success, 140 60% 45%) / 0.16); color: var(--kp-success); }
+
+/* Controls -------------------------------------------------------------------------------------- */
+.kp-btn { display: inline-flex; align-items: center; justify-content: center; gap: 8px; min-height: var(--kp-target); padding: 0 18px; border: 1px solid var(--kp-border); border-radius: var(--kp-radius); background: var(--kp-surface-raised); cursor: pointer; font-weight: 600; transition: background var(--kp-fast), opacity var(--kp-fast); }
+.kp-btn:hover { background: var(--kp-surface-hover); }
+.kp-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+.kp-btn[data-variant="primary"] { background: var(--kp-accent); border-color: var(--kp-accent); color: var(--kp-accent-fg); }
+.kp-btn[data-variant="primary"]:hover { background: hsl(var(--brand-hover, var(--primary, 84 100% 50%))); }
+.kp-btn[data-variant="danger"] { background: transparent; border-color: var(--kp-danger); color: var(--kp-danger); }
+.kp-btn[data-variant="ghost"] { background: transparent; border-color: transparent; }
+.kp-icon-btn { display: inline-flex; align-items: center; justify-content: center; width: var(--kp-target); height: var(--kp-target); border: 0; border-radius: var(--radius-full, 999px); background: transparent; cursor: pointer; }
+.kp-icon-btn:hover { background: var(--kp-surface-hover); }
+.kp-icon { width: 22px; height: 22px; fill: none; stroke: currentColor; stroke-width: 1.75; stroke-linecap: round; stroke-linejoin: round; }
+.kp-field { display: flex; flex-direction: column; gap: 6px; }
+.kp-label { color: var(--kp-muted); font-size: 0.8rem; }
+.kp-input { width: 100%; min-height: var(--kp-target); padding: 10px 12px; border: 1px solid var(--kp-border); border-radius: var(--kp-radius); background: var(--kp-surface); }
+textarea.kp-input { min-height: 120px; resize: vertical; }
+.kp-input[aria-invalid="true"] { border-color: var(--kp-danger); }
+.kp-segmented { display: flex; padding: 3px; border-radius: var(--kp-radius); background: var(--kp-surface); border: 1px solid var(--kp-border); }
+.kp-segmented > button { flex: 1; min-height: 36px; border: 0; border-radius: var(--kp-radius-sm); background: transparent; cursor: pointer; font-weight: 600; }
+.kp-segmented > button[aria-pressed="true"] { background: var(--kp-accent); color: var(--kp-accent-fg); }
+
+/* States: every app shows these three instead of a blank screen ----------------------------------- */
+.kp-state { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px; padding: 32px 24px; text-align: center; color: var(--kp-muted); }
+.kp-state h2 { margin: 0; color: var(--kp-fg); font-size: 1.05rem; }
+.kp-state p { margin: 0; max-width: 28ch; }
+.kp-state[data-tone="error"] h2 { color: var(--kp-danger); }
+.kp-spinner { width: 28px; height: 28px; border-radius: 50%; border: 3px solid var(--kp-border); border-top-color: var(--kp-accent); animation: kp-spin 0.8s linear infinite; }
+@keyframes kp-spin { to { transform: rotate(360deg); } }
+
+/* Overlays (created by kora-ui.js) --------------------------------------------------------------- */
+.kp-overlay { position: fixed; inset: 0; z-index: 50; display: flex; align-items: flex-end; justify-content: center; background: hsl(var(--modal-overlay, 0 0% 0% / 0.55)); animation: kp-fade var(--duration-popover, 160ms) var(--ease-entry, ease-out); }
+.kp-dialog { width: min(100%, 420px); max-height: 85%; overflow-y: auto; padding: 20px; border-radius: var(--kp-radius-lg) var(--kp-radius-lg) 0 0; background: var(--kp-surface-raised); box-shadow: var(--kp-shadow); display: flex; flex-direction: column; gap: var(--kp-gap); }
+.kp-dialog[data-centered] { border-radius: var(--kp-radius-lg); margin: auto; }
+.kp-dialog h2 { margin: 0; font-size: 1.1rem; }
+.kp-dialog p { margin: 0; color: var(--kp-muted); }
+.kp-dialog-actions { display: flex; flex-direction: column; gap: 8px; }
+.kp-toast { position: fixed; left: 16px; right: 16px; bottom: 24px; z-index: 60; padding: 12px 16px; border-radius: var(--kp-radius); background: var(--kp-surface-raised); border: 1px solid var(--kp-border); box-shadow: var(--kp-shadow); animation: kp-fade var(--duration-popover, 160ms) var(--ease-entry, ease-out); }
+@keyframes kp-fade { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }

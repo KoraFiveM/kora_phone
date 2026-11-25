@@ -77,4 +77,19 @@ test('job filter supports arrays and grades', function()
     equal(Registry.jobMatches(nil), true)
 end)
 
+test('html() reads the registered page from its own resource and nothing else', function()
+    local files = { ['ui/index.html'] = '<html></html>', ['ui/big.html'] = string.rep('x', Registry.MAX_HTML_BYTES + 1) }
+    _G.LoadResourceFile = function(resource, path) return resource == 'lb_res' and files[path] or nil end
+    local function add(id, ui) Registry.register({ identifier = id, name = id, ui = ui, resource = 'lb_res' }, 'lb_res') end
+    add('page', 'lb_res/ui/index.html'); add('url', 'https://example.com/x.html'); add('up', '../secret.html')
+    add('big', 'ui/big.html'); add('script', 'ui/app.js')
+    equal(Registry.html('page'), '<html></html>')
+    equal(Registry.html('url'), nil)
+    equal(Registry.html('up'), nil)
+    equal(Registry.html('big'), nil)
+    equal(Registry.html('script'), nil)
+    equal(Registry.html('ghost'), nil)
+    equal(Registry.html({ identifier = 'page' }), nil)
+end)
+
 H.finish('sdk-client')

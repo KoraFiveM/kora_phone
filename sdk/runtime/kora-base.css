@@ -1,0 +1,19 @@
+/* Kora phone UI kit: page reset. Only apps that own their whole page load this (lb-phone apps do not). */
+*, *::before, *::after { box-sizing: border-box; }
+
+html, body {
+    margin: 0;
+    height: 100%;
+    background: var(--kp-bg);
+    color: var(--kp-fg);
+    font-family: var(--kp-font);
+    font-size: 15px;
+    line-height: 1.4;
+    -webkit-font-smoothing: antialiased;
+    overscroll-behavior: none;
+}
+
+button, input, textarea, select { font: inherit; color: inherit; }
+:focus-visible { outline: 2px solid var(--kp-ring); outline-offset: 2px; }
+@media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; } }
+
