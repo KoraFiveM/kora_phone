@@ -1,6 +1,6 @@
 import type { Theme } from './themes';
 import { installedApps } from './catalog';
-export type AppId = `app:${string}` | 'custom' | 'store' | 'home' | 'phone' | 'contacts' | 'messages' | 'banking' | 'camera' | 'gallery' | 'social' | 'classifieds' | 'gps' | 'services' | 'mail' | 'property' | 'vehicles' | 'flash' | 'music' | 'clock' | 'settings' | 'moderation';
+export type AppId = `app:${string}` | 'custom' | 'store' | 'home' | 'phone' | 'contacts' | 'messages' | 'banking' | 'camera' | 'gallery' | 'social' | 'classifieds' | 'gps' | 'mail' | 'flash' | 'music' | 'clock' | 'settings' | 'moderation';
 export interface Settings { name: string; volume: number; scale: number; wallpaper: 'orbit' | 'plain' | 'midnight' | 'slate' | 'ember' | 'kora_core' | 'custom'; wallpaperUrl?: string; theme?: Theme; setupComplete?: boolean; phoneStyle?: 'classic' | 'standard' | 'flip' | 'fold'; phoneCase?: 'default' | 'nightdrive' | 'citypop' | 'sakura' | 'touge' | 'garage' | 'kora_core' | 'arcade' | 'space' | 'palms' | 'skyline' | 'custom'; phoneCaseUrl?: string; iconStyle?: 'circle' | 'squircle' | 'outline' | 'solid'; dnd?: boolean; dndFrom?: string; dndTo?: string; installedApps?: AppId[]; appOrder?: AppId[]; dockOrder?: AppId[] }
 export interface MapBlip { id: number; x: number; y: number; sprite: number; label: string; street?: string; zone?: string; colour: string }
 export interface Contact { id?: number; name: string; number: string; photo?: string; favorite?: boolean }
@@ -20,7 +20,6 @@ export interface SystemActivity { id: number; title: string; message: string; cr
 export interface MailItem { hasAction?: boolean; id: number; peer: string; subject: string; body: string; created_at: string; unread: boolean }
 export interface Location { label: string; x: number; y: number }
 export interface Service { label: string; description: string; numbers: string[] }
-export interface JobData { job: { name: string; label: string; grade: number | { name: string; label?: string; level?: number }; gradeLabel: string; onDuty: boolean }; actions: { id: string; label: string }[] }
 export interface ModerationReport { id: number; targetType: 'profile' | 'post' | 'comment' | 'listing'; targetId: number; reason: string; details: string; status: string; createdAt: string; snapshot?: Record<string, unknown> }
 export interface Bootstrap { homeReorder?: boolean; galleryViewer?: boolean; model?: 'standard' | 'flip' | 'fold'; characterName?: string; transfers?: boolean; moderator?: boolean; id: string; number: string; locked: boolean; hasPin: boolean; data?: DeviceData; preferences?: Settings; capabilities: Partial<Record<AppId | 'weather', boolean>>; unavailable: Record<string, string>; locations: Location[]; services: Service[]; call?: Call; video: { iceServers: RTCIceServer[] } | false; flash: { maxSeconds: number; maxBytes?: number } | false; admin: boolean }
 export type MediaKind = 'photo' | 'video';
@@ -31,8 +30,6 @@ export interface Comment { id: number; number: string; body: string; created_at:
 export interface Conversation { id: number; type?: 'direct' | 'group'; title?: string | null; peerPhoneNumber?: string | null; displayLabel?: string; lastMessageId?: number | null; lastMessagePreview?: string | null; lastMessageAt?: string | null; unreadCount?: number; sortId?: number; kind?: 'direct' | 'group'; name?: string | null; members?: string | null; last_body?: string; last_kind?: MediaKind | null; last_number?: string | null; last_at?: string | null }
 export interface ChatMessage { id: number; conversationId?: number; messageType?: 'text'; body: string; mediaId?: number | null; isMine?: boolean; senderNumber?: string; createdAt?: string; sender_number: string; media_url?: string; media_kind?: MediaKind; shared_from_post?: number; created_at: string }
 export interface Bank { balance: number; account: string; name: string; history: { id: string; citizenid: string; recipient: string; amount: number; status: string; created_at: string }[] }
-export interface Property { name: string; label: string; coords?: { x: number; y: number } }
-export interface Vehicle { vehicle: string; plate: string; garage: string; state: number; fuel: number }
 export interface Weather { condition: string; hour: number; minute: number; rain: number }
 export interface Notification { deviceId: string; title: string; body: string; app: AppId; at?: number; count?: number }
 export type Api = {
@@ -62,8 +59,6 @@ export type Api = {
   shareToChat: [{ conversationId: number; postId: number; body?: string; mediaUrl?: string; mediaKind?: MediaKind }, boolean];
   leaveGroup: [{ id: number }, boolean]; addMember: [{ id: number; number: string }, boolean];
   bank: [Record<string, never>, Bank]; transfer: [{ recipient: string; amount: number }, { status: string }];
-  property: [Record<string, never>, Property[]]; vehicles: [Record<string, never>, Vehicle[]]; services: [Record<string, never>, Service[]];
-  job: [Record<string, never>, JobData]; setDuty: [{ onDuty: boolean }, JobData]; jobAction: [{ action: string }, { completed: boolean }];
   capture: [{ front?: boolean }, DeviceData]; deletePhoto: [{ id: string }, DeviceData];
   blocked: [Record<string, never>, string[]]; setBlocked: [{ number: string; blocked: boolean }, boolean];
   systemMailList: [{ before?: number }, MailItem[]]; systemActivity: [{ before?: number }, SystemActivity[]]; mailAccept: [{ id: number }, MailAcceptResult]; systemMailRead: [{ id: number }, boolean]; systemMailDelete: [{ id: number }, boolean];

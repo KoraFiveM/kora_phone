@@ -37,6 +37,8 @@ function Callbacks.invoke(source, appId, name, payload)
     if not entry then return PhoneError(errors.NOT_FOUND, 'Callback is not registered') end
 
     local ok, result = pcall(entry.handler, source, payload)
+    -- A handler may `error(PhoneError(...))` (or Phone.unwrap a failed service result): that error goes to the UI as is.
+    if not ok and type(result) == 'table' and result.ok == false and type(result.error) == 'table' then return result end
     if not ok then
         Kora.logging.event('phone.sdk.callback_failed', source, {
             level = 'error', message = 'App callback failed',

@@ -53,7 +53,7 @@ const completed = new Map<string, unknown>();
 function save() { if (isDemo) return; localStorage.setItem(key, JSON.stringify(store)); }
 export function previewBootstrap(): Bootstrap {
   return { id: 'preview-device', number, locked: !!store.pin, hasPin: !!store.pin, data: store.pin ? undefined : structuredClone(store.data), preferences: structuredClone(store.data.settings),
-    transfers: true, capabilities: { banking: true, camera: true, property: true, vehicles: true, weather: true, moderation: true }, unavailable: {}, admin: true, moderator: true, video: { iceServers: [] },
+    transfers: true, capabilities: { banking: true, camera: true, weather: true, moderation: true }, unavailable: {}, admin: true, moderator: true, video: { iceServers: [] },
     locations: [{ label: 'Legion Square', x: 195.2, y: -933.8 }, { label: 'Pillbox Medical', x: 298.5, y: -584.4 }, { label: 'Mission Row Police', x: 425.1, y: -979.5 }], services: [], call: activeCall,
     flash: { maxSeconds: 12 } };
 }
@@ -61,7 +61,6 @@ export function previewIncoming() {
   activeCall = { id: crypto.randomUUID(), status: 'ringing', number: '5550178031', direction: 'incoming', deviceId: 'preview-device' };
   window.dispatchEvent(new MessageEvent('message', { data: { type: 'call', data: activeCall } }));
 }
-let demoDuty = true;
 export function resetPreview() { if (!isDemo) localStorage.removeItem(key); location.reload(); }
 export async function mockRequest<K extends keyof Api>(action: K, payload: Api[K][0], id: string): Promise<Api[K][1]> {
   await new Promise(resolve => setTimeout(resolve, 100));
@@ -145,14 +144,6 @@ export async function mockRequest<K extends keyof Api>(action: K, payload: Api[K
       if (p.recipient !== '5550192042') throw new Error('Demo recipient: 5550192042');
       store.bank.balance -= amount; store.bank.history.unshift({ id, citizenid: store.bank.account, recipient: String(p.recipient), amount, status: 'completed', created_at: timestamp() }); result = { status: 'completed' }; break;
     }
-    case 'property': result = [{ name: 'alta-14', label: '14 Alta Street', coords: { x: -270.2, y: -957.7 } }]; break;
-    case 'vehicles': result = [{ vehicle: 'sultan', plate: 'NOTH1NG', garage: 'Legion Square', state: 1, fuel: 82 }]; break;
-    case 'services': result = [{ label: 'Police', description: 'On-duty officers', numbers: ['5550109110'] }, { label: 'Medical', description: 'On-duty medics', numbers: ['5550103110'] }, { label: 'Mechanic', description: 'Repairs and roadside assistance', numbers: [] }]; break;
-    case 'job': case 'setDuty': {
-      if (action === 'setDuty') demoDuty = !!p.onDuty;
-      result = { job: { name: 'police', label: 'Police', grade: 2, gradeLabel: 'Officer', onDuty: demoDuty }, actions: [{ id: 'panic', label: 'Send backup request' }] }; break;
-    }
-    case 'jobAction': result = { completed: true }; break;
     case 'capture': {
       const svg = '<svg xmlns="http://www.w3.org/2000/svg" width="600" height="800"><rect width="600" height="800" fill="#c7c4b8"/><circle cx="420" cy="230" r="85" fill="#ede8d8"/><path d="M0 650 180 400 300 530 440 350 600 600V800H0" fill="#434844"/><path d="M0 760 220 600 420 670 600 510V800H0" fill="#262c29"/></svg>';
       store.data.photos.push({ id, url: `data:image/svg+xml,${encodeURIComponent(svg)}`, created_at: Date.now() / 1000 }); result = store.data; break;

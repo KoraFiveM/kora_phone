@@ -200,10 +200,8 @@ bind('getMail', Services.Mail.list)
 bind('sendMail', Services.Mail.send)
 bind('readMail', Services.Mail.markRead)
 bind('deleteMail', Services.Mail.delete)
-bind('getProperties', Services.Property.list)
 bind('saveItem', Services.Items.save)
 bind('removeItem', Services.Items.remove)
-bind('getVehicles', Services.Garage.list)
 
 -- Third-party app SDK (server/sdk/routes.lua) and system mail (server/mail/system.lua). Looked up when
 -- called so neither module has to load first. SDK calls can overlap (an app reads several keys on

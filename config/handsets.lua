@@ -82,8 +82,8 @@ Kora.config.extend({
     LaunchApps = C.object(apps({
         phone = true, contacts = true, messages = true, camera = true, gallery = true, gps = true,
         settings = true, mail = true, clock = true, music = true,
-        store = true, banking = true, social = true, classifieds = true, services = true, property = true,
-        vehicles = true, flash = true, moderation = true,
+        store = true, banking = true, social = true, classifieds = true,
+        flash = true, moderation = true,
     }), {
         live = true, advanced = true,
         description = 'Which apps the server accepts in saved settings (installedApps, home order). An id set to false or missing is rejected or dropped. Use Apps to hide an app from players.',

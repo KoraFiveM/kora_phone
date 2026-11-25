@@ -11,7 +11,7 @@ const pad = value => String(value).padStart(2, '0');
 function view(weather, reload) {
     return h('div', { class: 'kp-content weather' },
         h('p', { class: 'kp-section-label' }, t('now')),
-        icon('clock'),
+        icon('sun'),
         h('h2', { class: 'weather-condition' }, t(weather.condition) === weather.condition ? weather.condition.toLowerCase() : t(weather.condition)),
         h('small', { class: 'kp-label' }, t('clock')),
         h('div', { class: 'weather-time' }, `${pad(weather.hour)}:${pad(weather.minute)}`),

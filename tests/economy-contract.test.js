@@ -45,8 +45,15 @@ assert.doesNotMatch(jobs, /payload\.(?:job|grade|citizenId)/, "client must not s
 
 assert.match(migration, /name = 'uq_phone_bank_history_operation'[^\n]*unique = true/, "history must be unique per bank operation");
 assert.doesNotMatch(migration, /phone_economy_audit|manual_review/, "the old audit state machine table is gone");
-for (const name of ["getBankBalance", "getBankHistory", "transferBankMoney", "getJob", "setJobDuty", "runJobAction"]) {
+for (const name of ["getBankBalance", "getBankHistory", "transferBankMoney"]) {
   assert.match(callbacks, new RegExp(`(?:register(?:Callback)?|bind)\\('${name}'`), `missing callback ${name}`);
 }
+
+// The Work app is a folder app: its callbacks are the only way in, and each one runs the validated service.
+const workApp = fs.readFileSync(path.join(root, "apps/services/server.lua"), "utf8");
+for (const [callback, service] of [["get", "Jobs.get"], ["setDuty", "Jobs.setDuty"], ["runAction", "Jobs.runAction"]]) {
+  assert.match(workApp, new RegExp(`app\\.callback\\('${callback}'[\\s\\S]*?Services\\.${service.replace(".", "\\.")}\\(source`), `Work ${callback} must call ${service} with the caller's source`);
+}
+assert.doesNotMatch(workApp, /payload\.(?:job|grade|citizenId)/, "the Work app must not let the client pick job, grade or identity");
 
 console.log("PASS economy-contract: banking and jobs security contracts present");

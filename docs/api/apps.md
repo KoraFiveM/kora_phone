@@ -30,6 +30,7 @@ Every route uses the `sdk` rate bucket, needs a loaded character holding a phone
 | `apps:uninstall` | `id` | none | `{ id, installed = false }` |
 | `apps:call` | `app`, `name`, `payload` | none | The callback's return value |
 | `apps:storage:get` | `app`, `key` | `storage` | `{ value }` (nil when the key is missing) |
+| `apps:storage:list` | `app`, `prefix` (optional) | `storage` | `{ values }`, an object of every key starting with the prefix |
 | `apps:storage:set` | `app`, `key`, `value` | `storage` | `{ saved = true }` |
 | `apps:storage:remove` | `app`, `key` | `storage` | `{ removed = true }` |
 | `apps:contacts:list` | `app` | `contacts.read` | `{ contacts }` with `id`, `name`, `number` per contact |
@@ -60,8 +61,11 @@ Responses use `type` of `response` with `ok: true` and `payload`, or `ok: false`
 | --- | --- | --- |
 | `ready` | none | none |
 | `callback` | `name`, `payload` | none |
+| `client` | `name`, `payload` | none (answered by the app's `client.lua`, NUI route `apps:client`, never a server call) |
+| `lb` | `action` plus fields | lb-phone compatibility pages only: `contacts`, `gallery`, `call`, `openApp` |
 | `notify` | `title`, `body` | `notify` |
 | `storage.get` | `key` | `storage` |
+| `storage.list` | `prefix` (optional) | `storage` |
 | `storage.set` | `key`, `value` | `storage` |
 | `storage.remove` | `key` | `storage` |
 | `contacts.list` | none | `contacts.read` |
@@ -86,4 +90,4 @@ The host unwraps the server data so the response `payload` matches the SDK types
 
 ## NPM package
 
-`@kora/phone-sdk` (directory `sdk/`, version in `sdk/package.json`): `createPhoneClient()` returning `ready()`, `theme`, `init`, `callback`, `notify`, `storage` (`get`, `set`, `remove`), `contacts` (`list`, `save`), `on`, `onTheme`, `onVisibility`, `close`, `setTitle`, `haptic`, `getContext` and `destroy`. The `@kora/phone-sdk/react` entry exports `PhoneProvider`, `usePhone`, `useTheme`, `usePhoneCallback` and `usePhoneStorage`. The package also ships `src/theme.css` (see the theming note in the developer guide). `npm test` in `sdk/` builds it and runs `sdk/test/sdk.test.mjs`.
+`@kora/phone-sdk` (directory `sdk/`, version in `sdk/package.json`): `createPhoneClient()` returning `ready()`, `theme`, `init`, `callback`, `notify`, `storage` (`get`, `list`, `set`, `remove`), `client`, `contacts` (`list`, `save`), `on`, `onTheme`, `onVisibility`, `close`, `setTitle`, `haptic`, `getContext` and `destroy`. The `@kora/phone-sdk/react` entry exports `PhoneProvider`, `usePhone`, `useTheme`, `usePhoneCallback` and `usePhoneStorage`. The package also ships `src/theme.css` (see the theming note in the developer guide). `npm test` in `sdk/` builds it and runs `sdk/test/sdk.test.mjs`.

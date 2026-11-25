@@ -79,6 +79,16 @@ function methods.removeStorage(id, source, key)
     return SDK.Storage.remove(device.id, id, key)
 end
 
+---Turns a service result (PhoneResult or PhoneError) into what an app callback returns: the data on success, and on
+---failure the error is raised so the UI receives its code and message.
+---@param result table
+---@return any data
+function Phone.unwrap(result)
+    if type(result) ~= 'table' then error(PhoneError(PhoneConstants.Errors.INTERNAL, 'Request failed'), 0) end
+    if result.ok == false then error(result, 0) end
+    return result.data
+end
+
 Apps.registerAll()
 
 -- A phone restart keeps its folder apps: `onResourceStop` for this resource clears the registry by itself.

@@ -13,6 +13,12 @@ This page summarises what ships today and what is in progress. [Features](./feat
 - Custom apps ship today, both as sandboxed iframe apps through the manifest SDK ([App SDK](./apps.md)) and through the client registry and alias exports described in [How to use](./how-to-use.md).
 - The app SDK v1: manifest registration (`kora_phone_app` or `RegisterApp`), server-checked permissions, per-app storage and callbacks, the iframe protocol and the `@kora/phone-sdk` package.
 
+## Folder apps
+
+- Shipped: the `Phone.app` API, the UI kit, the style guide and linter, and Notes, Calculator, Weather, Garage, Home and Work as folder apps.
+- Still compiled into the host UI, in this order of difficulty: Clock and Sound (need background alarms and playback while the phone is closed), Wallet, Maps, Mail, Market (server data), Contacts, Phone, Messages, Camera, Gallery and Settings (they need calls, media and lock services exposed to apps first), Pulse, Flash and Moderation. Each moves when its services are ready.
+- `shared/routes.json` and the gateway remain the route table for the built-in apps; folder apps use `app.callback` and need no entry.
+
 ## Not enforced yet
 
 - The manifest permissions `media.read`, `location` and `payments` are accepted and stored, but no route checks them, so they grant nothing today.

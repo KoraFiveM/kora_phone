@@ -179,12 +179,21 @@ end)
 
 local MAX_WORLD = 20000
 
+KoraPhone.World = KoraPhone.World or {}
+
+---Sets the map waypoint. Returns false for coordinates outside the world.
+---@return boolean
+function KoraPhone.World.Waypoint(x, y)
+    x, y = tonumber(x), tonumber(y)
+    if not x or not y or math.abs(x) > MAX_WORLD or math.abs(y) > MAX_WORLD then return false end
+    SetNewWaypoint(x + 0.0, y + 0.0)
+    return true
+end
+
 route('waypoint', function(data)
-    local x, y = tonumber(data.x), tonumber(data.y)
-    if not x or not y or math.abs(x) > MAX_WORLD or math.abs(y) > MAX_WORLD then
+    if not KoraPhone.World.Waypoint(data.x, data.y) then
         return failure('INVALID_INPUT', Kora.lang('error.invalid_location'))
     end
-    SetNewWaypoint(x + 0.0, y + 0.0)
     return { ok = true, data = true }
 end)
 

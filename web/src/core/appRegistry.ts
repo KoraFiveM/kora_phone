@@ -1,8 +1,8 @@
 import { lazy } from 'react';
 import type { ComponentType, LazyExoticComponent } from 'react';
 import {
-  AlarmClock, Aperture, Blocks, Camera, Car, ContactRound, CreditCard, House, Image, Mail, MapPin,
-  MessageCircle, Music, Phone, Radio, Settings as SettingsIcon, ShieldAlert, ShieldCheck, Store as StoreIcon,
+  AlarmClock, Aperture, Blocks, Camera, ContactRound, CreditCard, Image, Mail, MapPin,
+  MessageCircle, Music, Phone, Radio, Settings as SettingsIcon, ShieldAlert, Store as StoreIcon,
   Tag,
 } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
@@ -13,9 +13,6 @@ import { GalleryScreen } from '../apps/gallery/GalleryScreen';
 import { GPSScreen } from '../apps/maps/GPSScreen';
 import { MailScreen } from '../apps/mail/MailScreen';
 import { MusicScreen } from '../apps/music/MusicScreen';
-import { PropertyScreen } from '../apps/property/PropertyScreen';
-import { ServicesScreen } from '../apps/services/ServicesScreen';
-import { VehiclesScreen } from '../apps/vehicles/VehiclesScreen';
 import { BankScreen } from '../apps/wallet/BankScreen';
 import { SettingsHost } from './SettingsHost';
 import { appCopy } from '../locales';
@@ -66,10 +63,7 @@ export const appRegistry: readonly AppDefinition[] = [
   entry('gallery', Image, GalleryScreen, 'grid'),
   entry('classifieds', Tag, MarketApp, 'grid', { optional: { category: 'Life', description: 'Buy, sell, and find something worth keeping.' } }),
   entry('gps', MapPin, GPSScreen, 'grid', { optional: { category: 'Tools', description: 'Familiar places. New directions. Your city, mapped.' } }),
-  entry('services', ShieldCheck, ServicesScreen, 'grid', { optional: { category: 'Life', description: 'Get in touch with the people who keep the city moving.' } }),
   entry('mail', Mail, MailScreen, 'grid', { optional: { category: 'Social', description: 'For the things that deserve more than a text.' } }),
-  entry('property', House, PropertyScreen, 'grid', { optional: { category: 'Life', description: 'Your properties and a shortcut home.' } }),
-  entry('vehicles', Car, VehiclesScreen, 'grid', { optional: { category: 'Life', description: 'Your vehicles, fuel, and last registered garage.' } }),
   entry('flash', Aperture, FlashApp, 'grid', { fullBleed: true, optional: { category: 'Social', description: 'Short videos and photos from around the city, for everyone to see.' } }),
   entry('music', Music, MusicScreen, 'grid', { optional: { category: 'Tools', description: 'Save YouTube, SoundCloud, or stream links and play them from your phone.' } }),
   entry('clock', AlarmClock, ClockScreen, 'grid', { optional: { category: 'Tools', description: 'Set alarms that ring on your local clock, even with the phone closed.' } }),

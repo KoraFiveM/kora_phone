@@ -64,7 +64,7 @@ const garage = read("server/services/garage.lua");
 const external = read("server/repositories/external.lua");
 const messaging = read("server/services/messaging.lua");
 const migration9 = read("server/schema.lua");
-for (const [route, callback] of [["items:save", "saveItem"], ["items:remove", "removeItem"], ["garage:list", "getVehicles"], ["messages:createGroup", "createGroup"], ["messages:leaveGroup", "leaveGroup"]]) {
+for (const [route, callback] of [["items:save", "saveItem"], ["items:remove", "removeItem"], ["messages:createGroup", "createGroup"], ["messages:leaveGroup", "leaveGroup"]]) {
   assert.match(nui, new RegExp(`\\['${route}'\\] = 'kora_phone:server:${callback}'`), `${route} must map to ${callback}`);
   assert.match(callbacks, bound(callback), `${callback} must be registered on the server`);
   assert.match(api, new RegExp(`'${route}'`), `the UI must call ${route}`);
@@ -86,7 +86,7 @@ assert.match(messaging, /requireConversation\(device, payload\)/, "leaving a gro
 const mailSvc = read("server/services/mail.lua");
 const mailRepo = read("server/repositories/mail.lua");
 const property = read("server/services/property.lua");
-for (const [route, callback] of [["messages:addMember", "addGroupMember"], ["mail:list", "getMail"], ["mail:send", "sendMail"], ["mail:read", "readMail"], ["mail:delete", "deleteMail"], ["property:list", "getProperties"]]) {
+for (const [route, callback] of [["messages:addMember", "addGroupMember"], ["mail:list", "getMail"], ["mail:send", "sendMail"], ["mail:read", "readMail"], ["mail:delete", "deleteMail"]]) {
   assert.match(nui, new RegExp(`\\['${route}'\\] = 'kora_phone:server:${callback}'`), `${route} must map to ${callback}`);
   assert.match(callbacks, bound(callback), `${callback} must be registered on the server`);
   assert.match(api, new RegExp(`'${route}'`), `the UI must call ${route}`);
@@ -97,6 +97,10 @@ assert.match(mailRepo, /INSERT IGNORE INTO phone_mail/, "a retried mail request 
 assert.match(mailRepo, /recipient_device_id = \?/, "mail is only read or deleted by its own sender or recipient");
 assert.match(read("server/repositories/external.lua"), /External\.isIdentifier\(name\)/, "housing table and column names must be checked before they go into SQL");
 assert.match(property, /device\.ownerCitizenId/, "homes must be looked up by the caller's own character");
+// Garage and Home are folder apps: their callbacks run the validated services with the caller's source, nothing the UI sends.
+for (const [app, service] of [["vehicles", "Garage.list"], ["property", "Property.list"]]) {
+  assert.match(read(`apps/${app}/server.lua`), new RegExp(`app\\.callback\\('list'[\\s\\S]*?Services\\.${service.replace(".", "\\.")}\\(source\\)`), `${app} list must call ${service}(source)`);
+}
 assert.match(messaging, /memberCount\(conversationId\) >= 50/, "groups are capped");
 assert.match(hostEvents, /type === 'mail:new'/, "the UI must handle new mail");
 

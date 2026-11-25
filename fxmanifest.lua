@@ -5,7 +5,7 @@ dependency 'kora_lib'
 name 'kora_phone'
 author 'Kora Team'
 description 'Server-authoritative Kora phone'
-version '0.0.1-dev.3'
+version '0.0.1-dev.4'
 
 lua54 'yes'
 

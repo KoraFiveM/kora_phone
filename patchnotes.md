@@ -1,2 +1,10 @@
+- 0.0.1-dev.4
+  - folder apps: drop `apps/<id>/` into the phone (`Phone.app`, `app.lua`, `server.lua`, `client.lua`, `ui/`), no manifest edit
+  - no-build UI kit (`/sdk/runtime/kit.js`, `kora-ui.css`) on kora_theme tokens, an app style guide and `tools/check-app.mjs` (runs in the test suite)
+  - `tools/new-app.mjs` scaffolds an app that already passes the linter
+  - Notes, Calculator, Weather, Garage, Home and Work are folder apps (their old `garage:list`, `property:list` and `jobs:*` routes are gone); apps from every source now appear on the home screen and in the App Store (server SDK apps were not shown before)
+  - SDK: `storage.list`, per-app storage quota (manifest `storage`), `category` and `system` manifest fields, `client` callbacks to an app's `client.lua`
+  - lb-phone: all 60 documented server exports answered, lb-phone page globals and `components` injected into custom app pages (see docs/lb-phone.md)
+  - removed: the `note` item kind and `Config.Server.Items.note` (notes live in the Notes app's storage; a fresh schema is expected)
 - 0.0.1-dev.3
   - added version check

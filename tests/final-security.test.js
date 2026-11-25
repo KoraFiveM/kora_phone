@@ -50,7 +50,7 @@ assert.deepEqual([...new Set(duplicates)], [], `duplicate server callbacks: ${du
 const nui = require("./helpers/nui-source").source;
 for (const route of ["calls:start", "calls:accept", "calls:reject", "calls:hangup", "calls:history",
   "gallery:list", "gallery:delete", "bank:getData", "bank:getTransactions", "bank:transfer",
-  "jobs:getData", "jobs:setDuty", "jobs:runAction", "messages:send", "social:getFeed",
+  "messages:send", "social:getFeed",
   "market:getListings", "market:contactSeller"]) {
   assert.ok(nui.includes(`['${route}']`), `NUI route missing: ${route}`);
 }
