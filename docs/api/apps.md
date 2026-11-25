@@ -62,6 +62,7 @@ Responses use `type` of `response` with `ok: true` and `payload`, or `ok: false`
 | `ready` | none | none |
 | `callback` | `name`, `payload` | none |
 | `open` | `app`, `target` (optional) | none (the host opens the app; the target reaches it as `init.target`) |
+| `call` | `number` (7 to 16 digits) | none (the host dials through the call service and shows its call screen) |
 | `refresh` | none | none (the host reloads the phone data other screens use, for example contacts) |
 | `client` | `name`, `payload` | none (answered by the app's `client.lua`, NUI route `apps:client`, never a server call) |
 | `lb` | `action` plus fields | lb-phone compatibility pages only: `contacts`, `gallery`, `call`, `openApp` |

@@ -1,5 +1,5 @@
-import type { Call, CallHistory, ChatMessage, Conversation } from '../../types';
-import type { RawCall, RawCallHistory, RawConversation, RawMessage } from '../raw';
+import type { Call, ChatMessage, Conversation } from '../../types';
+import type { RawCall, RawConversation, RawMessage } from '../raw';
 import { kindOf, stamp } from './common';
 
 /** The server names message fields differently from the chat screens: map them once, here. */
@@ -30,10 +30,3 @@ export const mapCall = (v: RawCall): Call => ({
     deviceId: 'kora_phone',
 });
 
-export const mapCallHistory = (x: RawCallHistory): CallHistory => ({
-    id: x.id,
-    caller: x.callerNumber,
-    recipient: x.calleeNumber,
-    status: x.status,
-    created_at: stamp(x.startedAt),
-});

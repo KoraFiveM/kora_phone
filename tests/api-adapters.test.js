@@ -43,7 +43,7 @@ try {
   equal(items([2]), [2], "items accepts a bare array");
   equal(items(null), [], "items tolerates null");
 
-  const { mapMessage, mapConversation, mapCall, mapCallHistory } = load("api/adapters/messages.js");
+  const { mapMessage, mapConversation, mapCall } = load("api/adapters/messages.js");
   const message = mapMessage({ id: 1, body: "hi", senderNumber: 555, createdAt: 1700000000, mediaUrl: "https://x/v", mediaMime: "video/webm" });
   equal([message.sender_number, message.created_at, message.media_url, message.media_kind, message.body],
     ["555", "2023-11-14T22:13:20.000Z", "https://x/v", "video", "hi"], "messages map server fields to chat fields");
@@ -54,8 +54,6 @@ try {
   equal([direct.kind, direct.members, direct.name, direct.last_body, direct.last_at], ["direct", "5550001", null, "", null], "direct conversations");
   equal(mapCall({ id: 9, status: "rejected", remoteNumber: "555" }),
     { id: "9", status: "declined", number: "555", direction: "outgoing", deviceId: "kora_phone" }, "rejected calls are shown as declined");
-  equal(mapCallHistory({ id: "c", callerNumber: "1", calleeNumber: "2", status: "ended", startedAt: 1700000000 }),
-    { id: "c", caller: "1", recipient: "2", status: "ended", created_at: "2023-11-14T22:13:20.000Z" }, "call history rows");
 
   const social = load("api/adapters/social.js");
   const listing = social.mapListing({ id: 1, title: "Bike", description: "Fast", price: 50, sellerName: "Sam", createdAt: "t", isOwner: true });

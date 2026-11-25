@@ -45,6 +45,7 @@ export interface RequestMap {
     client: { payload: { name: string; payload?: unknown }; result: unknown };
     open: { payload: { app: string; target?: string }; result: unknown };
     refresh: { payload: Record<string, never>; result: unknown };
+    call: { payload: { number: string }; result: unknown };
     notify: { payload: { title: string; body: string }; result: unknown };
     'storage.list': { payload: { prefix?: string }; result: Record<string, Json> };
     'storage.get': { payload: { key: string }; result: Json | null };

@@ -6,7 +6,6 @@ export interface Page<T> { items?: T[] }
 export interface RawContact { id: number | string; displayName?: string; phoneNumber?: string; photo?: string; isFavorite?: Flag }
 export interface RawMedia { id: number | string; publicUrl: string; mimeType?: string; createdAt?: number }
 export interface RawCall { id: number | string; status: string; remoteNumber?: string; direction?: 'incoming' | 'outgoing' }
-export interface RawCallHistory { id: string; callerNumber: string; calleeNumber: string; status: string; startedAt?: number | string }
 export interface RawConversation {
     type?: string; title?: string | null; peerPhoneNumber?: string | null; lastMessagePreview?: string | null;
     lastMediaMime?: string | null; lastMessageAt?: number | string | null; [key: string]: unknown;

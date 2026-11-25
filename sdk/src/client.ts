@@ -61,6 +61,8 @@ export interface PhoneClient {
     open(app: string, target?: string): Promise<void>;
     /** Tells the phone that data it shows elsewhere changed (contacts, for example), so it reloads it. */
     refresh(): Promise<void>;
+    /** Starts a voice call to a phone number through the phone's call service (the call screen belongs to the phone). */
+    call(number: string): Promise<void>;
     /** Calls a handler the app registered in its own client.lua with `app.client(name, fn)`. */
     client<TIn = unknown, TOut = unknown>(name: string, payload?: TIn): Promise<TOut>;
     notify(title: string, body: string): Promise<void>;
@@ -235,6 +237,9 @@ export function createPhoneClient(options: PhoneClientOptions = {}): PhoneClient
         },
         async open(app, target) {
             await request('open', target === undefined ? { app } : { app, target });
+        },
+        async call(number) {
+            await request('call', { number });
         },
         async refresh() {
             await request('refresh', {});

@@ -2,7 +2,7 @@ import { normalizeData } from './types';
 import { isOptional, starterApps } from './catalog';
 import { blobToDataUrl } from './useClipRecorder';
 import type { AppId } from './types';
-import type { Api, Bootstrap, Call, CallHistory, ChatMessage, Comment, Conversation, DeviceData, Message, Post } from './types';
+import type { Api, Bootstrap, Call, ChatMessage, Comment, Conversation, DeviceData, Message, Post } from './types';
 const key = 'nothing-phone-preview-v1';
 export const isDemo = new URLSearchParams(window.location?.search).has('demo');
 const timestamp = () => new Date().toISOString();
@@ -19,7 +19,7 @@ const seed: DeviceData = {
   alarms: [{ id: 'first-alarm', label: 'Wake up', time: '08:00', days: [1, 2, 3, 4, 5], enabled: true }],
 };
 const sampleFlashPhoto = () => `data:image/svg+xml,${encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" width="600" height="800"><rect width="600" height="800" fill="#e8a15c"/><circle cx="300" cy="320" r="110" fill="#fff3e0"/><path d="M0 620 200 480 340 560 460 420 600 560V800H0" fill="#8a5a2b"/></svg>')}`;
-interface Store { data: DeviceData; pin: string; messages: Message[]; posts: Post[]; flash: Post[]; comments: (Comment & { postId: number })[]; history: CallHistory[]; conversations: Conversation[]; chatMessages: Record<number, ChatMessage[]> }
+interface Store { data: DeviceData; pin: string; messages: Message[]; posts: Post[]; flash: Post[]; comments: (Comment & { postId: number })[]; conversations: Conversation[]; chatMessages: Record<number, ChatMessage[]> }
 function initial(): Store {
   return { data: structuredClone(seed), pin: '', messages: [
     { id: 1, sender: '5550192042', recipient: number, body: 'You around? Coffee at the usual spot.', kind: 'sms', subject: '', created_at: timestamp() },
@@ -30,7 +30,7 @@ function initial(): Store {
     { id: 2, number: '5550192042', body: 'Fresh coffee. Good company. Now open on the corner of Alta Street. â˜•', price: 0, created_at: timestamp(), likes: 12, comments: 0, liked: false, mine: false },
   ], flash: [
     { id: 1, number: '5550178031', body: 'Golden hour on Alta Street.', price: 0, media_kind: 'photo', media_url: sampleFlashPhoto(), created_at: timestamp(), likes: 41, comments: 0, liked: false, mine: false },
-  ], comments: [], history: [],
+  ], comments: [],
     conversations: [{ id: 1, kind: 'direct', name: null, members: '5550192042', last_body: 'On my way. Give me five.', last_kind: null, last_number: number, last_at: timestamp() }],
     chatMessages: { 1: [
       { id: 1, sender_number: '5550192042', body: 'You around? Coffee at the usual spot.', created_at: timestamp() },
@@ -94,16 +94,14 @@ export async function mockRequest<K extends keyof Api>(action: K, payload: Api[K
     }
     case 'messages': result = store.messages.filter(m => m.kind === p.kind && (!p.before || m.id < Number(p.before))).sort((a, b) => b.id - a.id).slice(0, 50); break;
     case 'sendMessage': store.messages.push({ id: Date.now(), sender: number, recipient: String(p.recipient), kind: p.kind as 'sms' | 'mail', subject: String(p.subject), body: String(p.body), created_at: timestamp() }); result = { sent: true }; break;
-    case 'history': result = store.history; break;
     case 'dial': {
       if (activeCall) throw new Error('Already in a call');
       activeCall = { id, number: String(p.number), direction: 'outgoing', status: 'ringing', deviceId: 'preview-device' }; result = activeCall;
-      store.history.unshift({ id, caller: number, recipient: String(p.number), status: 'ringing', created_at: timestamp() });
       setTimeout(() => { if (activeCall?.id === id) { activeCall = { ...activeCall, status: 'active' }; window.dispatchEvent(new MessageEvent('message', { data: { type: 'call', data: activeCall } })); } }, 2500);
       break;
     }
     case 'answer': if (activeCall) { activeCall = { ...activeCall, status: 'active' }; result = activeCall; } break;
-    case 'hangup': activeCall = undefined; store.history = store.history.map(h => h.id === p.id ? { ...h, status: 'ended' } : h); break;
+    case 'hangup': activeCall = undefined; break;
     case 'stations': store.data.stations = store.data.stations.filter(s => s.id !== p.id); if (!p.remove) store.data.stations.unshift({ id: String(p.id), label: String(p.label), url: String(p.url) }); result = store.data; break;
     case 'alarms': store.data.alarms = store.data.alarms.filter(a => a.id !== p.id); if (!p.remove) store.data.alarms.unshift({ id: String(p.id), label: String(p.label), time: String(p.time), days: Array.isArray(p.days) ? p.days as number[] : [], enabled: !!p.enabled }); result = store.data; break;
     case 'feed': result = feed.filter(post => !p.before || post.id < Number(p.before)); break;

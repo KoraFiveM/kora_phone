@@ -9,7 +9,6 @@ const en: AppCopy = {
   flash: { label: 'Flash', subtitle: 'Your city, in short clips.' },
   music: { label: 'Sound', subtitle: 'Something to listen to.' },
   clock: { label: 'Clock', subtitle: 'Right on time.' },
-  phone: { label: 'Phone', subtitle: 'A voice on the other end.' },
   messages: { label: 'Messages', subtitle: 'Stay a little closer.' },
   camera: { label: 'Camera', subtitle: 'See something. Keep it.' },
   settings: { label: 'Settings', subtitle: 'Unmistakably yours.' },

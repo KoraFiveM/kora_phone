@@ -1,6 +1,6 @@
 import type { Theme } from './themes';
 import { installedApps } from './catalog';
-export type AppId = `app:${string}` | 'custom' | 'store' | 'home' | 'phone' | 'messages' | 'camera' | 'gallery' | 'social' | 'gps' | 'flash' | 'music' | 'clock' | 'settings';
+export type AppId = `app:${string}` | 'custom' | 'store' | 'home' | 'messages' | 'camera' | 'gallery' | 'social' | 'gps' | 'flash' | 'music' | 'clock' | 'settings';
 export interface Settings { name: string; volume: number; scale: number; wallpaper: 'orbit' | 'plain' | 'midnight' | 'slate' | 'ember' | 'kora_core' | 'custom'; wallpaperUrl?: string; theme?: Theme; setupComplete?: boolean; phoneStyle?: 'classic' | 'standard' | 'flip' | 'fold'; phoneCase?: 'default' | 'nightdrive' | 'citypop' | 'sakura' | 'touge' | 'garage' | 'kora_core' | 'arcade' | 'space' | 'palms' | 'skyline' | 'custom'; phoneCaseUrl?: string; iconStyle?: 'circle' | 'squircle' | 'outline' | 'solid'; dnd?: boolean; dndFrom?: string; dndTo?: string; installedApps?: AppId[]; appOrder?: AppId[]; dockOrder?: AppId[] }
 export interface MapBlip { id: number; x: number; y: number; sprite: number; label: string; street?: string; zone?: string; colour: string }
 export interface Contact { id?: number; name: string; number: string; photo?: string; favorite?: boolean }
@@ -20,7 +20,6 @@ export interface Service { label: string; description: string; numbers: string[]
 export interface Bootstrap { homeReorder?: boolean; galleryViewer?: boolean; model?: 'standard' | 'flip' | 'fold'; characterName?: string; transfers?: boolean; moderator?: boolean; id: string; number: string; locked: boolean; hasPin: boolean; data?: DeviceData; preferences?: Settings; capabilities: Partial<Record<AppId | 'weather', boolean>>; unavailable: Record<string, string>; locations: Location[]; services: Service[]; call?: Call; video: { iceServers: RTCIceServer[] } | false; flash: { maxSeconds: number; maxBytes?: number } | false; admin: boolean }
 export type MediaKind = 'photo' | 'video';
 export interface Message { id: number; sender: string; recipient: string; kind: 'sms' | 'mail'; subject: string; body: string; created_at: string }
-export interface CallHistory { id: string; caller: string; recipient: string; status: string; created_at: string }
 export interface Post { id: number; number: string; body: string; price: number; media_url?: string; media_kind?: MediaKind; created_at: string; likes: number; comments: number; liked: boolean | number; mine: boolean | number }
 export interface Comment { id: number; number: string; body: string; created_at: string }
 export interface Conversation { id: number; type?: 'direct' | 'group'; title?: string | null; peerPhoneNumber?: string | null; displayLabel?: string; lastMessageId?: number | null; lastMessagePreview?: string | null; lastMessageAt?: string | null; unreadCount?: number; sortId?: number; kind?: 'direct' | 'group'; name?: string | null; members?: string | null; last_body?: string; last_kind?: MediaKind | null; last_number?: string | null; last_at?: string | null }
@@ -36,7 +35,7 @@ export type Api = {
   settings: [Settings & { expectedDeviceId?: string }, DeviceData]; contactSave: [Contact & { remove?: boolean }, DeviceData];
   messages: [{ kind: 'sms' | 'mail'; before?: number }, Message[]];
   sendMessage: [{ recipient: string; kind: 'sms' | 'mail'; subject: string; body: string }, { sent: boolean }];
-  history: [Record<string, never>, CallHistory[]]; dial: [{ number: string }, Call];
+  dial: [{ number: string }, Call];
   answer: [{ id: string }, Call]; hangup: [{ id: string; reject?: boolean }, boolean];
   stations: [Station & { remove?: boolean }, DeviceData];
   alarms: [Alarm & { remove?: boolean }, DeviceData];

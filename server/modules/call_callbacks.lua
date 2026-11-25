@@ -6,7 +6,6 @@ bind('calls:start', Calling.start)
 bind('calls:accept', Calling.accept)
 bind('calls:reject', Calling.reject)
 bind('calls:hangup', Calling.hangup)
-bind('calls:history', Calling.history)
 bind('calls:signal', Calling.videoSignal)
 
 RegisterNetEvent('kora_phone:server:calls:voiceFailure', function(callId)

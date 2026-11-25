@@ -350,6 +350,22 @@ test('open asks the host to open an app, only with a valid id', async () => {
     assert.deepEqual(opened, ['messages']);
 });
 
+test('call starts a call only with a valid number and only when the host provides it', async () => {
+    const dialled = [];
+    const t = setup({ router: { onCall: number => { dialled.push(number); } } });
+    await t.send(env('call', { number: '5550001' }, 'k1'));
+    assert.deepEqual(dialled, ['5550001']);
+    assert.equal(t.posted.at(-1).ok, true);
+    await t.send(env('call', { number: '12' }, 'k2'));
+    assert.equal(t.posted.at(-1).error.code, 'INVALID_PAYLOAD');
+    await t.send(env('call', { number: '555000a' }, 'k3'));
+    assert.equal(t.posted.at(-1).error.code, 'INVALID_PAYLOAD');
+    const without = setup();
+    await without.send(env('call', { number: '5550001' }, 'k4'));
+    assert.equal(without.posted.at(-1).error.code, 'PERMISSION_DENIED');
+    assert.deepEqual(dialled, ['5550001']);
+});
+
 (async () => {
     for (const [name, fn] of queue) {
         try { await fn(); console.log(`ok - ${name}`); } catch (e) { failures++; console.error(`not ok - ${name}\n${e.stack}`); }

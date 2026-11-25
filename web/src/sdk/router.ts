@@ -23,6 +23,8 @@ export interface RouterOptions {
     onSetTitle?: (title: string) => void;
     /** Opens another app. Receives a validated app id and an optional short target (a number, a thread). */
     onOpen?: (app: string, target?: string) => void;
+    /** Starts a call. Receives a validated number (7 to 16 digits). */
+    onCall?: (number: string) => Promise<unknown> | unknown;
     /** Reloads the data the host keeps for other screens (contacts and the like). */
     onRefresh?: () => Promise<unknown> | unknown;
     /** Opening hint for this app (see InitPayload.target). */
@@ -104,6 +106,13 @@ export function createRouter(options: RouterOptions) {
             if (!app) throw new RouteError('INVALID_PAYLOAD', 'Invalid app id');
             const target = typeof payload.target === 'string' && payload.target.length <= 64 ? payload.target : undefined;
             options.onOpen?.(app, target);
+            return null;
+        },
+        call: async payload => {
+            const number = typeof payload.number === 'string' && /^\d{7,16}$/.test(payload.number) ? payload.number : undefined;
+            if (!number) throw new RouteError('INVALID_PAYLOAD', 'Enter a valid number');
+            if (!options.onCall) throw new RouteError('PERMISSION_DENIED', 'Not available to this app');
+            await options.onCall(number);
             return null;
         },
         refresh: async () => { await options.onRefresh?.(); return null; },

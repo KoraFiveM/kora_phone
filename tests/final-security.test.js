@@ -48,7 +48,7 @@ const duplicates = names.filter((name, index) => names.indexOf(name) !== index);
 assert.deepEqual([...new Set(duplicates)], [], `duplicate server callbacks: ${duplicates.join(", ")}`);
 
 const nui = require("./helpers/nui-source").source;
-for (const route of ["calls:start", "calls:accept", "calls:reject", "calls:hangup", "calls:history",
+for (const route of ["calls:start", "calls:accept", "calls:reject", "calls:hangup",
   "gallery:list", "gallery:delete",
   "messages:send", "social:getFeed",]) {
   assert.ok(nui.includes(`['${route}']`), `NUI route missing: ${route}`);

@@ -95,6 +95,12 @@ assert.match(mailRepo, /INSERT IGNORE INTO phone_mail/, "a retried mail request 
 assert.match(mailRepo, /recipient_device_id = \?/, "mail is only read or deleted by its own sender or recipient");
 assert.match(read("server/repositories/external.lua"), /External\.isIdentifier\(name\)/, "housing table and column names must be checked before they go into SQL");
 assert.match(property, /device\.ownerCitizenId/, "homes must be looked up by the caller's own character");
+// Phone is a folder app: the recent calls come from the call service for the caller's own device; starting a call is
+// the phone's own `call` request, never a number or caller chosen by the app on the server.
+const phoneApp = read("apps/phone/server.lua");
+assert.match(phoneApp, /app\.callback\('recent'[\s\S]*?Services\.Calling\.history\(source/, "recent calls must come from Calling.history(source)");
+assert.doesNotMatch(phoneApp, /payload\.(?:deviceId|number|callerNumber)/, "the UI must not choose whose calls are listed");
+
 // Contacts is a folder app: each callback runs the validated contact service for the caller's own device, and the
 // contact photo can only be one of the caller's own gallery items.
 const contactsApp = read("apps/contacts/server.lua");

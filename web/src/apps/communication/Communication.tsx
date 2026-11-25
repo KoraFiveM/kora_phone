@@ -1,4 +1,4 @@
-import { ArrowDownLeft,ArrowUpRight,Delete,ImagePlus,Phone,Plus,Send,Trash2,X } from 'lucide-react';
+import { ImagePlus,Plus,Send,Trash2,X } from 'lucide-react';
 import { useEffect,useState } from 'react';
 import { api } from '../../api';
 import { mergeChatMessages,mergeConversations } from '../../chatMessages';
@@ -6,19 +6,9 @@ import { previewText } from '../../chatTokens';
 import { dateLabel,Empty,Row } from '../../components';
 import { LoadState,useLoad,usePhone } from '../../core/PhoneContext';
 import { ImagePicker,PhotoImage } from '../../Images';
-import type { CallHistory,ChatMessage,Conversation } from '../../types';
+import type { ChatMessage,Conversation } from '../../types';
 import { asList } from '../../types';
 
-export function PhoneScreen({ target }: { target: string }) {
-  const { run, busy, setCall, device, data } = usePhone();
-  const [number, setNumber] = useState(target);
-  const [tab, setTab] = useState('keypad');
-  const history = useLoad(() => api('history', {}), []);
-  return <><div className="segments"><button className={tab === 'keypad' ? 'selected' : ''} onClick={() => setTab('keypad')}>Keypad</button><button className={tab === 'recent' ? 'selected' : ''} onClick={() => { setTab('recent'); history.refresh(); }}>Recent</button></div>
-    {tab === 'keypad' ? <div className="dialer"><input className="dial-number" aria-label="Phone number" inputMode="tel" value={number} maxLength={16} placeholder="Enter number" onChange={e => setNumber(e.target.value.replace(/\D/g, ''))} /><p className="muted">{data.contacts.find(c => c.number === number)?.name || 'A little closer. One call away.'}</p><div className="keypad">{'123456789*0#'.split('').map((digit, i) => <button key={digit} onClick={() => setNumber(n => (n + digit).slice(0, 16))}><span>{digit}</span><small>{['', 'ABC', 'DEF', 'GHI', 'JKL', 'MNO', 'PQRS', 'TUV', 'WXYZ', '', '+', ''][i]}</small></button>)}</div><div className="dial-actions"><span /><button className="call-button" aria-label="Call number" disabled={busy || !/^\d{7,16}$/.test(number)} onClick={() => run(async () => setCall(await api('dial', { number })))}><Phone size={25} /></button><button className="icon-button" aria-label="Delete last digit" onClick={() => setNumber(n => n.slice(0, -1))}><Delete size={23} /></button></div></div>
-      : <><LoadState {...history} retry={history.refresh} />{asList<CallHistory>(history.value).map(call => { const incoming = call.recipient === device.number; const peer = incoming ? call.caller : call.recipient; return <Row key={call.id} title={data.contacts.find(c => c.number === peer)?.name || peer} detail={`${call.status} · ${dateLabel(call.created_at)}`} icon={incoming ? <ArrowDownLeft size={19} /> : <ArrowUpRight size={19} />} onClick={() => { setNumber(peer); setTab('keypad'); }} />; })}{!history.loading && !asList(history.value).length && <Empty title="Your first hello" detail="Your recent calls will appear here." />}</>}
-  </>;
-}
 export function MessagesScreen({ target }: { target: string }) {
   const { data, device, run, busy, revision } = usePhone();
   const inbox = useLoad(() => api('conversations', {}), [revision]);

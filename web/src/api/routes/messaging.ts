@@ -1,7 +1,7 @@
 import { photoBody, videoBody } from '../../chatTokens';
 import { items } from '../adapters/common';
-import { mapCall, mapCallHistory, mapConversation, mapMessage } from '../adapters/messages';
-import type { RawCall, RawCallHistory, RawConversation, RawMessage } from '../raw';
+import { mapCall, mapConversation, mapMessage } from '../adapters/messages';
+import type { RawCall, RawConversation, RawMessage } from '../raw';
 import { requestId } from '../env';
 import type { HandlerSet } from '../routeTypes';
 import { server } from '../transport';
@@ -10,11 +10,10 @@ import { server } from '../transport';
 const MAX_BODY = 1900;
 
 export const messagingRoutes: HandlerSet<
-    'history' | 'dial' | 'answer' | 'hangup' | 'videoSignal' | 'sendMessage' | 'messages' | 'conversations'
+    'dial' | 'answer' | 'hangup' | 'videoSignal' | 'sendMessage' | 'messages' | 'conversations'
     | 'startChat' | 'conversation' | 'sendChatMessage' | 'shareToChat' | 'markConversationRead'
     | 'deleteChatMessage' | 'addMember' | 'createGroup' | 'leaveGroup' | 'blocked' | 'setBlocked'
 > = {
-    history: async () => items(await server<{ items?: RawCallHistory[] }>('calls:history', { limit: 50 })).map(mapCallHistory),
     dial: async p => mapCall(await server<RawCall>('calls:start', { to: p.number })),
     answer: async p => mapCall(await server<RawCall>('calls:accept', { id: p.id })),
     hangup: async p => { await server(p.reject ? 'calls:reject' : 'calls:hangup', { id: p.id }); return true; },

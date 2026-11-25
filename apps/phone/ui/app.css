@@ -1,0 +1,6 @@
+.dialer { align-items: center; text-align: center; }
+.dial-number { text-align: center; font-family: var(--kp-font-mono); font-size: 1.8rem; letter-spacing: 0.06em; }
+.keypad { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; width: 100%; max-width: 320px; }
+.keypad button { min-height: 56px; flex-direction: column; gap: 0; }
+.keypad small { color: var(--kp-muted); font-size: 0.6rem; letter-spacing: 0.1em; }
+.call-button { min-width: 72px; }
