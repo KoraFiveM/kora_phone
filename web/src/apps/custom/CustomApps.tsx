@@ -122,6 +122,7 @@ export function CustomAppScreen({ id, hint, transport = hostTransport }: { id: s
       if (msg.type === 'app:event' && msg.app === id && typeof msg.name === 'string') post(push('event', { name: msg.name, data: msg.data }));
       else if (msg.type === 'customMessage' && msg.app === id) { const ev = legacyEvent(msg.data); post(push('event', ev ?? { name: 'message', data: msg.data })); if (compat) post(push('event', { name: 'kora:raw', data: msg.data })); }
       else if ((msg.type === 'messages:new' || msg.type === 'messages:read') && id === 'messages') post(push('event', { name: msg.type, data: msg.data }));
+      else if (msg.type === 'mapBlipsChanged' && id === 'gps') post(push('event', { name: 'mapBlipsChanged', data: null }));
       else if (msg.type === 'customClose' && msg.app === id) navigate('home');
     };
     const observer = new MutationObserver(() => {

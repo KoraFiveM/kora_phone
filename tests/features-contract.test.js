@@ -95,6 +95,15 @@ assert.match(mailRepo, /INSERT IGNORE INTO phone_mail/, "a retried mail request 
 assert.match(mailRepo, /recipient_device_id = \?/, "mail is only read or deleted by its own sender or recipient");
 assert.match(read("server/repositories/external.lua"), /External\.isIdentifier\(name\)/, "housing table and column names must be checked before they go into SQL");
 assert.match(property, /device\.ownerCitizenId/, "homes must be looked up by the caller's own character");
+// Maps is a folder app: places come from the server config, blips, position and waypoint from the client services,
+// and the page loads no outside image or script (blip icons are plain coloured dots).
+const mapsServer = read("apps/gps/server.lua"), mapsClient = read("apps/gps/client.lua");
+assert.match(mapsServer, /Config\.Server\.Maps\.Locations/, "places must come from Config.Server.Maps.Locations");
+for (const [name, service] of [["blips", "KoraPhone.Map.Blips"], ["here", "KoraPhone.World.Location"], ["waypoint", "KoraPhone.World.Waypoint"]])
+  assert.match(mapsClient, new RegExp(`app\\.client\\('${name}'[\\s\\S]*?${service.replace(/\./g, "\\.")}\\(`), `maps ${name} must call ${service}`);
+assert.doesNotMatch(read("apps/gps/ui/app.js"), /https?:\/\//, "the map page must not load anything from outside");
+assert.ok(fs.existsSync(path.join(root, "apps/gps/ui/map.jpg")), "the map image ships inside the app");
+
 // Gallery is a folder app: listing and deleting run the media service for the caller's own device, by item id only.
 const galleryApp = read("apps/gallery/server.lua");
 for (const [callback, service] of [["list", "Media.list"], ["delete", "Media.delete"]])

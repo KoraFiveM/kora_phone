@@ -162,19 +162,23 @@ local function currentWaypoint()
     return { x = math.floor(at.x + 0.5), y = math.floor(at.y + 0.5) }
 end
 
-route('location:mine', function()
+KoraPhone.World = KoraPhone.World or {}
+
+---Where the player is: coordinates, a street or zone label, heading and the game's own waypoint (for the Maps pin).
+---@return { x: number, y: number, label: string, heading: integer, waypoint: { x: integer, y: integer }|nil }
+function KoraPhone.World.Location()
     local at = Kora.cache.coords()
-    local label = locationLabel(at):gsub('[%[%]|]', ''):sub(1, 60)
     return {
-        ok = true,
-        data = {
-            x = roundTo(at.x, 0.1),
-            y = roundTo(at.y, 0.1),
-            label = label,
-            heading = math.floor(GetEntityHeading(Kora.cache.ped()) + 0.5),
-            waypoint = currentWaypoint(),
-        },
+        x = roundTo(at.x, 0.1),
+        y = roundTo(at.y, 0.1),
+        label = locationLabel(at):gsub('[%[%]|]', ''):sub(1, 60),
+        heading = math.floor(GetEntityHeading(Kora.cache.ped()) + 0.5),
+        waypoint = currentWaypoint(),
     }
+end
+
+route('location:mine', function()
+    return { ok = true, data = KoraPhone.World.Location() }
 end)
 
 local MAX_WORLD = 20000
@@ -268,6 +272,3 @@ route('calls:setSpeaker', function(data)
     return { ok = ok == true, error = reason }
 end)
 
-route('map:blips', function()
-    return { ok = true, data = KoraPhone.Map.Blips() }
-end)

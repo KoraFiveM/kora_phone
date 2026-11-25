@@ -80,7 +80,7 @@ Kora.config.extend({
     }),
 
     LaunchApps = C.object(apps({
-        messages = true, camera = true, gallery = true, gps = true,
+        camera = true,
         settings = true, clock = true, music = true,
         store = true, social = true,
         flash = true,

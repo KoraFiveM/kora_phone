@@ -101,7 +101,6 @@ files {
     'web/dist/assets/*',
     'web/dist/compat.js',
     'web/dist/lb-shim.js',
-    'web/dist/map.jpg',
     -- Folder apps: UI pages and assets, plus the no-build runtime (kit and client) they import.
     'apps/*/icon.svg',
     'apps/*/ui/*',

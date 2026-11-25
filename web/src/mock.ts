@@ -120,7 +120,6 @@ export async function mockRequest<K extends keyof Api>(action: K, payload: Api[K
     case 'weather': result = { condition: 'EXTRASUNNY', hour: 10, minute: 8, rain: 0 }; break;
     case 'waypoint': break;
     case 'videoSignal': break;
-    case 'mapBlips': result = [{ id: 1, x: 215.2, y: -810.5, sprite: 280, label: 'Elgin Avenue', colour: '#f0c850' }]; break;
     case 'myLocation': result = { x: 195.2, y: -933.8, label: 'Legion Square, Downtown Vinewood', heading: 45 }; break;
     case 'conversations': result = store.conversations.map(c=>({...c,sortId:c.sortId??c.id})).filter(c=>!p.before || c.sortId<Number(p.before) || (p.cursorId && c.sortId===Number(p.before)&&c.id<Number(p.cursorId))).sort((a,b)=>b.sortId-a.sortId||b.id-a.id).slice(0,50); break;
     case 'startChat': {

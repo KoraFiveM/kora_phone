@@ -76,8 +76,8 @@ try {
   const { mapBootstrap } = load("api/adapters/bootstrap.js");
   const open = mapBootstrap({ device: { id: 12, phoneNumber: 555 }, features: { media: true, maps: false, video: { iceServers: [] }, flash: { maxSeconds: "20" } }, apps: { social: false }, moderator: true }, { a: true });
   equal([open.bootstrap.id, open.bootstrap.number, open.bootstrap.locked, open.bootstrap.model], ["12", "555", false, "standard"], "bootstrap identity");
-  equal([open.bootstrap.capabilities.social, open.bootstrap.capabilities.camera, open.bootstrap.capabilities.gps],
-    [false, true, false], "capabilities combine app switches and server features");
+  equal([open.bootstrap.capabilities.social, open.bootstrap.capabilities.camera],
+    [false, true], "capabilities combine app switches and server features");
   equal(open.bootstrap.flash, { maxSeconds: 20, maxBytes: undefined }, "flash limits");
   equal(open.cache.customApps, { a: true }, "custom app preferences are carried into the cache");
   const locked = mapBootstrap({ security: { locked: true, hasPin: true } }, {});

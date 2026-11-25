@@ -15,8 +15,8 @@ This page summarises what ships today and what is in progress. [Features](./feat
 
 ## Folder apps
 
-- Shipped: the `Phone.app` API, the UI kit, the style guide and linter, and Notes, Calculator, Weather, Wallet, Mail, Moderation, Market, Contacts, Phone, Messages, Gallery, Garage, Home and Work as folder apps.
-- Still compiled into the host UI, in this order of difficulty: Clock and Sound (need background alarms and playback while the phone is closed), Maps (a pan and zoom map), Camera and Settings (they need calls, media and lock services exposed to apps first), Pulse and Flash. Each moves when its services are ready.
+- Shipped: the `Phone.app` API, the UI kit, the style guide and linter, and Notes, Calculator, Weather, Wallet, Mail, Moderation, Market, Contacts, Phone, Messages, Gallery, Maps, Garage, Home and Work as folder apps.
+- Still compiled into the host UI, in this order of difficulty: Clock and Sound (need background alarms and playback while the phone is closed),  Camera and Settings (they need calls, media and lock services exposed to apps first), Pulse and Flash. Each moves when its services are ready.
 - `shared/routes.json` and the gateway remain the route table for the built-in apps; folder apps use `app.callback` and need no entry.
 
 ## Not enforced yet
