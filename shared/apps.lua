@@ -20,7 +20,7 @@ KoraPhone.Apps = Apps
 
 Apps.FIELDS = {
     name = true, description = true, icon = true, ui = true, version = true, permissions = true, job = true,
-    defaultInstalled = true, price = true, category = true, system = true, storage = true, staff = true,
+    defaultInstalled = true, price = true, category = true, system = true, storage = true, staff = true, embeds = true,
 }
 
 ---Where a file lives in the resource, from the chunk name FiveM gives it (`@kora_phone/apps/notes/app.lua`).
@@ -48,7 +48,7 @@ function Apps.manifest(id, def)
         id = id, name = def.name, description = def.description, icon = icon,
         entry = ('apps/%s/%s'):format(id, ui), version = def.version or '1.0.0',
         permissions = def.permissions, job = def.job, defaultInstalled = def.defaultInstalled,
-        price = def.price, category = def.category, system = def.system, storage = def.storage, staff = def.staff,
+        price = def.price, category = def.category, system = def.system, storage = def.storage, staff = def.staff, embeds = def.embeds,
     }
 end
 

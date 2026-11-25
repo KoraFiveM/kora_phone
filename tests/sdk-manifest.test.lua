@@ -119,6 +119,15 @@ test('category and system default and are validated', function()
     equal(KoraPhone.SDK.Manifest.validate(H.manifest({ system = 'yes' })), nil)
 end)
 
+test('embeds must be plain host names, at most four', function()
+    local Manifest = KoraPhone.SDK.Manifest
+    equal(Manifest.validate(H.manifest({ embeds = { 'www.youtube-nocookie.com', 'w.soundcloud.com' } })).embeds[2], 'w.soundcloud.com')
+    equal(Manifest.validate(H.manifest({ embeds = { 'https://evil.example' } })), nil)
+    equal(Manifest.validate(H.manifest({ embeds = { 'evil.example/path' } })), nil)
+    equal(Manifest.validate(H.manifest({ embeds = { 'a.io', 'b.io', 'c.io', 'd.io', 'e.io' } })), nil)
+    equal(Manifest.validate(H.manifest({ embeds = 'youtube.com' })), nil)
+end)
+
 test('storage quota may be raised only up to the manifest maximum', function()
     local Manifest = KoraPhone.SDK.Manifest
     local manifest = Manifest.validate(H.manifest({ storage = { keys = 200, totalBytes = 512 * 1024 } }))

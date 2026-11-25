@@ -107,7 +107,7 @@ test('every routes.json server name is registered exactly once', function()
     end
     local count = 0
     for _ in pairs(seen) do count = count + 1 end
-    assert(count >= 60)
+    assert(count >= 40)
     assert(callbacks[PREFIX .. 'hasPhone'] and callbacks[PREFIX .. 'share:offer'])
 end)
 

@@ -101,6 +101,7 @@ export function CustomAppScreen({ id, hint, transport = hostTransport }: { id: s
       onClose: () => navigate('home'),
       onSetTitle: setTitle,
       target: hint || undefined,
+      getVolume: () => typeof settings.current?.volume === 'number' ? settings.current.volume : undefined,
       onCall: async number => { setCall(await api('dial', { number })); },
       onOpen: (app, to) => navigate(app as AppId, to),
       onRefresh: async () => { const next = await api('refresh', {}); if (next.data) updateData(next.data); },

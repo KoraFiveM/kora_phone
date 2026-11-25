@@ -34,8 +34,6 @@
     {"nui": "mail:send", "server": "kora_phone:server:sendMail", "rate": "sendMessage", "app": null},
     {"nui": "mail:read", "server": "kora_phone:server:readMail", "rate": "mutation", "app": null},
     {"nui": "mail:delete", "server": "kora_phone:server:deleteMail", "rate": "mutation", "app": null},
-    {"nui": "items:save", "server": "kora_phone:server:saveItem", "rate": "mutation", "app": null},
-    {"nui": "items:remove", "server": "kora_phone:server:removeItem", "rate": "mutation", "app": null},
     {"nui": "social:createAccount", "server": "kora_phone:server:social:createAccount", "rate": "community.profile", "app": "social"},
     {"nui": "social:getFeed", "server": "kora_phone:server:social:getFeed", "rate": "community.read", "app": "social"},
     {"nui": "social:getProfile", "server": "kora_phone:server:social:getProfile", "rate": "community.read", "app": "social"},

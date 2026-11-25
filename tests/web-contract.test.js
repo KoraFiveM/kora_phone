@@ -16,7 +16,7 @@ async function checkDeviceCache() {
   const equal = (actual, expected, message) => { assert.deepEqual(actual, expected, message); checks++; };
   const replies = [];
   const storage = new Map([
-    ["kora_phone:installed", JSON.stringify(["music"])],
+    ["kora_phone:installed", JSON.stringify(["social"])],
     ["kora_phone:customApps", JSON.stringify({ "test-addon": true })],
   ]);
   const transport = async (url, options) => {
@@ -78,7 +78,7 @@ async function checkDeviceCache() {
   equal(second.data.settings.name, "Phone B", "new-phone settings remain usable when gallery fails");
   equal(second.data.settings.volume, 0, "same-device partial settings retain zero values");
   for (const key of ["contacts", "stations", "photos"]) equal(second.data[key], [], `phone B has no phone A ${key}`);
-  equal(second.data.installedApps, ["music"], "a phone with no saved installs starts with the starter apps (install lists live in device settings, not NUI storage)");
+  equal(second.data.installedApps, [], "a phone with no saved installs starts with the starter apps (install lists live in device settings, not NUI storage)");
   equal(second.data.customApps, { "test-addon": true }, "the existing shared addon preferences are preserved");
   equal(first.data.settings, privateSettings, "resetting another device does not mutate an earlier returned snapshot");
   equal(first.data.photos.length, 1, "an earlier returned gallery remains intact");
@@ -98,7 +98,7 @@ async function checkDeviceCache() {
   completeGallery(gallery(4));
   equal((await loading).data.photos[0].id, "4", "the pending gallery still publishes a successful result");
   const settings = { name: "Saved B", volume: 0, scale: 1, wallpaper: "kora_core" };
-  ok("settings:save", settings, { ...settings, installedApps: ["music"], expectedDeviceId: "202" });
+  ok("settings:save", settings, { ...settings, installedApps: [], expectedDeviceId: "202" });
   equal((await api("settings", settings)).settings, settings, "saving settings keeps its existing request and return shape");
   const newCollections = adaptBootstrap(raw(303, { name: "Phone C" }));
   for (const key of ["contacts", "stations", "photos"]) equal(newCollections.data[key], [], `omitted new-device ${key} starts empty`);

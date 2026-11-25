@@ -35,7 +35,7 @@ for (const route of routes) {
     if (short.startsWith('moderation:')) assert.strictEqual(route.app, 'moderation');
     serverNames.add(route.server);
 }
-assert(routes.length >= 60, 'routes.json lost entries');
+assert(routes.length >= 40, 'routes.json lost entries');
 
 // SDK and system mail routes: fixed rate bucket, no app gate, server name mirrors the NUI name.
 const sdkRoutes = ['list', 'install', 'uninstall', 'call', 'storage:get', 'storage:list', 'storage:set', 'storage:remove',

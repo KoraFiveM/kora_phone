@@ -29,6 +29,8 @@ export interface RouterOptions {
     onRefresh?: () => Promise<unknown> | unknown;
     /** Opening hint for this app (see InitPayload.target). */
     target?: string;
+    /** The phone's volume setting (0 to 1), read when the app starts. */
+    getVolume?: () => number | undefined;
     /** lb-phone compatibility actions (contacts, gallery, call, openApp). Absent for every other app, which then cannot use the `lb` request. */
     onLb?: (action: string, payload: Record<string, unknown>) => Promise<unknown> | unknown;
     timeoutMs?: number;
@@ -181,6 +183,7 @@ export function createRouter(options: RouterOptions) {
             theme: options.getTheme(),
             permissions: [...options.permissions],
             ...(options.target ? { target: options.target } : {}),
+            ...(options.getVolume?.() !== undefined ? { volume: options.getVolume() } : {}),
         };
     }
 

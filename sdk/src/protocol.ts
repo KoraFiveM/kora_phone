@@ -36,6 +36,8 @@ export interface InitPayload {
     permissions: Permission[];
     /** Where the app was asked to open (a number to call, a thread to show). Absent for a plain launch. */
     target?: string;
+    /** The phone's volume setting, 0 to 1, for apps that play sound. */
+    volume?: number;
 }
 
 /** iframe -> host requests: payload and response types per request type. */

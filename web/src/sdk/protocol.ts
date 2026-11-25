@@ -27,6 +27,7 @@ export interface InitPayload {
     theme: ThemePayload;
     permissions: Permission[];
     target?: string;
+    volume?: number;
 }
 
 export interface Envelope {

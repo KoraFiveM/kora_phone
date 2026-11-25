@@ -56,7 +56,6 @@ export function mapBootstrap(raw: RawBootstrap, customApps: Record<string, boole
             social: apps.social !== false,
             weather: apps.weather !== false,
             flash: apps.flash !== false && !!features?.flash,
-            music: apps.music !== false,
         },
         unavailable: { flash: 'Video uploads need a media host, which this server has not configured' },
         locations: (Array.isArray(raw.locations) ? raw.locations : []) as Bootstrap['locations'],

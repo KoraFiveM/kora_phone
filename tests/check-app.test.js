@@ -49,6 +49,18 @@ const load = name => import(pathToFileURL(path.join(root, 'tools', name)).href);
     mutate('ui/index.html', text => text.replace('<main', '<main style="color: #123456"'));
     ok(rulesOf(demo).includes('colour-hex'), 'inline style colour was not flagged');
 
+    // Declared embeds: only the listed hosts may appear, and the page must carry a matching CSP.
+    const embedApp = scaffold('player', 'Player', tmp);
+    const lua = fs.readFileSync(path.join(embedApp, 'app.lua'), 'utf8');
+    fs.writeFileSync(path.join(embedApp, 'app.lua'), lua.replace("    icon = 'smile',", "    icon = 'smile',\n    embeds = { 'www.youtube-nocookie.com' },"));
+    fs.appendFileSync(path.join(embedApp, 'ui/app.js'), "\nconst frame = 'https://www.youtube-nocookie.com/embed/abcdefghijk';\n");
+    ok(rulesOf(embedApp).includes('embed-csp'), 'a declared embed without a CSP was not flagged');
+    const page = fs.readFileSync(path.join(embedApp, 'ui/index.html'), 'utf8');
+    fs.writeFileSync(path.join(embedApp, 'ui/index.html'), page.replace('<title>', "<meta http-equiv=\"Content-Security-Policy\" content=\"frame-src https://www.youtube-nocookie.com; media-src https:\">\n    <title>"));
+    assert.deepEqual(errorsOf(embedApp), [], 'a declared embed with its CSP must pass'); checks += 1;
+    fs.appendFileSync(path.join(embedApp, 'ui/app.js'), "\nfetch('https://evil.example/x');\n");
+    ok(rulesOf(embedApp).includes('external-url'), 'an undeclared host must still be flagged');
+
     // Structure.
     const broken = scaffold('broken', 'Broken', tmp);
     fs.writeFileSync(path.join(broken, 'app.lua'), "Phone.app('other', { name = 'X', icon = 'star' })");

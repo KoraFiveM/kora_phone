@@ -1,5 +1,5 @@
 import { isOptional } from '../../catalog';
-import type { DeviceData, Station } from '../../types';
+import type { DeviceData } from '../../types';
 import { normalizeData } from '../../types';
 import type { HandlerSet } from '../routeTypes';
 import { loadGallery, reload } from '../session';
@@ -9,24 +9,10 @@ import type { Page, RawSdkApp } from '../raw';
 import { nui, server } from '../transport';
 import { remember } from '../../lastScreen';
 
-type Item = Station;
-type Collection = 'stations';
-const itemKind: Record<Collection, string> = { stations: 'station' };
-
-/** Notes, alarms and stations are one shape of action: save or remove an item, mirror it in the cache. */
-const itemRoute = (collection: Collection) => async (payload: Item & { remove?: boolean }): Promise<DeviceData> => {
-    const { remove, ...item } = payload;
-    const kind = itemKind[collection];
-    if (remove) await server('items:remove', { kind, id: payload.id });
-    else await server('items:save', { kind, item });
-    const rest = (device.cache[collection] as Item[]).filter(x => x.id !== payload.id);
-    device.cache = { ...device.cache, [collection]: remove ? rest : [item, ...rest] };
-    return device.cache;
-};
 
 export const deviceRoutes: HandlerSet<
     'refresh' | 'unlock' | 'lock' | 'pin' | 'settings' | 'installApp' | 'appsList' | 'appsInstall' | 'appsUninstall' | 'customApp' | 'contactSave'
-    | 'stations' | 'capture'
+    | 'capture'
 > = {
     refresh: () => reload(),
     unlock: async ({ pin }) => { await server('security:unlock', { pin }); return reload(); },
@@ -100,7 +86,6 @@ export const deviceRoutes: HandlerSet<
         }
         return (await reload()).data as DeviceData;
     },
-    stations: itemRoute('stations'),
     capture: async ({ front }) => {
         await server('camera:open', { front });
         // Let the UI finish hiding so the phone is not in the screenshot.

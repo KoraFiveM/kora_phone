@@ -26,8 +26,14 @@ const CSS_RULES = [
 ];
 
 const ANY_RULES = [
-    { id: 'external-url', re: /https?:\/\/(?!cfx-nui-|www\.w3\.org\/)/i, message: 'external URL: an app may only load its own files and the phone runtime' },
+    { id: 'external-url', re: /https?:\/\/(?!cfx-nui-|www\.w3\.org\/)/i, message: 'external URL: an app may only load its own files and the phone runtime (list a player host in app.lua embeds)' },
 ];
+
+/** The hosts an app declares in app.lua `embeds = { 'host', ... }`. */
+function declaredEmbeds(lua) {
+    const block = /\bembeds\s*=\s*\{([^}]*)\}/.exec(lua);
+    return block ? [...block[1].matchAll(/['"]([^'"]+)['"]/g)].map(match => match[1]) : [];
+}
 
 /** @returns {{ rule: string, line: number, message: string, level: 'error' | 'warn' }[]} */
 function scan(text, rules, level = 'error') {
@@ -66,6 +72,8 @@ export function checkApp(appDir) {
     const add = (file, finding) => findings.push({ ...finding, file: relative(ROOT, file) || file });
 
     const definition = join(appDir, 'app.lua');
+    let embeds = [];
+    if (existsSync(definition)) embeds = declaredEmbeds(readFileSync(definition, 'utf8'));
     if (!existsSync(definition)) {
         add(appDir, { rule: 'app-lua', line: 0, level: 'error', message: 'missing app.lua (Phone.app definition)' });
     } else {
@@ -88,13 +96,21 @@ export function checkApp(appDir) {
         if (/[\\/]dist[\\/]/.test(file) && /\.(map)$/.test(file)) continue;
         if (!/\.(html?|css|js|mjs)$/.test(file)) continue;
         const text = readFileSync(file, 'utf8');
-        for (const finding of scan(text, ANY_RULES)) add(file, finding);
+        // A URL on a declared embed host is allowed; a `https:` source in the page's own CSP meta is not a URL to load.
+        const allowed = embeds.length ? text.replace(new RegExp(`https?://(?:${embeds.map(host => host.replace(/\./g, '\\.')).join('|')})(?![\\w.-])`, 'gi'), '') : text;
+        for (const finding of scan(allowed, ANY_RULES)) add(file, finding);
         for (const { offset, css } of cssOf(file, text)) {
             for (const finding of scan(css, CSS_RULES)) add(file, { ...finding, line: finding.line + offset });
         }
         if (/\bstates\.(loading|empty|error)\b|\bkp-state\b|\bload\(/.test(text)) usesStates = true;
         if (/[\\/]index\.html?$/.test(file) && file === join(uiDir, 'index.html')) {
             if (!/\/sdk\/runtime\/kora-ui\.css/.test(text)) add(file, { rule: 'kit-css', line: 1, level: 'error', message: 'index.html must link /sdk/runtime/kora-ui.css' });
+            if (embeds.length) {
+                const csp = /<meta[^>]+http-equiv=["']Content-Security-Policy["'][^>]*content=["']([^"']*)["']/i.exec(text);
+                const frames = csp ? (/frame-src([^;]*)/.exec(csp[1]) || [])[1] || '' : '';
+                const missing = embeds.filter(host => !frames.includes(host));
+                if (!csp || missing.length) add(file, { rule: 'embed-csp', line: 1, level: 'error', message: `index.html needs a Content-Security-Policy meta whose frame-src lists ${missing.length ? missing.join(', ') : embeds.join(', ')}` });
+            }
             if (!/<meta[^>]+name=["']viewport["']/.test(text)) add(file, { rule: 'viewport', line: 1, level: 'warn', message: 'add <meta name="viewport" content="width=device-width, initial-scale=1">' });
         }
     }

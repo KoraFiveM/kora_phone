@@ -15,7 +15,7 @@ Manifest.PERMISSIONS = {
 local FIELDS = {
     id = true, name = true, description = true, icon = true, entry = true, version = true,
     permissions = true, job = true, defaultInstalled = true, price = true,
-    category = true, system = true, storage = true, staff = true,
+    category = true, system = true, storage = true, staff = true, embeds = true,
 }
 
 Manifest.STORAGE_MAX = { keys = 512, totalBytes = 1024 * 1024 }
@@ -179,6 +179,17 @@ function Manifest.validate(raw)
     end
     if raw.system ~= nil and type(raw.system) ~= 'boolean' then return fail('system must be a boolean') end
     manifest.system = raw.system == true
+    if raw.embeds ~= nil then
+        -- Hosts the page may embed (a player iframe). Declared so the style check can allow exactly these and nothing else.
+        if type(raw.embeds) ~= 'table' or #raw.embeds > 4 then return fail('embeds must be a list of at most 4 host names') end
+        manifest.embeds = {}
+        for index, host in ipairs(raw.embeds) do
+            if type(host) ~= 'string' or #host > 64 or not host:match('^[a-z0-9][a-z0-9.-]*%.[a-z]+$') then
+                return fail(('embeds[%d] must be a plain host name such as www.youtube-nocookie.com'):format(index))
+            end
+            manifest.embeds[index] = host
+        end
+    end
     if raw.staff ~= nil and type(raw.staff) ~= 'boolean' then return fail('staff must be a boolean') end
     manifest.staff = raw.staff == true
 

@@ -19,7 +19,8 @@ Run `node tools/check-app.mjs` (all apps) or `node tools/check-app.mjs apps/note
 | `font-family` | A `font-family` that is not `inherit` or a `var()` | Nothing: the theme font is already applied. Monospace: `var(--kp-font-mono)` |
 | `radius-px` | A fixed `border-radius` | `var(--kp-radius)`, `var(--kp-radius-sm)`, `var(--kp-radius-lg)` |
 | `important` | `!important` | Fix the selector |
-| `external-url` | Any `http` or `https` URL that is not the phone itself | Ship the file inside the app folder |
+| `external-url` | Any `http` or `https` URL that is not the phone itself or a host the app declares in `embeds` | Ship the file inside the app folder. A player host goes in `embeds` and in the page's `frame-src` CSP |
+| `embed-csp` | An app with `embeds` whose `index.html` has no `Content-Security-Policy` meta listing each host in `frame-src` | Add the meta |
 | `app-lua`, `app-id`, `app-field`, `ui-entry` | Missing or wrong `app.lua`, id not equal to the folder name, no `name` or `icon`, UI entry file missing | See [App SDK developer guide](./apps.md) |
 | `kit-css` | `ui/index.html` does not link `/sdk/runtime/kora-ui.css` | Add the link |
 | `states` (warning) | No loading, empty or error state in the UI | Use `states.*` or `load()` from the kit |

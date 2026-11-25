@@ -62,7 +62,7 @@ const garage = read("server/services/garage.lua");
 const external = read("server/repositories/external.lua");
 const messaging = read("server/services/messaging.lua");
 const migration9 = read("server/schema.lua");
-for (const [route, callback] of [["items:save", "saveItem"], ["items:remove", "removeItem"], ["messages:createGroup", "createGroup"], ["messages:leaveGroup", "leaveGroup"]]) {
+for (const [route, callback] of [["messages:createGroup", "createGroup"], ["messages:leaveGroup", "leaveGroup"]]) {
   assert.match(nui, new RegExp(`\\['${route}'\\] = 'kora_phone:server:${callback}'`), `${route} must map to ${callback}`);
   assert.match(callbacks, bound(callback), `${callback} must be registered on the server`);
   assert.match(api, new RegExp(`'${route}'`), `the UI must call ${route}`);
@@ -107,6 +107,14 @@ for (const [name, service] of [["blips", "KoraPhone.Map.Blips"], ["here", "KoraP
   assert.match(mapsClient, new RegExp(`app\\.client\\('${name}'[\\s\\S]*?${service.replace(/\./g, "\\.")}\\(`), `maps ${name} must call ${service}`);
 assert.doesNotMatch(read("apps/gps/ui/app.js"), /https?:\/\//, "the map page must not load anything from outside");
 assert.ok(fs.existsSync(path.join(root, "apps/gps/ui/map.jpg")), "the map image ships inside the app");
+
+// Sound is a folder app: stations are validated phone items for the caller's own device, and its page may only embed
+// the hosts declared in app.lua (the CSP in index.html repeats them).
+const musicServer = read("apps/music/server.lua");
+for (const [callback, service] of [["save", "Items.save"], ["remove", "Items.remove"]])
+  assert.match(musicServer, new RegExp(`app\\.callback\\('${callback}'[\\s\\S]*?Services\\.${service.replace(".", "\\.")}\\(source, \\{ kind = 'station'`), `sound ${callback} must run ${service} for kind station`);
+assert.match(read("apps/music/app.lua"), /embeds = \{ 'www\.youtube-nocookie\.com', 'w\.soundcloud\.com' \}/, "sound declares its embed hosts");
+assert.match(read("apps/music/ui/index.html"), /frame-src https:\/\/www\.youtube-nocookie\.com https:\/\/w\.soundcloud\.com/, "sound's page carries the matching CSP");
 
 // Gallery is a folder app: listing and deleting run the media service for the caller's own device, by item id only.
 const galleryApp = read("apps/gallery/server.lua");

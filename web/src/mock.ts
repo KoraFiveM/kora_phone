@@ -99,7 +99,6 @@ export async function mockRequest<K extends keyof Api>(action: K, payload: Api[K
     }
     case 'answer': if (activeCall) { activeCall = { ...activeCall, status: 'active' }; result = activeCall; } break;
     case 'hangup': activeCall = undefined; break;
-    case 'stations': store.data.stations = store.data.stations.filter(s => s.id !== p.id); if (!p.remove) store.data.stations.unshift({ id: String(p.id), label: String(p.label), url: String(p.url) }); result = store.data; break;
     case 'feed': result = feed.filter(post => !p.before || post.id < Number(p.before)); break;
     case 'post': {
       const post: Post = { id: Date.now(), number, body: String(p.body || ''), price: Number(p.price) || 0, created_at: timestamp(), likes: 0, comments: 0, liked: false, mine: true };

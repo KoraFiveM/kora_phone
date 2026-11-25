@@ -118,7 +118,7 @@ test("settings rejects bad appOrder entries", function()
     equal(PhoneValidation.settings(okSettings({ appOrder = "social" })), nil)
 end)
 test("settings accepts a good appOrder", function()
-    equal(PhoneValidation.settings(okSettings({ appOrder = { "social", "music" } })).appOrder[2], "music")
+    equal(PhoneValidation.settings(okSettings({ appOrder = { "social", "flash" } })).appOrder[2], "flash")
 end)
 test("settings rejects non-table", function() equal(PhoneValidation.settings("x"), nil) end)
 test("settings accepts the kora_core theme and wallpaper", function()
@@ -364,7 +364,7 @@ end)
 local function joined(list) return list and table.concat(list, ",") or "nil" end
 local function withHome(allow, fn)
     local oldApps, oldHome = Config.LaunchApps, Config.HomeScreen
-    Config.LaunchApps = { social = true, flash = true, music = true, camera = true }
+    Config.LaunchApps = { social = true, flash = true, camera = true }
     Config.HomeScreen = { allowReorder = allow }
     local ok, err = pcall(fn)
     Config.LaunchApps, Config.HomeScreen = oldApps, oldHome
@@ -372,14 +372,14 @@ local function withHome(allow, fn)
 end
 test("appOrder keeps a valid order and drops repeated and unknown apps", function()
     withHome(true, function()
-        local out = PhoneValidation.settings(okSettings({ appOrder = { "music", "camera", "music", "bogus", "social" } }))
-        equal(joined(out.appOrder), "music,camera,social")
+        local out = PhoneValidation.settings(okSettings({ appOrder = { "flash", "camera", "flash", "bogus", "social" } }))
+        equal(joined(out.appOrder), "flash,camera,social")
     end)
 end)
 test("appOrder follows installedApps: removed apps drop out, new apps append", function()
     withHome(true, function()
-        local out = PhoneValidation.settings(okSettings({ appOrder = { "music", "camera", "social" }, installedApps = { "social", "flash" } }))
-        equal(joined(out.appOrder), "camera,social,flash")
+        local out = PhoneValidation.settings(okSettings({ appOrder = { "flash", "camera", "social" }, installedApps = { "social" } }))
+        equal(joined(out.appOrder), "camera,social")
     end)
 end)
 test("folder apps keep their place in a saved home order", function()

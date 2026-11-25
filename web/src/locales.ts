@@ -5,7 +5,6 @@ const en: AppCopy = {
   store: { label: 'App Store', subtitle: 'A little more you.' },
   social: { label: 'Pulse', subtitle: 'The city, in conversation.' },
   flash: { label: 'Flash', subtitle: 'Your city, in short clips.' },
-  music: { label: 'Sound', subtitle: 'Something to listen to.' },
   camera: { label: 'Camera', subtitle: 'See something. Keep it.' },
   settings: { label: 'Settings', subtitle: 'Unmistakably yours.' },
 };
