@@ -58,6 +58,8 @@ local function fixture(mode)
     installLoggingExports(env, function(event, source, fields)
         state.logs[#state.logs + 1] = { level = fields.level, event = event, fields = fields, source = source }
     end)
+    -- server/main.lua registers /phonereset through Kora.commands; the real module needs a running server.
+    env.Kora.commands = { add = function() end }
     env.StopResource = function()
         state.stopped = true
         for _, handler in ipairs(state.handlers.onResourceStop or {}) do handler('kora_phone-stevie') end

@@ -58,6 +58,15 @@ const load = name => import(pathToFileURL(path.join(root, 'tools', name)).href);
     assert.throws(() => scaffold('Bad Id', 'x', tmp)); checks += 1;
     assert.throws(() => scaffold('demo', 'x', tmp), /already exists/); checks += 1;
 
+    // The manifest must serve everything a folder app loads: its icon, its pages, and the runtime they import.
+    const manifest = fs.readFileSync(path.join(root, 'fxmanifest.lua'), 'utf8');
+    for (const pattern of ['apps/*/icon.svg', 'apps/*/ui/*', 'apps/*/ui/**/*', 'sdk/runtime/*', 'web/dist/lb-shim.js', 'apps/*/app.lua', 'apps/*/server.lua', 'apps/*/client.lua'])
+        ok(manifest.includes(`'${pattern}'`), `fxmanifest.lua must list ${pattern}`);
+    for (const id of fs.readdirSync(path.join(root, 'apps')))
+        ok(fs.existsSync(path.join(root, 'apps', id, 'icon.svg')), `apps/${id} ships icon.svg`);
+    for (const file of fs.readdirSync(path.join(root, 'sdk/runtime')))
+        ok(!/^kora-ui\.css$/.test(file) || fs.readFileSync(path.join(root, 'sdk/runtime', file), 'utf8').includes('kora-tokens.css'), 'kora-ui.css imports the split sheets');
+
     // The apps that ship with the phone follow the guide.
     const shipped = checkAll().filter(f => f.level === 'error');
     assert.deepEqual(shipped, [], `shipped apps have style errors:\n${shipped.map(f => `${f.file}:${f.line} ${f.rule}`).join('\n')}`); checks += 1;

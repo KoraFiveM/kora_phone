@@ -247,7 +247,7 @@ route('alarm', function(data)
             type = 'info',
             duration = 8000,
         })
-        PlaySoundFrontend(-1, 'Beep_Green', 'DLC_HEIST_HACKING_SNAKE_SOUNDS', true)
+        Kora.sound.playFrontend('Beep_Green', 'DLC_HEIST_HACKING_SNAKE_SOUNDS', { network = true })
     end
     return { ok = true }
 end)
