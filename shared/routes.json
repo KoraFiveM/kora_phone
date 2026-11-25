@@ -71,10 +71,5 @@
     {"nui": "apps:storage:remove", "server": "kora_phone:server:apps:storage:remove", "rate": "sdk", "app": null},
     {"nui": "apps:contacts:list", "server": "kora_phone:server:apps:contacts:list", "rate": "sdk", "app": null},
     {"nui": "apps:contacts:save", "server": "kora_phone:server:apps:contacts:save", "rate": "sdk", "app": null},
-    {"nui": "apps:notify", "server": "kora_phone:server:apps:notify", "rate": "sdk", "app": null},
-    {"nui": "mail:system:list", "server": "kora_phone:server:mail:system:list", "rate": "read", "app": null},
-    {"nui": "mail:system:activity", "server": "kora_phone:server:mail:system:activity", "rate": "read", "app": null},
-    {"nui": "mail:system:read", "server": "kora_phone:server:mail:system:read", "rate": "mutation", "app": null},
-    {"nui": "mail:system:delete", "server": "kora_phone:server:mail:system:delete", "rate": "mutation", "app": null},
-    {"nui": "mail:system:accept", "server": "kora_phone:server:mail:system:accept", "rate": "mutation", "app": null}
+    {"nui": "apps:notify", "server": "kora_phone:server:apps:notify", "rate": "sdk", "app": null}
 ]

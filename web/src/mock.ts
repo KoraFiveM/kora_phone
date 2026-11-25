@@ -2,7 +2,7 @@ import { normalizeData } from './types';
 import { isOptional, starterApps } from './catalog';
 import { blobToDataUrl } from './useClipRecorder';
 import type { AppId } from './types';
-import type { Api, Bootstrap, Call, CallHistory, ChatMessage, Comment, Conversation, DeviceData, SystemActivity, MailItem, Message, ModerationReport, Post } from './types';
+import type { Api, Bootstrap, Call, CallHistory, ChatMessage, Comment, Conversation, DeviceData, Message, ModerationReport, Post } from './types';
 const key = 'nothing-phone-preview-v1';
 export const isDemo = new URLSearchParams(window.location?.search).has('demo');
 const timestamp = () => new Date().toISOString();
@@ -19,7 +19,7 @@ const seed: DeviceData = {
   alarms: [{ id: 'first-alarm', label: 'Wake up', time: '08:00', days: [1, 2, 3, 4, 5], enabled: true }],
 };
 const sampleFlashPhoto = () => `data:image/svg+xml,${encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" width="600" height="800"><rect width="600" height="800" fill="#e8a15c"/><circle cx="300" cy="320" r="110" fill="#fff3e0"/><path d="M0 620 200 480 340 560 460 420 600 560V800H0" fill="#8a5a2b"/></svg>')}`;
-interface Store { systemMail?: MailItem[]; systemActivity?: SystemActivity[]; data: DeviceData; pin: string; messages: Message[]; posts: Post[]; flash: Post[]; comments: (Comment & { postId: number })[]; history: CallHistory[]; conversations: Conversation[]; chatMessages: Record<number, ChatMessage[]> }
+interface Store { data: DeviceData; pin: string; messages: Message[]; posts: Post[]; flash: Post[]; comments: (Comment & { postId: number })[]; history: CallHistory[]; conversations: Conversation[]; chatMessages: Record<number, ChatMessage[]> }
 function initial(): Store {
   return { data: structuredClone(seed), pin: '', messages: [
     { id: 1, sender: '5550192042', recipient: number, body: 'You around? Coffee at the usual spot.', kind: 'sms', subject: '', created_at: timestamp() },
@@ -44,8 +44,6 @@ if (isDemo) store.data.settings.setupComplete = true;
 store.flash = Array.isArray(store.flash) ? store.flash : initial().flash;
 store.conversations = Array.isArray(store.conversations) ? store.conversations : initial().conversations;
 store.chatMessages = store.chatMessages && typeof store.chatMessages === 'object' ? store.chatMessages : initial().chatMessages;
-store.systemMail ??= [{id:1,peer:'Job Office',subject:'Delivery offer',body:'Collect your delivery at the depot.\nAccept when you are ready.',hasAction:true,unread:true,created_at:timestamp()}];
-store.systemActivity ??= [{id:1,title:'Crypto activity',message:'A city service recorded a transaction note.',created_at:timestamp()}];
 let activeCall: Call | undefined;
 let classifieds: Post[] = [{ id: 99, number: '5550192042', body: 'Karin Sultan Â· Great condition, low miles. Ready for its next adventure.', price: 18000, created_at: timestamp(), likes: 0, comments: 0, liked: false, mine: false }];
 let reports: (ModerationReport & { targetId: number })[] = [{ id: 1, targetType: 'listing', targetId: 99, reason: 'scam', details: 'The price seems too good to be true.', status: 'open', createdAt: timestamp(), snapshot: { title: 'Karin Sultan', description: 'Great condition, low miles. Ready for its next adventure.', price: 18000 } }];
@@ -188,11 +186,6 @@ export async function mockRequest<K extends keyof Api>(action: K, payload: Api[K
     case 'createProfile': break;
     case 'blocked': result = (store as { blocked?: string[] }).blocked ?? []; break;
     case 'setBlocked': { const list = new Set((store as { blocked?: string[] }).blocked ?? []); if (p.blocked) list.add(String(p.number)); else list.delete(String(p.number)); (store as { blocked?: string[] }).blocked = [...list]; break; }
-    case 'systemMailList': result=store.systemMail!.filter(m=>!p.before || m.id<Number(p.before)).slice().sort((a,b)=>b.id-a.id).slice(0,50); break;
-    case 'systemActivity': result=store.systemActivity!.filter(m=>!p.before || m.id<Number(p.before)).slice().sort((a,b)=>b.id-a.id).slice(0,50); break;
-    case 'mailAccept': { const mail=store.systemMail!.find(m=>m.id===p.id); if(!mail?.hasAction) throw new Error('Mail action is no longer available'); mail.hasAction=false; result={accepted:true,dispatched:false}; break; }
-    case 'systemMailRead': { const mail=store.systemMail!.find(m=>m.id===p.id); if(mail)mail.unread=false; break; }
-    case 'systemMailDelete': store.systemMail=store.systemMail!.filter(m=>m.id!==p.id); break;
     case 'mailList': result = store.messages.filter(m => m.kind === 'mail' && (p.box === 'sent' ? m.sender === number : m.recipient === number)).sort((a, b) => b.id - a.id).map(m => ({ id: m.id, peer: p.box === 'sent' ? m.recipient : m.sender, subject: m.subject, body: m.body, created_at: m.created_at, unread: p.box !== 'sent' && !(m as { read?: boolean }).read })); break;
     case 'mailSend': store.messages.push({ id: Date.now(), sender: number, recipient: String(p.to), body: String(p.body), kind: 'mail', subject: String(p.subject), created_at: timestamp() }); break;
     case 'mailRead': { const mail = store.messages.find(m => m.id === p.id) as { read?: boolean } | undefined; if (mail) mail.read = true; break; }

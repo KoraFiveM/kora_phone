@@ -101,7 +101,6 @@ local OPTIONAL_APPS = {
     social = true,
     classifieds = true,
     gps = true,
-    mail = true,
     flash = true,
     music = true,
     clock = true,

@@ -6,7 +6,8 @@ import type { AppId, Bootstrap, DeviceData, Notification } from '../types';
 import { normalizeData } from '../types';
 import { handsetIdentity } from '../themes';
 import type { HandsetModel } from '../themes';
-import { canLaunch, restoreApp } from './appRegistry';
+import { appDefinition, canLaunch, restoreApp } from './appRegistry';
+import { sdkApp } from './runtimeApps';
 import type { PhoneAction, PhoneState } from './phoneState';
 import type { PhoneRefs } from './storeContext';
 import type { CallVideo } from './useCallVideo';
@@ -35,6 +36,8 @@ export function usePhoneActions({ state, dispatch, refs, video }: ActionInput) {
   }, [refs, patch, notify]);
 
   const navigate = useCallback((requested: AppId, destination = '') => {
+    // The id of a folder app (a Mail notification, the weather shortcut) opens through the app host.
+    if (requested !== 'home' && requested !== 'custom' && !appDefinition(requested) && sdkApp(requested)) { destination = requested; requested = 'custom'; }
     const customAllowed = requested === 'custom' && destination !== '' && device?.capabilities.store !== false;
     dispatch({ type: 'navigate', app: customAllowed || canLaunch(requested, device) ? requested : 'home', target: destination });
   }, [device, dispatch]);

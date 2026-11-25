@@ -1,6 +1,6 @@
 import type { Theme } from './themes';
 import { installedApps } from './catalog';
-export type AppId = `app:${string}` | 'custom' | 'store' | 'home' | 'phone' | 'contacts' | 'messages' | 'camera' | 'gallery' | 'social' | 'classifieds' | 'gps' | 'mail' | 'flash' | 'music' | 'clock' | 'settings' | 'moderation';
+export type AppId = `app:${string}` | 'custom' | 'store' | 'home' | 'phone' | 'contacts' | 'messages' | 'camera' | 'gallery' | 'social' | 'classifieds' | 'gps' | 'flash' | 'music' | 'clock' | 'settings' | 'moderation';
 export interface Settings { name: string; volume: number; scale: number; wallpaper: 'orbit' | 'plain' | 'midnight' | 'slate' | 'ember' | 'kora_core' | 'custom'; wallpaperUrl?: string; theme?: Theme; setupComplete?: boolean; phoneStyle?: 'classic' | 'standard' | 'flip' | 'fold'; phoneCase?: 'default' | 'nightdrive' | 'citypop' | 'sakura' | 'touge' | 'garage' | 'kora_core' | 'arcade' | 'space' | 'palms' | 'skyline' | 'custom'; phoneCaseUrl?: string; iconStyle?: 'circle' | 'squircle' | 'outline' | 'solid'; dnd?: boolean; dndFrom?: string; dndTo?: string; installedApps?: AppId[]; appOrder?: AppId[]; dockOrder?: AppId[] }
 export interface MapBlip { id: number; x: number; y: number; sprite: number; label: string; street?: string; zone?: string; colour: string }
 export interface Contact { id?: number; name: string; number: string; photo?: string; favorite?: boolean }
@@ -14,8 +14,6 @@ export interface SdkApp {
   id: string; name: string; description: string; icon?: string; entry: string; version?: string; resource: string; url?: string;
   permissions: string[]; job?: unknown; defaultInstalled?: boolean; price?: number; installed: boolean;
 }
-export interface MailAcceptResult { accepted: boolean; dispatched: boolean }
-export interface SystemActivity { id: number; title: string; message: string; created_at: string }
 export interface MailItem { hasAction?: boolean; id: number; peer: string; subject: string; body: string; created_at: string; unread: boolean }
 export interface Location { label: string; x: number; y: number }
 export interface Service { label: string; description: string; numbers: string[] }
@@ -58,7 +56,6 @@ export type Api = {
   leaveGroup: [{ id: number }, boolean]; addMember: [{ id: number; number: string }, boolean];
   capture: [{ front?: boolean }, DeviceData]; deletePhoto: [{ id: string }, DeviceData];
   blocked: [Record<string, never>, string[]]; setBlocked: [{ number: string; blocked: boolean }, boolean];
-  systemMailList: [{ before?: number }, MailItem[]]; systemActivity: [{ before?: number }, SystemActivity[]]; mailAccept: [{ id: number }, MailAcceptResult]; systemMailRead: [{ id: number }, boolean]; systemMailDelete: [{ id: number }, boolean];
   mailList: [{ box: 'inbox' | 'sent'; before?: number }, MailItem[]]; mailSend: [{ to: string; subject: string; body: string }, boolean]; mailRead: [{ id: number }, boolean]; mailDelete: [{ id: number }, boolean];
   myLocation: [Record<string, never>, { x: number; y: number; label: string; heading?: number; waypoint?: { x: number; y: number } }];
   mapBlips: [Record<string, never>, MapBlip[]];

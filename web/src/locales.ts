@@ -7,7 +7,6 @@ const en: AppCopy = {
   gallery: { label: 'Gallery', subtitle: 'The moments you keep.' },
   classifieds: { label: 'Market', subtitle: 'Good things. New beginnings.' },
   gps: { label: 'Maps', subtitle: 'Find your own way.' },
-  mail: { label: 'Mail', subtitle: 'A little more to say.' },
   flash: { label: 'Flash', subtitle: 'Your city, in short clips.' },
   music: { label: 'Sound', subtitle: 'Something to listen to.' },
   clock: { label: 'Clock', subtitle: 'Right on time.' },

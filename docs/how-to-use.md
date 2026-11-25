@@ -20,7 +20,7 @@ The Wallet app (`server/services/wallet.lua`) is read-only identity, never money
 
 ## Banking — phone-to-phone cash transfer
 
-The Banking app reads balances from `exports.kora_core` and moves money through `exports.kora_banking:ExecuteTransaction`; it keeps no ledger of its own beyond a slim per-device history. `getBankBalance` reads the caller's `bank` account (`Config.Server.Banking.Account`) through `KoraPhone.Integrations.Banking.getBalance`. `getBankHistory` pages `phone_bank_history`. `transferBankMoney` is atomic and idempotent: see [Banking and jobs](./banking-jobs.md) for the key format, error mapping and caller whitelist. The route is gated by `Config.Apps.banking`.
+The Banking app reads balances from `exports.kora_core` and moves money through `exports.kora_banking:ExecuteTransaction`; it keeps no ledger of its own beyond a slim per-device history. The Wallet folder app (`apps/banking`) calls the banking service: `overview` reads the caller's `bank` account (`Config.Server.Banking.Account`) through `KoraPhone.Integrations.Banking.getBalance` and pages `phone_bank_history`. `transfer` is atomic and idempotent: see [Banking and jobs](./banking-jobs.md) for the key format, error mapping and caller whitelist. The app is switched off with `Config.Apps.banking = false`.
 
 - A transfer needs a `clientRequestId` (8 to 64 chars) from the caller. It is the idempotency key, not a display value.
 - Recipient resolution is by phone number only (`PhoneValidation.phoneNumber`) via `KoraPhone.Repositories.Phones.findByNumber`. The recipient must be a different character than the sender. The recipient may be offline: kora_banking credits their stored balance.

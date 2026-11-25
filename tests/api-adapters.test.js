@@ -69,12 +69,7 @@ try {
   const mail = load("api/adapters/mail.js");
   equal(mail.mapMail({ id: 1, peer: 7, subject: "s", body: "b", unread: 1, createdAt: "t" }),
     { id: 1, peer: "7", subject: "s", body: "b", created_at: "t", unread: true }, "mail rows");
-  equal(mail.mapSystemMail({ id: 1, peer: "p", subject: "s", body: "b", hasAction: true, unread: 0, createdAt: "t" }).hasAction, true, "system mail action flag");
 
-  equal(mail.mapSystemMail({ id: 2, peer: "Job", subject: "s", body: "b", hasAction: 1, unread: 0, createdAt: "t" }),
-    { id: 2, peer: "Job", subject: "s", body: "b", hasAction: true, created_at: "t", unread: false }, "system mail keeps its action flag");
-  equal(mail.mapMailAccept({ accepted: true, dispatched: 0 }), { accepted: true, dispatched: false }, "accept result has both flags");
-  equal(mail.mapMailAccept(undefined), { accepted: false, dispatched: false }, "empty accept result is a refusal");
   const sdk = load("api/adapters/apps.js").mapSdkApp({ id: "demo", name: "Demo", entry: "ui/index.html", resource: "demo_res", permissions: ["notify", 3], installed: 1 });
   equal([sdk.id, sdk.permissions, sdk.installed, sdk.defaultInstalled], ["demo", ["notify"], true, false], "SDK app listing is typed and filtered");
   const media = load("api/adapters/media.js");

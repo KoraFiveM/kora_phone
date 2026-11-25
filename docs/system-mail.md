@@ -29,11 +29,11 @@ exports.kora_phone:AddSystemActivity(citizenId, 'Credit', 'Received 5 BTC')
 
 `button.event` is nominated only by the calling server resource, never by a client. It must look like `resource:client:name`, be at most 200 characters, and must not start with `kora_phone:`, `kora_core:`, `kora_lib:`, `kora_sql:`, `kora_inventory:` or `kora_voice:`. `button.data` is capped at 16000 characters of JSON.
 
-When the player presses Accept, the route `mail:system:accept` claims the button once in the database and the server itself fires `TriggerClientEvent(event, source, data)`. The browser sends only the mail id. Duplicate, deleted, locked and other-character requests are refused, and a consumed button is not retried. The receiving resource must still validate any resulting request on its own server.
+When the player presses Accept, the Mail app's `accept` callback (the same one-use claim, `mail:system:accept` inside `server/mail/system.lua`) claims the button once in the database and the server itself fires `TriggerClientEvent(event, source, data)`. The browser sends only the mail id. Duplicate, deleted, locked and other-character requests are refused, and a consumed button is not retried. The receiving resource must still validate any resulting request on its own server.
 
-## Routes
+## Callbacks
 
-`mail:system:list`, `mail:system:activity`, `mail:system:read`, `mail:system:delete` and `mail:system:accept`. All need an unlocked handset held by the current character. Mail belongs to the character, not the handset, so a traded handset reveals nothing and a replacement handset shows the same mailbox.
+The Mail folder app (`apps/mail`) serves `inbox`, `activity`, `read`, `delete` and `accept`, each calling the matching handler in `KoraPhone.SystemMail.routes` (`mail:system:list`, `activity`, `read`, `delete`, `accept`). They are SDK app callbacks, so they are no longer entries in `shared/routes.json`. All need an unlocked handset held by the current character. Mail belongs to the character, not the handset, so a traded handset reveals nothing and a replacement handset shows the same mailbox.
 
 ## Tables
 

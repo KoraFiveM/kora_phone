@@ -13,7 +13,7 @@ const dialCall = (number: string) => api('dial', { number });
 /** lb-phone app names the host can open, lower-cased. Anything else is an app registered through the SDK. */
 const APP_NAMES: Record<string, AppId> = {
   phone: 'phone', messages: 'messages', contacts: 'contacts', camera: 'camera', photos: 'gallery', gallery: 'gallery',
-  settings: 'settings', maps: 'gps', mail: 'mail', clock: 'clock', 'app store': 'store', appstore: 'store',
+  settings: 'settings', maps: 'gps', clock: 'clock', 'app store': 'store', appstore: 'store',
 };
 
 /** lb-phone names of apps that are folder apps here. */

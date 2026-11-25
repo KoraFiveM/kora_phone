@@ -48,5 +48,5 @@ assert.deepStrictEqual(unused, [], `routes.json entries the web never calls: ${u
 
 for (const name of SERVER_ONLY) assert(routes.includes(name) && !used.has(name), `${name} is in SERVER_ONLY but is wired or gone: remove it from the list`);
 for (const gone of routes.filter((name) => name.startsWith('legacy:'))) assert.fail(`legacy route ${gone} must be removed`);
-assert(routes.includes('mail:system:accept') && routes.includes('apps:list'), 'system mail and SDK routes are present');
+assert(routes.includes('apps:list') && routes.includes('apps:storage:list'), 'SDK routes are present');
 console.log(`PASS web-routes: ${used.size} web routes checked against ${routes.length} in routes.json`);

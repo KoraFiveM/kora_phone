@@ -25,12 +25,10 @@ export interface RawReport {
     status: string; createdAt?: number | string; snapshot?: Record<string, unknown>;
 }
 export interface RawMail { id: number; peer: string; subject: string; body: string; hasAction?: Flag; unread?: Flag; createdAt?: number | string }
-export interface RawActivity { id: number; title: string; message: string; createdAt?: number | string }
 export interface RawSdkApp {
     id: string; name?: string; description?: string; icon?: string; entry?: string; version?: string; resource?: string; url?: string;
     permissions?: unknown; job?: unknown; defaultInstalled?: Flag; price?: number; installed?: Flag;
 }
-export interface RawMailAccept { accepted?: Flag; dispatched?: Flag }
 export interface RawUpload { mode?: string; uploadUrl?: unknown; field?: unknown; tag?: unknown; token?: unknown }
 export interface RawUploadTicket { upload?: RawUpload }
 export interface RawSavedMedia { id: number | string; publicUrl: string; mimeType?: string }

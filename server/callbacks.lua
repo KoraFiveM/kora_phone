@@ -203,7 +203,7 @@ bind('deleteMail', Services.Mail.delete)
 bind('saveItem', Services.Items.save)
 bind('removeItem', Services.Items.remove)
 
--- Third-party app SDK (server/sdk/routes.lua) and system mail (server/mail/system.lua). Looked up when
+-- Third-party app SDK (server/sdk/routes.lua). Looked up when
 -- called so neither module has to load first. SDK calls can overlap (an app reads several keys on
 -- start), so they skip the per-player handset lock.
 local function lazy(getTable, key)
@@ -216,17 +216,12 @@ local function lazy(getTable, key)
 end
 
 for _, key in ipairs({
-    'apps:list', 'apps:install', 'apps:uninstall', 'apps:call', 'apps:storage:get',
+    'apps:list', 'apps:install', 'apps:uninstall', 'apps:call', 'apps:storage:get', 'apps:storage:list',
     'apps:storage:set', 'apps:storage:remove', 'apps:contacts:list', 'apps:contacts:save', 'apps:notify',
 }) do
     bind(key, lazy(function() return KoraPhone.SDK and KoraPhone.SDK.routes end, key), { lock = false })
 end
 
-for _, key in ipairs({
-    'mail:system:list', 'mail:system:activity', 'mail:system:read', 'mail:system:delete', 'mail:system:accept',
-}) do
-    bind(key, lazy(function() return KoraPhone.SystemMail and KoraPhone.SystemMail.routes end, key))
-end
 
 -- Lets the client tell a downed player with no phone item apart from one who simply cannot use it right now.
 Kora.callback.register(PREFIX .. 'hasPhone', function(source)

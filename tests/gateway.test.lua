@@ -111,13 +111,12 @@ test('every routes.json server name is registered exactly once', function()
     assert(callbacks[PREFIX .. 'hasPhone'] and callbacks[PREFIX .. 'share:offer'])
 end)
 
-test('the new sdk and system mail routes are registered, the legacy names are not', function()
-    for _, name in ipairs({ 'apps:list', 'apps:notify', 'mail:system:list', 'mail:system:accept' }) do
+test('the sdk routes are registered, the legacy names are not', function()
+    for _, name in ipairs({ 'apps:list', 'apps:notify', 'apps:storage:list' }) do
         assert(callbacks[PREFIX .. name], name)
     end
     assert(not callbacks[PREFIX .. 'legacy:getMail'] and not callbacks[PREFIX .. 'acceptLegacyMail'])
     equal(Routes.byName['apps:list'].rate, 'sdk')
-    equal(Routes.byName['mail:system:read'].rate, 'mutation')
 end)
 
 test('an unbound route answers INTERNAL and logs', function()
@@ -241,7 +240,7 @@ test('async routes reply through the callback and skip the handset lock', functi
     equal(call('deleteMedia', {}).error.code, PhoneConstants.Errors.INTERNAL)
 end)
 
-test('sdk and system mail routes bind lazily to their module tables', function()
+test('sdk routes bind lazily to their module tables', function()
     reset()
     Routes.handle('apps:list', function(s, p)
         return (KoraPhone.SDK.routes['apps:list'])(s, p)
@@ -250,10 +249,8 @@ test('sdk and system mail routes bind lazily to their module tables', function()
     -- the real binding in callbacks.lua is lazy: re-run it against the now present table
     dofile(root .. '/server/callbacks.lua')
     equal(call('apps:list', {}).ok, true)
-    KoraPhone.SystemMail = { routes = { ['mail:system:list'] = function() return PhoneResult({ items = {} }) end } }
-    equal(call('mail:system:list', {}).ok, true)
-    KoraPhone.SystemMail = nil
-    equal(call('mail:system:list', {}).ok, false)
+    KoraPhone.SDK = nil
+    equal(call('apps:list', {}).ok, false)
 end)
 
 test('registerCallback shim binds by name', function()

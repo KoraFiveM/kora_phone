@@ -1,7 +1,7 @@
 import { lazy } from 'react';
 import type { ComponentType, LazyExoticComponent } from 'react';
 import {
-  AlarmClock, Aperture, Blocks, Camera, ContactRound, Image, Mail, MapPin,
+  AlarmClock, Aperture, Blocks, Camera, ContactRound, Image, MapPin,
   MessageCircle, Music, Phone, Radio, Settings as SettingsIcon, ShieldAlert, Store as StoreIcon,
   Tag,
 } from 'lucide-react';
@@ -11,7 +11,6 @@ import { ContactsScreen, MessagesScreen, PhoneScreen } from '../apps/communicati
 import { CustomAppRoute } from '../apps/custom/CustomApps';
 import { GalleryScreen } from '../apps/gallery/GalleryScreen';
 import { GPSScreen } from '../apps/maps/GPSScreen';
-import { MailScreen } from '../apps/mail/MailScreen';
 import { MusicScreen } from '../apps/music/MusicScreen';
 import { SettingsHost } from './SettingsHost';
 import { appCopy } from '../locales';
@@ -61,7 +60,6 @@ export const appRegistry: readonly AppDefinition[] = [
   entry('gallery', Image, GalleryScreen, 'grid'),
   entry('classifieds', Tag, MarketApp, 'grid', { optional: { category: 'Life', description: 'Buy, sell, and find something worth keeping.' } }),
   entry('gps', MapPin, GPSScreen, 'grid', { optional: { category: 'Tools', description: 'Familiar places. New directions. Your city, mapped.' } }),
-  entry('mail', Mail, MailScreen, 'grid', { optional: { category: 'Social', description: 'For the things that deserve more than a text.' } }),
   entry('flash', Aperture, FlashApp, 'grid', { fullBleed: true, optional: { category: 'Social', description: 'Short videos and photos from around the city, for everyone to see.' } }),
   entry('music', Music, MusicScreen, 'grid', { optional: { category: 'Tools', description: 'Save YouTube, SoundCloud, or stream links and play them from your phone.' } }),
   entry('clock', AlarmClock, ClockScreen, 'grid', { optional: { category: 'Tools', description: 'Set alarms that ring on your local clock, even with the phone closed.' } }),
