@@ -38,7 +38,6 @@ export type Api = {
   uploadMedia: [{ blob: Blob; onProgress?: (fraction: number) => void }, { id: number; url: string; kind: MediaKind }];
   capture: [{ front?: boolean }, DeviceData];
   blocked: [Record<string, never>, string[]]; setBlocked: [{ number: string; blocked: boolean }, boolean];
-  mailList: [{ box: 'inbox' | 'sent'; before?: number }, MailItem[]]; mailSend: [{ to: string; subject: string; body: string }, boolean]; mailRead: [{ id: number }, boolean]; mailDelete: [{ id: number }, boolean];
   myLocation: [Record<string, never>, { x: number; y: number; label: string; heading?: number; waypoint?: { x: number; y: number } }];
   waypoint: [{ x: number; y: number }, boolean]; weather: [Record<string, never>, Weather];
   videoSignal: [{ id: string; epoch?: string; kind: 'offer' | 'answer' | 'ice'; sdp?: RTCSessionDescriptionInit; candidate?: RTCIceCandidateInit }, boolean];

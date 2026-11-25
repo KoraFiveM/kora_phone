@@ -109,10 +109,6 @@ export async function mockRequest<K extends keyof Api>(action: K, payload: Api[K
     case 'uploadMedia': { const blob = p.blob as Blob; (p.onProgress as ((n: number) => void) | undefined)?.(1); result = { id: 0, url: await blobToDataUrl(blob), kind: blob.type.startsWith('video/') ? 'video' : 'photo' }; break; }
     case 'blocked': result = (store as { blocked?: string[] }).blocked ?? []; break;
     case 'setBlocked': { const list = new Set((store as { blocked?: string[] }).blocked ?? []); if (p.blocked) list.add(String(p.number)); else list.delete(String(p.number)); (store as { blocked?: string[] }).blocked = [...list]; break; }
-    case 'mailList': result = store.messages.filter(m => m.kind === 'mail' && (p.box === 'sent' ? m.sender === number : m.recipient === number)).sort((a, b) => b.id - a.id).map(m => ({ id: m.id, peer: p.box === 'sent' ? m.recipient : m.sender, subject: m.subject, body: m.body, created_at: m.created_at, unread: p.box !== 'sent' && !(m as { read?: boolean }).read })); break;
-    case 'mailSend': store.messages.push({ id: Date.now(), sender: number, recipient: String(p.to), body: String(p.body), kind: 'mail', subject: String(p.subject), created_at: timestamp() }); break;
-    case 'mailRead': { const mail = store.messages.find(m => m.id === p.id) as { read?: boolean } | undefined; if (mail) mail.read = true; break; }
-    case 'mailDelete': store.messages = store.messages.filter(m => m.id !== p.id); break;
   }
   save(); completed.set(id, structuredClone(result));
   return structuredClone(result) as Api[K][1];

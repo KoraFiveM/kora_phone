@@ -187,10 +187,6 @@ bind('share:offer', Services.Share.offer)
 bind('share:answer', Services.Share.answer)
 bind('getBlocked', Services.Blocking.list)
 bind('setBlocked', Services.Blocking.set)
-bind('getMail', Services.Mail.list)
-bind('sendMail', Services.Mail.send)
-bind('readMail', Services.Mail.markRead)
-bind('deleteMail', Services.Mail.delete)
 
 -- Third-party app SDK (server/sdk/routes.lua). Looked up when
 -- called so neither module has to load first. SDK calls can overlap (an app reads several keys on

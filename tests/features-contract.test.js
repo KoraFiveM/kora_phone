@@ -90,11 +90,7 @@ assert.match(messaging, /requireConversation\(device, payload\)/, "leaving a gro
 const mailSvc = read("server/services/mail.lua");
 const mailRepo = read("server/repositories/mail.lua");
 const property = read("server/services/property.lua");
-for (const [route, callback] of [["mail:list", "getMail"], ["mail:send", "sendMail"], ["mail:read", "readMail"], ["mail:delete", "deleteMail"]]) {
-  assert.match(nui, new RegExp(`\\['${route}'\\] = 'kora_phone:server:${callback}'`), `${route} must map to ${callback}`);
-  assert.match(callbacks, bound(callback), `${callback} must be registered on the server`);
-  assert.match(api, new RegExp(`'${route}'`), `the UI must call ${route}`);
-}
+assert.equal(JSON.parse(read("shared/routes.json")).some((route) => /^mail:/.test(route.nui)), false, "player mail has no screen, so it has no route; the Mail app serves system mail");
 assert.match(mailSvc, /PhoneContracts\.mail\(/, "mail must be validated on the server");
 assert.match(mailSvc, /isEitherBlocked/, "mail must respect blocks");
 assert.match(mailRepo, /INSERT IGNORE INTO phone_mail/, "a retried mail request must not send twice");

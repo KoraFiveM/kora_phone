@@ -53,7 +53,6 @@ Every NUI route that forwards to a server callback is listed once in `shared/rou
 | Contacts and sharing | `getContacts`, `saveContact`, `deleteContact`, `share:offer`, `share:answer` |
 | Messages | `sendMessage`, `getMessages`, `getConversations`, `startDirectConversation`, `markConversationRead`, `createGroup`, `leaveGroup`, `addGroupMember`, `getBlocked`, `setBlocked` |
 | Calls | `calls:start`, `calls:accept`, `calls:reject`, `calls:hangup`, `calls:signal`, `calls:videoControl` |
-| Mail | `getMail`, `sendMail`, `readMail`, `deleteMail` |
 | Media | `requestMediaUpload`, `completeMediaUpload`, `getGallery` |
 | Utilities | (none: items moved into the Clock and Sound apps) |
 | Apps (SDK) | `apps:list`, `apps:install`, `apps:uninstall`, `apps:call`, `apps:storage:get`, `apps:storage:list`, `apps:storage:set`, `apps:storage:remove`, `apps:contacts:list`, `apps:contacts:save`, `apps:notify` (see [App SDK API](./api/apps.md)) |

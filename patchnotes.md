@@ -6,6 +6,7 @@
   - SDK: `storage.list`, per-app storage quota (manifest `storage`), `category` and `system` manifest fields, `client` callbacks to an app's `client.lua`
   - lb-phone: all 60 documented server exports answered, lb-phone page globals and `components` injected into custom app pages (see docs/lb-phone.md)
   - SDK `phone.system(...)`: settings, PIN, blocked numbers and handset controls for the phone's own system apps (refused for every other app)
+  - removed: the unused player-mail routes (`mail:list`, `mail:send`, `mail:read`, `mail:delete`); the Mail app serves system mail
   - kora stack: delayed server work uses `KoraPhone.After` (Kora.timers), the handset prop uses `Kora.entities.create`; docs/kora-stack.md records usage and the raw natives kept on purpose
   - removed: the `note` item kind and `Config.Server.Items.note` (notes live in the Notes app's storage; a fresh schema is expected)
 - 0.0.1-dev.3
