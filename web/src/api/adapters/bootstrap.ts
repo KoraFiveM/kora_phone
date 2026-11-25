@@ -55,7 +55,6 @@ export function mapBootstrap(raw: RawBootstrap, customApps: Record<string, boole
             camera: apps.camera !== false && features?.media === true,
             gallery: true,
             social: apps.social !== false,
-            classifieds: apps.classifieds !== false,
             clock: apps.clock !== false,
             gps: apps.gps !== false && features?.maps === true,
             weather: apps.weather !== false,

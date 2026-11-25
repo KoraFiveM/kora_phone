@@ -99,7 +99,6 @@ end
 -- Apps a player installs from the store; they only appear in the home order while installed.
 local OPTIONAL_APPS = {
     social = true,
-    classifieds = true,
     gps = true,
     flash = true,
     music = true,

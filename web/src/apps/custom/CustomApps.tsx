@@ -11,6 +11,7 @@ import { appUrl, createRouter, buildTheme, permissionsOf, sameTheme, originOf, p
 import { buildLbDocument } from '../../sdk';
 import type { HostTransport, Handset, ThemePayload } from '../../sdk';
 import { lbAction } from './lbActions';
+import type { AppId } from '../../types';
 type CustomApp = SdkApp;
 function useCustomApps() { return useRuntimeApps(); }
 const maskUrl = (icon: string) => `url("${icon.replace(/^nui:\/\//, 'https://cfx-nui-')}")`;
@@ -99,6 +100,7 @@ export function CustomAppScreen({ id, transport = hostTransport }: { id: string;
       },
       onClose: () => navigate('home'),
       onSetTitle: setTitle,
+      onOpen: app => navigate(app as AppId),
       onLb: compat ? (action, payload) => lbAction(action, payload, { data: dataRef.current, navigate, run: work => run(work), setCall }) : undefined,
     });
     const onMessage = (e: MessageEvent) => {

@@ -57,6 +57,8 @@ export interface PhoneClient {
     readonly theme: ThemeState | null;
     readonly init: InitPayload | null;
     callback<TIn = unknown, TOut = unknown>(name: string, payload?: TIn): Promise<TOut>;
+    /** Opens another app on the phone (a built-in app or a folder app id), leaving this one. */
+    open(app: string): Promise<void>;
     /** Calls a handler the app registered in its own client.lua with `app.client(name, fn)`. */
     client<TIn = unknown, TOut = unknown>(name: string, payload?: TIn): Promise<TOut>;
     notify(title: string, body: string): Promise<void>;
@@ -228,6 +230,9 @@ export function createPhoneClient(options: PhoneClientOptions = {}): PhoneClient
         },
         async callback<TIn = unknown, TOut = unknown>(name: string, payload?: TIn): Promise<TOut> {
             return (await request('callback', { name, payload })) as TOut;
+        },
+        async open(app) {
+            await request('open', { app });
         },
         async client<TIn = unknown, TOut = unknown>(name: string, payload?: TIn): Promise<TOut> {
             return (await request('client', { name, payload })) as TOut;

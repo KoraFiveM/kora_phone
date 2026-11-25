@@ -3,7 +3,6 @@ import type { ComponentType, LazyExoticComponent } from 'react';
 import {
   AlarmClock, Aperture, Blocks, Camera, ContactRound, Image, MapPin,
   MessageCircle, Music, Phone, Radio, Settings as SettingsIcon, Store as StoreIcon,
-  Tag,
 } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import { ClockScreen } from '../apps/clock/ClockScreen';
@@ -44,7 +43,6 @@ const screen = (load: () => Promise<ComponentType<ScreenProps>>) => lazy(async (
 const StoreApp = screen(async () => (await import('../apps/store/Store')).StoreScreen);
 const PulseApp = screen(async () => (await import('../apps/pulse/Pulse')).PulseScreen);
 const FlashApp = screen(async () => (await import('../apps/flash/Flash')).FlashScreen);
-const MarketApp = screen(async () => (await import('../apps/market/MarketScreen')).FeedScreen);
 const CameraApp = screen(async () => (await import('../apps/camera/CameraScreen')).CameraScreen);
 
 const entry = (
@@ -57,7 +55,6 @@ export const appRegistry: readonly AppDefinition[] = [
   entry('store', StoreIcon, StoreApp, 'grid'),
   entry('social', Radio, PulseApp, 'grid', { fullBleed: true, optional: { category: 'Social', description: 'Message your people, one-on-one or in a group.' } }),
   entry('gallery', Image, GalleryScreen, 'grid'),
-  entry('classifieds', Tag, MarketApp, 'grid', { optional: { category: 'Life', description: 'Buy, sell, and find something worth keeping.' } }),
   entry('gps', MapPin, GPSScreen, 'grid', { optional: { category: 'Tools', description: 'Familiar places. New directions. Your city, mapped.' } }),
   entry('flash', Aperture, FlashApp, 'grid', { fullBleed: true, optional: { category: 'Social', description: 'Short videos and photos from around the city, for everyone to see.' } }),
   entry('music', Music, MusicScreen, 'grid', { optional: { category: 'Tools', description: 'Save YouTube, SoundCloud, or stream links and play them from your phone.' } }),

@@ -17,7 +17,7 @@ const CLIENT_ONLY = new Set(['phone:ready', 'phone:close', 'camera:close', 'came
 
 // Server routes the web has no action for yet (the bootstrap already carries contacts; follow/profile/listing-edit
 // have no screen). Listed so a NEW unused route fails this test instead of rotting silently.
-const SERVER_ONLY = new Set(['contacts:list', 'market:getListing', 'market:updateListing', 'social:block',
+const SERVER_ONLY = new Set(['contacts:list', 'social:report', 'social:block',
     'social:follow', 'social:getProfile', 'social:unfollow']);
 
 function walk(dir) {

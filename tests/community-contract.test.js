@@ -43,9 +43,18 @@ assert.match(moderation, /Repositories\.Reports\.claim/);
 assert.match(reports, /assigned_citizenid = \?/);
 assert.match(callbacks, /local bind = KoraPhone\.Routes\.handle/, "callbacks bind through the route gateway");
 assert.match(read("server/callbacks.lua"), /RateLimits\.consume/);
-for (const callback of ["social:createPost", "social:report", "market:createListing", "market:contactSeller"]) {
+for (const callback of ["social:createPost", "social:report"]) {
   assert.ok(callbacks.includes(callback), `missing callback ${callback}`);
 }
+// Market is a folder app: every callback runs the validated marketplace service for the caller's own source
+// and charges the community bucket its old route used.
+const marketApp = read("apps/classifieds/server.lua");
+for (const [callback, service, rate] of [["list", "getListings", "community.read"], ["create", "createListing", "community.listing"], ["remove", "setStatus", "community.listing"],
+  ["sold", "setStatus", "community.listing"], ["contact", "contactSeller", "community.contact"], ["report", "report", "community.report"]]) {
+  assert.match(marketApp, new RegExp(`app\\.callback\\('${callback}'[\\s\\S]*?Services\\.\\w+\\.${service}\\(source[\\s\\S]*?rate = '${rate.replace(".", "\\.")}'`), `market ${callback} must call ${service}(source) and charge ${rate}`);
+}
+assert.doesNotMatch(marketApp, /payload\.(?:ownerDeviceId|deviceId|citizenId|sender)/, "the UI must not choose the seller, owner or device");
+
 // Moderation is a staff-only folder app: both callbacks run the moderation service (which re-checks the moderator)
 // and charge its strict bucket; the manifest marks it staff so the phone refuses everyone else.
 const moderationApp = read("apps/moderation/server.lua");

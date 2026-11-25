@@ -45,7 +45,6 @@ store.flash = Array.isArray(store.flash) ? store.flash : initial().flash;
 store.conversations = Array.isArray(store.conversations) ? store.conversations : initial().conversations;
 store.chatMessages = store.chatMessages && typeof store.chatMessages === 'object' ? store.chatMessages : initial().chatMessages;
 let activeCall: Call | undefined;
-let classifieds: Post[] = [{ id: 99, number: '5550192042', body: 'Karin Sultan Â· Great condition, low miles. Ready for its next adventure.', price: 18000, created_at: timestamp(), likes: 0, comments: 0, liked: false, mine: false }];
 const completed = new Map<string, unknown>();
 function save() { if (isDemo) return; localStorage.setItem(key, JSON.stringify(store)); }
 export function previewBootstrap(): Bootstrap {
@@ -65,7 +64,7 @@ export async function mockRequest<K extends keyof Api>(action: K, payload: Api[K
   // This is a local demo adapter; production authorization lives exclusively in Lua.
   const p = payload as Record<string, unknown>;
   let result: unknown = true;
-  const feed = p.kind === 'classifieds' ? classifieds : p.kind === 'flash' ? store.flash : store.posts;
+  const feed = p.kind === 'flash' ? store.flash : store.posts;
   switch (action) {
     case 'installApp': {
       const app = p.app as AppId;
@@ -113,13 +112,10 @@ export async function mockRequest<K extends keyof Api>(action: K, payload: Api[K
       if (p.kind === 'flash') { post.media_kind = p.mediaKind as Post['media_kind']; post.media_url = p.mediaKind === 'photo' ? sampleFlashPhoto() : String(p.media); }
       feed.unshift(post); break;
     }
-    case 'reportListing': break;
-    case 'markSold': classifieds = classifieds.filter(post => post.id !== p.id); break;
-    case 'contactSeller': break;
-    case 'removePost': store.posts = store.posts.filter(post => post.id !== p.id); classifieds = classifieds.filter(post => post.id !== p.id); store.flash = store.flash.filter(post => post.id !== p.id); break;
-    case 'like': for (const post of [...store.posts, ...classifieds, ...store.flash]) if (post.id === p.id) { post.likes += p.liked ? 1 : -1; post.liked = !!p.liked; } break;
+    case 'removePost': store.posts = store.posts.filter(post => post.id !== p.id); store.flash = store.flash.filter(post => post.id !== p.id); break;
+    case 'like': for (const post of [...store.posts, ...store.flash]) if (post.id === p.id) { post.likes += p.liked ? 1 : -1; post.liked = !!p.liked; } break;
     case 'comments': result = store.comments.filter(c => c.postId === p.id); break;
-    case 'comment': store.comments.push({ id: Date.now(), postId: Number(p.id), number, body: String(p.body), created_at: timestamp() }); for (const post of [...store.posts, ...classifieds, ...store.flash]) if (post.id === p.id) post.comments++; break;
+    case 'comment': store.comments.push({ id: Date.now(), postId: Number(p.id), number, body: String(p.body), created_at: timestamp() }); for (const post of [...store.posts, ...store.flash]) if (post.id === p.id) post.comments++; break;
     case 'removeComment': store.comments = store.comments.filter(c => c.id !== p.id); break;
     case 'capture': {
       const svg = '<svg xmlns="http://www.w3.org/2000/svg" width="600" height="800"><rect width="600" height="800" fill="#c7c4b8"/><circle cx="420" cy="230" r="85" fill="#ede8d8"/><path d="M0 650 180 400 300 530 440 350 600 600V800H0" fill="#434844"/><path d="M0 760 220 600 420 670 600 510V800H0" fill="#262c29"/></svg>';
@@ -160,7 +156,7 @@ export async function mockRequest<K extends keyof Api>(action: K, payload: Api[K
     }
     case 'shareToChat': {
       const convId = Number(p.conversationId);
-      const post = [...store.posts, ...classifieds, ...store.flash].find(item => item.id === Number(p.postId));
+      const post = [...store.posts, ...store.flash].find(item => item.id === Number(p.postId));
       if (!post) throw new Error('Post no longer available');
       const message: ChatMessage = { id: Date.now(), sender_number: number, body: post.body, media_url: post.media_url, media_kind: post.media_kind, shared_from_post: post.id, created_at: timestamp() };
       (store.chatMessages[convId] ||= []).push(message);

@@ -1,6 +1,6 @@
 import type { Theme } from './themes';
 import { installedApps } from './catalog';
-export type AppId = `app:${string}` | 'custom' | 'store' | 'home' | 'phone' | 'contacts' | 'messages' | 'camera' | 'gallery' | 'social' | 'classifieds' | 'gps' | 'flash' | 'music' | 'clock' | 'settings';
+export type AppId = `app:${string}` | 'custom' | 'store' | 'home' | 'phone' | 'contacts' | 'messages' | 'camera' | 'gallery' | 'social' | 'gps' | 'flash' | 'music' | 'clock' | 'settings';
 export interface Settings { name: string; volume: number; scale: number; wallpaper: 'orbit' | 'plain' | 'midnight' | 'slate' | 'ember' | 'kora_core' | 'custom'; wallpaperUrl?: string; theme?: Theme; setupComplete?: boolean; phoneStyle?: 'classic' | 'standard' | 'flip' | 'fold'; phoneCase?: 'default' | 'nightdrive' | 'citypop' | 'sakura' | 'touge' | 'garage' | 'kora_core' | 'arcade' | 'space' | 'palms' | 'skyline' | 'custom'; phoneCaseUrl?: string; iconStyle?: 'circle' | 'squircle' | 'outline' | 'solid'; dnd?: boolean; dndFrom?: string; dndTo?: string; installedApps?: AppId[]; appOrder?: AppId[]; dockOrder?: AppId[] }
 export interface MapBlip { id: number; x: number; y: number; sprite: number; label: string; street?: string; zone?: string; colour: string }
 export interface Contact { id?: number; name: string; number: string; photo?: string; favorite?: boolean }
@@ -40,10 +40,10 @@ export type Api = {
   answer: [{ id: string }, Call]; hangup: [{ id: string; reject?: boolean }, boolean];
   stations: [Station & { remove?: boolean }, DeviceData];
   alarms: [Alarm & { remove?: boolean }, DeviceData];
-  feed: [{ kind: 'classifieds' | 'flash'; before?: number }, Post[]];
-  post: [{ kind: 'classifieds' | 'flash'; body: string; price: number; mediaKind?: MediaKind; media?: string; mediaId?: number }, boolean];
+  feed: [{ kind?: 'flash'; before?: number }, Post[]];
+  post: [{ kind?: 'flash'; body: string; price?: number; mediaKind?: MediaKind; media?: string; mediaId?: number }, boolean];
   uploadMedia: [{ blob: Blob; onProgress?: (fraction: number) => void }, { id: number; url: string; kind: MediaKind }]; createProfile: [{ handle: string; displayName: string }, boolean];
-  removePost: [{ id: number; kind?: 'classifieds' | 'flash' }, boolean]; reportListing: [{ id: number; reason: string; details: string }, boolean]; markSold: [{ id: number }, boolean]; contactSeller: [{ id: number; message: string }, boolean]; like: [{ id: number; liked: boolean }, boolean];
+  removePost: [{ id: number; kind?: 'flash' }, boolean]; like: [{ id: number; liked: boolean }, boolean];
   comments: [{ id: number }, Comment[]]; comment: [{ id: number; body: string }, boolean]; removeComment: [{ id: number }, boolean];
   conversations: [{ before?: number; cursorId?: number }, Conversation[]]; startChat: [{ number: string }, Conversation];
   createGroup: [{ name: string; numbers: string[] }, { id: number }];

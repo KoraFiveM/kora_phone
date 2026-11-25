@@ -144,6 +144,9 @@ function createPhoneClient(options = {}) {
     async callback(name, payload) {
       return await request("callback", { name, payload });
     },
+    async open(app) {
+      await request("open", { app });
+    },
     async client(name, payload) {
       return await request("client", { name, payload });
     },

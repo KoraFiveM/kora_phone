@@ -21,6 +21,8 @@ export interface RouterOptions {
     onReady?: () => void;
     onClose?: () => void;
     onSetTitle?: (title: string) => void;
+    /** Opens another app. Receives a validated app id. */
+    onOpen?: (app: string) => void;
     /** lb-phone compatibility actions (contacts, gallery, call, openApp). Absent for every other app, which then cannot use the `lb` request. */
     onLb?: (action: string, payload: Record<string, unknown>) => Promise<unknown> | unknown;
     timeoutMs?: number;
@@ -92,6 +94,12 @@ export function createRouter(options: RouterOptions) {
             const name = typeof payload.name === 'string' && /^[a-zA-Z0-9_:.-]{1,48}$/.test(payload.name) ? payload.name : undefined;
             if (!name) throw new RouteError('INVALID_PAYLOAD', 'Invalid callback name');
             return call('apps:call', { name, payload: payload.payload });
+        },
+        open: payload => {
+            const app = typeof payload.app === 'string' && /^[a-z0-9][a-z0-9_-]{1,31}$/.test(payload.app) ? payload.app : undefined;
+            if (!app) throw new RouteError('INVALID_PAYLOAD', 'Invalid app id');
+            options.onOpen?.(app);
+            return null;
         },
         lb: payload => {
             if (!options.onLb) throw new RouteError('PERMISSION_DENIED', 'Not available to this app');

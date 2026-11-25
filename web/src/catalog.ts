@@ -1,5 +1,5 @@
 import type { AppId } from './types';
-export const optionalApps = ['social', 'classifieds', 'gps', 'flash', 'music', 'clock'] as const;
+export const optionalApps = ['social', 'gps', 'flash', 'music', 'clock'] as const;
 export type OptionalApp = typeof optionalApps[number];
 export const starterApps: OptionalApp[] = ['gps', 'clock', 'music'];
 export const isOptional = (id: AppId): id is OptionalApp => (optionalApps as readonly string[]).includes(id);

@@ -57,13 +57,13 @@ Every NUI route that forwards to a server callback is listed once in `shared/rou
 | Media | `requestMediaUpload`, `completeMediaUpload`, `getGallery`, `deleteMedia` |
 | Utilities | `saveItem`, `removeItem` |
 | Apps (SDK) | `apps:list`, `apps:install`, `apps:uninstall`, `apps:call`, `apps:storage:get`, `apps:storage:list`, `apps:storage:set`, `apps:storage:remove`, `apps:contacts:list`, `apps:contacts:save`, `apps:notify` (see [App SDK API](./api/apps.md)) |
-| Community | `social:createAccount`, `getFeed`, `getProfile`, `createPost`, `deletePost`, `toggleLike`, `follow`, `unfollow`, `createComment`, `deleteComment`, `getComments`, `block`, `report`; `market:getListings`, `getListing`, `createListing`, `updateListing`, `removeListing`, `markSold`, `contactSeller`  (each prefixed with its group, for example `social:getFeed`) |
+| Community | `social:createAccount`, `getFeed`, `getProfile`, `createPost`, `deletePost`, `toggleLike`, `follow`, `unfollow`, `createComment`, `deleteComment`, `getComments`, `block`, `report` (each prefixed with its group, for example `social:getFeed`) |
 
 The gateway in `server/callbacks.lua` registers one callback per `server` name in `shared/routes.json` and takes the rate key and app gate from there. Two callbacks the NUI never calls are registered in code: `share:offer` (rate key `shareNumber`, called by the client's third-eye option) and `hasPhone` (no rate limit; the client uses it to tell a downed player without a phone from one who cannot use it). Modules only bind handlers with `KoraPhone.Routes.handle(name, handler)`; a handler can be bound before or after the gateway loads. The `apps:*` routes (SDK) and `mail:system:*` routes (system mail) are bound the same way. Limits are in [Configuration](./configuration.md).
 
 ## NUI callbacks
 
-Forwarded to the server callbacks above, using the NUI names in `shared/routes.json` (for example `contacts:list`, `messages:send`, `calls:start`, `gallery:list`, `settings:save`, `security:unlock`, `handset:action`, `social:*`, `market:*`, `moderation:*`, `apps:*`, `mail:system:*`). Handled on the client:
+Forwarded to the server callbacks above, using the NUI names in `shared/routes.json` (for example `contacts:list`, `messages:send`, `calls:start`, `gallery:list`, `settings:save`, `security:unlock`, `handset:action`, `social:*`, `moderation:*`, `apps:*`, `mail:system:*`). Handled on the client:
 
 | Callback | Purpose |
 | --- | --- |

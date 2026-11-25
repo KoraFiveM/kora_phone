@@ -339,6 +339,17 @@ test('buildLbDocument injects base, config and shim ahead of the app scripts', (
     assert.ok(!/<\/script><img/.test(hostile) && !hostile.includes('a</script><b>'), 'script end tags are escaped');
 });
 
+test('open asks the host to open an app, only with a valid id', async () => {
+    const opened = [];
+    const t = setup({ router: { onOpen: app => opened.push(app) } });
+    await t.send(env('open', { app: 'messages' }, 'o1'));
+    assert.deepEqual(opened, ['messages']);
+    assert.equal(t.posted.at(-1).ok, true);
+    await t.send(env('open', { app: '../etc' }, 'o2'));
+    assert.equal(t.posted.at(-1).error.code, 'INVALID_PAYLOAD');
+    assert.deepEqual(opened, ['messages']);
+});
+
 (async () => {
     for (const [name, fn] of queue) {
         try { await fn(); console.log(`ok - ${name}`); } catch (e) { failures++; console.error(`not ok - ${name}\n${e.stack}`); }

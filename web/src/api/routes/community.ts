@@ -1,8 +1,8 @@
 import type { Post } from '../../types';
 import { items } from '../adapters/common';
-import { mapComment, mapListing, mapPost, splitListing } from '../adapters/social';
+import { mapComment, mapPost } from '../adapters/social';
 import { mapMail } from '../adapters/mail';
-import type { RawComment, RawListing, RawMail, RawPost } from '../raw';
+import type { RawComment, RawMail, RawPost } from '../raw';
 import type { HandlerSet } from '../routeTypes';
 import { server } from '../transport';
 import { uploadMedia } from '../upload';
@@ -10,22 +10,15 @@ import { uploadMedia } from '../upload';
 const done = async (work: Promise<unknown>): Promise<true> => { await work; return true; };
 
 const mailAndCommunity: HandlerSet<
-    'feed' | 'post' | 'uploadMedia' | 'createProfile' | 'removePost' | 'reportListing'
-    | 'markSold' | 'contactSeller' | 'like' | 'comments' | 'comment' | 'removeComment'
+    'feed' | 'post' | 'uploadMedia' | 'createProfile' | 'removePost'
+    | 'like' | 'comments' | 'comment' | 'removeComment'
     | 'mailList' | 'mailSend' | 'mailRead' | 'mailDelete'
 > = {
-    feed: async (p): Promise<Post[]> => p.kind === 'classifieds'
-        ? items(await server<{ items?: RawListing[] }>('market:getListings', { limit: 30, cursor: p.before })).map(mapListing)
-        : items(await server<{ items?: RawPost[] }>('social:getFeed', { limit: 30, cursor: p.before })).map(mapPost),
-    post: (p, { id }) => done(p.kind === 'classifieds'
-        ? server('market:createListing', { ...splitListing(p.body), category: 'other', price: p.price, clientRequestId: id })
-        : server('social:createPost', { body: p.body, mediaId: p.mediaId, clientRequestId: id })),
+    feed: async (p): Promise<Post[]> => items(await server<{ items?: RawPost[] }>('social:getFeed', { limit: 30, cursor: p.before })).map(mapPost),
+    post: (p, { id }) => done(server('social:createPost', { body: p.body, mediaId: p.mediaId, clientRequestId: id })),
     uploadMedia: p => uploadMedia(p),
     createProfile: p => done(server('social:createAccount', { handle: p.handle, displayName: p.displayName })),
-    removePost: p => done(server(p.kind === 'flash' ? 'social:deletePost' : 'market:removeListing', { id: p.id })),
-    reportListing: p => done(server('social:report', { targetType: 'listing', targetId: p.id, reason: p.reason, details: p.details })),
-    markSold: p => done(server('market:markSold', { id: p.id })),
-    contactSeller: (p, { id }) => done(server('market:contactSeller', { id: p.id, message: p.message, clientRequestId: id })),
+    removePost: p => done(server('social:deletePost', { id: p.id })),
     like: p => done(server('social:toggleLike', { postId: p.id, liked: p.liked })),
     comments: async p => items(await server<{ items?: RawComment[] }>('social:getComments', { postId: p.id, limit: 50 })).map(mapComment),
     comment: (p, { id }) => done(server('social:createComment', { postId: p.id, body: p.body, clientRequestId: id })),

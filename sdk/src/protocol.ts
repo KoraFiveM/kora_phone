@@ -41,6 +41,7 @@ export interface RequestMap {
     ready: { payload: Record<string, never> | undefined; result: unknown };
     callback: { payload: { name: string; payload?: unknown }; result: unknown };
     client: { payload: { name: string; payload?: unknown }; result: unknown };
+    open: { payload: { app: string }; result: unknown };
     notify: { payload: { title: string; body: string }; result: unknown };
     'storage.list': { payload: { prefix?: string }; result: Record<string, Json> };
     'storage.get': { payload: { key: string }; result: Json | null };
