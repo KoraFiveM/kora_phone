@@ -52,7 +52,7 @@ assert.match(notifications, /KoraPhone\.State\.quiet and not urgent/, "Do Not Di
 assert.match(notifications, /Notifications\.Native\(notification\.title/, "pushed notifications must go through the same silenced path");
 assert.match(nui, /route\('notify'/, "the UI must be able to ask the game for a notification while the phone is closed");
 assert.match(actions, /nui\('notify'/, "texts, mail and missed calls must raise a game notification when the phone is closed");
-assert.match(api, /shareToChat:/, "sharing a Flash post to a chat must be wired in game");
+assert.match(read("apps/flash/server.lua"), /app\.callback\('share'[\s\S]*?Services\.Messaging\.send\(source/, "sharing a Flash post to a chat must run the messaging service");
 assert.match(calls, /KoraPhone\.State\.quiet/);
 
 // Persistent notes/alarms/stations, group chats and the Garage go through registered, validated server code.
@@ -62,11 +62,13 @@ const garage = read("server/services/garage.lua");
 const external = read("server/repositories/external.lua");
 const messaging = read("server/services/messaging.lua");
 const migration9 = read("server/schema.lua");
-for (const [route, callback] of [["messages:createGroup", "createGroup"], ["messages:leaveGroup", "leaveGroup"]]) {
-  assert.match(nui, new RegExp(`\\['${route}'\\] = 'kora_phone:server:${callback}'`), `${route} must map to ${callback}`);
-  assert.match(callbacks, bound(callback), `${callback} must be registered on the server`);
-  assert.match(api, new RegExp(`'${route}'`), `the UI must call ${route}`);
-}
+// Pulse is a folder app: groups, members and chats run the messaging service for the caller's own device.
+const pulseApp = read("apps/social/server.lua");
+for (const [callback, service, rate] of [["createGroup", "createGroup", "mutation"], ["addMember", "addMember", "mutation"], ["leaveGroup", "leaveGroup", "mutation"],
+  ["send", "send", "sendMessage"], ["thread", "list", "read"], ["conversations", "listConversations", "read"]])
+  assert.match(pulseApp, new RegExp(`app\\.callback\\('${callback}'[\\s\\S]*?Services\\.Messaging\\.${service}\\(source[\\s\\S]*?rate = '${rate}'`), `pulse ${callback} must call ${service}(source) and charge ${rate}`);
+assert.match(pulseApp, /Services\.Blocking\.set\(source/, "pulse blocks run the blocking service");
+assert.doesNotMatch(pulseApp, /payload\.(?:senderNumber|deviceId|from)/, "the UI must not choose the sender");
 assert.match(nui, /route\('weather:get'/);
 // Clock is a folder app: its client script rings the alarms, its server callbacks store them as validated phone items.
 const clockServer = read("apps/clock/server.lua");
@@ -88,7 +90,7 @@ assert.match(messaging, /requireConversation\(device, payload\)/, "leaving a gro
 const mailSvc = read("server/services/mail.lua");
 const mailRepo = read("server/repositories/mail.lua");
 const property = read("server/services/property.lua");
-for (const [route, callback] of [["messages:addMember", "addGroupMember"], ["mail:list", "getMail"], ["mail:send", "sendMail"], ["mail:read", "readMail"], ["mail:delete", "deleteMail"]]) {
+for (const [route, callback] of [["mail:list", "getMail"], ["mail:send", "sendMail"], ["mail:read", "readMail"], ["mail:delete", "deleteMail"]]) {
   assert.match(nui, new RegExp(`\\['${route}'\\] = 'kora_phone:server:${callback}'`), `${route} must map to ${callback}`);
   assert.match(callbacks, bound(callback), `${callback} must be registered on the server`);
   assert.match(api, new RegExp(`'${route}'`), `the UI must call ${route}`);
@@ -200,7 +202,7 @@ const socialSvc = read("server/services/social.lua");
 const socialRepo = read("server/repositories/social.lua");
 const mediaRepo = read("server/repositories/media.lua");
 const migration11 = read("server/schema.lua");
-const flash = read("web/src/apps/flash/Flash.tsx");
+const flash = read("apps/flash/ui/app.js");
 for (const [route, callback] of [["media:request", "requestMediaUpload"], ["media:complete", "completeMediaUpload"]]) {
   assert.match(nui, new RegExp(`\\['${route}'\\] = 'kora_phone:server:${callback}'`), `${route} must map to ${callback}`);
   assert.match(api, new RegExp(`'${route}'`), `the UI must call ${route}`);
@@ -221,7 +223,7 @@ assert.match(migration11, /'video'/, "messages need a video type");
 assert.match(api, /if \(action === 'uploadMedia'\)/, "uploads must bypass the serial request queue so they don't block the phone");
 assert.match(api, /koraPhoneTicket/, "the upload must carry its ticket tag");
 assert.match(flash, /createProfile/, "Flash must create a social profile on first use");
-assert.match(flash, /uploadMedia/, "Flash clips must go through the upload pipeline");
+assert.match(flash, /phone\.media\.upload\(/, "Flash clips must go through the upload pipeline");
 
 // The pure logic, executed for real (skipped when the web toolchain isn't installed).
 let ts;

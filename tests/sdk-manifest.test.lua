@@ -119,6 +119,12 @@ test('category and system default and are validated', function()
     equal(KoraPhone.SDK.Manifest.validate(H.manifest({ system = 'yes' })), nil)
 end)
 
+test('the media and camera permissions are known, an invented one is not', function()
+    local Manifest = KoraPhone.SDK.Manifest
+    equal(#Manifest.validate(H.manifest({ permissions = { 'media.write', 'camera', 'record' } })).permissions, 3)
+    equal(Manifest.validate(H.manifest({ permissions = { 'root' } })), nil)
+end)
+
 test('embeds must be plain host names, at most four', function()
     local Manifest = KoraPhone.SDK.Manifest
     equal(Manifest.validate(H.manifest({ embeds = { 'www.youtube-nocookie.com', 'w.soundcloud.com' } })).embeds[2], 'w.soundcloud.com')

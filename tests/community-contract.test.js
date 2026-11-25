@@ -27,7 +27,6 @@ for (const source of repositoryFiles) {
 const social = read("server/services/social.lua");
 const market = read("server/services/marketplace.lua");
 const moderation = read("server/services/moderation.lua");
-const callbacks = read("server/modules/community_callbacks.lua");
 const reports = read("server/repositories/reports.lua");
 assert.match(social, /isEitherBlocked/);
 assert.match(social, /authorIsPrivate/);
@@ -41,11 +40,14 @@ assert.match(moderation, /hasPermission/);
 assert.match(moderation, /Repositories\.Reports\.audit/);
 assert.match(moderation, /Repositories\.Reports\.claim/);
 assert.match(reports, /assigned_citizenid = \?/);
-assert.match(callbacks, /local bind = KoraPhone\.Routes\.handle/, "callbacks bind through the route gateway");
 assert.match(read("server/callbacks.lua"), /RateLimits\.consume/);
-for (const callback of ["social:createPost", "social:report"]) {
-  assert.ok(callbacks.includes(callback), `missing callback ${callback}`);
-}
+// Flash and Market are folder apps: their callbacks run the services above for the caller's own source and charge the community buckets.
+const flashApp = read("apps/flash/server.lua");
+for (const [callback, service, rate] of [["feed", "Social.getFeed", "community.read"], ["createProfile", "Social.createAccount", "community.profile"], ["post", "Social.createPost", "community.post"],
+  ["remove", "Social.deletePost", "community.post"], ["like", "Social.toggleLike", "community.reaction"], ["comments", "Social.getComments", "community.read"],
+  ["comment", "Social.createComment", "community.comment"], ["removeComment", "Social.deleteComment", "community.comment"]])
+  assert.match(flashApp, new RegExp(`app\\.callback\\('${callback}'[\\s\\S]*?Services\\.${service.replace(".", "\\.")}\\(source[\\s\\S]*?rate = '${rate.replace(".", "\\.")}'`), `flash ${callback} must call ${service}(source) and charge ${rate}`);
+assert.doesNotMatch(flashApp, /payload\.(?:authorDeviceId|deviceId|profileId|handle\b(?!,))/, "the UI must not choose an author or device");
 // Market is a folder app: every callback runs the validated marketplace service for the caller's own source
 // and charges the community bucket its old route used.
 const marketApp = read("apps/classifieds/server.lua");

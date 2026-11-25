@@ -406,6 +406,30 @@ test('the system request is refused unless the host gave this app the handler', 
     assert.equal(trusted.posted.at(-1).error.code, 'INVALID_PAYLOAD');
 });
 
+test('media.upload and camera.capture need their permissions, a real blob, and a host handler', async () => {
+    const saved = { id: 7, url: 'https://x/p.jpg', kind: 'photo' };
+    const seen = [];
+    const router = { onUpload: async blob => { seen.push(['upload', blob.size]); return saved; }, onCapture: async front => { seen.push(['capture', front]); return saved; } };
+    const none = setup({ permissions: [], router });
+    await none.send(env('media.upload', { blob: new Blob(['abc']) }, 'u1'));
+    assert.equal(none.posted.at(-1).error.code, 'PERMISSION_DENIED');
+    await none.send(env('camera.capture', {}, 'u2'));
+    assert.equal(none.posted.at(-1).error.code, 'PERMISSION_DENIED');
+    assert.deepEqual(seen, [], 'the handlers never run without the permission');
+    const granted = setup({ permissions: ['media.write', 'camera'], router });
+    await granted.send(env('media.upload', { blob: new Blob(['abc']) }, 'u3'));
+    assert.deepEqual(granted.posted.at(-1).payload, saved);
+    await granted.send(env('media.upload', { blob: 'not a blob' }, 'u4'));
+    assert.equal(granted.posted.at(-1).error.code, 'INVALID_PAYLOAD');
+    await granted.send(env('media.upload', { blob: new Blob([]) }, 'u5'));
+    assert.equal(granted.posted.at(-1).error.code, 'INVALID_PAYLOAD');
+    await granted.send(env('camera.capture', { front: true }, 'u6'));
+    assert.deepEqual(seen, [['upload', 3], ['capture', true]]);
+    const bare = setup({ permissions: ['media.write', 'camera'] });
+    await bare.send(env('media.upload', { blob: new Blob(['abc']) }, 'u7'));
+    assert.equal(bare.posted.at(-1).error.code, 'PERMISSION_DENIED');
+});
+
 (async () => {
     for (const [name, fn] of queue) {
         try { await fn(); console.log(`ok - ${name}`); } catch (e) { failures++; console.error(`not ok - ${name}\n${e.stack}`); }

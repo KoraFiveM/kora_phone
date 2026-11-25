@@ -89,7 +89,6 @@ server_scripts {
     'server/callbacks.lua',
     'server/modules/call_callbacks.lua',
     'server/modules/media_callbacks.lua',
-    'server/modules/community_callbacks.lua',
     'server/handset_callbacks.lua',
     'server/main.lua'
 }

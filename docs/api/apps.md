@@ -61,6 +61,8 @@ Responses use `type` of `response` with `ok: true` and `payload`, or `ok: false`
 | --- | --- | --- |
 | `ready` | none | none |
 | `callback` | `name`, `payload` | none |
+| `media.upload` | `blob` | `media.write` (answers with the saved item: `id`, `url`, `kind`) |
+| `camera.capture` | `front` (optional) | `camera` (answers with the saved item) |
 | `open` | `app`, `target` (optional) | none (the host opens the app; the target reaches it as `init.target`) |
 | `call` | `number` (7 to 16 digits) | none (the host dials through the call service and shows its call screen) |
 | `system` | `action` plus fields | system apps of this resource only (`settings.get`, `settings.save`, `pin.set`, `blocks.list`, `blocks.set`, `handset`) |

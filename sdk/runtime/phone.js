@@ -150,6 +150,12 @@ function createPhoneClient(options = {}) {
     async system(action, payload) {
       return await request("system", { ...payload ?? {}, action });
     },
+    media: { async upload(blob) {
+      return await request("media.upload", { blob });
+    } },
+    camera: { async capture(options2) {
+      return await request("camera.capture", { front: options2?.front === true });
+    } },
     async call(number) {
       await request("call", { number });
     },

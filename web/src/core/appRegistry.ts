@@ -1,8 +1,8 @@
 import { lazy } from 'react';
 import type { ComponentType, LazyExoticComponent } from 'react';
 import {
-  Aperture, Blocks, Camera,
-  Phone, Radio, Store as StoreIcon,
+  Blocks, Camera,
+  Phone, Store as StoreIcon,
 } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import { CustomAppRoute } from '../apps/custom/CustomApps';
@@ -35,8 +35,6 @@ const screen = (load: () => Promise<ComponentType<ScreenProps>>) => lazy(async (
 // Heavy apps are split into their own chunks and loaded the first time they open.
 // The App Store reads this registry for its listings, so it loads lazily to keep the module graph acyclic.
 const StoreApp = screen(async () => (await import('../apps/store/Store')).StoreScreen);
-const PulseApp = screen(async () => (await import('../apps/pulse/Pulse')).PulseScreen);
-const FlashApp = screen(async () => (await import('../apps/flash/Flash')).FlashScreen);
 const CameraApp = screen(async () => (await import('../apps/camera/CameraScreen')).CameraScreen);
 
 const entry = (
@@ -47,8 +45,6 @@ const entry = (
 /** One entry per built-in app. Adding an app is adding a line here (plus its server-side id). Order is the home-screen order. */
 export const appRegistry: readonly AppDefinition[] = [
   entry('store', StoreIcon, StoreApp, 'grid'),
-  entry('social', Radio, PulseApp, 'grid', { fullBleed: true, optional: { category: 'Social', description: 'Message your people, one-on-one or in a group.' } }),
-  entry('flash', Aperture, FlashApp, 'grid', { fullBleed: true, optional: { category: 'Social', description: 'Short videos and photos from around the city, for everyone to see.' } }),
   entry('camera', Camera, CameraApp, 'dock'),
   // Third-party SDK apps (apps:list) are not entries: they all render through this host, with the SDK app id as the
 // route target. Their runtime list lives in runtimeApps.ts and feeds the App Store and the host.

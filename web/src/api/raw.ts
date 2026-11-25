@@ -6,19 +6,6 @@ export interface Page<T> { items?: T[] }
 export interface RawContact { id: number | string; displayName?: string; phoneNumber?: string; photo?: string; isFavorite?: Flag }
 export interface RawMedia { id: number | string; publicUrl: string; mimeType?: string; createdAt?: number }
 export interface RawCall { id: number | string; status: string; remoteNumber?: string; direction?: 'incoming' | 'outgoing' }
-export interface RawConversation {
-    type?: string; title?: string | null; peerPhoneNumber?: string | null; lastMessagePreview?: string | null;
-    lastMediaMime?: string | null; lastMessageAt?: number | string | null; [key: string]: unknown;
-}
-export interface RawMessage {
-    senderNumber?: string; createdAt?: number | string; mediaUrl?: string | null; mediaMime?: string | null; [key: string]: unknown;
-}
-export interface RawListing { id: number; sellerHandle?: string; sellerName?: string; title: string; description?: string; price: number; createdAt?: number | string; isOwner?: boolean }
-export interface RawPost {
-    id: number; handle?: string; displayName?: string; body: string; createdAt?: number | string; likeCount?: number;
-    commentCount?: number; liked?: Flag; mine?: Flag; mediaUrl?: string | null; mediaMime?: string | null;
-}
-export interface RawComment { id: number; handle?: string; displayName?: string; body: string; createdAt?: number | string }
 export interface RawMail { id: number; peer: string; subject: string; body: string; hasAction?: Flag; unread?: Flag; createdAt?: number | string }
 export interface RawSdkApp {
     id: string; name?: string; description?: string; icon?: string; entry?: string; version?: string; resource?: string; url?: string;

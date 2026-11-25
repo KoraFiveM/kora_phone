@@ -1,5 +1,5 @@
 import { phone, ready, h, render, states, toast, confirm, pick as choose, icon, i18n } from '/sdk/runtime/kit.js';
-import { parseToken, previewText } from './chat.js';
+import { parseToken, previewText } from '/sdk/runtime/chat-tokens.js';
 
 const t = i18n({ en: { title: 'Messages', compose: 'New message', all: 'All messages', to: 'Phone number', placeholder: 'Message', send: 'Send', attach: 'Attach gallery photo',
     removeAttachment: 'Remove attachment', del: 'Delete message for me', emptyTitle: 'Start a conversation', emptyDetail: 'A simple hello goes a long way.', older: 'Older conversations',

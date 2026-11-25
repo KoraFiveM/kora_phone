@@ -13,6 +13,7 @@ import {
     type RequestMap,
     type RequestMessage,
     type RequestType,
+    type SavedMedia,
     type ThemeState,
 } from './protocol.js';
 
@@ -61,6 +62,10 @@ export interface PhoneClient {
     open(app: string, target?: string): Promise<void>;
     /** Tells the phone that data it shows elsewhere changed (contacts, for example), so it reloads it. */
     refresh(): Promise<void>;
+    /** Uploads a file to the media host and saves it to the gallery (needs the media.write permission). */
+    media: { upload(blob: Blob): Promise<SavedMedia> };
+    /** Takes an in-game photo with the phone's camera (needs the camera permission). */
+    camera: { capture(options?: { front?: boolean }): Promise<SavedMedia> };
     /** Starts a voice call to a phone number through the phone's call service (the call screen belongs to the phone). */
     call(number: string): Promise<void>;
     /** Settings, PIN, blocked numbers and handset controls. Only the phone's own system apps may use it; every other app gets PERMISSION_DENIED. */
@@ -243,6 +248,8 @@ export function createPhoneClient(options: PhoneClientOptions = {}): PhoneClient
         async system<TOut = unknown>(action: string, payload?: Record<string, unknown>): Promise<TOut> {
             return (await request('system', { ...(payload ?? {}), action })) as TOut;
         },
+        media: { async upload(blob) { return (await request('media.upload', { blob })) as SavedMedia; } },
+        camera: { async capture(options) { return (await request('camera.capture', { front: options?.front === true })) as SavedMedia; } },
         async call(number) {
             await request('call', { number });
         },

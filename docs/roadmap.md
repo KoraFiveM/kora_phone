@@ -15,8 +15,8 @@ This page summarises what ships today and what is in progress. [Features](./feat
 
 ## Folder apps
 
-- Shipped: the `Phone.app` API, the UI kit, the style guide and linter, and Notes, Calculator, Weather, Wallet, Mail, Moderation, Market, Contacts, Phone, Messages, Gallery, Maps, Clock, Sound, Settings, Garage, Home and Work as folder apps.
-- Still compiled into the host UI, in this order of difficulty:  Camera, Pulse and Flash (they need the in-game render canvas and clip recording, which only a running client can verify). The first-run Setup screen and the shop-counter services dialog stay in the host: Setup runs before the launcher is usable, and the dialog opens from the world rather than from an app. Each moves when its services are ready.
+- Shipped: the `Phone.app` API, the UI kit, the style guide and linter, and Notes, Calculator, Weather, Wallet, Mail, Moderation, Market, Contacts, Phone, Messages, Gallery, Maps, Clock, Sound, Settings, Pulse, Flash, Garage, Home and Work as folder apps.
+- Still compiled into the host UI, in this order of difficulty:  Camera (it needs the in-game render canvas, which only a running client can verify). Pulse and Flash are folder apps now. The first-run Setup screen and the shop-counter services dialog stay in the host: Setup runs before the launcher is usable, and the dialog opens from the world rather than from an app. Each moves when its services are ready.
 - `shared/routes.json` and the gateway remain the route table for the built-in apps; folder apps use `app.callback` and need no entry.
 
 ## Not enforced yet

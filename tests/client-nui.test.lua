@@ -65,7 +65,7 @@ end
 test('one callback is registered per route in routes.json', function()
     load()
     local routes = decode(routesJson)
-    assert(#routes > 40, 'routes.json should list the server routes')
+    assert(#routes > 30, 'routes.json should list the server routes')
     for _, route in ipairs(routes) do assert(registered[route.nui], route.nui) end
     equal(#KoraPhone.Routes, #routes)
 end)

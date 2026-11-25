@@ -10,6 +10,8 @@ export const REQUIRED_PERMISSION: Partial<Record<RequestType, Permission>> = {
     'storage.remove': 'storage',
     'contacts.list': 'contacts.read',
     'contacts.save': 'contacts.write',
+    'media.upload': 'media.write',
+    'camera.capture': 'camera',
 };
 
 export const isPermission = (value: unknown): value is Permission =>

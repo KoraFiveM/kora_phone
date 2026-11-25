@@ -13,3 +13,8 @@ export function previewText(body) {
     if (!token) return body || '';
     return token.kind === 'location' ? 'Shared a location' : token.kind === 'video' ? 'Sent a clip' : 'Sent a photo';
 }
+
+const clean = label => String(label).replace(/[[\]|]/g, '').trim().slice(0, 60);
+export const locationBody = place => `[[loc:${place.x},${place.y}|${clean(place.label)}]]`;
+export const photoBody = url => `[[photo:${url}]]`;
+export const videoBody = url => `[[video:${url}]]`;

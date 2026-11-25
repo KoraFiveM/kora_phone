@@ -101,7 +101,7 @@ Folder apps are trusted code. Their Lua runs in this resource's VM, and their pa
 
 ### Built-in apps
 
-Notes, Calculator, Weather, Wallet (`banking`), Mail (`mail`), Moderation (`moderation`, a `staff` app), Market (`classifieds`), Contacts, Phone, Messages and Gallery (in the dock), Maps (`gps`), Clock (`clock`, a `client.lua` that rings alarms with the phone closed), Sound (`music`, with declared `embeds`), Settings (`settings`, a `system` app that uses `phone.system`), Garage (`vehicles`), Home (`property`) and Work (`services`) ship as folder apps and are the reference implementations: `notes` for storage, `calculator` for pure UI, `weather` and `property` for `client.lua`, and `vehicles`, `property` and `services` for wrapping an existing server service with `Phone.unwrap`. The remaining built-in apps (Camera, Pulse, Flash) are still compiled into the host UI and move into `apps/` one at a time as they gain the services they need; see `patchnotes.md`.
+Notes, Calculator, Weather, Wallet (`banking`), Mail (`mail`), Moderation (`moderation`, a `staff` app), Market (`classifieds`), Contacts, Phone, Messages and Gallery (in the dock), Maps (`gps`), Clock (`clock`, a `client.lua` that rings alarms with the phone closed), Sound (`music`, with declared `embeds`), Pulse (`social`) and Flash (`flash`), which use `media.write`, `camera` and `record`, Settings (`settings`, a `system` app that uses `phone.system`), Garage (`vehicles`), Home (`property`) and Work (`services`) ship as folder apps and are the reference implementations: `notes` for storage, `calculator` for pure UI, `weather` and `property` for `client.lua`, and `vehicles`, `property` and `services` for wrapping an existing server service with `Phone.unwrap`. The remaining built-in apps (Camera, Pulse, Flash) are still compiled into the host UI and move into `apps/` one at a time as they gain the services they need; see `patchnotes.md`.
 
 ## Other ways to register an app
 
@@ -153,6 +153,9 @@ Job grades in a manifest are one-based, the same as kora_core's native grade lev
 | `storage` | `apps:storage:get`, `apps:storage:list`, `apps:storage:set`, `apps:storage:remove` |
 | `contacts.read` | `apps:contacts:list` |
 | `contacts.write` | `apps:contacts:save` |
+| `media.write` | `phone.media.upload(blob)`: uploads a file through the phone's media pipeline and saves it to the gallery (the server still enforces size, type and daily limits) |
+| `camera` | `phone.camera.capture()`: takes an in-game photo with the phone's own camera and saves it to the gallery |
+| `record` | Lets the app's frame use the webcam and microphone (`getUserMedia`), for short clips recorded with `sdk/runtime/recorder.js` |
 | `media.read` | Accepted in manifests, but no route checks it yet: it grants nothing |
 | `location` | Accepted in manifests, but no route checks it yet: it grants nothing |
 | `payments` | Accepted in manifests, but no route checks it yet: it grants nothing |

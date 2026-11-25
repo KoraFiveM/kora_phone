@@ -1,8 +1,6 @@
-import type { Post } from '../../types';
 import { items } from '../adapters/common';
-import { mapComment, mapPost } from '../adapters/social';
 import { mapMail } from '../adapters/mail';
-import type { RawComment, RawMail, RawPost } from '../raw';
+import type { RawMail } from '../raw';
 import type { HandlerSet } from '../routeTypes';
 import { server } from '../transport';
 import { uploadMedia } from '../upload';
@@ -10,19 +8,10 @@ import { uploadMedia } from '../upload';
 const done = async (work: Promise<unknown>): Promise<true> => { await work; return true; };
 
 const mailAndCommunity: HandlerSet<
-    'feed' | 'post' | 'uploadMedia' | 'createProfile' | 'removePost'
-    | 'like' | 'comments' | 'comment' | 'removeComment'
+    'uploadMedia'
     | 'mailList' | 'mailSend' | 'mailRead' | 'mailDelete'
 > = {
-    feed: async (p): Promise<Post[]> => items(await server<{ items?: RawPost[] }>('social:getFeed', { limit: 30, cursor: p.before })).map(mapPost),
-    post: (p, { id }) => done(server('social:createPost', { body: p.body, mediaId: p.mediaId, clientRequestId: id })),
     uploadMedia: p => uploadMedia(p),
-    createProfile: p => done(server('social:createAccount', { handle: p.handle, displayName: p.displayName })),
-    removePost: p => done(server('social:deletePost', { id: p.id })),
-    like: p => done(server('social:toggleLike', { postId: p.id, liked: p.liked })),
-    comments: async p => items(await server<{ items?: RawComment[] }>('social:getComments', { postId: p.id, limit: 50 })).map(mapComment),
-    comment: (p, { id }) => done(server('social:createComment', { postId: p.id, body: p.body, clientRequestId: id })),
-    removeComment: p => done(server('social:deleteComment', { id: p.id })),
     mailList: async p => items(await server<{ items?: RawMail[] }>('mail:list', { box: p.box, limit: 50, cursor: p.before })).map(mapMail),
     mailSend: (p, { id }) => done(server('mail:send', { to: p.to, subject: p.subject, body: p.body, clientRequestId: id })),
     mailRead: p => done(server('mail:read', { id: p.id })),

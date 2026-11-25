@@ -1,4 +1,4 @@
-import { ArrowUpRight,Check,Download,Radio,Search,X } from 'lucide-react';
+import { Check,Download,Search,X } from 'lucide-react';
 import { useState } from 'react';
 import { api } from '../../api';
 import type { OptionalApp } from '../../catalog';
@@ -24,7 +24,6 @@ export function StoreScreen() {
   });
   const visible = optionalApps.filter(id => supported(id)).filter(id => (tab !== 'Installed' || installed(id)) && (category === 'All' || listing(id).category === category) && `${appCopy(id).label} ${listing(id).description}`.toLowerCase().includes(search.toLowerCase()));
   return <div className="store"><div className="segments"><button className={tab === 'Discover' ? 'selected' : ''} onClick={() => setTab('Discover')}>Discover</button><button className={tab === 'Installed' ? 'selected' : ''} onClick={() => setTab('Installed')}>Installed · {data.installedApps?.length || 0}</button></div>
-    {tab === 'Discover' && !search && category === 'All' && <section className="store-feature"><span className="eyebrow">MADE FOR YOUR CITY</span><Radio size={40} strokeWidth={1} /><h2>Find your<br />frequency.</h2><p>Pulse. The conversation starts here.</p><button disabled={busy || !supported('social')} onClick={() => installed('social') ? navigate('social') : change('social', true)}>{working === 'social' ? <span className="store-spinner" aria-hidden="true" /> : <ArrowUpRight size={16} />}{working === 'social' ? 'Installing' : installed('social') ? 'Open Pulse' : 'Get Pulse — Free'}</button>{working === 'social' && <div className="store-progress store-progress-feature" aria-hidden="true"><i /></div>}<div className="store-orbit" /></section>}
     <label className="store-search"><Search size={17} /><input aria-label="Search apps" placeholder="Find your next favorite" value={search} onChange={e => setSearch(e.target.value)} /></label>
     <div className="store-categories">{['All', 'Social', 'Life', 'Tools'].map(value => <button key={value} className={category === value ? 'selected' : ''} onClick={() => setCategory(value)}>{value}</button>)}</div>
     <div className="section-heading"><span className="section-label">{tab === 'Installed' ? 'ON THIS PHONE' : 'A LITTLE OF EVERYTHING'}</span><span className="store-count">{visible.length.toString().padStart(2, '0')}</span></div>

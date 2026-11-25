@@ -41,8 +41,8 @@ assert.match(home, /reorderAllowed &&/, "the arrange control follows Config.Home
 assert.match(readApi(), /homeReorder: features\?\.homeReorder !== false/, "bootstrap carries the server option");
 
 // shared/validation.lua keeps its own copy of the optional apps; it must match the catalog.
-const catalog = read("web/src/catalog.ts").match(/optionalApps = \[([^\]]*)\]/)[1].match(/'([a-z]+)'/g).map(v => v.slice(1, -1)).sort();
-const server = read("shared/validation.lua").match(/OPTIONAL_APPS = \{([^}]*)\}/)[1].match(/([a-z]+)\s*=\s*true/g).map(v => v.split("=")[0].trim()).sort();
+const catalog = ((read("web/src/catalog.ts").match(/optionalApps = \[([^\]]*)\]/)[1].match(/'([a-z]+)'/g)) || []).map(v => v.slice(1, -1)).sort();
+const server = (read("shared/validation.lua").match(/OPTIONAL_APPS = \{([^}]*)\}/)[1].match(/([a-z]+)\s*=\s*true/g) || []).map(v => v.split("=")[0].trim()).sort();
 assert.deepEqual(server, catalog, "server OPTIONAL_APPS matches web/src/catalog.ts optionalApps");
 
 // The app registry (core/appRegistry.ts) is the one list of apps: its optional entries are the catalog.

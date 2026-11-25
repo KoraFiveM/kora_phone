@@ -9,6 +9,9 @@ export type Permission =
     | 'contacts.read'
     | 'contacts.write'
     | 'media.read'
+    | 'media.write'
+    | 'camera'
+    | 'record'
     | 'location'
     | 'payments';
 
@@ -21,6 +24,13 @@ export interface Contact {
     id?: string | number;
     name: string;
     number: string;
+}
+
+/** A photo or clip saved to the phone's gallery. */
+export interface SavedMedia {
+    id: number;
+    url: string;
+    kind: 'photo' | 'video';
 }
 
 export interface ThemeState {
@@ -48,6 +58,8 @@ export interface RequestMap {
     open: { payload: { app: string; target?: string }; result: unknown };
     refresh: { payload: Record<string, never>; result: unknown };
     call: { payload: { number: string }; result: unknown };
+    'media.upload': { payload: { blob: Blob }; result: SavedMedia };
+    'camera.capture': { payload: { front?: boolean }; result: SavedMedia };
     system: { payload: { action: string } & Record<string, unknown>; result: unknown };
     notify: { payload: { title: string; body: string }; result: unknown };
     'storage.list': { payload: { prefix?: string }; result: Record<string, Json> };

@@ -8,7 +8,7 @@ local Manifest = {}
 KoraPhone.SDK.Manifest = Manifest
 
 Manifest.PERMISSIONS = {
-    notify = true, storage = true, ['contacts.read'] = true, ['contacts.write'] = true,
+    notify = true, storage = true, ['contacts.read'] = true, ['contacts.write'] = true, ['media.write'] = true, camera = true, record = true,
     ['media.read'] = true, location = true, payments = true,
 }
 

@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Blocks } from 'lucide-react';
 import { api, nui } from '../../api';
+import { uploadMedia } from '../../api/upload';
 import { usePhone } from '../../core/PhoneContext';
 import { usePhoneStore } from '../../core/storeContext';
 import { isSdkInstalled, refreshSdkApps, useRuntimeApps } from '../../core/runtimeApps';
@@ -118,6 +119,15 @@ export function CustomAppScreen({ id, hint, transport = hostTransport }: { id: s
       onClose: () => navigate('home'),
       onSetTitle: setTitle,
       target: hint || undefined,
+      // The permission check in the router runs first, so these only ever answer an app that declared media.write or camera.
+      onUpload: async blob => { const saved = await uploadMedia({ blob }); void api('refresh', {}).then(next => { if (next.data) updateData(next.data); }).catch(() => undefined); return saved; },
+      onCapture: async front => {
+        const next = await api('capture', { front });
+        updateData(next);
+        const shot = next.photos[0];
+        if (!shot) throw new Error('The photo was not saved');
+        return { id: Number(shot.id), url: shot.url, kind: shot.kind ?? 'photo' };
+      },
       // Settings, PIN and handset controls: only for a system app that is served by this very resource.
       onSystem: definition.source === 'server' && definition.system === true && resource === location.hostname.replace(/^cfx-nui-/, '')
         ? (action, payload) => runSystemAction(systemDeps(), action, payload) : undefined,
@@ -142,7 +152,7 @@ export function CustomAppScreen({ id, hint, transport = hostTransport }: { id: s
       const msg: HostMessage = e.data;
       if (msg.type === 'app:event' && msg.app === id && typeof msg.name === 'string') post(push('event', { name: msg.name, data: msg.data }));
       else if (msg.type === 'customMessage' && msg.app === id) { const ev = legacyEvent(msg.data); post(push('event', ev ?? { name: 'message', data: msg.data })); if (compat) post(push('event', { name: 'kora:raw', data: msg.data })); }
-      else if ((msg.type === 'messages:new' || msg.type === 'messages:read') && id === 'messages') post(push('event', { name: msg.type, data: msg.data }));
+      else if ((msg.type === 'messages:new' || msg.type === 'messages:read') && (id === 'messages' || id === 'social')) post(push('event', { name: msg.type, data: msg.data }));
       else if (msg.type === 'mapBlipsChanged' && id === 'gps') post(push('event', { name: 'mapBlipsChanged', data: null }));
       else if (msg.type === 'customClose' && msg.app === id) navigate('home');
     };
@@ -170,7 +180,7 @@ export function CustomAppScreen({ id, hint, transport = hostTransport }: { id: s
   if (!definition || !authorized || compatDoc === null) return <div className="app-host"><div className="app-host-state" role="status"><p>Opening app…</p></div></div>;
   return <div className="app-host">
     {title && <div className="app-host-title">{title}</div>}
-    <iframe key={attempt} ref={frame} className="app-host-frame" data-ready={state === 'ready'} title={definition.name} {...(compat && compatDoc ? { srcDoc: compatDoc } : { src: url })}
+    <iframe key={attempt} ref={frame} className="app-host-frame" data-ready={state === 'ready'} title={definition.name} allow={permissions.includes('record') ? 'camera; microphone' : undefined} {...(compat && compatDoc ? { srcDoc: compatDoc } : { src: url })}
       sandbox="allow-scripts allow-same-origin allow-forms" referrerPolicy="no-referrer" />
     {state === 'loading' && <div className="app-host-state" role="status"><p>Opening {definition.name}…</p></div>}
     {state === 'error' && <div className="app-host-state" data-tone="error" role="alert"><p>{definition.name} did not respond.</p><button onClick={() => setAttempt(n => n + 1)}>Try again</button></div>}

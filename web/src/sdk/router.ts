@@ -25,6 +25,10 @@ export interface RouterOptions {
     onOpen?: (app: string, target?: string) => void;
     /** Settings, PIN, blocked numbers and handset controls. Only ever set for a system app that lives in this resource. */
     onSystem?: (action: string, payload: Record<string, unknown>) => Promise<unknown> | unknown;
+    /** Uploads a blob and saves it to the gallery; resolves with the saved item. */
+    onUpload?: (blob: Blob) => Promise<unknown>;
+    /** Takes an in-game photo and resolves with the saved item. */
+    onCapture?: (front: boolean) => Promise<unknown>;
     /** Starts a call. Receives a validated number (7 to 16 digits). */
     onCall?: (number: string) => Promise<unknown> | unknown;
     /** Reloads the data the host keeps for other screens (contacts and the like). */
@@ -44,6 +48,8 @@ export interface MessageLike { source: unknown; origin: string; data: unknown }
 
 export const REQUEST_TIMEOUT_MS = 15000;
 const MAX_PENDING = 32;
+/** The server enforces its own, smaller media limits; this only stops an absurd blob from crossing the iframe boundary. */
+const MAX_UPLOAD_BYTES = 64 * 1024 * 1024;
 
 /** Source + origin validation. `expectedSource` is iframe.contentWindow. */
 export function isTrustedMessage(event: MessageLike, expectedSource: unknown, origin: string): boolean {
@@ -120,6 +126,16 @@ export function createRouter(options: RouterOptions) {
             return null;
         },
         refresh: async () => { await options.onRefresh?.(); return null; },
+        'media.upload': async payload => {
+            if (!(payload.blob instanceof Blob)) throw new RouteError('INVALID_PAYLOAD', 'A file is required');
+            if (payload.blob.size === 0 || payload.blob.size > MAX_UPLOAD_BYTES) throw new RouteError('INVALID_PAYLOAD', 'That file is too large');
+            if (!options.onUpload) throw new RouteError('PERMISSION_DENIED', 'Not available to this app');
+            return options.onUpload(payload.blob);
+        },
+        'camera.capture': async payload => {
+            if (!options.onCapture) throw new RouteError('PERMISSION_DENIED', 'Not available to this app');
+            return options.onCapture(payload.front === true);
+        },
         system: payload => {
             if (!options.onSystem) throw new RouteError('PERMISSION_DENIED', 'Not available to this app');
             const action = str(payload.action, 32);

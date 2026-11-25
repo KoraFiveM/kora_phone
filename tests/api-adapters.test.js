@@ -23,7 +23,7 @@ const compile = (rel) => {
   fs.writeFileSync(target, outputText);
 };
 // Pure modules only: no DOM, no mock, no transport.
-["types.ts", "catalog.ts", "themes.ts", "api/adapters/common.ts", "api/adapters/messages.ts", "api/adapters/social.ts",
+["types.ts", "catalog.ts", "themes.ts", "api/adapters/common.ts", "api/adapters/messages.ts",
   "api/adapters/mail.ts", "api/adapters/apps.ts", "api/adapters/media.ts", "api/adapters/bootstrap.ts", "api/raw.ts",
   "api/errors.ts"].forEach(compile);
 fs.writeFileSync(path.join(out, "package.json"), "{}");
@@ -43,25 +43,9 @@ try {
   equal(items([2]), [2], "items accepts a bare array");
   equal(items(null), [], "items tolerates null");
 
-  const { mapMessage, mapConversation, mapCall } = load("api/adapters/messages.js");
-  const message = mapMessage({ id: 1, body: "hi", senderNumber: 555, createdAt: 1700000000, mediaUrl: "https://x/v", mediaMime: "video/webm" });
-  equal([message.sender_number, message.created_at, message.media_url, message.media_kind, message.body],
-    ["555", "2023-11-14T22:13:20.000Z", "https://x/v", "video", "hi"], "messages map server fields to chat fields");
-  equal(mapMessage({ id: 2 }).media_url, undefined, "no media url stays undefined");
-  const group = mapConversation({ id: 3, type: "group", title: "Crew", lastMessagePreview: "yo", lastMessageAt: "2024-01-01" });
-  equal([group.kind, group.name, group.last_body, group.last_at, group.last_number], ["group", "Crew", "yo", "2024-01-01", null], "group conversations");
-  const direct = mapConversation({ id: 4, peerPhoneNumber: "5550001" });
-  equal([direct.kind, direct.members, direct.name, direct.last_body, direct.last_at], ["direct", "5550001", null, "", null], "direct conversations");
+  const { mapCall } = load("api/adapters/messages.js");
   equal(mapCall({ id: 9, status: "rejected", remoteNumber: "555" }),
     { id: "9", status: "declined", number: "555", direction: "outgoing", deviceId: "kora_phone" }, "rejected calls are shown as declined");
-
-  const social = load("api/adapters/social.js");
-  const listing = social.mapListing({ id: 1, title: "Bike", description: "Fast", price: 50, sellerName: "Sam", createdAt: "t", isOwner: true });
-  equal([listing.number, listing.body, listing.price, listing.mine, listing.likes], ["Sam", "Bike\nFast", 50, true, 0], "classifieds");
-  const post = social.mapPost({ id: 2, handle: "@a", body: "b", likeCount: 3, liked: 1, mine: 1, createdAt: "t", mediaUrl: "https://x/i", mediaMime: "image/png" });
-  equal([post.number, post.likes, post.liked, post.mine, post.media_kind], ["@a", 3, true, true, "photo"], "social posts");
-  equal(social.mapComment({ id: 3, displayName: "Dee", body: "ok", createdAt: "t" }).number, "Dee", "comment author falls back to display name");
-  equal(social.splitListing(`${"x".repeat(100)}\nline two\nline three`), { title: "x".repeat(80), description: "line two\nline three" }, "listing text splits into title and description");
 
   const mail = load("api/adapters/mail.js");
   equal(mail.mapMail({ id: 1, peer: 7, subject: "s", body: "b", unread: 1, createdAt: "t" }),
