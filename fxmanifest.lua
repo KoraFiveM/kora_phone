@@ -1,5 +1,6 @@
 fx_version 'cerulean'
 game 'gta5'
+dependency 'kora_lib'
 
 name 'kora_phone'
 author 'Kora Team'
@@ -126,3 +127,5 @@ provide 'high-phone'
 
 -- kora_qa: Gherkin test scenarios (converted legacy tests), see [kora]/kora_qa/README.md
 qa_feature 'tests/*.feature'
+
+server_script 'kora_versioncheck.lua'
