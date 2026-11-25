@@ -1,0 +1,14 @@
+#listPane, #detailPane { height: 100%; }
+#detailPane .kp-app { height: 100%; }
+.thread { display: flex; flex-direction: column; gap: 8px; }
+.bubble { align-self: flex-start; max-width: 85%; padding: 8px 12px; border-radius: var(--kp-radius-lg); background: var(--kp-surface-raised); }
+.bubble[data-mine="true"] { align-self: flex-end; background: var(--kp-accent); color: var(--kp-accent-fg); }
+.bubble p { margin: 0; white-space: pre-wrap; overflow-wrap: anywhere; }
+.bubble small { display: block; opacity: 0.7; font-size: 0.7rem; }
+.bubble img, .bubble video { max-width: 100%; border-radius: var(--kp-radius-sm); display: block; }
+.composer { display: flex; gap: 8px; align-items: flex-end; }
+.composer textarea { min-height: var(--kp-target); max-height: 120px; flex: 1; }
+.attachment { position: relative; width: 72px; }
+.attachment img { width: 72px; height: 72px; object-fit: cover; border-radius: var(--kp-radius-sm); }
+.contact-photo { width: 40px; height: 40px; border-radius: var(--radius-full, 999px); object-fit: cover; background: var(--kp-surface-raised); flex: none; }
+.unread { font-weight: 700; color: var(--kp-accent); }

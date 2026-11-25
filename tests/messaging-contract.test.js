@@ -21,10 +21,10 @@ const migration = read("server/schema.lua");
 const web = readApi();
 const contracts = read("shared/contracts.lua");
 
-for (const callback of ["getContacts", "getConversations", "startDirectConversation", "markConversationRead", "deleteMessageForSelf"]) {
+for (const callback of ["getContacts", "getConversations", "startDirectConversation", "markConversationRead"]) {
   assert.match(callbacks, bound(callback), `${callback} must be registered`);
 }
-for (const route of ["contacts:list", "messages:getConversations", "messages:startDirect", "messages:markRead", "messages:deleteForSelf"]) {
+for (const route of ["contacts:list", "messages:getConversations", "messages:startDirect", "messages:markRead"]) {
   assert.match(nui, new RegExp(`\\['${route.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}']`), `${route} needs an explicit NUI bridge`);
 }
 
@@ -47,6 +47,13 @@ assert.match(web, /messages:getConversations/, "UI must load real conversations"
 assert.match(web, /messages:getPage/, "UI must load real message pages");
 assert.match(web, /conversationId: p\.conversationId, body: p\.body.*clientRequestId: id/, "composer must send against the selected conversation");
 assert.doesNotMatch(web, /5550000000/, "composer must not use a hard-coded recipient");
-assert.doesNotMatch(read("web/src/Communication.tsx"), /dangerouslySetInnerHTML/, "React must render message bodies as text");
+// Messages is a folder app: each callback runs the validated messaging service for the caller's own device, and the
+// page builds every message with text nodes (never innerHTML), so a hostile message body cannot run markup.
+const messagesApp = read("apps/messages/server.lua");
+for (const [callback, service, rate] of [["conversations", "listConversations", "read"], ["start", "startDirect", "mutation"], ["thread", "list", "read"],
+  ["send", "send", "sendMessage"], ["read", "markRead", "mutation"], ["delete", "deleteForSelf", "mutation"]])
+  assert.match(messagesApp, new RegExp(`app\\.callback\\('${callback}'[\\s\\S]*?Services\\.Messaging\\.${service}\\(source[\\s\\S]*?rate = '${rate}'`), `messages ${callback} must call ${service}(source) and charge ${rate}`);
+assert.doesNotMatch(messagesApp, /payload\.(?:senderNumber|deviceId|from)/, "the UI must not choose the sender");
+for (const file of ["app.js", "chat.js"]) assert.doesNotMatch(read(`apps/messages/ui/${file}`), /innerHTML|insertAdjacentHTML|document\.write/, "message bodies must be rendered as text");
 
 console.log("PASS messaging-contract: authority, ownership, paging, unread, blocks and UI contracts verified");

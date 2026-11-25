@@ -1,3 +1,4 @@
+import { currentAppId } from './phoneState';
 import { useEffect, useMemo, useReducer, useState } from 'react';
 import type { ReactNode } from 'react';
 import { isPreview } from '../api';
@@ -42,7 +43,7 @@ export function PhoneStoreProvider({ children }: { children: ReactNode }) {
     audio: { current: undefined }, coverAudio: { current: undefined }, peekTimer: { current: undefined },
     phone: { current: null }, screen: { current: null },
   }));
-  refs.call.current = state.call; refs.shown.current = state.shown; refs.app.current = state.app;
+  refs.call.current = state.call; refs.shown.current = state.shown; refs.app.current = currentAppId(state.app, state.target) as typeof state.app;
   if (device) refs.notificationDevice.current = device.id;
 
   const data = useMemo(() => {

@@ -92,8 +92,6 @@ export async function mockRequest<K extends keyof Api>(action: K, payload: Api[K
       if (!p.remove) store.data.contacts.push({ name: String(p.name), number: String(p.number), photo: String(p.photo || ''), favorite: p.favorite === true });
       result = store.data; break;
     }
-    case 'messages': result = store.messages.filter(m => m.kind === p.kind && (!p.before || m.id < Number(p.before))).sort((a, b) => b.id - a.id).slice(0, 50); break;
-    case 'sendMessage': store.messages.push({ id: Date.now(), sender: number, recipient: String(p.recipient), kind: p.kind as 'sms' | 'mail', subject: String(p.subject), body: String(p.body), created_at: timestamp() }); result = { sent: true }; break;
     case 'dial': {
       if (activeCall) throw new Error('Already in a call');
       activeCall = { id, number: String(p.number), direction: 'outgoing', status: 'ringing', deviceId: 'preview-device' }; result = activeCall;

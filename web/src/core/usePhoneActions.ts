@@ -79,7 +79,7 @@ export function usePhoneActions({ state, dispatch, refs, video }: ActionInput) {
     if (!notification.deviceId || (owner && owner !== notification.deviceId)) return;
     // Do Not Disturb still collects the notification, it just doesn't pop up (unless it's urgent).
     // No pop-up for a text while you're already looking at your chats.
-    const reading = incoming.app === 'messages' && refs.shown.current && (refs.app.current === 'messages' || refs.app.current === 'social');
+    const reading = incoming.app === 'messages' && refs.shown.current && ((refs.app.current as string) === 'messages' || refs.app.current === 'social');
     const popup = !reading && (incoming.urgent === true || !isQuiet(refs.quietConfig.current));
     dispatch({ type: 'notification', notification, popup });
   }, [dispatch, refs]);

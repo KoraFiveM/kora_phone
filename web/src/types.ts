@@ -1,6 +1,6 @@
 import type { Theme } from './themes';
 import { installedApps } from './catalog';
-export type AppId = `app:${string}` | 'custom' | 'store' | 'home' | 'messages' | 'camera' | 'social' | 'gps' | 'flash' | 'music' | 'clock' | 'settings';
+export type AppId = `app:${string}` | 'custom' | 'store' | 'home' | 'camera' | 'social' | 'gps' | 'flash' | 'music' | 'clock' | 'settings';
 /** Where navigate() may go: a built-in app, or the id of a folder app (which opens through the app host). */
 export type AppTarget = AppId | (string & {});
 export interface Settings { name: string; volume: number; scale: number; wallpaper: 'orbit' | 'plain' | 'midnight' | 'slate' | 'ember' | 'kora_core' | 'custom'; wallpaperUrl?: string; theme?: Theme; setupComplete?: boolean; phoneStyle?: 'classic' | 'standard' | 'flip' | 'fold'; phoneCase?: 'default' | 'nightdrive' | 'citypop' | 'sakura' | 'touge' | 'garage' | 'kora_core' | 'arcade' | 'space' | 'palms' | 'skyline' | 'custom'; phoneCaseUrl?: string; iconStyle?: 'circle' | 'squircle' | 'outline' | 'solid'; dnd?: boolean; dndFrom?: string; dndTo?: string; installedApps?: AppId[]; appOrder?: AppId[]; dockOrder?: AppId[] }
@@ -35,8 +35,6 @@ export type Api = {
   unlock: [{ pin: string }, Bootstrap]; lock: [Record<string, never>, Bootstrap]; refresh: [Record<string, never>, Bootstrap];
   pin: [{ currentPin: string; pin: string }, { hasPin: boolean }];
   settings: [Settings & { expectedDeviceId?: string }, DeviceData]; contactSave: [Contact & { remove?: boolean }, DeviceData];
-  messages: [{ kind: 'sms' | 'mail'; before?: number }, Message[]];
-  sendMessage: [{ recipient: string; kind: 'sms' | 'mail'; subject: string; body: string }, { sent: boolean }];
   dial: [{ number: string }, Call];
   answer: [{ id: string }, Call]; hangup: [{ id: string; reject?: boolean }, boolean];
   stations: [Station & { remove?: boolean }, DeviceData];
@@ -51,7 +49,6 @@ export type Api = {
   conversation: [{ id: number; before?: number }, ChatMessage[]];
   sendChatMessage: [{ conversationId: number; body: string; mediaKind?: MediaKind; media?: string; mediaId?: number }, ChatMessage];
   markConversationRead: [{ id: number; messageId?: number }, boolean];
-  deleteChatMessage: [{ messageId: number }, boolean];
   shareToChat: [{ conversationId: number; postId: number; body?: string; mediaUrl?: string; mediaKind?: MediaKind }, boolean];
   leaveGroup: [{ id: number }, boolean]; addMember: [{ id: number; number: string }, boolean];
   capture: [{ front?: boolean }, DeviceData];

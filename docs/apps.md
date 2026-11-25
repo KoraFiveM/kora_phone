@@ -74,6 +74,10 @@ app.push('refresh', data)                   -- Lua to the open UI
 
 If a folder app's id is one of the dock ids (`phone`, `messages`, `contacts`, `camera`, `gallery`) the phone shows it in the dock instead of the grid, in the default dock order. An app opened with `phone.open('phone', number)` receives that target as `init.target` (`phone.init.target` after `ready()`).
 
+### Events from the phone
+
+The phone forwards `messages:new` and `messages:read` to an open Messages app as app events (`phone.on('messages:new', fn)`). A wide app area (an unfolded Atlas Fold) shows list and detail together when the page uses the kit's `kp-split`, as Messages does.
+
 ### The UI kit
 
 An app page loads the kit from the phone, with no build step:
@@ -93,7 +97,7 @@ Folder apps are trusted code. Their Lua runs in this resource's VM, and their pa
 
 ### Built-in apps
 
-Notes, Calculator, Weather, Wallet (`banking`), Mail (`mail`), Moderation (`moderation`, a `staff` app), Market (`classifieds`), Contacts, Phone and Gallery (in the dock), Garage (`vehicles`), Home (`property`) and Work (`services`) ship as folder apps and are the reference implementations: `notes` for storage, `calculator` for pure UI, `weather` and `property` for `client.lua`, and `vehicles`, `property` and `services` for wrapping an existing server service with `Phone.unwrap`. The remaining built-in apps (Messages, Camera, Settings, Maps, Pulse, Flash, Clock, Sound) are still compiled into the host UI and move into `apps/` one at a time as they gain the services they need; see `patchnotes.md`.
+Notes, Calculator, Weather, Wallet (`banking`), Mail (`mail`), Moderation (`moderation`, a `staff` app), Market (`classifieds`), Contacts, Phone, Messages and Gallery (in the dock), Garage (`vehicles`), Home (`property`) and Work (`services`) ship as folder apps and are the reference implementations: `notes` for storage, `calculator` for pure UI, `weather` and `property` for `client.lua`, and `vehicles`, `property` and `services` for wrapping an existing server service with `Phone.unwrap`. The remaining built-in apps (Camera, Settings, Maps, Pulse, Flash, Clock, Sound) are still compiled into the host UI and move into `apps/` one at a time as they gain the services they need; see `patchnotes.md`.
 
 ## Other ways to register an app
 

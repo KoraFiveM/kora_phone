@@ -2,11 +2,10 @@ import { lazy } from 'react';
 import type { ComponentType, LazyExoticComponent } from 'react';
 import {
   AlarmClock, Aperture, Blocks, Camera, MapPin,
-  MessageCircle, Music, Phone, Radio, Settings as SettingsIcon, Store as StoreIcon,
+  Music, Phone, Radio, Settings as SettingsIcon, Store as StoreIcon,
 } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import { ClockScreen } from '../apps/clock/ClockScreen';
-import { MessagesScreen } from '../apps/communication/Communication';
 import { CustomAppRoute } from '../apps/custom/CustomApps';
 import { GPSScreen } from '../apps/maps/GPSScreen';
 import { MusicScreen } from '../apps/music/MusicScreen';
@@ -57,7 +56,6 @@ export const appRegistry: readonly AppDefinition[] = [
   entry('flash', Aperture, FlashApp, 'grid', { fullBleed: true, optional: { category: 'Social', description: 'Short videos and photos from around the city, for everyone to see.' } }),
   entry('music', Music, MusicScreen, 'grid', { optional: { category: 'Tools', description: 'Save YouTube, SoundCloud, or stream links and play them from your phone.' } }),
   entry('clock', AlarmClock, ClockScreen, 'grid', { optional: { category: 'Tools', description: 'Set alarms that ring on your local clock, even with the phone closed.' } }),
-  entry('messages', MessageCircle, MessagesScreen, 'dock'),
   entry('camera', Camera, CameraApp, 'dock'),
   entry('settings', SettingsIcon, SettingsHost, 'system'),
   // Third-party SDK apps (apps:list) are not entries: they all render through this host, with the SDK app id as the

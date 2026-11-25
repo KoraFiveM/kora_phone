@@ -10,9 +10,9 @@ import { server } from '../transport';
 const MAX_BODY = 1900;
 
 export const messagingRoutes: HandlerSet<
-    'dial' | 'answer' | 'hangup' | 'videoSignal' | 'sendMessage' | 'messages' | 'conversations'
+    'dial' | 'answer' | 'hangup' | 'videoSignal' | 'conversations'
     | 'startChat' | 'conversation' | 'sendChatMessage' | 'shareToChat' | 'markConversationRead'
-    | 'deleteChatMessage' | 'addMember' | 'createGroup' | 'leaveGroup' | 'blocked' | 'setBlocked'
+    | 'addMember' | 'createGroup' | 'leaveGroup' | 'blocked' | 'setBlocked'
 > = {
     dial: async p => mapCall(await server<RawCall>('calls:start', { to: p.number })),
     answer: async p => mapCall(await server<RawCall>('calls:accept', { id: p.id })),
@@ -21,11 +21,6 @@ export const messagingRoutes: HandlerSet<
         await server('calls:signal', { id: p.id, epoch: p.epoch, kind: p.kind, sdp: p.sdp, candidate: p.candidate });
         return true;
     },
-    sendMessage: async (p, { id }) => {
-        await server('messages:send', { to: p.recipient, body: p.body, clientRequestId: id });
-        return { sent: true };
-    },
-    messages: async () => { throw new Error('Conversation history needs the peer-number repository upgrade'); },
     conversations: async p => items(await server<{ items?: RawConversation[] } | RawConversation[]>('messages:getConversations', {
         limit: 50, cursor: p.before, cursorId: p.cursorId,
     })).map(mapConversation),
@@ -55,7 +50,6 @@ export const messagingRoutes: HandlerSet<
         return true;
     },
     markConversationRead: async p => { await server('messages:markRead', { conversationId: p.id, messageId: p.messageId }); return true; },
-    deleteChatMessage: async p => { await server('messages:deleteForSelf', { messageId: p.messageId }); return true; },
     addMember: async p => { await server('messages:addMember', { conversationId: p.id, number: p.number }); return true; },
     createGroup: p => server<{ id: number }>('messages:createGroup', { name: p.name, numbers: p.numbers }),
     leaveGroup: async p => { await server('messages:leaveGroup', { conversationId: p.id }); return true; },

@@ -15,7 +15,6 @@
     {"nui": "messages:getConversations", "server": "kora_phone:server:getConversations", "rate": "read", "app": null},
     {"nui": "messages:startDirect", "server": "kora_phone:server:startDirectConversation", "rate": "mutation", "app": null},
     {"nui": "messages:markRead", "server": "kora_phone:server:markConversationRead", "rate": "mutation", "app": null},
-    {"nui": "messages:deleteForSelf", "server": "kora_phone:server:deleteMessageForSelf", "rate": "mutation", "app": null},
     {"nui": "messages:getPage", "server": "kora_phone:server:getMessages", "rate": "read", "app": null},
     {"nui": "messages:send", "server": "kora_phone:server:sendMessage", "rate": "sendMessage", "app": null},
     {"nui": "calls:start", "server": "kora_phone:server:calls:start", "rate": "callStart", "app": null},

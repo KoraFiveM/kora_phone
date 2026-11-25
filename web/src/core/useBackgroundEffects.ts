@@ -2,13 +2,15 @@ import { useEffect } from 'react';
 import { api, isDemo, isEmbed, demoModel, isPreview, nui } from '../api';
 import { alarmTone } from '../apps/clock/ClockScreen';
 import { recall, remember } from '../lastScreen';
+import { currentAppId } from './phoneState';
 import type { Alarm } from '../types';
 import type { PhoneStore } from './storeContext';
 
 /** Timers and persistence that must keep running whether or not a screen is mounted. */
 export function useBackgroundEffects({ state, dispatch, refs, video, actions, view }: PhoneStore) {
-  const { device, call, alert, toast, notifications, earlier, app, shown } = state;
-  const { data, quiet, date, flip, fold } = view;
+  const { device, call, alert, toast, notifications, earlier, shown } = state;
+  const app = currentAppId(state.app, state.target);
+  const { data, quiet, date, flip } = view;
   const { stopVideo, gameVideo, localVideoRef, remoteVideoRef, localStream, remoteStream } = video;
   const { markRead, updateData, choosePreviewModel } = actions;
   const { dnd, dndFrom, dndTo } = data.settings;
@@ -62,7 +64,7 @@ export function useBackgroundEffects({ state, dispatch, refs, video, actions, vi
   // Being in an app means you've seen its notifications.
   useEffect(() => {
     if (!shown || app === 'home') return;
-    const seen = notifications.filter(n => n.app === app || (app === 'social' && n.app === 'messages'));
+    const seen = notifications.filter(n => (n.app as string) === app || (app === 'social' && (n.app as string) === 'messages'));
     if (seen.length) markRead(seen);
   }, [app, shown, notifications, markRead]);
 
@@ -113,14 +115,6 @@ export function useBackgroundEffects({ state, dispatch, refs, video, actions, vi
     })();
     return () => { cancelled = true; };
   }, []);
-
-  // The folded phone shows the conversation list beside an open chat.
-  useEffect(() => {
-    if (!fold || state.folded || app !== 'messages' || !shown || view.locked) return;
-    let live = true;
-    void api('conversations', {}).then(value => { if (live) dispatch({ type: 'patch', patch: { foldInbox: value, foldInboxMore: value.length === 50 } }); }).catch(() => undefined);
-    return () => { live = false; };
-  }, [fold, state.folded, app, state.revision, shown, view.locked, device?.id, dispatch]);
 
   // Browser demo: start on the handset named in the URL.
   useEffect(() => {

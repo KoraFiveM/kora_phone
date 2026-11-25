@@ -51,7 +51,7 @@ Every NUI route that forwards to a server callback is listed once in `shared/rou
 | Phone | `getBootstrap`, `saveSettings`, `unlockPhone`, `lockPhone`, `setPhonePin`, `removePhonePin`, `hasPhone` |
 | Handsets | `handsetAction` (ops: `status`, `select`, `faceUnlock`, `faceEnroll`, `wifi`, `insertSim`, `removeSim`, `registerCloud`, `backup`, `restoreCloud`, `reset`, and service ops `buy`, `recoverCloud`, `replaceSim`, `resell`, `consent`) |
 | Contacts and sharing | `getContacts`, `saveContact`, `deleteContact`, `share:offer`, `share:answer` |
-| Messages | `sendMessage`, `getMessages`, `getConversations`, `startDirectConversation`, `markConversationRead`, `deleteMessageForSelf`, `createGroup`, `leaveGroup`, `addGroupMember`, `getBlocked`, `setBlocked` |
+| Messages | `sendMessage`, `getMessages`, `getConversations`, `startDirectConversation`, `markConversationRead`, `createGroup`, `leaveGroup`, `addGroupMember`, `getBlocked`, `setBlocked` |
 | Calls | `calls:start`, `calls:accept`, `calls:reject`, `calls:hangup`, `calls:signal`, `calls:videoControl` |
 | Mail | `getMail`, `sendMail`, `readMail`, `deleteMail` |
 | Media | `requestMediaUpload`, `completeMediaUpload`, `getGallery` |
