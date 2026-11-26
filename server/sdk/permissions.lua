@@ -18,6 +18,9 @@ function Permissions.gate(source, appId, permission)
     if not device then return nil, nil, err end
     local app = KoraPhone.SDK.Registry.get(appId)
     if not app then return nil, nil, PhoneError(errors.NOT_FOUND, 'App is not registered') end
+    if not KoraPhone.SDK.Registry.visibleTo(app, source) then
+        return nil, nil, PhoneError(errors.FORBIDDEN, 'App is not available')
+    end
     if not KoraPhone.SDK.Install.isInstalled(device, app) then
         return nil, nil, PhoneError(errors.FORBIDDEN, 'App is not installed')
     end

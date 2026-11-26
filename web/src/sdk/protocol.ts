@@ -6,12 +6,12 @@ export type Handset = 'standard' | 'flip' | 'fold';
 export type Scheme = 'dark' | 'light';
 
 export const PERMISSIONS = [
-    'notify', 'storage', 'contacts.read', 'contacts.write', 'media.read', 'location', 'payments',
+    'notify', 'storage', 'contacts.read', 'contacts.write', 'media.read', 'media.write', 'camera', 'record', 'location', 'payments',
 ] as const;
 export type Permission = typeof PERMISSIONS[number];
 
 export const REQUEST_TYPES = [
-    'ready', 'callback', 'notify', 'storage.get', 'storage.set', 'storage.remove',
+    'ready', 'callback', 'client', 'open', 'refresh', 'call', 'lb', 'system', 'media.upload', 'camera.capture', 'notify', 'storage.get', 'storage.list', 'storage.set', 'storage.remove',
     'contacts.list', 'contacts.save', 'close', 'setTitle', 'haptic', 'getContext',
 ] as const;
 export type RequestType = typeof REQUEST_TYPES[number];
@@ -26,6 +26,8 @@ export interface InitPayload {
     locale: string;
     theme: ThemePayload;
     permissions: Permission[];
+    target?: string;
+    volume?: number;
 }
 
 export interface Envelope {

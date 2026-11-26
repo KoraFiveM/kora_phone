@@ -21,6 +21,7 @@ local function view(app, device)
         id = app.id, name = app.name, description = app.description, icon = app.icon,
         entry = app.entry, version = app.version, permissions = app.permissions, job = app.job,
         defaultInstalled = app.defaultInstalled, price = app.price, resource = app.resource,
+        category = app.category, system = app.system,
         url = KoraPhone.SDK.Registry.url(app),
         installed = KoraPhone.SDK.Install.isInstalled(device, app),
     }
@@ -34,7 +35,9 @@ function routes.list(source)
     local apps = {}
     for _, app in ipairs(KoraPhone.SDK.Registry.list()) do
         local entry = view(app, device)
-        if entry.installed or KoraPhone.SDK.Registry.jobMatches(app, job) then apps[#apps + 1] = entry end
+        if not KoraPhone.SDK.Registry.visibleTo(app, source) then
+            -- staff apps are invisible to everyone else
+        elseif entry.installed or KoraPhone.SDK.Registry.jobMatches(app, job) then apps[#apps + 1] = entry end
     end
     return PhoneResult({ apps = apps })
 end
@@ -65,6 +68,15 @@ function routes.storageGet(source, payload)
     local value, storageErr = KoraPhone.SDK.Storage.get(device.id, app.id, payload.key)
     if storageErr then return storageErr end
     return PhoneResult({ value = value })
+end
+
+function routes.storageList(source, payload)
+    payload = payloadOf(payload)
+    local device, app, err = Permissions.gate(source, payload.app, 'storage')
+    if not device then return err end
+    local values, storageErr = KoraPhone.SDK.Storage.list(device.id, app.id, payload.prefix)
+    if storageErr then return storageErr end
+    return PhoneResult({ values = values })
 end
 
 function routes.storageSet(source, payload)
@@ -131,6 +143,7 @@ KoraPhone.SDK.routes['apps:install'] = routes.install
 KoraPhone.SDK.routes['apps:uninstall'] = routes.uninstall
 KoraPhone.SDK.routes['apps:call'] = routes.call
 KoraPhone.SDK.routes['apps:storage:get'] = routes.storageGet
+KoraPhone.SDK.routes['apps:storage:list'] = routes.storageList
 KoraPhone.SDK.routes['apps:storage:set'] = routes.storageSet
 KoraPhone.SDK.routes['apps:storage:remove'] = routes.storageRemove
 KoraPhone.SDK.routes['apps:contacts:list'] = routes.contactsList

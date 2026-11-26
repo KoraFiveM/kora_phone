@@ -1,0 +1,25 @@
+.identity { text-align: center; }
+.overline { color: var(--kp-muted); font-size: 0.7rem; letter-spacing: 0.1em; text-transform: uppercase; }
+.categories { display: flex; flex-direction: column; }
+.category-value { color: var(--kp-muted); font-size: 0.85rem; }
+.save-state { margin: 0; padding: 8px 16px; color: var(--kp-muted); font-size: 0.8rem; border-top: 1px solid var(--kp-border); }
+.save-state[data-status="error"] { color: var(--kp-danger); }
+.swatches { display: grid; grid-template-columns: repeat(auto-fill, minmax(88px, 1fr)); gap: 8px; }
+.swatches button { display: flex; flex-direction: column; gap: 6px; align-items: stretch; padding: 6px; border: 1px solid var(--kp-border); border-radius: var(--kp-radius); background: var(--kp-surface); cursor: pointer; font-size: 0.8rem; }
+.swatches button[aria-pressed="true"] { border-color: var(--kp-accent); }
+.swatches .swatch { height: 56px; border-radius: var(--kp-radius-sm); border: 1px solid var(--kp-border); }
+.range { display: flex; flex-direction: column; gap: 6px; }
+.range output { color: var(--kp-muted); }
+.quiet-hours { display: grid; grid-template-columns: 1fr 1fr; gap: var(--kp-gap); }
+.blocked-row { display: flex; align-items: center; gap: var(--kp-gap); padding: 8px 0; border-bottom: 1px solid var(--kp-border); }
+.photo-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; }
+.photo-grid button { padding: 0; border: 2px solid transparent; border-radius: var(--kp-radius-sm); background: none; cursor: pointer; }
+.photo-grid button[aria-pressed="true"] { border-color: var(--kp-accent); }
+.photo-grid img { width: 100%; aspect-ratio: 1; object-fit: cover; border-radius: var(--kp-radius-sm); display: block; }
+.hs-number { font-family: var(--kp-font-mono); font-size: 1.3rem; margin: 0; }
+.hs-facts { display: grid; grid-template-columns: 1fr; gap: 6px; margin: 0; }
+.hs-facts dt { color: var(--kp-muted); font-size: 0.75rem; }
+.hs-facts dd { margin: 0; overflow-wrap: anywhere; }
+.hs-card { display: flex; flex-direction: column; gap: var(--kp-gap); }
+details { border-top: 1px solid var(--kp-border); padding-top: 8px; }
+summary { cursor: pointer; font-weight: 600; }

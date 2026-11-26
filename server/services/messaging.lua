@@ -47,6 +47,15 @@ end
 function Messaging.send(source, payload)
     local sender, err = KoraPhone.Permissions.requireDevice(source)
     if not sender then return err end
+    return Messaging.sendAs(sender, payload)
+end
+
+---Sends a message as `sender` (a phone_devices row with at least `id` and `phoneNumber`). Used by `send` for the held
+---phone and by compat exports that send from a phone number with no player involved.
+---@param sender table
+---@param payload table
+function Messaging.sendAs(sender, payload)
+    local err
     local message, validationError = PhoneContracts.message(payload)
     if not message then return PhoneError(PhoneConstants.Errors.INVALID_INPUT, validationError) end
     local conversationId, recipient

@@ -1,3 +1,4 @@
+import { currentAppId } from './phoneState';
 import { useEffect, useMemo, useReducer, useState } from 'react';
 import type { ReactNode } from 'react';
 import { isPreview } from '../api';
@@ -12,7 +13,7 @@ import { restoreApp } from './appRegistry';
 import { initialPhoneState, phoneReducer } from './phoneState';
 import { PhoneStoreContext } from './storeContext';
 import type { PhoneRefs, PhoneStore } from './storeContext';
-import { storedAlarms, useBackgroundEffects } from './useBackgroundEffects';
+import { useBackgroundEffects } from './useBackgroundEffects';
 import { useCallVideo } from './useCallVideo';
 import { useHostEvents } from './useHostEvents';
 import { usePhoneActions } from './usePhoneActions';
@@ -38,11 +39,11 @@ export function PhoneStoreProvider({ children }: { children: ReactNode }) {
   const [refs] = useState<PhoneRefs>(() => ({
     call: { current: undefined }, shown: { current: state.shown }, app: { current: state.app }, busy: { current: false },
     notificationDevice: { current: device?.id }, quietConfig: { current: storedQuiet() },
-    contactNames: { current: new Map<string, string>() }, alarms: { current: storedAlarms() }, firedAlarms: { current: new Set<string>() },
+    contactNames: { current: new Map<string, string>() },
     audio: { current: undefined }, coverAudio: { current: undefined }, peekTimer: { current: undefined },
     phone: { current: null }, screen: { current: null },
   }));
-  refs.call.current = state.call; refs.shown.current = state.shown; refs.app.current = state.app;
+  refs.call.current = state.call; refs.shown.current = state.shown; refs.app.current = currentAppId(state.app, state.target) as typeof state.app;
   if (device) refs.notificationDevice.current = device.id;
 
   const data = useMemo(() => {

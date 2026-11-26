@@ -43,9 +43,17 @@ local callbacks = {}
 local citizen = 'CID1'
 _G.GetGameTimer = function() return now end
 _G.SetTimeout = function(_, fn) timeouts[#timeouts + 1] = fn end
+-- The server schedules through KoraPhone.After (Kora.timers.setTimeout); the test drives the same queue.
+KoraPhone = KoraPhone or {}
+KoraPhone.After = function(ms, fn) _G.SetTimeout(ms, fn) end
 _G.GetCurrentResourceName = function() return 'kora_phone' end
 _G.LoadResourceFile = function(_, path) return readFile(path) end
-_G.json = { decode = function() return decodeRoutes(readFile('shared/routes.json')) end }
+-- No shipped route carries an app gate any more (every gated app is a folder app), so the gate itself is exercised with a synthetic route.
+_G.json = { decode = function()
+    local routes = decodeRoutes(readFile('shared/routes.json'))
+    routes[#routes + 1] = { nui = 'gate:test', server = 'kora_phone:server:gate:test', rate = 'read', app = 'social' }
+    return routes
+end }
 _G.promise = { new = function()
     local p = {}
     function p:resolve(value) self.value = value end
@@ -70,6 +78,7 @@ dofile(root .. '/shared/constants.lua')
 local lockCalls, clears, backups = 0, {}, 0
 local selected = { [1] = 'h1' }
 _G.KoraPhone = {
+    After = function(ms, fn) _G.SetTimeout(ms, fn) end,
     Services = setmetatable({}, { __index = function() return setmetatable({}, { __index = function() return function() end end }) end }),
     GetCitizenId = function() return citizen end,
     Handsets = {
@@ -107,17 +116,16 @@ test('every routes.json server name is registered exactly once', function()
     end
     local count = 0
     for _ in pairs(seen) do count = count + 1 end
-    assert(count >= 60)
+    assert(count >= 30)
     assert(callbacks[PREFIX .. 'hasPhone'] and callbacks[PREFIX .. 'share:offer'])
 end)
 
-test('the new sdk and system mail routes are registered, the legacy names are not', function()
-    for _, name in ipairs({ 'apps:list', 'apps:notify', 'mail:system:list', 'mail:system:accept' }) do
+test('the sdk routes are registered, the legacy names are not', function()
+    for _, name in ipairs({ 'apps:list', 'apps:notify', 'apps:storage:list' }) do
         assert(callbacks[PREFIX .. name], name)
     end
     assert(not callbacks[PREFIX .. 'legacy:getMail'] and not callbacks[PREFIX .. 'acceptLegacyMail'])
     equal(Routes.byName['apps:list'].rate, 'sdk')
-    equal(Routes.byName['mail:system:read'].rate, 'mutation')
 end)
 
 test('an unbound route answers INTERNAL and logs', function()
@@ -170,15 +178,13 @@ end)
 test('app gate from routes.json blocks a disabled app before the handler runs', function()
     reset()
     local ran = false
-    Routes.handle('social:getFeed', function() ran = true return PhoneResult({}) end)
+    Routes.handle('gate:test', function() ran = true return PhoneResult({}) end)
     Config.Apps = { social = false }
-    local result = call('social:getFeed', {})
+    local result = call('gate:test', {})
     equal(result.error.code, PhoneConstants.Errors.FORBIDDEN)
     equal(ran, false)
-    Config.Apps = { social = true, banking = false }
-    equal(call('social:getFeed', {}).ok, true)
-    Routes.handle('transferBankMoney', function() ran = true return PhoneResult({}) end)
-    equal(call('transferBankMoney', {}).error.code, PhoneConstants.Errors.FORBIDDEN)
+    Config.Apps = { social = true, flash = false }
+    equal(call('gate:test', {}).ok, true)
 end)
 
 test('ordinary routes run inside the handset lock; handsetAction and lock=false do not', function()
@@ -239,11 +245,11 @@ test('async routes reply through the callback and skip the handset lock', functi
     local result = call('requestMediaUpload', {})
     equal(result.ok, true)
     equal(lockCalls, 0)
-    Routes.handle('deleteMedia', function() error('boom') end, { async = true })
-    equal(call('deleteMedia', {}).error.code, PhoneConstants.Errors.INTERNAL)
+    Routes.handle('completeMediaUpload', function() error('boom') end, { async = true })
+    equal(call('completeMediaUpload', {}).error.code, PhoneConstants.Errors.INTERNAL)
 end)
 
-test('sdk and system mail routes bind lazily to their module tables', function()
+test('sdk routes bind lazily to their module tables', function()
     reset()
     Routes.handle('apps:list', function(s, p)
         return (KoraPhone.SDK.routes['apps:list'])(s, p)
@@ -252,10 +258,8 @@ test('sdk and system mail routes bind lazily to their module tables', function()
     -- the real binding in callbacks.lua is lazy: re-run it against the now present table
     dofile(root .. '/server/callbacks.lua')
     equal(call('apps:list', {}).ok, true)
-    KoraPhone.SystemMail = { routes = { ['mail:system:list'] = function() return PhoneResult({ items = {} }) end } }
-    equal(call('mail:system:list', {}).ok, true)
-    KoraPhone.SystemMail = nil
-    equal(call('mail:system:list', {}).ok, false)
+    KoraPhone.SDK = nil
+    equal(call('apps:list', {}).ok, false)
 end)
 
 test('registerCallback shim binds by name', function()

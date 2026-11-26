@@ -5,3 +5,6 @@
 .app-host-state { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: var(--space-3); padding: var(--space-6); text-align: center; background: hsl(var(--background)); color: hsl(var(--muted-foreground)); }
 .app-host-state[data-tone="error"] { color: hsl(var(--destructive)); }
 .app-host-state button { padding: var(--space-2) var(--space-4); border-radius: var(--radius); border: 1px solid hsl(var(--border)); background: hsl(var(--surface-raised)); color: hsl(var(--foreground)); }
+
+/* An app icon drawn from an .svg the app ships: coloured by the theme, never by the app. */
+.sdk-icon { display: inline-block; background: currentColor; mask-repeat: no-repeat; mask-position: center; mask-size: contain; -webkit-mask-repeat: no-repeat; -webkit-mask-position: center; -webkit-mask-size: contain; }

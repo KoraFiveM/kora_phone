@@ -188,7 +188,7 @@ function Calling.start(source, payload)
     TriggerClientEvent('kora_phone:client:calls:outgoing', source, publicCall(call, caller.id))
     TriggerClientEvent('kora_phone:client:calls:incoming', calleeSource, publicCall(call, callee.id))
 
-    SetTimeout(ringTimeoutMs, function()
+    KoraPhone.After(ringTimeoutMs, function()
         local current = Calling.activeById[call.id]
         if current and current.status == 'ringing' then finish(current, 'missed', 'ring_timeout') end
     end)
@@ -317,7 +317,7 @@ function Calling.videoControl(source, payload)
             epoch = call.video.epoch,
         })
         local epoch = call.video.epoch
-        SetTimeout(30000, function()
+        KoraPhone.After(30000, function()
             if call.video and call.video.epoch == epoch and not call.video.accepted then
                 call.video = nil
                 notify(call, 'kora_phone:client:calls:videoControl', { id = call.id, action = 'stop' })

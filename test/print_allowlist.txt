@@ -1,1 +1,2 @@
 server/main.lua:only remaining print is the /phonereset console reply (operator command reply meant for the console)
+sdk/runtime/game.js: generated bundle of web/src/gameVideo.ts; its two [Camera] console.error lines report a lost WebGL context, which has no other channel in a page

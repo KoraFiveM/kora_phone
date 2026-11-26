@@ -1,6 +1,6 @@
 import { createContext, useContext } from 'react';
 import type { Dispatch, RefObject } from 'react';
-import type { Alarm, AppId, Call, DeviceData } from '../types';
+import type { AppId, Call, DeviceData } from '../types';
 import type { HandsetModel, Appearance } from '../themes';
 import type { Quiet } from '../quiet';
 import type { PhoneAction, PhoneState } from './phoneState';
@@ -17,8 +17,6 @@ export interface PhoneRefs {
   quietConfig: RefObject<Quiet>;
   /** Contact names, kept while the phone is closed so a game notification can say who it's from (memory only). */
   contactNames: RefObject<Map<string, string>>;
-  alarms: RefObject<Alarm[]>;
-  firedAlarms: RefObject<Set<string>>;
   audio: RefObject<AudioContext | undefined>;
   coverAudio: RefObject<HTMLAudioElement | undefined>;
   peekTimer: RefObject<ReturnType<typeof setTimeout> | undefined>;

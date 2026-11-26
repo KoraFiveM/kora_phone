@@ -38,6 +38,7 @@ local function setup(config)
     _G.IsPedSwimming = function() return flags.swimming end
     _G.IsPedSwimmingUnderWater = function() return false end
     _G.IsPedInAnyVehicle = function() return flags.vehicle end
+    _G.GetEntityCoords = function() return { x = 0.0, y = 0.0, z = 0.0 } end
     _G.GetPedBoneIndex = function(_, bone) return bone end
     _G.GetEntityBoneIndexByName = function(_, name) return name end
     _G.SetEntityCollision = function() end
@@ -60,6 +61,8 @@ local function setup(config)
             onChange = function(key, fn) if key == "ped" then pedListeners[#pedListeners + 1] = fn end end,
         },
         stream = { loadModel = function(model, cb) cb(model); return true end },
+        -- Kora.entities.create loads the model and returns the local entity; the mock keeps CreateObject's bookkeeping.
+        entities = { create = function(model) return CreateObject(model) end },
         anim = {
             play = function(entity, dict, clip, opts) played[#played + 1] = { dict = dict, clip = clip, flag = opts.flag }; return { entity = entity, n = #played } end,
             stopHandle = function() stopped = stopped + 1; return true end,
@@ -150,10 +153,10 @@ end)
 
 test("closing the phone while the prop model loads leaves no prop behind", function()
     setup({})
-    Kora.stream.loadModel = function(model, cb) KoraPhone.Animations.Stop(); cb(model); return true end
+    -- Kora.entities.create waits for the model; the phone is put away during that wait.
+    Kora.entities.create = function(model) KoraPhone.Animations.Stop(); return CreateObject(model) end
     KoraPhone.Animations.Start()
-    equal(#props, 0)
-    equal(livingProps(), 0)
+    equal(livingProps(), 0, 'the prop created during the wait is deleted, not left in the hand')
 end)
 
 test("a restart clears a prop the previous instance left in the hand, and only that", function()

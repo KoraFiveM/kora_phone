@@ -12,7 +12,7 @@ const readApi = () => { // the web API layer is split across web/src/api/**
 };
 
 const manifest = read("fxmanifest.lua");
-for (const module of ["call_callbacks", "economy_callbacks", "media_callbacks", "community_callbacks"]) {
+for (const module of ["call_callbacks", "media_callbacks"]) {
   assert.ok(manifest.includes(`server/modules/${module}.lua`), `manifest must load ${module}`);
 }
 assert.ok(manifest.indexOf("server/rate_limits.lua") < manifest.indexOf("server/modules/call_callbacks.lua"),
@@ -37,8 +37,8 @@ assert.match(web, /captureDone: 'camera:close'/, "camera capture must restore ph
   }
 }
 
-const callbackFiles = ["server/callbacks.lua", "server/modules/economy_callbacks.lua",
-  "server/modules/media_callbacks.lua", "server/modules/community_callbacks.lua", "server/modules/call_callbacks.lua"];
+const callbackFiles = ["server/callbacks.lua",
+  "server/modules/media_callbacks.lua", "server/modules/call_callbacks.lua"];
 const names = [];
 for (const file of callbackFiles) {
   const source = read(file);
@@ -48,10 +48,9 @@ const duplicates = names.filter((name, index) => names.indexOf(name) !== index);
 assert.deepEqual([...new Set(duplicates)], [], `duplicate server callbacks: ${duplicates.join(", ")}`);
 
 const nui = require("./helpers/nui-source").source;
-for (const route of ["calls:start", "calls:accept", "calls:reject", "calls:hangup", "calls:history",
-  "gallery:list", "gallery:delete", "bank:getData", "bank:getTransactions", "bank:transfer",
-  "jobs:getData", "jobs:setDuty", "jobs:runAction", "messages:send", "social:getFeed",
-  "market:getListings", "market:contactSeller"]) {
+for (const route of ["calls:start", "calls:accept", "calls:reject", "calls:hangup",
+  "gallery:list",
+  ]) {
   assert.ok(nui.includes(`['${route}']`), `NUI route missing: ${route}`);
 }
 console.log("PASS final-security: load order, sessions, focus, callback uniqueness and NUI coverage verified");

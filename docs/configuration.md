@@ -47,11 +47,11 @@ Lua tests run without FiveM, so `tests/config_shim.lua` stands in for `Kora.conf
 | `Config.HomeScreen.allowReorder` | `true` | shared, live | Let players drag home-screen icons; `false` hides the controls and the server ignores order changes |
 | `Config.Gallery.fullscreenViewer` | `true` | server, live | Large full-screen photo and video viewer |
 | `Config.AppStore` | `true` | server, live | `false` hides the App Store icon |
-| `Config.Apps` | all `true` except `moderation = false` | server, live | Per-app switches sent to the UI at bootstrap: `banking`, `social`, `classifieds`, `services`, `property`, `vehicles`, `flash`, `moderation`, `gps`, `notes`, `mail`, `weather`, `calculator`, `clock`, `music` |
+| `Config.Apps` | all `true` except `moderation = false` | server, live | Per-app switches. For folder apps (`social`, `flash`, `music`, `notes`, `classifieds`, `gps`, `clock`, `weather`, `calculator`, `banking`, `mail`, `moderation`, `services`, `property`, `vehicles` and any app you add under `apps/`) `false` stops the app registering, so it disappears from the store and the home screen |
 
 `Config.ShareNumber`: `Enabled = true`, `Distance = 3.0` m (server-measured, 1 to 15), `AnswerDistance = 10.0` m, `ExpireSeconds = 30` (5 to 120), `CooldownSeconds = 20` per pair, `AskForName = true`, `AllowShareBack = true`, `AllowWhileLocked = true`.
 
-Server-side enforcement of `Config.Apps` is limited: the server refuses `social:*` callbacks when `social` is `false`, `market:*` when `classifieds` is `false`, `moderation:*` when `moderation` is `false`, and `transferBankMoney` when `banking` is `false`. Other switches only change what the UI offers.
+Server-side enforcement of `Config.Apps` is limited: a folder app (`social`, `flash`, `banking`, `mail`, `moderation`, `services`, ...) is not registered at all when its switch is `false`, so none of its callbacks exist. Other switches only change what the UI offers.
 
 ## config/handsets.lua
 
@@ -98,7 +98,7 @@ Everything here is server scope and never sent to a client.
 | `Config.Server.Pin` | `MaxAttempts = 5`, `LockSeconds = 300` | live | PIN lockout |
 | `Config.Server.Handsets.ResumeEnrolledHandset` | `true` | live | With several handsets and none selected, resume the one whose Face ID is enrolled for the character |
 | `Config.Server.Wallet` | `ShowDistance = 3.0`, `Licences` list of `id` and `label` | live | ID card licences read from `metadata.licences` (driver, weapon, business) |
-| `Config.Server.Items` | note 100, alarm 20, station 30 | live | Per-phone limits for notes, alarms and Sound stations |
+| `Config.Server.Items` | alarm 20, station 30 | live | Per-phone limits for alarms and Sound stations. Notes are kept by the Notes app in its own storage (100 notes) |
 | `Config.Server.Maps.Locations` | seven example places (`label`, `x`, `y`) | live | Saved places listed in Maps. An empty list turns the feature flag off |
 | `Config.Server.SdkCallbackRateLimit` | `max = 30`, `window = 10000` (ms) | restart | Rate limit passed to `Kora.callback` for every sandboxed app callback (`app:<id>:<name>`). Read when an app registers its callbacks |
 | `Config.Server.Garage` | `Enabled = true`, `UseGarageLabels = true` | restart | Garage app: `Enabled` switches it on (vehicles come from `exports.kora_garages:getOwnedVehicles`), `UseGarageLabels` shows kora_garages names. |

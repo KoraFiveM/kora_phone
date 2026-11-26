@@ -2,11 +2,12 @@ import { useCallback } from 'react';
 import type { Dispatch } from 'react';
 import { api, isPreview, nui } from '../api';
 import { isQuiet } from '../quiet';
-import type { AppId, Bootstrap, DeviceData, Notification } from '../types';
+import type { AppId, AppTarget, Bootstrap, DeviceData, Notification } from '../types';
 import { normalizeData } from '../types';
 import { handsetIdentity } from '../themes';
 import type { HandsetModel } from '../themes';
-import { canLaunch, restoreApp } from './appRegistry';
+import { appDefinition, canLaunch, restoreApp } from './appRegistry';
+import { sdkApp } from './runtimeApps';
 import type { PhoneAction, PhoneState } from './phoneState';
 import type { PhoneRefs } from './storeContext';
 import type { CallVideo } from './useCallVideo';
@@ -34,9 +35,11 @@ export function usePhoneActions({ state, dispatch, refs, video }: ActionInput) {
     finally { refs.busy.current = false; patch({ busy: false }); }
   }, [refs, patch, notify]);
 
-  const navigate = useCallback((requested: AppId, destination = '') => {
+  const navigate = useCallback((requested: AppTarget, destination = '') => {
+    // The id of a folder app (a Mail notification, the weather shortcut) opens through the app host.
+    if (requested !== 'home' && requested !== 'custom' && !appDefinition(requested) && sdkApp(requested)) { destination = destination ? `${requested}#${destination}` : requested; requested = 'custom'; }
     const customAllowed = requested === 'custom' && destination !== '' && device?.capabilities.store !== false;
-    dispatch({ type: 'navigate', app: customAllowed || canLaunch(requested, device) ? requested : 'home', target: destination });
+    dispatch({ type: 'navigate', app: customAllowed || canLaunch(requested, device) ? requested as AppId : 'home', target: destination });
   }, [device, dispatch]);
 
   // The stale-device guard: an update from a handset that has since been swapped is dropped.
@@ -76,7 +79,7 @@ export function usePhoneActions({ state, dispatch, refs, video }: ActionInput) {
     if (!notification.deviceId || (owner && owner !== notification.deviceId)) return;
     // Do Not Disturb still collects the notification, it just doesn't pop up (unless it's urgent).
     // No pop-up for a text while you're already looking at your chats.
-    const reading = incoming.app === 'messages' && refs.shown.current && (refs.app.current === 'messages' || refs.app.current === 'social');
+    const reading = incoming.app === 'messages' && refs.shown.current && (refs.app.current as string) === 'messages';
     const popup = !reading && (incoming.urgent === true || !isQuiet(refs.quietConfig.current));
     dispatch({ type: 'notification', notification, popup });
   }, [dispatch, refs]);

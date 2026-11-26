@@ -27,7 +27,6 @@ for (const source of repositoryFiles) {
 const social = read("server/services/social.lua");
 const market = read("server/services/marketplace.lua");
 const moderation = read("server/services/moderation.lua");
-const callbacks = read("server/modules/community_callbacks.lua");
 const reports = read("server/repositories/reports.lua");
 assert.match(social, /isEitherBlocked/);
 assert.match(social, /authorIsPrivate/);
@@ -41,9 +40,28 @@ assert.match(moderation, /hasPermission/);
 assert.match(moderation, /Repositories\.Reports\.audit/);
 assert.match(moderation, /Repositories\.Reports\.claim/);
 assert.match(reports, /assigned_citizenid = \?/);
-assert.match(callbacks, /local bind = KoraPhone\.Routes\.handle/, "callbacks bind through the route gateway");
 assert.match(read("server/callbacks.lua"), /RateLimits\.consume/);
-for (const callback of ["social:createPost", "social:report", "market:createListing", "market:contactSeller", "moderation:resolve"]) {
-  assert.ok(callbacks.includes(callback), `missing callback ${callback}`);
+// Flash and Market are folder apps: their callbacks run the services above for the caller's own source and charge the community buckets.
+const flashApp = read("apps/flash/server.lua");
+for (const [callback, service, rate] of [["feed", "Social.getFeed", "community.read"], ["createProfile", "Social.createAccount", "community.profile"], ["post", "Social.createPost", "community.post"],
+  ["remove", "Social.deletePost", "community.post"], ["like", "Social.toggleLike", "community.reaction"], ["comments", "Social.getComments", "community.read"],
+  ["comment", "Social.createComment", "community.comment"], ["removeComment", "Social.deleteComment", "community.comment"]])
+  assert.match(flashApp, new RegExp(`app\\.callback\\('${callback}'[\\s\\S]*?Services\\.${service.replace(".", "\\.")}\\(source[\\s\\S]*?rate = '${rate.replace(".", "\\.")}'`), `flash ${callback} must call ${service}(source) and charge ${rate}`);
+assert.doesNotMatch(flashApp, /payload\.(?:authorDeviceId|deviceId|profileId|handle\b(?!,))/, "the UI must not choose an author or device");
+// Market is a folder app: every callback runs the validated marketplace service for the caller's own source
+// and charges the community bucket its old route used.
+const marketApp = read("apps/classifieds/server.lua");
+for (const [callback, service, rate] of [["list", "getListings", "community.read"], ["create", "createListing", "community.listing"], ["remove", "setStatus", "community.listing"],
+  ["sold", "setStatus", "community.listing"], ["contact", "contactSeller", "community.contact"], ["report", "report", "community.report"]]) {
+  assert.match(marketApp, new RegExp(`app\\.callback\\('${callback}'[\\s\\S]*?Services\\.\\w+\\.${service}\\(source[\\s\\S]*?rate = '${rate.replace(".", "\\.")}'`), `market ${callback} must call ${service}(source) and charge ${rate}`);
 }
+assert.doesNotMatch(marketApp, /payload\.(?:ownerDeviceId|deviceId|citizenId|sender)/, "the UI must not choose the seller, owner or device");
+
+// Moderation is a staff-only folder app: both callbacks run the moderation service (which re-checks the moderator)
+// and charge its strict bucket; the manifest marks it staff so the phone refuses everyone else.
+const moderationApp = read("apps/moderation/server.lua");
+for (const [callback, service] of [["queue", "getQueue"], ["resolve", "resolve"]])
+  assert.match(moderationApp, new RegExp(`app\\.callback\\('${callback}'[\\s\\S]*?Services\\.Moderation\\.${service}\\(source`), `moderation ${callback} must call the service with the caller's source`);
+assert.equal((moderationApp.match(/rate = 'community\.moderation'/g) || []).length, 2, "moderation callbacks must charge community.moderation");
+assert.match(read("apps/moderation/app.lua"), /staff = true/, "moderation must be a staff app");
 console.log("PASS community-contract: schema, authorization and callback contracts present");

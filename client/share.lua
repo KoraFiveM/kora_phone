@@ -111,7 +111,7 @@ RegisterNetEvent('kora_phone:client:share:request', function(data)
     }
     -- Down or behind another resource's camera: no prompt, the request simply expires.
     if KoraPhone.Unavailable() or KoraPhone.UiBlocked() then return end
-    PlaySoundFrontend(-1, 'Text_Arrive_Tone', 'Phone_SoundSet_Default', true)
+    Kora.sound.playFrontend('Text_Arrive_Tone', 'Phone_SoundSet_Default', { network = true })
     if KoraPhone.State.open then
         KoraPhone.SendNui('share:request', request)
     else

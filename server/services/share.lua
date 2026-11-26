@@ -98,7 +98,7 @@ function Share.offer(source, payload)
     if not KoraPhone.HasPhone(target) then return fail('NOT_FOUND', 'They cannot take your number right now') end
     local cooldown = math.max(0, tonumber(c.CooldownSeconds) or 20)
     Share.cooldown[pair] = now + cooldown
-    SetTimeout((cooldown + 1) * 1000, function()
+    KoraPhone.After((cooldown + 1) * 1000, function()
         if (Share.cooldown[pair] or 0) <= os.time() then Share.cooldown[pair] = nil end
     end)
 
@@ -132,7 +132,7 @@ function Share.offer(source, payload)
             shareBack = c.AllowShareBack == true,
         })
     end
-    SetTimeout((expires + 1) * 1000, function()
+    KoraPhone.After((expires + 1) * 1000, function()
         if forget(id) and GetPlayerName(source) then
             notify(source, 'Number not saved', 'They did not answer in time.')
         end

@@ -35,8 +35,14 @@ function Callbacks.invoke(source, appId, name, payload)
     if not device then return err end
     local entry = Callbacks.handlers[app.id] and Callbacks.handlers[app.id][name]
     if not entry then return PhoneError(errors.NOT_FOUND, 'Callback is not registered') end
+    -- A callback may name one of Config.Server.RateLimits' buckets (the strict ones money and job actions use).
+    if entry.rate and not KoraPhone.RateLimits.consume(source, entry.rate) then
+        return PhoneError(errors.RATE_LIMITED, 'Too many requests')
+    end
 
     local ok, result = pcall(entry.handler, source, payload)
+    -- A handler may `error(PhoneError(...))` (or Phone.unwrap a failed service result): that error goes to the UI as is.
+    if not ok and type(result) == 'table' and result.ok == false and type(result.error) == 'table' then return result end
     if not ok then
         Kora.logging.event('phone.sdk.callback_failed', source, {
             level = 'error', message = 'App callback failed',
@@ -54,7 +60,8 @@ end
 ---@param resource string must own the app
 ---@return boolean ok
 ---@return string? err
-function Callbacks.register(appId, name, handler, resource)
+---@param options? { rate?: string } rate: a Config.Server.RateLimits bucket charged on every call, on top of the SDK limit
+function Callbacks.register(appId, name, handler, resource, options)
     local app = KoraPhone.SDK.Registry.get(appId)
     if not app then return false, 'NOT_FOUND: app is not registered' end
     if app.resource ~= resource then return false, 'FORBIDDEN: app belongs to another resource' end
@@ -63,7 +70,8 @@ function Callbacks.register(appId, name, handler, resource)
 
     Callbacks.handlers[appId] = Callbacks.handlers[appId] or {}
     local replaced = Callbacks.handlers[appId][name] ~= nil
-    Callbacks.handlers[appId][name] = { handler = handler, resource = resource }
+    local rate = type(options) == 'table' and type(options.rate) == 'string' and options.rate or nil
+    Callbacks.handlers[appId][name] = { handler = handler, resource = resource, rate = rate }
     if not replaced then
         Kora.callback.register(Callbacks.fullName(appId, name), function(source, payload)
             return Callbacks.invoke(source, appId, name, payload)

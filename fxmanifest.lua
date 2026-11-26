@@ -5,7 +5,7 @@ dependency 'kora_lib'
 name 'kora_phone'
 author 'Kora Team'
 description 'Server-authoritative Kora phone'
-version '0.0.1-dev.3'
+version '0.0.1-dev.4'
 
 lua54 'yes'
 
@@ -17,7 +17,10 @@ shared_scripts {
     'config/handsets.lua',
     'shared/constants.lua',
     'shared/validation.lua',
-    'shared/contracts.lua'
+    'shared/contracts.lua',
+    -- Folder apps: the Phone.app API first, then every apps/<id>/app.lua definition (both realms).
+    'shared/apps.lua',
+    'apps/*/app.lua'
 }
 
 client_scripts {
@@ -30,6 +33,7 @@ client_scripts {
     'client/camera.lua',
     'client/sdk/registry.lua',
     'client/sdk/events.lua',
+    'client/sdk/apps.lua',
     'client/customapps.lua',
     'client/integrations/voice.lua',
     'client/main.lua',
@@ -39,7 +43,9 @@ client_scripts {
     'client/phone_state.lua',
     'client/services.lua',
     'client/share.lua',
-    'client/video.lua'
+    'client/video.lua',
+    -- Folder apps' client code runs last so every KoraPhone client module exists.
+    'apps/*/client.lua'
 }
 
 server_scripts {
@@ -63,6 +69,8 @@ server_scripts {
     'server/handsets/lifecycle.lua',
     'server/mailboxes.lua',
     'server/mail/system.lua',
+    -- lb-phone server exports (exports['lb-phone']:...), answered through the phone's own services.
+    'server/compat/lbphone.lua',
     'server/phone_commerce.lua',
     -- App SDK: needs server/permissions.lua, rate_limits.lua and shared/constants.lua above.
     'server/sdk/manifest.lua',
@@ -75,12 +83,12 @@ server_scripts {
     'server/sdk/routes.lua',
     'server/sdk/discovery.lua',
     'server/sdk/exports.lua',
+    'server/sdk/apps.lua',
+    'apps/*/server.lua',
     -- Gateway: registers every callback from shared/routes.json; handlers bind lazily.
     'server/callbacks.lua',
     'server/modules/call_callbacks.lua',
-    'server/modules/economy_callbacks.lua',
     'server/modules/media_callbacks.lua',
-    'server/modules/community_callbacks.lua',
     'server/handset_callbacks.lua',
     'server/main.lua'
 }
@@ -91,7 +99,12 @@ files {
     'web/dist/index.html',
     'web/dist/assets/*',
     'web/dist/compat.js',
-    'web/dist/map.jpg',
+    'web/dist/lb-shim.js',
+    -- Folder apps: UI pages and assets, plus the no-build runtime (kit and client) they import.
+    'apps/*/icon.svg',
+    'apps/*/ui/*',
+    'apps/*/ui/**/*',
+    'sdk/runtime/*',
     'shared/routes.json',
     'locales/*.lua',
     'local-media/*',

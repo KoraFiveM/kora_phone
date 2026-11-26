@@ -1,36 +1,48 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Blocks } from 'lucide-react';
-import { api, isPreview, nui } from '../../api';
+import { api, nui } from '../../api';
+import { uploadMedia } from '../../api/upload';
 import { usePhone } from '../../core/PhoneContext';
-import { setSdkApps, useSdkApps } from '../../core/runtimeApps';
+import { usePhoneStore } from '../../core/storeContext';
+import { isSdkInstalled, refreshSdkApps, useRuntimeApps } from '../../core/runtimeApps';
 import type { SdkApp } from '../../core/runtimeApps';
 import { isHostMessage } from '../../nuiEvents';
 import '../../CustomApps.css';
 import { SETTINGS_EVENT, legacyEvent } from '../../sdk/legacy';
 import { appUrl, createRouter, buildTheme, permissionsOf, sameTheme, originOf, push, isRecord } from '../../sdk';
+import { buildLbDocument, runSystemAction, unwrap } from '../../sdk';
+import type { SystemDeps } from '../../sdk';
 import type { HostTransport, Handset, ThemePayload } from '../../sdk';
+import { lbAction } from './lbActions';
+import type { AppId } from '../../types';
 type CustomApp = SdkApp;
-function useCustomApps() {
-  const apps = useSdkApps(); const [loaded, setLoaded] = useState(isPreview);
-  useEffect(() => {
-    if (isPreview) return;
-    let mounted = true;
-    const refresh = () => { void nui<CustomApp[]>('customList').then(list => { if (mounted) setSdkApps(Array.isArray(list) ? list : []); setLoaded(true); }).catch(() => { if (mounted) { setSdkApps([]); setLoaded(true); } }); };
-    const handler = (e: MessageEvent) => { if (isHostMessage(e.source, window, window.parent) && e.data?.type === 'customRegistry') refresh(); };
-    refresh(); window.addEventListener('message', handler);
-    return () => { mounted = false; window.removeEventListener('message', handler); };
-  }, []);
-  return { apps, loaded };
+function useCustomApps() { return useRuntimeApps(); }
+const maskUrl = (icon: string) => `url("${icon.replace(/^nui:\/\//, 'https://cfx-nui-')}")`;
+
+/** An app's icon: a themed mask for an .svg shipped with the app, an image for other URLs, a generic block otherwise. */
+export function SdkIcon({ icon, size = 25 }: { icon?: string; size?: number }) {
+  if (icon && /^(nui:\/\/|https:\/\/)/.test(icon) && /\.svg(\?|$)/.test(icon)) return <span className="sdk-icon" style={{ width: size, height: size, maskImage: maskUrl(icon), WebkitMaskImage: maskUrl(icon) }} aria-hidden="true" />;
+  if (icon && /^https:\/\//.test(icon)) return <img src={icon} alt="" width={size} height={size} />;
+  return <Blocks size={size} strokeWidth={1.5} />;
 }
-export function CustomAppStore({ search, installedOnly }: { search: string; installedOnly: boolean }) {
+
+const CATEGORY_LABEL: Record<string, string> = { tools: 'Tools', life: 'Life', social: 'Social' };
+
+export function CustomAppStore({ search, installedOnly, category = 'All' }: { search: string; installedOnly: boolean; category?: string }) {
   const { apps } = useCustomApps(); const { data, updateData, run, busy, navigate } = usePhone();
-  const isInstalled = (app: CustomApp) => data.customApps?.[app.identifier] ?? app.defaultApp === true;
-  const visible = apps.filter(app => (!installedOnly || isInstalled(app)) && `${app.name} ${app.description}`.toLowerCase().includes(search.toLowerCase()));
+  const isInstalled = (app: CustomApp) => isSdkInstalled(app, data.customApps);
+  const visible = apps.filter(app => (!installedOnly || isInstalled(app))
+    && (category === 'All' || CATEGORY_LABEL[app.category ?? 'tools'] === category)
+    && `${app.name} ${app.description}`.toLowerCase().includes(search.toLowerCase()));
   if (!visible.length) return null;
-  return <section><p className="section-label">COMMUNITY APPS</p>{visible.map(app => {
+  return <section><p className="section-label">MORE APPS</p>{visible.map(app => {
     const installed = isInstalled(app);
-    const change = (value: boolean) => run(async () => { updateData(await api('customApp', { app: app.identifier, installed: value })); await nui('customLifecycle', { app: app.identifier, event: value ? 'onInstall' : 'onDelete' }); });
-    return <article className="store-app" key={app.identifier}><div className="store-app-icon">{app.icon ? <img src={app.icon} alt="" /> : <Blocks size={22} strokeWidth={1.5} />}</div><div className="store-app-copy"><h3>{app.name}</h3><small>Community · Free</small><p>{app.description}</p>{installed && <button disabled={busy} className="store-remove" onClick={() => change(false)}>Remove</button>}</div><button className={`store-get ${installed ? 'installed' : ''}`} disabled={busy} onClick={() => installed ? navigate('custom', app.identifier) : change(true)}>{installed ? 'Open' : 'Get'}</button></article>;
+    const change = (value: boolean) => run(async () => {
+      updateData(await api('customApp', { app: app.identifier, installed: value }));
+      await nui('customLifecycle', { app: app.identifier, event: value ? 'onInstall' : 'onDelete' });
+      await refreshSdkApps();
+    });
+    return <article className="store-app" key={app.identifier}><div className="store-app-icon"><SdkIcon icon={app.icon} size={22} /></div><div className="store-app-copy"><h3>{app.name}</h3><small>{app.source === 'server' ? (CATEGORY_LABEL[app.category ?? 'tools'] ?? 'Apps') : 'Community'} · Free</small><p>{app.description}</p>{installed && !app.system && <button disabled={busy} className="store-remove" onClick={() => change(false)}>Remove</button>}</div><button className={`store-get ${installed ? 'installed' : ''}`} disabled={busy} onClick={() => installed ? navigate('custom', app.identifier) : change(true)}>{installed ? 'Open' : 'Get'}</button></article>;
   })}</section>;
 }
 const hostTransport: HostTransport = { request: (route, payload) => nui<unknown>(route, payload) };
@@ -42,16 +54,36 @@ type HostState = 'loading' | 'ready' | 'error';
 
 interface HostMessage { type?: unknown; app?: unknown; name?: unknown; data?: unknown }
 
-export function CustomAppScreen({ id, transport = hostTransport }: { id: string; transport?: HostTransport }) {
+export function CustomAppScreen({ id, hint, transport = hostTransport }: { id: string; hint?: string; transport?: HostTransport }) {
   const { apps, loaded } = useCustomApps(); const definition = apps.find(app => app.identifier === id);
-  const { data, device, run, setCall, navigate } = usePhone();
+  const { data, device, run, setCall, navigate, updateData, setHasPin } = usePhone();
+  const { actions: { reloadHandset } } = usePhoneStore();
   const frame = useRef<HTMLIFrameElement>(null);
   const [authorized, setAuthorized] = useState(false); const [error, setError] = useState('');
   const [state, setState] = useState<HostState>('loading'); const [title, setTitle] = useState(''); const [attempt, setAttempt] = useState(0);
   const settings = useRef(data.settings); settings.current = data.settings;
+  const dataRef = useRef(data); dataRef.current = data;
+  const deviceRef = useRef(device); deviceRef.current = device;
+  const systemDeps = (): SystemDeps => ({
+    snapshot: () => ({ settings: dataRef.current.settings as unknown as Record<string, unknown>, model: deviceRef.current.model, hasPin: deviceRef.current.hasPin, number: deviceRef.current.number, characterName: deviceRef.current.characterName, deviceId: deviceRef.current.id }),
+    saveSettings: async next => { const saved = await api('settings', { ...(next as unknown as Parameters<typeof api<'settings'>>[1]), expectedDeviceId: deviceRef.current.id }); updateData(saved); return saved.settings as unknown as Record<string, unknown>; },
+    setPin: async (currentPin, pin) => { const result = await api('pin', { currentPin, pin }); setHasPin(result.hasPin); return result; },
+    listBlocked: () => api('blocked', {}),
+    setBlocked: (number, blocked) => api('setBlocked', { number, blocked }),
+    handset: async payload => {
+      const result = unwrap(await nui('handset:action', payload));
+      // Selecting a handset, a SIM, a restore or a reset changes which handset the phone is showing: reload it.
+      if (payload.op !== 'status') await reloadHandset();
+      return result;
+    },
+  });
   const resource = definition?.resource ?? '';
+  // lb-phone style apps (registered from a resource's client script) get the compatibility layer injected into their own
+  // page, which the phone then loads as a document of its own origin. null = not loaded yet, '' = load it plainly.
+  const compat = definition?.source === 'client' && !/^https?:\/\//.test(definition.ui);
+  const [compatDoc, setCompatDoc] = useState<string | null>(null);
   const url = useMemo(() => definition ? appUrl(resource, definition.ui, { npParent: location.origin, npResource: resource, npApp: id }) : '', [definition, resource, id]);
-  const origin = useMemo(() => definition ? (/^https?:\/\//.test(definition.ui) ? originOf(definition.ui) : `https://cfx-nui-${resource}`) : '', [definition, resource]);
+  const origin = useMemo(() => definition ? (compat && compatDoc ? location.origin : /^https?:\/\//.test(definition.ui) ? originOf(definition.ui) : `https://cfx-nui-${resource}`) : '', [definition, resource, compat, compatDoc]);
   const permissions = useMemo(() => permissionsOf(definition), [definition]);
   const post = useCallback((message: unknown) => { frame.current?.contentWindow?.postMessage(message, origin); }, [origin]);
   const model = device?.model;
@@ -63,7 +95,16 @@ export function CustomAppScreen({ id, transport = hostTransport }: { id: string;
   }, [id, attempt]);
 
   useEffect(() => {
-    if (!authorized || !definition) return;
+    if (!authorized || !definition || !compat) { setCompatDoc(compat ? null : ''); return; }
+    let mounted = true; setCompatDoc(null);
+    Promise.all([nui<{ html?: string }>('apps:html', { app: id }), fetch('lb-shim.js').then(response => response.text())])
+      .then(([page, shim]) => { if (mounted) setCompatDoc(page?.html ? buildLbDocument(page.html, { resource, ui: definition.ui, app: id, name: definition.name, hostOrigin: location.origin }, shim) : ''); })
+      .catch(() => { if (mounted) setCompatDoc(''); });
+    return () => { mounted = false; };
+  }, [authorized, definition, compat, id, resource, attempt]);
+
+  useEffect(() => {
+    if (!authorized || !definition || compatDoc === null) return;
     let lastTheme: ThemePayload | null = null;
     const currentTheme = () => { lastTheme = buildTheme(readRoot); return lastTheme; };
     const router = createRouter({
@@ -77,6 +118,25 @@ export function CustomAppScreen({ id, transport = hostTransport }: { id: string;
       },
       onClose: () => navigate('home'),
       onSetTitle: setTitle,
+      target: hint || undefined,
+      // The permission check in the router runs first, so these only ever answer an app that declared media.write or camera.
+      onUpload: async blob => { const saved = await uploadMedia({ blob }); void api('refresh', {}).then(next => { if (next.data) updateData(next.data); }).catch(() => undefined); return saved; },
+      onCapture: async front => {
+        let next;
+        try { next = await api('capture', { front }); } finally { await nui('captureDone'); }   // gives the phone back after the shot
+        updateData(next);
+        const shot = next.photos[0];
+        if (!shot) throw new Error('The photo was not saved');
+        return { id: Number(shot.id), url: shot.url, kind: shot.kind ?? 'photo' };
+      },
+      // Settings, PIN and handset controls: only for a system app that is served by this very resource.
+      onSystem: definition.source === 'server' && definition.system === true && resource === location.hostname.replace(/^cfx-nui-/, '')
+        ? (action, payload) => runSystemAction(systemDeps(), action, payload) : undefined,
+      getVolume: () => typeof settings.current?.volume === 'number' ? settings.current.volume : undefined,
+      onCall: async number => { setCall(await api('dial', { number })); },
+      onOpen: (app, to) => navigate(app as AppId, to),
+      onRefresh: async () => { const next = await api('refresh', {}); if (next.data) updateData(next.data); },
+      onLb: compat ? (action, payload) => lbAction(action, payload, { data: dataRef.current, navigate, run: work => run(work), setCall }) : undefined,
     });
     const onMessage = (e: MessageEvent) => {
       const win = frame.current?.contentWindow;
@@ -92,7 +152,9 @@ export function CustomAppScreen({ id, transport = hostTransport }: { id: string;
       if (!isHostMessage(e.source, window, window.parent) || !isRecord(e.data)) return;
       const msg: HostMessage = e.data;
       if (msg.type === 'app:event' && msg.app === id && typeof msg.name === 'string') post(push('event', { name: msg.name, data: msg.data }));
-      else if (msg.type === 'customMessage' && msg.app === id) { const ev = legacyEvent(msg.data); post(push('event', ev ?? { name: 'message', data: msg.data })); }
+      else if (msg.type === 'customMessage' && msg.app === id) { const ev = legacyEvent(msg.data); post(push('event', ev ?? { name: 'message', data: msg.data })); if (compat) post(push('event', { name: 'kora:raw', data: msg.data })); }
+      else if ((msg.type === 'messages:new' || msg.type === 'messages:read') && (id === 'messages' || id === 'social')) post(push('event', { name: msg.type, data: msg.data }));
+      else if (msg.type === 'mapBlipsChanged' && id === 'gps') post(push('event', { name: 'mapBlipsChanged', data: null }));
       else if (msg.type === 'customClose' && msg.app === id) navigate('home');
     };
     const observer = new MutationObserver(() => {
@@ -108,7 +170,7 @@ export function CustomAppScreen({ id, transport = hostTransport }: { id: string;
       router.dispose(); observer.disconnect(); window.clearTimeout(timer);
       document.removeEventListener('visibilitychange', onVisibility); window.removeEventListener('message', onMessage);
     };
-  }, [authorized, definition, origin, id, resource, permissions, transport, post, model, navigate, run, setCall]);
+  }, [authorized, definition, compat, compatDoc, origin, id, resource, permissions, transport, post, model, navigate, run, setCall, hint, updateData]);
 
   useEffect(() => {
     if (state === 'ready' && frame.current?.contentWindow) post(push('event', { name: SETTINGS_EVENT, data: data.settings }));
@@ -116,14 +178,15 @@ export function CustomAppScreen({ id, transport = hostTransport }: { id: string;
 
   if (error) return <p role="alert">{error}</p>;
   if (loaded && !definition) return <div className="app-host"><div className="app-host-state" role="status"><p>This app is offline. Its resource may have stopped.</p><button onClick={() => navigate('home')}>Home</button></div></div>;
-  if (!definition || !authorized) return <div className="app-host"><div className="app-host-state" role="status"><p>Opening app…</p></div></div>;
+  if (!definition || !authorized || compatDoc === null) return <div className="app-host"><div className="app-host-state" role="status"><p>Opening app…</p></div></div>;
   return <div className="app-host">
     {title && <div className="app-host-title">{title}</div>}
-    <iframe key={attempt} ref={frame} className="app-host-frame" data-ready={state === 'ready'} title={definition.name} src={url}
+    <iframe key={attempt} ref={frame} className="app-host-frame" data-ready={state === 'ready'} title={definition.name} allow={permissions.includes('record') ? 'camera; microphone' : undefined} {...(compat && compatDoc ? { srcDoc: compatDoc } : { src: url })}
       sandbox="allow-scripts allow-same-origin allow-forms" referrerPolicy="no-referrer" />
     {state === 'loading' && <div className="app-host-state" role="status"><p>Opening {definition.name}…</p></div>}
     {state === 'error' && <div className="app-host-state" data-tone="error" role="alert"><p>{definition.name} did not respond.</p><button onClick={() => setAttempt(n => n + 1)}>Try again</button></div>}
   </div>;
 }
 
-export function CustomAppRoute({ target }: { target: string }) { return <CustomAppScreen id={target} />; }
+/** The route target is the app id, optionally followed by `#` and an opening hint for the app. */
+export function CustomAppRoute({ target }: { target: string }) { const [id, hint] = target.split('#'); return <CustomAppScreen id={id} hint={hint} />; }

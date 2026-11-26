@@ -122,7 +122,6 @@ Kora.config.extend({
 
         -- Notes, alarms and music stations each phone may keep.
         Items = C.object({
-            note = C.integer(100, { label = 'Notes per phone', min = 1, max = 1000, live = true, description = 'How many notes each phone may keep.' }),
             alarm = C.integer(20, { label = 'Alarms per phone', min = 1, max = 200, live = true, description = 'How many alarms each phone may keep.' }),
             station = C.integer(30, { label = 'Stations per phone', min = 1, max = 200, live = true, description = 'How many music stations each phone may keep.' }),
         }),

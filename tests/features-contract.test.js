@@ -19,18 +19,16 @@ const { bound } = require("./helpers/bound");
 const notifications = read("client/notifications.lua");
 const calls = read("client/calls.lua");
 const wallet = read("server/services/wallet.lua");
-const economy = read("server/modules/economy_callbacks.lua");
 const api = readApi();
 const background = read("web/src/core/useBackgroundEffects.ts");
 const actions = read("web/src/core/usePhoneActions.ts");
 const hostEvents = read("web/src/core/useHostEvents.ts");
 
 // Every new NUI route the UI calls exists on the client and reaches a registered server callback.
-for (const [route, callback] of [["wallet:get", "getWallet"], ["wallet:show", "showWalletId"]]) {
-  assert.match(nui, new RegExp(`\\['${route}'\\] = 'kora_phone:server:${callback}'`), `${route} must map to ${callback}`);
-  assert.match(economy, bound(callback), `${callback} must be registered on the server`);
-  assert.match(api, new RegExp(`server(?:<.*?>)?\\('${route}'[,)]`), `the UI must call ${route}`);
-}
+// Wallet is a folder app: ID card and "show my ID" run the validated wallet service for the caller's own source.
+const walletApp = read("apps/banking/server.lua");
+for (const [callback, service] of [["idCard", "Wallet.get"], ["showId", "Wallet.show"]])
+  assert.match(walletApp, new RegExp(`app\\.callback\\('${callback}'[\\s\\S]*?Services\\.${service.replace(".", "\\.")}\\(source\\)`), `${callback} must call ${service}(source)`);
 for (const route of ["location:mine", "waypoint", "quiet"]) {
   assert.match(nui, new RegExp(`RegisterNUICallback\\('${route}'`), `${route} must be registered on the client`);
 }
@@ -54,7 +52,7 @@ assert.match(notifications, /KoraPhone\.State\.quiet and not urgent/, "Do Not Di
 assert.match(notifications, /Notifications\.Native\(notification\.title/, "pushed notifications must go through the same silenced path");
 assert.match(nui, /route\('notify'/, "the UI must be able to ask the game for a notification while the phone is closed");
 assert.match(actions, /nui\('notify'/, "texts, mail and missed calls must raise a game notification when the phone is closed");
-assert.match(api, /shareToChat:/, "sharing a Flash post to a chat must be wired in game");
+assert.match(read("apps/flash/server.lua"), /app\.callback\('share'[\s\S]*?Services\.Messaging\.send\(source/, "sharing a Flash post to a chat must run the messaging service");
 assert.match(calls, /KoraPhone\.State\.quiet/);
 
 // Persistent notes/alarms/stations, group chats and the Garage go through registered, validated server code.
@@ -64,13 +62,19 @@ const garage = read("server/services/garage.lua");
 const external = read("server/repositories/external.lua");
 const messaging = read("server/services/messaging.lua");
 const migration9 = read("server/schema.lua");
-for (const [route, callback] of [["items:save", "saveItem"], ["items:remove", "removeItem"], ["garage:list", "getVehicles"], ["messages:createGroup", "createGroup"], ["messages:leaveGroup", "leaveGroup"]]) {
-  assert.match(nui, new RegExp(`\\['${route}'\\] = 'kora_phone:server:${callback}'`), `${route} must map to ${callback}`);
-  assert.match(callbacks, bound(callback), `${callback} must be registered on the server`);
-  assert.match(api, new RegExp(`'${route}'`), `the UI must call ${route}`);
-}
+// Pulse is a folder app: groups, members and chats run the messaging service for the caller's own device.
+const pulseApp = read("apps/social/server.lua");
+for (const [callback, service, rate] of [["createGroup", "createGroup", "mutation"], ["addMember", "addMember", "mutation"], ["leaveGroup", "leaveGroup", "mutation"],
+  ["send", "send", "sendMessage"], ["thread", "list", "read"], ["conversations", "listConversations", "read"]])
+  assert.match(pulseApp, new RegExp(`app\\.callback\\('${callback}'[\\s\\S]*?Services\\.Messaging\\.${service}\\(source[\\s\\S]*?rate = '${rate}'`), `pulse ${callback} must call ${service}(source) and charge ${rate}`);
+assert.match(pulseApp, /Services\.Blocking\.set\(source/, "pulse blocks run the blocking service");
+assert.doesNotMatch(pulseApp, /payload\.(?:senderNumber|deviceId|from)/, "the UI must not choose the sender");
 assert.match(nui, /route\('weather:get'/);
-assert.match(nui, /route\('alarm'/);
+// Clock is a folder app: its client script rings the alarms, its server callbacks store them as validated phone items.
+const clockServer = read("apps/clock/server.lua");
+for (const [callback, service] of [["save", "Items.save"], ["remove", "Items.remove"]])
+  assert.match(clockServer, new RegExp(`app\\.callback\\('${callback}'[\\s\\S]*?Services\\.${service.replace(".", "\\.")}\\(source, \\{ kind = 'alarm'`), `clock ${callback} must run ${service} for kind alarm`);
+assert.match(read("apps/clock/client.lua"), /Kora\.timers\.setInterval\(tick, 1000\)/, "alarms must be checked from the client script so they ring with the phone closed");
 assert.match(items, /PhoneValidation\.item\(/, "items must be validated on the server");
 assert.match(items, /Config\.Server\.Items\[kind\]/, "items must be limited per phone");
 assert.match(migration9, /primary = \{ 'device_id', 'kind', 'item_key' \}/, "an item is unique per device, kind and key");
@@ -86,17 +90,82 @@ assert.match(messaging, /requireConversation\(device, payload\)/, "leaving a gro
 const mailSvc = read("server/services/mail.lua");
 const mailRepo = read("server/repositories/mail.lua");
 const property = read("server/services/property.lua");
-for (const [route, callback] of [["messages:addMember", "addGroupMember"], ["mail:list", "getMail"], ["mail:send", "sendMail"], ["mail:read", "readMail"], ["mail:delete", "deleteMail"], ["property:list", "getProperties"]]) {
-  assert.match(nui, new RegExp(`\\['${route}'\\] = 'kora_phone:server:${callback}'`), `${route} must map to ${callback}`);
-  assert.match(callbacks, bound(callback), `${callback} must be registered on the server`);
-  assert.match(api, new RegExp(`'${route}'`), `the UI must call ${route}`);
-}
+assert.equal(JSON.parse(read("shared/routes.json")).some((route) => /^mail:/.test(route.nui)), false, "player mail has no screen, so it has no route; the Mail app serves system mail");
 assert.match(mailSvc, /PhoneContracts\.mail\(/, "mail must be validated on the server");
 assert.match(mailSvc, /isEitherBlocked/, "mail must respect blocks");
 assert.match(mailRepo, /INSERT IGNORE INTO phone_mail/, "a retried mail request must not send twice");
 assert.match(mailRepo, /recipient_device_id = \?/, "mail is only read or deleted by its own sender or recipient");
 assert.match(read("server/repositories/external.lua"), /External\.isIdentifier\(name\)/, "housing table and column names must be checked before they go into SQL");
 assert.match(property, /device\.ownerCitizenId/, "homes must be looked up by the caller's own character");
+// Maps is a folder app: places come from the server config, blips, position and waypoint from the client services,
+// and the page loads no outside image or script (blip icons are plain coloured dots).
+const mapsServer = read("apps/gps/server.lua"), mapsClient = read("apps/gps/client.lua");
+assert.match(mapsServer, /Config\.Server\.Maps\.Locations/, "places must come from Config.Server.Maps.Locations");
+for (const [name, service] of [["blips", "KoraPhone.Map.Blips"], ["here", "KoraPhone.World.Location"], ["waypoint", "KoraPhone.World.Waypoint"]])
+  assert.match(mapsClient, new RegExp(`app\\.client\\('${name}'[\\s\\S]*?${service.replace(/\./g, "\\.")}\\(`), `maps ${name} must call ${service}`);
+assert.doesNotMatch(read("apps/gps/ui/app.js"), /https?:\/\//, "the map page must not load anything from outside");
+assert.ok(fs.existsSync(path.join(root, "apps/gps/ui/map.jpg")), "the map image ships inside the app");
+
+// The `system` request (settings, PIN, blocked numbers, handset controls) is handed only to a `system` app served by
+// this very resource: never to another resource's app, an lb-phone page, or a folder app that is not marked system.
+const hostApps = read("web/src/apps/custom/CustomApps.tsx");
+assert.match(hostApps, /onSystem: definition\.source === 'server' && definition\.system === true && resource === location\.hostname\.replace\(\/\^cfx-nui-\/, ''\)/, "the system handler must be gated on source, system flag and own resource");
+assert.doesNotMatch(read("web/src/sdk/system.ts"), /installedApps|customApps/, "the system service must not write install state");
+
+// Settings is a system folder app. Everything that changes the phone goes through phone.system (validated routes); its own server
+// file only lists the caller's photos, and the page never calls a NUI or server route by itself.
+const settingsApp = read("apps/settings/app.lua"), settingsServer = read("apps/settings/server.lua");
+assert.match(settingsApp, /system = true/, "settings must be a system app, or phone.system is refused");
+assert.deepEqual([...settingsServer.matchAll(/app\.callback\('(\w+)'/g)].map(match => match[1]), ["photos"], "settings has no server callbacks beyond the photo list");
+for (const file of ["app.js", "handset.js"]) {
+  const source = read(`apps/settings/ui/${file}`);
+  assert.doesNotMatch(source, /fetch\(|XMLHttpRequest|handset:action/, `${file} must reach the phone only through phone.system`);
+}
+assert.match(read("apps/settings/ui/handset.js"), /phone\.system\('handset'/, "handset operations go through phone.system");
+assert.match(read("apps/settings/ui/app.js"), /phone\.system\('settings\.save'/, "settings are saved through phone.system");
+
+// Camera is a system folder app: the page draws the game texture and records; the native camera is driven only through the client handlers,
+// and a photo taken through the service always gives the phone back (captureDone).
+const cameraClient = read("apps/camera/client.lua");
+for (const [name, call] of [["open", "KoraPhone.Camera.Open"], ["zoom", "KoraPhone.Camera.Zoom"], ["facing", "KoraPhone.Camera.SetFacing"], ["recording", "KoraPhone.Camera.SetRecording"], ["close", "KoraPhone.Camera.Close"]])
+  assert.match(cameraClient, new RegExp(`app\\.client\\('${name}'[\\s\\S]*?${call.replace(/\./g, "\\.")}\\(`), `camera ${name} must call ${call}`);
+assert.match(read("apps/camera/app.lua"), /permissions = \{ 'camera', 'media\.write', 'record' \}/, "camera declares exactly the permissions it uses");
+assert.match(read("web/src/apps/custom/CustomApps.tsx"), /finally \{ await nui\('captureDone'\); \}/, "camera.capture must hand the phone back after the shot");
+assert.match(read("apps/camera/ui/app.js"), /window\.top/, "the game view is sized from the phone page, not the frame");
+
+// Sound is a folder app: stations are validated phone items for the caller's own device, and its page may only embed
+// the hosts declared in app.lua (the CSP in index.html repeats them).
+const musicServer = read("apps/music/server.lua");
+for (const [callback, service] of [["save", "Items.save"], ["remove", "Items.remove"]])
+  assert.match(musicServer, new RegExp(`app\\.callback\\('${callback}'[\\s\\S]*?Services\\.${service.replace(".", "\\.")}\\(source, \\{ kind = 'station'`), `sound ${callback} must run ${service} for kind station`);
+assert.match(read("apps/music/app.lua"), /embeds = \{ 'www\.youtube-nocookie\.com', 'w\.soundcloud\.com' \}/, "sound declares its embed hosts");
+assert.match(read("apps/music/ui/index.html"), /frame-src https:\/\/www\.youtube-nocookie\.com https:\/\/w\.soundcloud\.com/, "sound's page carries the matching CSP");
+
+// Gallery is a folder app: listing and deleting run the media service for the caller's own device, by item id only.
+const galleryApp = read("apps/gallery/server.lua");
+for (const [callback, service] of [["list", "Media.list"], ["delete", "Media.delete"]])
+  assert.match(galleryApp, new RegExp(`app\\.callback\\('${callback}'[\\s\\S]*?Services\\.${service.replace(".", "\\.")}\\(source`), `gallery ${callback} must call ${service}(source`);
+assert.doesNotMatch(galleryApp, /payload\.(?:deviceId|ownerDeviceId|url)/, "the UI must only name an item id");
+assert.match(read("server/services/media.lua"), /Media\.findOwned\(device\.id, mediaId\)/, "a delete must only reach the caller's own media");
+
+// Phone is a folder app: the recent calls come from the call service for the caller's own device; starting a call is
+// the phone's own `call` request, never a number or caller chosen by the app on the server.
+const phoneApp = read("apps/phone/server.lua");
+assert.match(phoneApp, /app\.callback\('recent'[\s\S]*?Services\.Calling\.history\(source/, "recent calls must come from Calling.history(source)");
+assert.doesNotMatch(phoneApp, /payload\.(?:deviceId|number|callerNumber)/, "the UI must not choose whose calls are listed");
+
+// Contacts is a folder app: each callback runs the validated contact service for the caller's own device, and the
+// contact photo can only be one of the caller's own gallery items.
+const contactsApp = read("apps/contacts/server.lua");
+for (const [callback, service] of [["list", "Contacts.list"], ["save", "Contacts.save"], ["delete", "Contacts.delete"], ["photos", "Media.list"]])
+  assert.match(contactsApp, new RegExp(`app\\.callback\\('${callback}'[\\s\\S]*?Services\\.${service.replace(".", "\\.")}\\(source`), `contacts ${callback} must call ${service}(source`);
+assert.doesNotMatch(contactsApp, /payload\.(?:deviceId|ownerDeviceId|citizenId)/, "the UI must not choose the device or owner");
+assert.match(read("server/services/contacts.lua"), /Media\.findOwned\(device\.id, contact\.avatarMediaId\)/, "a contact photo must belong to the caller");
+
+// Garage and Home are folder apps: their callbacks run the validated services with the caller's source, nothing the UI sends.
+for (const [app, service] of [["vehicles", "Garage.list"], ["property", "Property.list"]]) {
+  assert.match(read(`apps/${app}/server.lua`), new RegExp(`app\\.callback\\('list'[\\s\\S]*?Services\\.${service.replace(".", "\\.")}\\(source\\)`), `${app} list must call ${service}(source)`);
+}
 assert.match(messaging, /memberCount\(conversationId\) >= 50/, "groups are capped");
 assert.match(hostEvents, /type === 'mail:new'/, "the UI must handle new mail");
 
@@ -128,7 +197,7 @@ assert.match(txRepo, /AND t\.id < \?/, "the history cursor must be qualified now
 assert.match(txRepo, /entry\.peer =/, "history must say who the other person was");
 assert.match(bankSvc, /holder = holder, number = player\.citizenid/, "the wallet must show the holder and account number");
 assert.match(phoneSvc, /transfers = KoraPhone\.Integrations\.Banking\.canTransfer\(\)/, "the UI must know whether transfers are on");
-assert.match(read("web/src/apps/wallet/BankScreen.tsx"), /!device\.transfers/, "the Send money form must be hidden when transfers are off");
+assert.match(read("apps/banking/ui/app.js"), /bank\.transfers \?/, "the Send money form must be hidden when transfers are off");
 assert.match(api, /isFavorite: p\.favorite === true/, "saving a contact must not wipe its favourite flag");
 
 // Flash and chat clips: the upload pipeline and where its trust boundaries are.
@@ -138,7 +207,7 @@ const socialSvc = read("server/services/social.lua");
 const socialRepo = read("server/repositories/social.lua");
 const mediaRepo = read("server/repositories/media.lua");
 const migration11 = read("server/schema.lua");
-const flash = read("web/src/apps/flash/Flash.tsx");
+const flash = read("apps/flash/ui/app.js");
 for (const [route, callback] of [["media:request", "requestMediaUpload"], ["media:complete", "completeMediaUpload"]]) {
   assert.match(nui, new RegExp(`\\['${route}'\\] = 'kora_phone:server:${callback}'`), `${route} must map to ${callback}`);
   assert.match(api, new RegExp(`'${route}'`), `the UI must call ${route}`);
@@ -159,7 +228,7 @@ assert.match(migration11, /'video'/, "messages need a video type");
 assert.match(api, /if \(action === 'uploadMedia'\)/, "uploads must bypass the serial request queue so they don't block the phone");
 assert.match(api, /koraPhoneTicket/, "the upload must carry its ticket tag");
 assert.match(flash, /createProfile/, "Flash must create a social profile on first use");
-assert.match(flash, /uploadMedia/, "Flash clips must go through the upload pipeline");
+assert.match(flash, /phone\.media\.upload\(/, "Flash clips must go through the upload pipeline");
 
 // The pure logic, executed for real (skipped when the web toolchain isn't installed).
 let ts;

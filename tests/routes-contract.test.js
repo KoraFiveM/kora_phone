@@ -7,7 +7,7 @@ const path = require('node:path');
 
 const root = path.join(__dirname, '..');
 const routes = JSON.parse(fs.readFileSync(path.join(root, 'shared/routes.json'), 'utf8'));
-const APPS = new Set([null, 'social', 'classifieds', 'moderation', 'banking']);
+const APPS = new Set([null, 'social', 'classifieds', 'moderation']);
 
 function walk(dir) {
     return fs.readdirSync(dir, { withFileTypes: true }).flatMap((entry) => {
@@ -33,13 +33,12 @@ for (const route of routes) {
     if (short.startsWith('social:')) assert.strictEqual(route.app, 'social');
     if (short.startsWith('market:')) assert.strictEqual(route.app, 'classifieds');
     if (short.startsWith('moderation:')) assert.strictEqual(route.app, 'moderation');
-    if (short === 'transferBankMoney') assert.strictEqual(route.app, 'banking');
     serverNames.add(route.server);
 }
-assert(routes.length >= 60, 'routes.json lost entries');
+assert(routes.length >= 30, 'routes.json lost entries');
 
 // SDK and system mail routes: fixed rate bucket, no app gate, server name mirrors the NUI name.
-const sdkRoutes = ['list', 'install', 'uninstall', 'call', 'storage:get', 'storage:set', 'storage:remove',
+const sdkRoutes = ['list', 'install', 'uninstall', 'call', 'storage:get', 'storage:list', 'storage:set', 'storage:remove',
     'contacts:list', 'contacts:save', 'notify'].map((name) => `apps:${name}`);
 const systemMail = { list: 'read', activity: 'read', read: 'mutation', delete: 'mutation', accept: 'mutation' };
 const byNui = new Map(routes.map((route) => [route.nui, route]));
@@ -50,13 +49,18 @@ for (const nui of sdkRoutes) {
     assert.strictEqual(route.server, `kora_phone:server:${nui}`);
     assert.strictEqual(route.app, null);
 }
-for (const [name, rate] of Object.entries(systemMail)) {
-    const route = byNui.get(`mail:system:${name}`);
-    assert(route, `missing system mail route ${name}`);
-    assert.strictEqual(route.rate, rate);
-    assert.strictEqual(route.server, `kora_phone:server:mail:system:${name}`);
-}
+// System mail is served by the Mail folder app (apps/mail), not by the route table.
+for (const name of Object.keys(systemMail)) assert(!byNui.has(`mail:system:${name}`), `mail:system:${name} must not be a route`);
 assert(!routes.some((route) => /legacy/i.test(route.nui + route.server)), 'legacy mail routes must stay removed');
+
+// Every apps:* route is served by server/sdk/routes.lua and must be listed in the gateway's SDK binding loop
+// (a route in routes.json that nothing binds fails at runtime with "Request failed").
+const gateway = fs.readFileSync(path.join(root, 'server/callbacks.lua'), 'utf8');
+const sdkRoutesSource = fs.readFileSync(path.join(root, 'server/sdk/routes.lua'), 'utf8');
+for (const route of routes.filter((entry) => entry.nui.startsWith('apps:') && entry.nui !== 'apps:client' && entry.nui !== 'apps:html')) {
+    assert(gateway.includes(`'${route.nui}'`), `${route.nui} is in routes.json but the gateway never binds it`);
+    assert(sdkRoutesSource.includes(`KoraPhone.SDK.routes['${route.nui}']`), `${route.nui} has no handler in server/sdk/routes.lua`);
+}
 
 // Every rate key used by a route must exist in Config.Server.RateLimits.
 const serverConfig = fs.readFileSync(path.join(root, 'config/server.lua'), 'utf8');

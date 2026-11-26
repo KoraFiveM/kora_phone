@@ -1,3 +1,4 @@
+import { sdkIdOf } from '../runtimeApps';
 import { useCallback, useEffect, useRef } from 'react';
 import type { PointerEvent as ReactPointerEvent } from 'react';
 import { api } from '../../api';
@@ -67,7 +68,9 @@ export function useHomeReorder(orders: { grid: AppId[]; dock: AppId[] }, allowed
 
   const iconClick = (id: AppId) => {
     if (suppressClick.current) { suppressClick.current = false; return; }
-    if (editing) home({ editing: false }); else actions.navigate(id);
+    if (editing) { home({ editing: false }); return; }
+    const sdkId = sdkIdOf(id);
+    if (sdkId) actions.navigate('custom', sdkId); else actions.navigate(id);
   };
   useEffect(() => () => dragCleanup.current?.(), []);
   useEffect(() => { if (!allowed) home({ editing: false, dragId: null, overId: null }); }, [allowed, home]);

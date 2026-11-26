@@ -1,0 +1,11 @@
+.flash-card { padding: 0; overflow: hidden; }
+.flash-media { position: relative; background: var(--kp-surface-raised); }
+.flash-media img, .flash-media video { width: 100%; display: block; max-height: 70vh; object-fit: cover; }
+.flash-body { padding: var(--kp-gap); display: flex; flex-direction: column; gap: 6px; }
+.flash-actions { display: flex; gap: 6px; }
+.flash-actions button[aria-pressed="true"] { color: var(--kp-accent); }
+.comment { padding: 6px 0; border-bottom: 1px solid var(--kp-border); }
+.comment p { margin: 0; overflow-wrap: anywhere; }
+.stage video { width: 100%; max-height: 40vh; border-radius: var(--kp-radius); }
+.progress { height: 6px; border-radius: var(--kp-radius-sm); background: var(--kp-surface-raised); overflow: hidden; }
+.progress i { display: block; height: 100%; background: var(--kp-accent); }

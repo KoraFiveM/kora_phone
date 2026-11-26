@@ -294,6 +294,142 @@ test('end to end: built SDK client against the host router', async () => {
     client.destroy();
 });
 
+test('client requests reach the app client.lua route, lb requests only work when the host enables them', async () => {
+    const t = setup({ reply: { ok: true, data: { x: 1 } } });
+    await t.send(env('client', { name: 'get', payload: { a: 1 } }, 'c1'));
+    assert.deepEqual(t.calls.at(-1), ['apps:client', { app: 'demo', name: 'get', payload: { a: 1 } }]);
+    assert.deepEqual(t.posted.at(-1).payload, { x: 1 });
+    await t.send(env('client', { name: 'bad name!' }, 'c2'));
+    assert.equal(t.posted.at(-1).error.code, 'INVALID_PAYLOAD');
+    await t.send(env('lb', { action: 'contacts' }, 'c3'));
+    assert.equal(t.posted.at(-1).error.code, 'PERMISSION_DENIED');
+    const seen = [];
+    const enabled = setup({ router: { onLb: (action, payload) => { seen.push([action, payload.number]); return [{ number: '1' }]; } } });
+    await enabled.send(env('lb', { action: 'call', number: '5550001' }, 'c4'));
+    assert.deepEqual(seen, [['call', '5550001']]);
+    assert.deepEqual(enabled.posted.at(-1).payload, [{ number: '1' }]);
+    await enabled.send(env('lb', {}, 'c5'));
+    assert.equal(enabled.posted.at(-1).error.code, 'INVALID_PAYLOAD');
+});
+
+test('storage.list forwards the prefix and returns the values object', async () => {
+    const t = setup({ reply: { ok: true, data: { values: { 'note:1': { t: 'a' } } } } });
+    await t.send(env('storage.list', { prefix: 'note:' }, 's1'));
+    assert.deepEqual(t.calls.at(-1), ['apps:storage:list', { app: 'demo', prefix: 'note:' }]);
+    assert.deepEqual(t.posted.at(-1).payload, { 'note:1': { t: 'a' } });
+    const denied = setup({ permissions: [] });
+    await denied.send(env('storage.list', {}, 's2'));
+    assert.equal(denied.posted.at(-1).error.code, 'PERMISSION_DENIED');
+});
+
+test('buildLbDocument injects base, config and shim ahead of the app scripts', () => {
+    const { buildLbDocument, baseUrl } = sdk;
+    const config = { resource: 'my_app', ui: 'ui/index.html', app: 'my', name: 'My App', hostOrigin: 'https://cfx-nui-kora_phone' };
+    assert.equal(baseUrl('my_app', 'ui/index.html'), 'https://cfx-nui-my_app/ui/');
+    assert.equal(baseUrl('my_app', 'index.html'), 'https://cfx-nui-my_app/');
+    const page = '<!doctype html><html><head><title>x</title><script src="app.js"></script></head><body></body></html>';
+    const doc = buildLbDocument(page, config, 'window.SHIM=1;');
+    const shimAt = doc.indexOf('window.SHIM=1;');
+    assert.ok(shimAt > doc.indexOf('<head>') && shimAt < doc.indexOf('<script src="app.js">'), 'shim runs first');
+    assert.ok(doc.includes('<base href="https://cfx-nui-my_app/ui/">'));
+    assert.ok(doc.includes('"resource":"my_app"'));
+    assert.ok(buildLbDocument('<html><body>hi</body></html>', config, 's').includes('<head><base'));
+    assert.ok(buildLbDocument('<p>fragment</p>', config, 's').startsWith('<!doctype html><html><head><base'));
+    const hostile = buildLbDocument(page, { ...config, name: '</script><img src=x onerror=alert(1)>' }, 'a</script><b>');
+    assert.ok(!/<\/script><img/.test(hostile) && !hostile.includes('a</script><b>'), 'script end tags are escaped');
+});
+
+test('open asks the host to open an app, only with a valid id', async () => {
+    const opened = [];
+    const t = setup({ router: { onOpen: app => opened.push(app) } });
+    await t.send(env('open', { app: 'messages' }, 'o1'));
+    assert.deepEqual(opened, ['messages']);
+    assert.equal(t.posted.at(-1).ok, true);
+    await t.send(env('open', { app: '../etc' }, 'o2'));
+    assert.equal(t.posted.at(-1).error.code, 'INVALID_PAYLOAD');
+    assert.deepEqual(opened, ['messages']);
+});
+
+test('call starts a call only with a valid number and only when the host provides it', async () => {
+    const dialled = [];
+    const t = setup({ router: { onCall: number => { dialled.push(number); } } });
+    await t.send(env('call', { number: '5550001' }, 'k1'));
+    assert.deepEqual(dialled, ['5550001']);
+    assert.equal(t.posted.at(-1).ok, true);
+    await t.send(env('call', { number: '12' }, 'k2'));
+    assert.equal(t.posted.at(-1).error.code, 'INVALID_PAYLOAD');
+    await t.send(env('call', { number: '555000a' }, 'k3'));
+    assert.equal(t.posted.at(-1).error.code, 'INVALID_PAYLOAD');
+    const without = setup();
+    await without.send(env('call', { number: '5550001' }, 'k4'));
+    assert.equal(without.posted.at(-1).error.code, 'PERMISSION_DENIED');
+    assert.deepEqual(dialled, ['5550001']);
+});
+
+test('system actions: only the listed settings change, a PIN and a handset operation pass through, anything else is refused', async () => {
+    const { runSystemAction, SETTING_KEYS } = sdk;
+    const calls = [];
+    const deps = {
+        snapshot: () => ({ settings: { name: 'A', volume: 0.5, theme: 'dark' }, model: 'fold', hasPin: false, number: '5550001' }),
+        saveSettings: async next => { calls.push(['save', next]); return next; },
+        setPin: async (current, pin) => { calls.push(['pin', current, pin]); return { hasPin: true }; },
+        listBlocked: async () => ['5550002'],
+        setBlocked: async (number, blocked) => { calls.push(['block', number, blocked]); return true; },
+        handset: async payload => { calls.push(['handset', payload]); return { ok: true }; },
+    };
+    assert.equal((await runSystemAction(deps, 'settings.get', {})).model, 'fold');
+    assert.deepEqual(await runSystemAction(deps, 'settings.save', { patch: { volume: 0.9 } }), { name: 'A', volume: 0.9, theme: 'dark' });
+    await assert.rejects(runSystemAction(deps, 'settings.save', { patch: { pinHash: 'x' } }), /Unknown setting: pinHash/);
+    await assert.rejects(runSystemAction(deps, 'settings.save', {}), e => e.code === 'INVALID_PAYLOAD');
+    assert.ok(SETTING_KEYS.includes('dnd') && !SETTING_KEYS.includes('installedApps'), 'install state is not a setting an app may write here');
+    assert.deepEqual(await runSystemAction(deps, 'pin.set', { currentPin: '1234', pin: '5678' }), { hasPin: true });
+    await assert.rejects(runSystemAction(deps, 'pin.set', { pin: 12345 }), e => e.code === 'INVALID_PAYLOAD');
+    assert.deepEqual(await runSystemAction(deps, 'blocks.list', {}), ['5550002']);
+    await runSystemAction(deps, 'blocks.set', { number: '5550002', blocked: false });
+    await assert.rejects(runSystemAction(deps, 'blocks.set', { number: '5550002', blocked: 'no' }), e => e.code === 'INVALID_PAYLOAD');
+    await runSystemAction(deps, 'handset', { action: 'system', op: 'status' });
+    assert.deepEqual(calls.at(-1), ['handset', { op: 'status' }], 'the routing key is stripped, the operation is forwarded');
+    await assert.rejects(runSystemAction(deps, 'handset', {}), e => e.code === 'INVALID_PAYLOAD');
+    await assert.rejects(runSystemAction(deps, 'wipe', {}), /Unknown system action/);
+});
+
+test('the system request is refused unless the host gave this app the handler', async () => {
+    const plain = setup();
+    await plain.send(env('system', { action: 'settings.get' }, 'y1'));
+    assert.equal(plain.posted.at(-1).error.code, 'PERMISSION_DENIED');
+    const seen = [];
+    const trusted = setup({ router: { onSystem: (action, payload) => { seen.push([action, payload.pin]); return { fine: 1 }; } } });
+    await trusted.send(env('system', { action: 'pin.set', pin: '1' }, 'y2'));
+    assert.deepEqual(seen, [['pin.set', '1']]);
+    assert.deepEqual(trusted.posted.at(-1).payload, { fine: 1 });
+    await trusted.send(env('system', {}, 'y3'));
+    assert.equal(trusted.posted.at(-1).error.code, 'INVALID_PAYLOAD');
+});
+
+test('media.upload and camera.capture need their permissions, a real blob, and a host handler', async () => {
+    const saved = { id: 7, url: 'https://x/p.jpg', kind: 'photo' };
+    const seen = [];
+    const router = { onUpload: async blob => { seen.push(['upload', blob.size]); return saved; }, onCapture: async front => { seen.push(['capture', front]); return saved; } };
+    const none = setup({ permissions: [], router });
+    await none.send(env('media.upload', { blob: new Blob(['abc']) }, 'u1'));
+    assert.equal(none.posted.at(-1).error.code, 'PERMISSION_DENIED');
+    await none.send(env('camera.capture', {}, 'u2'));
+    assert.equal(none.posted.at(-1).error.code, 'PERMISSION_DENIED');
+    assert.deepEqual(seen, [], 'the handlers never run without the permission');
+    const granted = setup({ permissions: ['media.write', 'camera'], router });
+    await granted.send(env('media.upload', { blob: new Blob(['abc']) }, 'u3'));
+    assert.deepEqual(granted.posted.at(-1).payload, saved);
+    await granted.send(env('media.upload', { blob: 'not a blob' }, 'u4'));
+    assert.equal(granted.posted.at(-1).error.code, 'INVALID_PAYLOAD');
+    await granted.send(env('media.upload', { blob: new Blob([]) }, 'u5'));
+    assert.equal(granted.posted.at(-1).error.code, 'INVALID_PAYLOAD');
+    await granted.send(env('camera.capture', { front: true }, 'u6'));
+    assert.deepEqual(seen, [['upload', 3], ['capture', true]]);
+    const bare = setup({ permissions: ['media.write', 'camera'] });
+    await bare.send(env('media.upload', { blob: new Blob(['abc']) }, 'u7'));
+    assert.equal(bare.posted.at(-1).error.code, 'PERMISSION_DENIED');
+});
+
 (async () => {
     for (const [name, fn] of queue) {
         try { await fn(); console.log(`ok - ${name}`); } catch (e) { failures++; console.error(`not ok - ${name}\n${e.stack}`); }

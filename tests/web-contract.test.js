@@ -16,7 +16,7 @@ async function checkDeviceCache() {
   const equal = (actual, expected, message) => { assert.deepEqual(actual, expected, message); checks++; };
   const replies = [];
   const storage = new Map([
-    ["kora_phone:installed", JSON.stringify(["notes", "mail"])],
+    ["kora_phone:installed", JSON.stringify(["social"])],
     ["kora_phone:customApps", JSON.stringify({ "test-addon": true })],
   ]);
   const transport = async (url, options) => {
@@ -59,7 +59,7 @@ async function checkDeviceCache() {
   const privateSettings = { name: "Phone A", volume: .9, scale: 1.1, wallpaper: "custom", wallpaperUrl: "https://example.invalid/private.jpg", theme: "dark", setupComplete: true, dnd: true };
   const first = await refresh(raw(101, privateSettings, {
     contacts: [{ id: 1, displayName: "A contact", phoneNumber: "555001", isFavorite: 1 }],
-    items: { notes: [{ id: "a", title: "Private", body: "A note" }], alarms: [{ id: "a", label: "Alarm", time: "07:00", days: [], enabled: true }], stations: [{ id: "a", label: "Station", url: "https://example.invalid/radio" }] },
+    items: { stations: [{ id: "a", label: "Station", url: "https://example.invalid/radio" }] },
   }), gallery(1));
   equal(first.id, "101", "the existing string device ID contract is retained");
   equal(first.data.photos, [{ id: "1", url: "https://example.invalid/1.jpg", created_at: 123, kind: 'photo' }], "gallery fields retain their public mapping");
@@ -68,17 +68,17 @@ async function checkDeviceCache() {
   equal(same.preferences.name, "Renamed A", "same-device partial settings are applied");
   equal(same.preferences.volume, .9, "numeric and string IDs identify the same device");
   equal(same.data.photos, first.data.photos, "same-device direct bootstrap retains its gallery");
-  equal(same.data.notes, first.data.notes, "same-device omitted collections retain existing values");
+  equal(same.data.stations, first.data.stations, "same-device omitted collections retain existing values");
   const locked = adaptBootstrap(raw(202, { volume: 0 }, { security: { locked: true, hasPin: true } }));
   equal(locked.id, "202", "new-device ID is preserved");
   equal(locked.data, undefined, "locked devices still hide private collections");
   equal(locked.hasPin, true, "PIN metadata is preserved");
   equal(locked.preferences, { name: "Kora Phone", volume: 0, scale: 1, wallpaper: "kora_core", theme: "kora_core", setupComplete: false }, "a new locked phone uses its own partial settings and the existing defaults");
-  const second = await refresh(raw(202, { name: "Phone B", scale: .8 }, { contacts: [], items: { notes: [], alarms: [], stations: [] } }), failedGallery);
+  const second = await refresh(raw(202, { name: "Phone B", scale: .8 }, { contacts: [], items: { stations: [] } }), failedGallery);
   equal(second.data.settings.name, "Phone B", "new-phone settings remain usable when gallery fails");
   equal(second.data.settings.volume, 0, "same-device partial settings retain zero values");
-  for (const key of ["contacts", "notes", "alarms", "stations", "photos"]) equal(second.data[key], [], `phone B has no phone A ${key}`);
-  equal(second.data.installedApps, ["gps", "notes", "mail", "weather", "calculator", "music", "clock"], "a phone with no saved installs starts with the starter apps (install lists live in device settings, not NUI storage)");
+  for (const key of ["contacts", "stations", "photos"]) equal(second.data[key], [], `phone B has no phone A ${key}`);
+  equal(second.data.installedApps, [], "a phone with no saved installs starts with the starter apps (install lists live in device settings, not NUI storage)");
   equal(second.data.customApps, { "test-addon": true }, "the existing shared addon preferences are preserved");
   equal(first.data.settings, privateSettings, "resetting another device does not mutate an earlier returned snapshot");
   equal(first.data.photos.length, 1, "an earlier returned gallery remains intact");
@@ -98,10 +98,10 @@ async function checkDeviceCache() {
   completeGallery(gallery(4));
   equal((await loading).data.photos[0].id, "4", "the pending gallery still publishes a successful result");
   const settings = { name: "Saved B", volume: 0, scale: 1, wallpaper: "kora_core" };
-  ok("settings:save", settings, { ...settings, installedApps: ["gps", "notes", "mail", "weather", "calculator", "music", "clock"], expectedDeviceId: "202" });
+  ok("settings:save", settings, { ...settings, installedApps: [], expectedDeviceId: "202" });
   equal((await api("settings", settings)).settings, settings, "saving settings keeps its existing request and return shape");
   const newCollections = adaptBootstrap(raw(303, { name: "Phone C" }));
-  for (const key of ["contacts", "notes", "alarms", "stations", "photos"]) equal(newCollections.data[key], [], `omitted new-device ${key} starts empty`);
+  for (const key of ["contacts", "stations", "photos"]) equal(newCollections.data[key], [], `omitted new-device ${key} starts empty`);
   equal(newCollections.preferences.theme, "kora_core", "new-device theme has the existing default");
   equal(newCollections.preferences.setupComplete, false, "new-device setup has the existing default");
   const fallback = adaptBootstrap({});
@@ -116,70 +116,27 @@ async function checkDeviceCache() {
     { id: 11, displayName: 'Contact A', phoneNumber: '5551111111', isFavorite: true, photo: 'https://example.invalid/77.jpg' },
     { id: 12, displayName: 'Contact B', phoneNumber: '5552222222', isFavorite: false },
   ];
-  const context = { data: (await refresh(raw(404, {}, { contacts }), gallery(77))).data, updateData: value => { context.data = value; }, busy: false, navigate: () => {} };
-  let pending, hookIndex = 0;
-  const hooks = [];
-  context.run = fn => { pending = fn(); };
-  const useState = initial => {
-    const slot = hookIndex++;
-    if (!(slot in hooks)) hooks[slot] = initial;
-    return [hooks[slot], value => { hooks[slot] = typeof value === 'function' ? value(hooks[slot]) : value; }];
-  };
-  const jsx = (type, props) => ({ type, props: props || {} });
-  const componentModule = { exports: {} };
-  const componentSource = ts.transpileModule(fs.readFileSync(resolveWeb(root, 'web/src/Communication.tsx'), 'utf8'), {
-    compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2020, jsx: ts.JsxEmit.ReactJSX },
-  }).outputText;
-  const componentRequire = full => {
-    // Screens move between folders: match imports by module basename, not by relative path.
-    const name = full.startsWith('.') ? full.split('/').pop() : full;
-    if (name === 'react') return { useState, useEffect: () => {} };
-    if (name === 'react/jsx-runtime') return { jsx, jsxs: jsx, Fragment: 'Fragment' };
-    if (name === 'api') return { api, isPreview: false };
-    if (name === 'PhoneContext') return { usePhone: () => context, useLoad: () => ({}), LoadState: 'LoadState' };
-    if (name === 'types') return load(path.join(root, 'web/src/types.ts'));
-    if (name === 'chatTokens') return load(path.join(root, 'web/src/chatTokens.ts'));
-    if (name === 'chatMessages') return load(path.join(root, 'web/src/chatMessages.ts'));
-    if (name === 'Images') return { ImagePicker: 'ImagePicker', PhotoImage: 'PhotoImage' };
-    if (name === 'components') return { Row: 'Row', Empty: 'Empty', dateLabel: () => '' };
-    if (name === 'lucide-react') return {};
-    throw new Error(`Unexpected component import: ${full}`);
-  };
-  new Function('require', 'module', 'exports', componentSource)(componentRequire, componentModule, componentModule.exports);
-  const view = () => { hookIndex = 0; return componentModule.exports.ContactsScreen(); };
-  const nodes = value => {
-    if (Array.isArray(value)) return value.flatMap(nodes);
-    if (!value || typeof value !== 'object') return [];
-    return [value, ...nodes(value.props?.children)];
-  };
-  const button = label => { const value = nodes(view()).find(node => node.type === 'button' && node.props['aria-label'] === label); assert.ok(value, label); return value.props; };
-  const field = label => { const node = nodes(view()).find(node => node.type === 'label' && node.props.children[0] === label); assert.ok(node, label); return nodes(node).find(child => child.type === 'input').props; };
-  const submit = async () => { const form = nodes(view()).find(node => node.type === 'form'); assert.ok(form, 'contact editor is open'); form.props.onSubmit({ preventDefault: () => {} }); await pending; };
+  // The Contacts UI is a folder app (apps/contacts) that calls the server directly; the phone's own copy of the contact
+  // list (used by Phone, Messages and Pulse) is changed only through api('contactSave'), which these steps drive.
+  let data = (await refresh(raw(404, {}, { contacts }), gallery(77))).data;
   const reread = () => { ok('bootstrap', raw(404, {}, { contacts })); replies.push({ route: 'gallery:list', body: { limit: 100 }, result: gallery(77) }); };
-  button('Edit Contact A').onClick();
-  equal(field('Number').value, '5551111111', 'actual editor starts with selected contact');
-  field('Name').onChange({ target: { value: 'Edited A' } });
-  field('Number').onChange({ target: { value: '5554444444' } });
+  const firstContact = data.contacts[0];
+  equal(firstContact.number, '5551111111', 'the phone starts with the stored contact');
   ok('contacts:update', { id: 11 }, { id: 11, displayName: 'Edited A', phoneNumber: '5554444444', isFavorite: true, avatarMediaId: 77 });
   contacts[0] = { ...contacts[0], displayName: 'Edited A', phoneNumber: '5554444444' };
-  reread(); await submit();
-  equal(context.data.contacts[0].id, 11, 'number edit retains the original contact ID');
-  equal(context.data.contacts[0].favorite, true, 'number edit retains the selected contact favourite');
-  equal(context.data.contacts[1].number, '5552222222', 'another contact is unchanged by the reloaded response');
-  equal(nodes(view()).some(node => node.type === 'form'), false, 'successful save closes the existing editor');
-  button('Edit Contact B').onClick();
-  button('Add contact').onClick(); button('Add contact').onClick();
-  equal(field('Name').value, '', 'Add clears the old editor');
-  field('Name').onChange({ target: { value: 'New C' } }); field('Number').onChange({ target: { value: '5557777777' } });
+  reread(); data = await api('contactSave', { id: firstContact.id, name: 'Edited A', number: '5554444444', photo: firstContact.photo, favorite: firstContact.favorite });
+  equal(data.contacts[0].id, 11, 'number edit retains the original contact ID');
+  equal(data.contacts[0].favorite, true, 'number edit retains the selected contact favourite');
+  equal(data.contacts[1].number, '5552222222', 'another contact is unchanged by the reloaded response');
   ok('contacts:create', { id: 13 }, { displayName: 'New C', phoneNumber: '5557777777', isFavorite: false });
   contacts.push({ id: 13, displayName: 'New C', phoneNumber: '5557777777', isFavorite: false });
-  reread(); await submit();
-  equal(context.data.contacts[2].id, 13, 'new contact uses existing create route without a retired editing ID');
+  reread(); data = await api('contactSave', { name: 'New C', number: '5557777777' });
+  equal(data.contacts[2].id, 13, 'new contact uses the create route without a retired editing ID');
   ok('contacts:update', { id: 11 }, { id: 11, displayName: 'Edited A', phoneNumber: '5554444444', isFavorite: false, avatarMediaId: 77 });
-  contacts[0].isFavorite = false; reread(); button('Remove Edited A from favourites').onClick(); await pending;
-  equal(context.data.contacts[0].favorite, false, 'favourite spread keeps the existing saved ID path');
-  ok('contacts:delete', { id: 12 }, { id: 12 }); contacts.splice(1, 1); reread(); button('Delete Contact B').onClick(); await pending;
-  equal(context.data.contacts.map(contact => contact.id), [11, 13], 'delete spread keeps the existing saved ID path');
+  contacts[0].isFavorite = false; reread(); data = await api('contactSave', { ...data.contacts[0], favorite: false });
+  equal(data.contacts[0].favorite, false, 'favourite spread keeps the existing saved ID path');
+  ok('contacts:delete', { id: 12 }, { id: 12 }); contacts.splice(1, 1); reread(); data = await api('contactSave', { ...data.contacts[1], remove: true });
+  equal(data.contacts.map(contact => contact.id), [11, 13], 'delete spread keeps the existing saved ID path');
   ok('contacts:update', { id: 11 }, { id: 11, displayName: 'Legacy A', phoneNumber: '5554444444', isFavorite: false });
   contacts[0].displayName = 'Legacy A'; reread();
   equal((await api('contactSave', { name: 'Legacy A', number: '5554444444' })).contacts[0].name, 'Legacy A', 'ID-less public callers retain the number lookup');

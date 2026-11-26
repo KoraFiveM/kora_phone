@@ -108,4 +108,41 @@ test('fileListed supports exact paths and globs', function()
     assert(not Manifest.fileListed({}, 'ui/index.html'))
 end)
 
+test('category and system default and are validated', function()
+    local manifest = KoraPhone.SDK.Manifest.validate(H.manifest())
+    equal(manifest.category, 'tools')
+    equal(manifest.system, false)
+    local ok, err = KoraPhone.SDK.Manifest.validate(H.manifest({ category = 'nope' }))
+    equal(ok, nil)
+    assert(err:find('category must be one of'), err)
+    equal(KoraPhone.SDK.Manifest.validate(H.manifest({ category = 'social', system = true })).system, true)
+    equal(KoraPhone.SDK.Manifest.validate(H.manifest({ system = 'yes' })), nil)
+end)
+
+test('the media and camera permissions are known, an invented one is not', function()
+    local Manifest = KoraPhone.SDK.Manifest
+    equal(#Manifest.validate(H.manifest({ permissions = { 'media.write', 'camera', 'record' } })).permissions, 3)
+    equal(Manifest.validate(H.manifest({ permissions = { 'root' } })), nil)
+end)
+
+test('embeds must be plain host names, at most four', function()
+    local Manifest = KoraPhone.SDK.Manifest
+    equal(Manifest.validate(H.manifest({ embeds = { 'www.youtube-nocookie.com', 'w.soundcloud.com' } })).embeds[2], 'w.soundcloud.com')
+    equal(Manifest.validate(H.manifest({ embeds = { 'https://evil.example' } })), nil)
+    equal(Manifest.validate(H.manifest({ embeds = { 'evil.example/path' } })), nil)
+    equal(Manifest.validate(H.manifest({ embeds = { 'a.io', 'b.io', 'c.io', 'd.io', 'e.io' } })), nil)
+    equal(Manifest.validate(H.manifest({ embeds = 'youtube.com' })), nil)
+end)
+
+test('storage quota may be raised only up to the manifest maximum', function()
+    local Manifest = KoraPhone.SDK.Manifest
+    local manifest = Manifest.validate(H.manifest({ storage = { keys = 200, totalBytes = 512 * 1024 } }))
+    equal(manifest.storage.keys, 200)
+    equal(manifest.storage.totalBytes, 512 * 1024)
+    equal(Manifest.validate(H.manifest({ storage = { keys = 513 } })), nil)
+    equal(Manifest.validate(H.manifest({ storage = { totalBytes = 2 * 1024 * 1024 } })), nil)
+    equal(Manifest.validate(H.manifest({ storage = { keys = 1.5 } })), nil)
+    equal(Manifest.validate(H.manifest({ storage = { rows = 3 } })), nil)
+end)
+
 H.finish('sdk-manifest')

@@ -1,0 +1,28 @@
+/* Kora phone UI kit: design tokens. Every value is a kora_theme token the host forwards into the app. */
+:root {
+    --kp-bg: hsl(var(--background, 0 0% 6%));
+    --kp-fg: hsl(var(--foreground, 0 0% 96%));
+    --kp-surface: hsl(var(--surface, var(--card, 0 0% 9%)));
+    --kp-surface-raised: hsl(var(--surface-raised, var(--card, 0 0% 14%)));
+    --kp-surface-hover: hsl(var(--surface-hover, var(--surface-raised, 0 0% 17%)));
+    --kp-muted: hsl(var(--muted-foreground, 0 0% 58%));
+    --kp-accent: hsl(var(--primary, 84 100% 50%));
+    --kp-accent-fg: hsl(var(--primary-foreground, 0 0% 0%));
+    --kp-accent-soft: hsl(var(--brand-soft, var(--primary, 84 100% 50%)) / 0.16);
+    --kp-border: hsl(var(--border, 0 0% 20%));
+    --kp-danger: hsl(var(--destructive, 0 80% 55%));
+    --kp-success: hsl(var(--success, 140 60% 45%));
+    --kp-warning: hsl(var(--warning, 38 92% 50%));
+    --kp-ring: hsl(var(--ring, var(--primary, 84 100% 50%)));
+    --kp-radius: var(--radius, 8px);
+    --kp-radius-sm: var(--radius-sm, 6px);
+    --kp-radius-lg: var(--radius-lg, 12px);
+    --kp-font: var(--font-sans, system-ui, sans-serif);
+    --kp-font-heading: var(--font-heading, var(--font-sans, system-ui, sans-serif));
+    --kp-font-mono: var(--font-mono, ui-monospace, monospace);
+    --kp-shadow: var(--shadow-floating, 0 8px 24px hsl(0 0% 0% / 0.35));
+    --kp-gap: var(--space-3, 12px);
+    --kp-fast: var(--duration-fast, 120ms);
+    --kp-target: 44px;
+    color-scheme: light dark;
+}

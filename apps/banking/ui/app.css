@@ -1,0 +1,7 @@
+.wallet-balance { margin: 0; font-family: var(--kp-font-heading); font-size: 2.2rem; }
+.wallet-account { font-family: var(--kp-font-mono); color: var(--kp-muted); }
+.wallet-amount { font-family: var(--kp-font-mono); }
+.wallet-amount[data-direction="in"] { color: var(--kp-success); }
+.wallet-id dl { display: grid; grid-template-columns: 1fr 1fr; gap: var(--kp-gap); margin: 0; }
+.wallet-id dt { color: var(--kp-muted); font-size: 0.8rem; }
+.wallet-id dd { margin: 0; font-weight: 600; }

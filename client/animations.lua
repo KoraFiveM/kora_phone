@@ -87,16 +87,19 @@ local function createProp(ped)
     local offset, rotation = option('offset'), option('rotation')
     local created
     propName = propModel()
-    -- loadModel waits for the model; a Stop() during that wait must not leave an untracked prop in the hand.
+    -- Kora.entities.create loads the model (and tracks the local prop so it is deleted if this resource stops). A Stop()
+    -- during that wait must not leave a prop in the hand, so check the generation once it returns.
     local mine = generation
-    Kora.stream.loadModel(propName, function(hash)
-        if mine ~= generation or not wanted then return end
-        created = CreateObject(hash, 0.0, 0.0, 0.0, false, false, false)
-        if created == 0 or not DoesEntityExist(created) then created = nil; return end
-        SetEntityCollision(created, false, false)
-        AttachEntityToEntity(created, ped, boneIndex, offset.x, offset.y, offset.z, rotation.x, rotation.y, rotation.z,
-            true, true, false, true, 1, true)
-    end)
+    local entity = Kora.entities.create(propName, GetEntityCoords(ped))
+    if not entity then return nil end
+    if mine ~= generation or not wanted then
+        if DoesEntityExist(entity) then DeleteEntity(entity) end
+        return nil
+    end
+    created = entity
+    SetEntityCollision(created, false, false)
+    AttachEntityToEntity(created, ped, boneIndex, offset.x, offset.y, offset.z, rotation.x, rotation.y, rotation.z,
+        true, true, false, true, 1, true)
     return created
 end
 

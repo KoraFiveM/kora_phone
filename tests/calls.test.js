@@ -23,7 +23,7 @@ for (const status of ["ringing", "active", "ended", "rejected", "missed", "cance
 assert.match(service, /Permissions\.requireDevice\(source\)/, "calls must derive identity from QBCore source");
 assert.match(service, /device\.id\s*~=/, "accept/reject must verify the callee");
 assert.match(service, /participant\(call, deviceId\)/, "mutations must verify call membership");
-assert.match(service, /SetTimeout\(ringTimeoutMs/, "ringing calls need a server timeout");
+assert.match(service, /KoraPhone\.After\(ringTimeoutMs/, "ringing calls need a server timeout");
 assert.match(service, /Calling\.callByDevice\[caller\.id\]/, "caller concurrency must be guarded");
 assert.match(service, /Calling\.callByDevice\[callee\.id\]/, "callee concurrency must be guarded");
 assert.match(service, /Repositories\.Phones\.findByNumber/, "callee must resolve from an owned phone number");
@@ -189,6 +189,8 @@ local function host()
     for _, file in ipairs({ 'server/integrations/database.lua', 'server/integrations/kora_core.lua', 'server/repositories/phones.lua', 'server/repositories/blocks.lua',
         'server/repositories/calls.lua', 'server/services/phone.lua', 'server/rate_limits.lua', 'server/permissions.lua',
         'server/sessions.lua', 'server/integrations/voice.lua', 'server/services/calling.lua' }) do dofile(root .. '/' .. file) end
+    -- kora_core.lua defines After over Kora.timers; this harness has no kora_lib, so it drives the same queue as SetTimeout.
+    KoraPhone.After = function(ms, fn) SetTimeout(ms, fn) end
     local file = assert(io.open(root .. '/server/callbacks.lua')); local callbackSource = file:read('*a'); file:close()
     -- Use the real protected dispatcher, without registering unrelated phone services.
     local boundary = assert(callbackSource:find('local bind = Routes.handle', 1, true))

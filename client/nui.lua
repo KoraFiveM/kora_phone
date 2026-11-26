@@ -122,6 +122,16 @@ route('customList', function()
     return KoraPhone.CustomApps.List()
 end)
 
+-- Folder apps: the UI's `phone.client(name, payload)` reaches apps/<id>/client.lua handlers here.
+route('apps:client', function(data)
+    return KoraPhone.Apps.invokeClient(data.app, data.name, data.payload)
+end)
+
+-- Only the page of an app that registered itself; the UI never names a file.
+route('apps:html', function(data)
+    return { html = KoraPhone.SDK.ClientRegistry.html(data.app) }
+end)
+
 route('customLifecycle', function(data)
     if type(data.app) == 'string' and type(data.event) == 'string' then
         KoraPhone.CustomApps.Fire(data.app, data.event)
@@ -152,29 +162,42 @@ local function currentWaypoint()
     return { x = math.floor(at.x + 0.5), y = math.floor(at.y + 0.5) }
 end
 
-route('location:mine', function()
+KoraPhone.World = KoraPhone.World or {}
+
+---Where the player is: coordinates, a street or zone label, heading and the game's own waypoint (for the Maps pin).
+---@return { x: number, y: number, label: string, heading: integer, waypoint: { x: integer, y: integer }|nil }
+function KoraPhone.World.Location()
     local at = Kora.cache.coords()
-    local label = locationLabel(at):gsub('[%[%]|]', ''):sub(1, 60)
     return {
-        ok = true,
-        data = {
-            x = roundTo(at.x, 0.1),
-            y = roundTo(at.y, 0.1),
-            label = label,
-            heading = math.floor(GetEntityHeading(Kora.cache.ped()) + 0.5),
-            waypoint = currentWaypoint(),
-        },
+        x = roundTo(at.x, 0.1),
+        y = roundTo(at.y, 0.1),
+        label = locationLabel(at):gsub('[%[%]|]', ''):sub(1, 60),
+        heading = math.floor(GetEntityHeading(Kora.cache.ped()) + 0.5),
+        waypoint = currentWaypoint(),
     }
+end
+
+route('location:mine', function()
+    return { ok = true, data = KoraPhone.World.Location() }
 end)
 
 local MAX_WORLD = 20000
 
+KoraPhone.World = KoraPhone.World or {}
+
+---Sets the map waypoint. Returns false for coordinates outside the world.
+---@return boolean
+function KoraPhone.World.Waypoint(x, y)
+    x, y = tonumber(x), tonumber(y)
+    if not x or not y or math.abs(x) > MAX_WORLD or math.abs(y) > MAX_WORLD then return false end
+    SetNewWaypoint(x + 0.0, y + 0.0)
+    return true
+end
+
 route('waypoint', function(data)
-    local x, y = tonumber(data.x), tonumber(data.y)
-    if not x or not y or math.abs(x) > MAX_WORLD or math.abs(y) > MAX_WORLD then
+    if not KoraPhone.World.Waypoint(data.x, data.y) then
         return failure('INVALID_INPUT', Kora.lang('error.invalid_location'))
     end
-    SetNewWaypoint(x + 0.0, y + 0.0)
     return { ok = true, data = true }
 end)
 
@@ -201,32 +224,23 @@ local function currentWeather()
     return 'CLEAR'
 end
 
-route('weather:get', function()
+-- World services every app may use (the Weather app's client.lua, the home screen widget).
+KoraPhone.World = KoraPhone.World or {}
+
+---@return { condition: string, hour: integer, minute: integer, rain: number }
+function KoraPhone.World.Weather()
     return {
-        ok = true,
-        data = {
-            condition = currentWeather(),
-            hour = GetClockHours(),
-            minute = GetClockMinutes(),
-            rain = math.max(0.0, GetRainLevel() + 0.0),
-        },
+        condition = currentWeather(),
+        hour = GetClockHours(),
+        minute = GetClockMinutes(),
+        rain = math.max(0.0, GetRainLevel() + 0.0),
     }
+end
+
+route('weather:get', function()
+    return { ok = true, data = KoraPhone.World.Weather() }
 end)
 
--- An alarm went off in the UI. With the phone closed the player still needs to notice it.
-route('alarm', function(data)
-    if not KoraPhone.State.open then
-        local label = stringField(data.label, 60) or ''
-        Kora.notify.send({
-            title = Kora.lang('title.alarm'),
-            message = label ~= '' and label or Kora.lang('notify.alarm_untitled'),
-            type = 'info',
-            duration = 8000,
-        })
-        PlaySoundFrontend(-1, 'Beep_Green', 'DLC_HEIST_HACKING_SNAKE_SOUNDS', true)
-    end
-    return { ok = true }
-end)
 
 -- Do Not Disturb: the UI owns the setting and schedule and tells the client whether it is quiet now.
 route('quiet', function(data)
@@ -244,6 +258,3 @@ route('calls:setSpeaker', function(data)
     return { ok = ok == true, error = reason }
 end)
 
-route('map:blips', function()
-    return { ok = true, data = KoraPhone.Map.Blips() }
-end)

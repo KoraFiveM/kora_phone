@@ -20,7 +20,7 @@ Current version: see `version` in `fxmanifest.lua`.
 | [UI](./ui.md) | Apps, handset styles, custom apps, NUI development |
 | [Handsets, SIMs and cloud](./three-handsets.md) | Handset identity, security, inventory gateway, backup and rollback |
 | [Commands](./commands.md) | Chat commands, key mappings, third-eye options |
-| [App SDK](./apps.md) | Developer guide for sandboxed third-party apps (v1 SDK) |
+| [App SDK](./apps.md) | Developer guide for folder apps and third-party apps (v1 SDK) |
 | [App SDK API](./api/apps.md) | SDK exports, routes and iframe protocol reference |
 | [Exports](./api/exports-events.md) | Client and server exports, including phone-alias exports |
 | [Events and callbacks](./events.md) | Net events, local events, server callbacks, NUI callbacks |
@@ -30,6 +30,9 @@ Current version: see `version` in `fxmanifest.lua`.
 | [Media storage](./media-storage.md) | Photo and video providers, Fivemanage, limits |
 | [Banking and jobs](./banking-jobs.md) | kora_banking transfers, jobs and duty, Garage and Property sources |
 | [Community security](./community-security.md) | Pulse, Market and moderation controls |
+| [App style guide](./style-guide.md) | The rules every app follows, and the linter that checks them |
+| [Kora stack usage](./kora-stack.md) | Which kora_lib and kora_core modules the phone uses, and the few raw natives it keeps on purpose |
+| [lb-phone apps](./lb-phone.md) | What of lb-phone's apps, page globals and server exports is supported |
 | [System mail](./system-mail.md) | Server-delivered mail and activity notes, plus the custom-app alias note |
 | [Security checklist](./security.md) | Security rules the code follows |
 | [Troubleshooting](./troubleshooting.md) | Common start-up and runtime problems |

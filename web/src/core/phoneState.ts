@@ -1,7 +1,10 @@
-import type { AppId, Bootstrap, Call, Conversation, DeviceData, Notification } from '../types';
+import type { AppId, Bootstrap, Call, DeviceData, Notification } from '../types';
 import { normalizeData } from '../types';
 import { recall } from '../lastScreen';
 import type { ShareRequest } from './ShareRequest';
+
+/** The app the player is looking at. A folder app opens through the app host, so its id is the route target. */
+export const currentAppId = (app: string, target: string): string => app === 'custom' ? target.split('#')[0] : app;
 
 export interface ServiceRequest { id: string; label: string; operation: string }
 export interface ServiceResult { message: string; accountId?: string; recoveryCode?: string }
@@ -34,8 +37,6 @@ export interface PhoneState {
   video: VideoState;
   coverCamera: boolean;
   coverPlaying: boolean;
-  foldInbox: Conversation[];
-  foldInboxMore: boolean;
   peek?: Peek;
   pin: string;
   lockError: string;
@@ -73,7 +74,7 @@ export function initialPhoneState(device: Bootstrap | undefined, shown: boolean,
   return {
     device, shown, app, target: '', toast: '', busy: false, revision: 0, hiddenCapture: false,
     notifications: stored.a, earlier: stored.e, showNotifications: false, home: idleHome, folded: false, unfolding: false,
-    serviceOpen: false, video: idleVideo, coverCamera: false, coverPlaying: false, foldInbox: [], foldInboxMore: false,
+    serviceOpen: false, video: idleVideo, coverCamera: false, coverPlaying: false,
     pin: '', lockError: '',
   };
 }

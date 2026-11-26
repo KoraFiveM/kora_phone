@@ -21,6 +21,24 @@ export interface RouterOptions {
     onReady?: () => void;
     onClose?: () => void;
     onSetTitle?: (title: string) => void;
+    /** Opens another app. Receives a validated app id and an optional short target (a number, a thread). */
+    onOpen?: (app: string, target?: string) => void;
+    /** Settings, PIN, blocked numbers and handset controls. Only ever set for a system app that lives in this resource. */
+    onSystem?: (action: string, payload: Record<string, unknown>) => Promise<unknown> | unknown;
+    /** Uploads a blob and saves it to the gallery; resolves with the saved item. */
+    onUpload?: (blob: Blob) => Promise<unknown>;
+    /** Takes an in-game photo and resolves with the saved item. */
+    onCapture?: (front: boolean) => Promise<unknown>;
+    /** Starts a call. Receives a validated number (7 to 16 digits). */
+    onCall?: (number: string) => Promise<unknown> | unknown;
+    /** Reloads the data the host keeps for other screens (contacts and the like). */
+    onRefresh?: () => Promise<unknown> | unknown;
+    /** Opening hint for this app (see InitPayload.target). */
+    target?: string;
+    /** The phone's volume setting (0 to 1), read when the app starts. */
+    getVolume?: () => number | undefined;
+    /** lb-phone compatibility actions (contacts, gallery, call, openApp). Absent for every other app, which then cannot use the `lb` request. */
+    onLb?: (action: string, payload: Record<string, unknown>) => Promise<unknown> | unknown;
     timeoutMs?: number;
     /** Allowed overrides for tests/legacy hosts that hand back a fully qualified entry URL. */
     origin?: string;
@@ -30,6 +48,8 @@ export interface MessageLike { source: unknown; origin: string; data: unknown }
 
 export const REQUEST_TIMEOUT_MS = 15000;
 const MAX_PENDING = 32;
+/** The server enforces its own, smaller media limits; this only stops an absurd blob from crossing the iframe boundary. */
+const MAX_UPLOAD_BYTES = 64 * 1024 * 1024;
 
 /** Source + origin validation. `expectedSource` is iframe.contentWindow. */
 export function isTrustedMessage(event: MessageLike, expectedSource: unknown, origin: string): boolean {
@@ -91,6 +111,48 @@ export function createRouter(options: RouterOptions) {
             if (!name) throw new RouteError('INVALID_PAYLOAD', 'Invalid callback name');
             return call('apps:call', { name, payload: payload.payload });
         },
+        open: payload => {
+            const app = typeof payload.app === 'string' && /^[a-z0-9][a-z0-9_-]{1,31}$/.test(payload.app) ? payload.app : undefined;
+            if (!app) throw new RouteError('INVALID_PAYLOAD', 'Invalid app id');
+            const target = typeof payload.target === 'string' && payload.target.length <= 64 ? payload.target : undefined;
+            options.onOpen?.(app, target);
+            return null;
+        },
+        call: async payload => {
+            const number = typeof payload.number === 'string' && /^\d{7,16}$/.test(payload.number) ? payload.number : undefined;
+            if (!number) throw new RouteError('INVALID_PAYLOAD', 'Enter a valid number');
+            if (!options.onCall) throw new RouteError('PERMISSION_DENIED', 'Not available to this app');
+            await options.onCall(number);
+            return null;
+        },
+        refresh: async () => { await options.onRefresh?.(); return null; },
+        'media.upload': async payload => {
+            if (!(payload.blob instanceof Blob)) throw new RouteError('INVALID_PAYLOAD', 'A file is required');
+            if (payload.blob.size === 0 || payload.blob.size > MAX_UPLOAD_BYTES) throw new RouteError('INVALID_PAYLOAD', 'That file is too large');
+            if (!options.onUpload) throw new RouteError('PERMISSION_DENIED', 'Not available to this app');
+            return options.onUpload(payload.blob);
+        },
+        'camera.capture': async payload => {
+            if (!options.onCapture) throw new RouteError('PERMISSION_DENIED', 'Not available to this app');
+            return options.onCapture(payload.front === true);
+        },
+        system: payload => {
+            if (!options.onSystem) throw new RouteError('PERMISSION_DENIED', 'Not available to this app');
+            const action = str(payload.action, 32);
+            if (!action) throw new RouteError('INVALID_PAYLOAD', 'An action is required');
+            return options.onSystem(action, payload);
+        },
+        lb: payload => {
+            if (!options.onLb) throw new RouteError('PERMISSION_DENIED', 'Not available to this app');
+            const action = str(payload.action, 32);
+            if (!action) throw new RouteError('INVALID_PAYLOAD', 'An action is required');
+            return options.onLb(action, payload);
+        },
+        client: payload => {
+            const name = typeof payload.name === 'string' && /^[a-zA-Z0-9_:.-]{1,48}$/.test(payload.name) ? payload.name : undefined;
+            if (!name) throw new RouteError('INVALID_PAYLOAD', 'Invalid client callback name');
+            return call('apps:client', { name, payload: payload.payload });
+        },
         notify: async payload => {
             const title = str(payload.title, 64);
             if (!title) throw new RouteError('INVALID_PAYLOAD', 'A title is required');
@@ -101,6 +163,11 @@ export function createRouter(options: RouterOptions) {
         'storage.get': async payload => {
             const data = await call('apps:storage:get', { key: requireKey(payload) });
             return isRecord(data) && data.value !== undefined ? data.value : null;
+        },
+        'storage.list': async payload => {
+            const prefix = typeof payload.prefix === 'string' ? payload.prefix.slice(0, 64) : undefined;
+            const data = await call('apps:storage:list', { prefix });
+            return isRecord(data) && isRecord(data.values) ? data.values : {};
         },
         'storage.set': async payload => {
             await call('apps:storage:set', { key: requireKey(payload), value: payload.value });
@@ -139,6 +206,8 @@ export function createRouter(options: RouterOptions) {
             locale: options.locale,
             theme: options.getTheme(),
             permissions: [...options.permissions],
+            ...(options.target ? { target: options.target } : {}),
+            ...(options.getVolume?.() !== undefined ? { volume: options.getVolume() } : {}),
         };
     }
 

@@ -44,8 +44,11 @@ RegisterNetEvent('kora_phone:server:phone:closed', function()
 end)
 
 -- /phonereset [id]: wipes a player's phone settings and PIN so the setup screen shows again.
--- No id resets your own phone. Moderators only (kora.phone.moderate ace or a kora_core admin/god permission); console needs an id.
-RegisterCommand('phonereset', function(caller, args)
+-- No id resets your own phone. Moderators only (kora.phone.moderate ace or a kora_core admin/god permission);
+-- the console needs an id. Registered through Kora.commands, which gives it chat suggestions and the permission gate.
+Kora.commands.add('phonereset', 'Reset a phone: settings and PIN, so setup runs again', {
+    { name = 'id', help = 'Player id (default: yourself)' },
+}, false, function(caller, args)
     local function reply(message)
         if caller == 0 then
             Kora.print.info('phone.reset_command', message)
@@ -53,7 +56,6 @@ RegisterCommand('phonereset', function(caller, args)
             Kora.notify.send(caller, { title = 'Phone', message = message, type = 'info', duration = 4000 })
         end
     end
-    if caller ~= 0 and not KoraPhone.Services.Moderation.isModerator(caller) then return reply('No permission') end
     local target = tonumber(args[1]) or caller
     local citizenId = target ~= 0 and KoraPhone.GetCitizenId(target)
     local device = citizenId and KoraPhone.Handsets.current(target, false)
@@ -64,7 +66,10 @@ RegisterCommand('phonereset', function(caller, args)
     KoraPhone.Repositories.Phones.clearPin(device.id)
     TriggerClientEvent('kora_phone:client:reset', target)
     reply(('Phone reset for player %d'):format(target))
-end, false)
+end, {
+    permission = 'moderate',
+    checkPermission = function(source) return KoraPhone.Services.Moderation.isModerator(source) end,
+})
 
 AddEventHandler('kora_core:server:playerUnloaded', function(src)
     KoraPhone.Sessions.close(src)

@@ -35,7 +35,7 @@ JSON columns (`settings_json`, report snapshots) are read with `CAST(... AS CHAR
 | `phone_cloud_accounts` | Cloud accounts | `id`, `owner_citizenid`, `recovery_hash`, `revision` |
 | `phone_cloud_media` | Media granted to cloud accounts | `account_id`, `media_id` |
 | `phone_contacts` | Contacts per device | `owner_device_id`, `display_name`, `phone_number` |
-| `phone_items` | Notes, alarms and Sound stations | `device_id`, `kind` (`note`, `alarm`, `station`), `item_key`, `payload` |
+| `phone_items` | Alarms and Sound stations | `device_id`, `kind` (`alarm`, `station`), `item_key`, `payload` |
 | `phone_mailboxes`, `phone_threads` | Per-handset message copies and thread index | `device_id`, `peer_number`, `sender_number`, `body`, `request_id`, `is_read`, `is_outgoing` |
 | `phone_conversations`, `phone_conversation_members`, `phone_messages`, `phone_message_deletions` | Older conversation tables, still read for legacy groups and message media | `type`, `direct_key`, `message_type` |
 | `phone_calls`, `phone_call_hidden` | Call history and per-handset hidden calls | `caller_number_snapshot`, `callee_number_snapshot`, `status`, `voice_channel`, `started_at` |

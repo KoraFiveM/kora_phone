@@ -1,0 +1,11 @@
+/*
+ * Kora phone UI kit. Every colour, font, radius and shadow here is a kora_theme token the host forwards
+ * into the app (HSL triplets, so they are always wrapped in hsl()). Apps use the .kp-* classes below and
+ * never write colours of their own: tools/check-app.mjs fails the build when they do.
+ *
+ * The app's viewport IS the app area of the phone, so ordinary @media / @container queries adapt to
+ * Standard, Flip and Fold without the app knowing which handset it is on.
+ */
+@import url('kora-tokens.css');
+@import url('kora-base.css');
+@import url('kora-components.css');

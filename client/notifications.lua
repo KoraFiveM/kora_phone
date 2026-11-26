@@ -14,7 +14,7 @@ function Notifications.Native(title, body, urgent)
     if KoraPhone.State.quiet and not urgent then return false end
     Kora.notify.send({ title = title, message = body, type = urgent and 'error' or 'info', duration = 4500 })
     if Config.Client.NotificationSound ~= false then
-        PlaySoundFrontend(-1, 'Text_Arrive_Tone', 'Phone_SoundSet_Default', true)
+        Kora.sound.playFrontend('Text_Arrive_Tone', 'Phone_SoundSet_Default', { network = true })
     end
     return true
 end

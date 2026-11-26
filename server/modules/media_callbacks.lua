@@ -5,4 +5,3 @@ local Media = KoraPhone.Services.Media
 bind('requestMediaUpload', Media.requestUpload, { async = true })
 bind('completeMediaUpload', Media.completeUpload, { async = true })
 bind('getGallery', Media.list)
-bind('deleteMedia', Media.delete, { async = true })

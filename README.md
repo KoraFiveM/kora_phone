@@ -32,7 +32,7 @@ Each handset has its own visual identity, with coordinated colors across the lau
 ## What's included
 
 - **Calls and video:** kora_voice audio, accepted WebRTC video upgrades, in-game selfie/rear cameras and hang-up. Muting a call is not supported because kora_voice has no call-only mute.
-- **Everyday apps:** Contacts, Messages with photo attachments, Camera, Gallery, Maps, Mail, Notes, Weather, Calculator, Clock and Sound.
+- **Everyday apps:** Contacts, Messages with photo attachments, Camera, Gallery, plus Notes, Weather, Calculator, Wallet, Mail, Moderation, Market, Contacts, Phone, Messages, Gallery, Maps, Clock, Sound, Settings, Pulse, Flash, Camera, Garage, Home and Work as drop-in folder apps.
 - **Social, money and work apps:** Pulse and Flash (social, clips), Market (classifieds), Banking and the Wallet ID card (transfers through kora_banking), Services (jobs, duty and configured actions through kora_core), Garage (kora_core vehicles, kora_garages names), Property (your housing tables) and a moderation queue (off by default). Each can be switched off in `Config.Apps`.
 - **Third-party apps:** sandboxed iframe apps declared by manifest and built with `@kora/phone-sdk` (server-checked permissions, per-app storage and callbacks; see [docs/apps.md](docs/apps.md)), plus the lb-phone, sd-phone, 17mov_Phone, yseries and high-phone custom-app export aliases.
 - **Personal security:** optional PINs, simulated character-based Face ID with a backup PIN, cloud backup/restore and recovery codes.

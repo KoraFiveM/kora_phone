@@ -16,7 +16,98 @@ A third-party app is a separate FiveM resource that ships a small web UI. The ph
 - The app gets its own **storage** and its own **callbacks**, namespaced by app id.
 - Colours, fonts and shape come from `kora_theme` and are pushed into the iframe.
 
-## Registering an app
+## Folder apps (the recommended way)
+
+An app can live inside this resource, in `apps/<id>/`. No manifest edit, no separate resource and no build step: drop the folder in and restart `kora_phone`.
+
+```text
+apps/notes/
+  app.lua        Phone.app('notes', { ... })   what the app is (static data, both realms)
+  server.lua     optional: server callbacks and events
+  client.lua     optional: client callbacks that read game state
+  icon.svg       the app icon, one colour
+  ui/index.html  the page (plus app.js, app.css, ...)
+```
+
+Scaffold one with `node tools/new-app.mjs my-app "My App"`, then run `node tools/check-app.mjs apps/my-app`. The UI follows the [App style guide](./style-guide.md).
+
+### app.lua
+
+```lua
+Phone.app('notes', {
+    name = 'Notes',
+    description = 'A home for your plans, ideas, and little reminders.',
+    icon = 'icon.svg',
+    category = 'tools',
+    permissions = { 'storage' },
+    storage = { keys = 128, totalBytes = 512 * 1024 },
+    defaultInstalled = true,
+})
+```
+
+The first argument must equal the folder name; a mismatch stops the phone loading that app. Fields are the manifest fields below, except that `ui` replaces `entry` (a path inside the app folder, default `ui/index.html`) and an `.svg` icon is a file inside the folder. An invalid definition is logged as `phone.app.rejected` and skipped; the other apps still load. An admin can switch an app off with `Config.Apps.<id> = false`.
+
+### server.lua and client.lua
+
+```lua
+-- server.lua
+local app = Phone.app('notes')
+app.callback('save', function(source, payload) return { saved = true } end)   -- UI: phone.callback('save', data)
+app.callback('list', function(source) return Phone.unwrap(KoraPhone.Services.Garage.list(source)) end)  -- raises a failed service result as the UI error
+app.callback('pay', handler, { rate = 'bankTransfer' })                         -- also charge a strict Config.Server.RateLimits bucket
+app.send(source, 'refresh', { n = 1 })                                         -- UI: phone.on('refresh', fn)
+app.notify(source, 'Title', 'Body')
+local value = app.getStorage(source, 'key')   -- also setStorage, removeStorage, listStorage
+```
+
+```lua
+-- client.lua
+local app = Phone.app('weather')
+app.client('get', function(payload) return KoraPhone.World.Weather() end)     -- UI: phone.client('get')
+app.on('refresh', function(data) end)       -- server app.send, handled in Lua
+app.push('refresh', data)                   -- Lua to the open UI
+```
+
+`app.callback` handlers run behind the same gate as every SDK callback (character loaded, phone held, PIN unlocked, app installed). `app.client` handlers have no server gate: they run on the player's own client.
+
+### System services
+
+`phone.system(action, payload)` reaches the phone's own settings: `settings.get`, `settings.save` (a patch of `name`, `volume`, `scale`, `wallpaper`, `wallpaperUrl`, `theme`, `phoneStyle`, `phoneCase`, `phoneCaseUrl`, `iconStyle`, `dnd`, `dndFrom`, `dndTo`, `setupComplete`, `appOrder`, `dockOrder`; the server validates the values again), `pin.set`, `blocks.list`, `blocks.set` and `handset` (one handset operation: SIM, cloud, Face ID, Wi-Fi). The phone only offers it to an app that sets `system = true` and is served by this resource (Settings is the one that uses it); every other app, including lb-phone pages and apps from other resources, gets `PERMISSION_DENIED`.
+
+### The dock
+
+If a folder app's id is one of the dock ids (`phone`, `messages`, `contacts`, `camera`, `gallery`) the phone shows it in the dock instead of the grid, in the default dock order. An app opened with `phone.open('phone', number)` receives that target as `init.target` (`phone.init.target` after `ready()`).
+
+### Events from the phone
+
+The phone forwards `messages:new` and `messages:read` to an open Messages app as app events (`phone.on('messages:new', fn)`). `mapBlipsChanged` reaches an open Maps app the same way. A wide app area (an unfolded Atlas Fold) shows list and detail together when the page uses the kit's `kp-split`, as Messages does.
+
+### The UI kit
+
+An app page loads the kit from the phone, with no build step:
+
+```html
+<link rel="stylesheet" href="/sdk/runtime/kora-ui.css">
+<script type="module">
+    import { phone, ready, h, render, states, load, toast, confirm, menu, prompt, popup, icon, i18n } from '/sdk/runtime/kit.js';
+</script>
+```
+
+`phone` is the SDK client (`phone.callback`, `phone.client`, `phone.open(app, target)` to open another app, `phone.call(number)` to start a call (the phone's own call screen takes over), `phone.refresh()` to make the phone reload its own copy of shared data such as contacts,  `phone.storage.get/list/set/remove`, `phone.contacts`, `phone.notify`). `h` builds elements without `innerHTML`. See the [style guide](./style-guide.md) for the CSS classes.
+
+### Trust
+
+Folder apps are trusted code. Their Lua runs in this resource's VM, and their page is served from this resource's own origin, so it can reach the phone's own NUI callbacks. The manifest `permissions` are enforced for the SDK requests an iframe sends (`storage`, `notify`, contacts), and for apps from other resources; they do not sandbox a folder app's Lua. Treat adding a folder to `apps/` like starting a resource.
+
+### Built-in apps
+
+Notes, Calculator, Weather, Wallet (`banking`), Mail (`mail`), Moderation (`moderation`, a `staff` app), Market (`classifieds`), Contacts, Phone, Messages and Gallery (in the dock), Maps (`gps`), Clock (`clock`, a `client.lua` that rings alarms with the phone closed), Sound (`music`, with declared `embeds`), Camera (`camera`, a `system` app that draws the game texture with `sdk/runtime/game.js`), Pulse (`social`) and Flash (`flash`), which use `media.write`, `camera` and `record`, Settings (`settings`, a `system` app that uses `phone.system`), Garage (`vehicles`), Home (`property`) and Work (`services`) ship as folder apps and are the reference implementations: `notes` for storage, `calculator` for pure UI, `weather` and `property` for `client.lua`, and `vehicles`, `property` and `services` for wrapping an existing server service with `Phone.unwrap`. The remaining built-in apps (none) are still compiled into the host UI and move into `apps/` one at a time as they gain the services they need; see `patchnotes.md`.
+
+## Other ways to register an app
+
+The two ways below are for apps that live in their own resource. They produce the same manifest.
+
+### Registering from another resource
 
 There are two ways; both produce the same manifest object.
 
@@ -44,6 +135,11 @@ Rules for both:
 | `job` | string, table or array | no | A job name, or a table with `name` and optional `grade` (the minimum one-based grade, as in kora_core), or an array of those. Display filter only |
 | `defaultInstalled` | boolean | no | Whether the app counts as installed until the player installs or removes it. `false` when omitted |
 | `price` | number | no | Non-negative number. Display only: nothing charges it |
+| `category` | string | no | `tools` (default), `life`, `social`, `games` or `system`. Used by the App Store filters |
+| `embeds` | array | no | Up to four host names the page may put in a frame, for example a player (`www.youtube-nocookie.com`). The style check allows exactly these hosts in the app's files, and `index.html` must carry a `Content-Security-Policy` meta whose `frame-src` repeats them. Nothing else outside the resource is allowed |
+| `staff` | boolean | no | `true` shows and serves the app to moderators only (the same check as the moderation queue), enforced on the server for every call. `false` when omitted |
+| `system` | boolean | no | `true` hides the Remove button in the App Store. `false` when omitted |
+| `storage` | table | no | Raises the storage quota: `keys` up to 512 and `totalBytes` up to 1048576 (1 MB). Defaults are 64 keys and 128 KB |
 
 Unknown fields or unknown permissions reject the registration.
 
@@ -54,9 +150,12 @@ Job grades in a manifest are one-based, the same as kora_core's native grade lev
 | Permission | Enforced for |
 | --- | --- |
 | `notify` | `apps:notify` (the iframe request `notify`) |
-| `storage` | `apps:storage:get`, `apps:storage:set`, `apps:storage:remove` |
+| `storage` | `apps:storage:get`, `apps:storage:list`, `apps:storage:set`, `apps:storage:remove` |
 | `contacts.read` | `apps:contacts:list` |
 | `contacts.write` | `apps:contacts:save` |
+| `media.write` | `phone.media.upload(blob)`: uploads a file through the phone's media pipeline and saves it to the gallery (the server still enforces size, type and daily limits) |
+| `camera` | `phone.camera.capture()`: takes an in-game photo with the phone's own camera and saves it to the gallery |
+| `record` | Lets the app's frame use the webcam and microphone (`getUserMedia`), for short clips recorded with `sdk/runtime/recorder.js` |
 | `media.read` | Accepted in manifests, but no route checks it yet: it grants nothing |
 | `location` | Accepted in manifests, but no route checks it yet: it grants nothing |
 | `payments` | Accepted in manifests, but no route checks it yet: it grants nothing |
@@ -112,7 +211,7 @@ Client-side apps registered through the client exports (`RegisterApp`, `RemoveAp
 - **Server-side enforcement.** Every `apps:*` call is rate limited, needs a loaded character holding a phone (and an unlocked session when a PIN is set), needs the app to be registered and installed for that device, and has its permission checked on the server against the registered manifest. The UI cannot grant itself permissions.
 - **Sandbox.** The iframe uses `sandbox="allow-scripts allow-same-origin allow-forms"` and `referrerpolicy="no-referrer"`. There is no top navigation and no popups.
 - **Origin checks.** The host accepts messages only when `event.source` is the iframe window and `event.origin` is `https://cfx-nui-RESOURCE`. The SDK client accepts messages only from its parent window and the host origin (default `https://cfx-nui-kora_phone`).
-- **Storage quotas.** 64 keys per app per device, 16 KB per value (JSON encoded), 128 KB total per app per device. Keys are 1 to 64 characters from letters, digits, `_`, `.`, `:` and `-`.
+- **Storage quotas.** By default 64 keys per app per device, 16 KB per value (JSON encoded), 128 KB total per app per device. The manifest `storage` field raises keys and total size (up to 512 keys and 1 MB); the value limit stays 16 KB. Keys are 1 to 64 characters from letters, digits, `_`, `.`, `:` and `-`.
 - **Callback ownership.** Only the registering resource may add callbacks for an app id.
 - **Field limits.** Notification title at most 48 and body at most 200 characters; contact name at most 64, number 3 to 24 characters of digits, `+`, `-`, spaces and brackets.
 
@@ -152,7 +251,7 @@ export function App() {
 }
 ```
 
-The client surface is `ready()`, `theme`, `init`, `callback`, `notify`, `storage` (`get`, `set`, `remove`), `contacts` (`list`, `save`), `on`, `onTheme`, `onVisibility`, `close`, `setTitle`, `haptic`, `getContext` and `destroy`. Requests time out after 10 seconds by default (`timeoutMs`) with a `PhoneError` of code `TIMEOUT`. The React entry adds `PhoneProvider`, `usePhone`, `useTheme`, `usePhoneCallback` (returns `data`, `loading`, `error` and `call`) and `usePhoneStorage` (returns `value`, `loading`, `error`, `set` and `remove`). See `examples/hello-app/` for a complete resource and `sdk/README.md` for the package.
+The client surface is `ready()`, `theme`, `init`, `callback`, `client`, `notify`, `storage` (`get`, `list`, `set`, `remove`), `contacts` (`list`, `save`), `on`, `onTheme`, `onVisibility`, `close`, `setTitle`, `haptic`, `getContext` and `destroy`. Requests time out after 10 seconds by default (`timeoutMs`) with a `PhoneError` of code `TIMEOUT`. The React entry adds `PhoneProvider`, `usePhone`, `useTheme`, `usePhoneCallback` (returns `data`, `loading`, `error` and `call`) and `usePhoneStorage` (returns `value`, `loading`, `error`, `set` and `remove`). See `examples/hello-app/` for a complete resource and `sdk/README.md` for the package.
 
 ## Known gaps
 
@@ -170,5 +269,8 @@ The client surface is `ready()`, `theme`, `init`, `callback`, `notify`, `storage
 7. Build output is generated at release time and not committed.
 
 ## Migration from lb-phone and sd-phone aliases
+
+lb-phone apps need no migration: see [lb-phone apps](./lb-phone.md) for what is supported.
+
 
 The existing alias exports for `lb-phone`, `sd-phone`, `17mov_Phone`, `yseries` and `high-phone` remain and feed the same registry as the client `RegisterApp`. Such apps get UI and their own resource logic only, with no server permissions. To use storage, contacts, notifications or server callbacks, move the app to the manifest model above. The legacy bridge `web/dist/compat.js` keeps `fetchNui`, `onNuiEvent`, `onSettingsChange`, `resourceName`, `appName` and `settings` working for old addons.

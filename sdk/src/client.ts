@@ -13,6 +13,7 @@ import {
     type RequestMap,
     type RequestMessage,
     type RequestType,
+    type SavedMedia,
     type ThemeState,
 } from './protocol.js';
 
@@ -57,9 +58,25 @@ export interface PhoneClient {
     readonly theme: ThemeState | null;
     readonly init: InitPayload | null;
     callback<TIn = unknown, TOut = unknown>(name: string, payload?: TIn): Promise<TOut>;
+    /** Opens another app on the phone (a built-in app or a folder app id), leaving this one. */
+    open(app: string, target?: string): Promise<void>;
+    /** Tells the phone that data it shows elsewhere changed (contacts, for example), so it reloads it. */
+    refresh(): Promise<void>;
+    /** Uploads a file to the media host and saves it to the gallery (needs the media.write permission). */
+    media: { upload(blob: Blob): Promise<SavedMedia> };
+    /** Takes an in-game photo with the phone's camera (needs the camera permission). */
+    camera: { capture(options?: { front?: boolean }): Promise<SavedMedia> };
+    /** Starts a voice call to a phone number through the phone's call service (the call screen belongs to the phone). */
+    call(number: string): Promise<void>;
+    /** Settings, PIN, blocked numbers and handset controls. Only the phone's own system apps may use it; every other app gets PERMISSION_DENIED. */
+    system<TOut = unknown>(action: string, payload?: Record<string, unknown>): Promise<TOut>;
+    /** Calls a handler the app registered in its own client.lua with `app.client(name, fn)`. */
+    client<TIn = unknown, TOut = unknown>(name: string, payload?: TIn): Promise<TOut>;
     notify(title: string, body: string): Promise<void>;
     storage: {
         get<T extends Json = Json>(key: string): Promise<T | null>;
+        /** Every value whose key starts with `prefix` (all keys when omitted). */
+        list<T extends Json = Json>(prefix?: string): Promise<Record<string, T>>;
         set<T extends Json = Json>(key: string, value: T): Promise<void>;
         remove(key: string): Promise<void>;
     };
@@ -225,6 +242,23 @@ export function createPhoneClient(options: PhoneClientOptions = {}): PhoneClient
         async callback<TIn = unknown, TOut = unknown>(name: string, payload?: TIn): Promise<TOut> {
             return (await request('callback', { name, payload })) as TOut;
         },
+        async open(app, target) {
+            await request('open', target === undefined ? { app } : { app, target });
+        },
+        async system<TOut = unknown>(action: string, payload?: Record<string, unknown>): Promise<TOut> {
+            return (await request('system', { ...(payload ?? {}), action })) as TOut;
+        },
+        media: { async upload(blob) { return (await request('media.upload', { blob })) as SavedMedia; } },
+        camera: { async capture(options) { return (await request('camera.capture', { front: options?.front === true })) as SavedMedia; } },
+        async call(number) {
+            await request('call', { number });
+        },
+        async refresh() {
+            await request('refresh', {});
+        },
+        async client<TIn = unknown, TOut = unknown>(name: string, payload?: TIn): Promise<TOut> {
+            return (await request('client', { name, payload })) as TOut;
+        },
         async notify(title, body) {
             await request('notify', { title, body });
         },
@@ -232,6 +266,9 @@ export function createPhoneClient(options: PhoneClientOptions = {}): PhoneClient
             async get<T extends Json = Json>(key: string) {
                 const value = await request('storage.get', { key });
                 return (value ?? null) as T | null;
+            },
+            async list<T extends Json = Json>(prefix?: string) {
+                return ((await request('storage.list', prefix === undefined ? {} : { prefix })) ?? {}) as Record<string, T>;
             },
             async set(key, value) {
                 await request('storage.set', { key, value });

@@ -1,0 +1,3 @@
+.vehicle-plate { font-family: var(--kp-font-mono); letter-spacing: 0.08em; }
+.vehicle-stats { display: grid; grid-template-columns: 1fr 1fr; gap: var(--kp-gap); }
+.vehicle-stats strong { display: block; }

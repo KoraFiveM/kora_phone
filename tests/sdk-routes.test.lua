@@ -17,6 +17,14 @@ local function setup(manifestOverrides)
         usage = function() return { keys = 0, bytes = 0 } end,
         set = function(d, a, k, v) store[d .. a .. k] = v return true end,
         remove = function(d, a, k) store[d .. a .. k] = nil return true end,
+        list = function(d, a, prefix)
+            local rows = {}
+            for key, value in pairs(store) do
+                local k = key:sub(#(d .. a) + 1)
+                if k:sub(1, #(prefix or '')) == (prefix or '') then rows[#rows + 1] = { key = k, value = value } end
+            end
+            return rows
+        end,
     }
     env.store = store
 end
@@ -26,7 +34,7 @@ local function code(result) return result.error and result.error.code end
 test('every contract route is exposed for the gateway', function()
     setup()
     for _, name in ipairs({ 'apps:list', 'apps:install', 'apps:uninstall', 'apps:call', 'apps:storage:get',
-        'apps:storage:set', 'apps:storage:remove', 'apps:contacts:list', 'apps:contacts:save', 'apps:notify' }) do
+        'apps:storage:set', 'apps:storage:list', 'apps:storage:remove', 'apps:contacts:list', 'apps:contacts:save', 'apps:notify' }) do
         equal(type(routes[name]), 'function', name)
     end
 end)
@@ -66,6 +74,19 @@ test('route handlers do not charge the rate limiter themselves', function()
         local result = fn(1, { app = 'demo-app', id = 'demo-app', name = 'x', key = 'k', value = 1, title = 't' })
         assert(code(result) ~= 'RATE_LIMITED', name .. ' charged the limiter itself')
     end
+end)
+
+test('apps:storage:list returns the keys under a prefix and honours the storage permission', function()
+    setup()
+    equal(routes['apps:storage:set'](1, { app = 'demo-app', key = 'note:1', value = { t = 'a' } }).ok, true)
+    equal(routes['apps:storage:set'](1, { app = 'demo-app', key = 'note:2', value = { t = 'b' } }).ok, true)
+    equal(routes['apps:storage:set'](1, { app = 'demo-app', key = 'other', value = 1 }).ok, true)
+    local listed = routes['apps:storage:list'](1, { app = 'demo-app', prefix = 'note:' })
+    equal(listed.ok, true)
+    equal(listed.data.values['note:1'].t, 'a')
+    equal(listed.data.values['note:2'].t, 'b')
+    equal(listed.data.values['other'], nil)
+    equal(code(routes['apps:storage:list'](1, { app = 'demo-app', prefix = 'bad prefix!' })), 'INVALID_INPUT')
 end)
 
 test('unknown or malformed app ids are NOT_FOUND', function()

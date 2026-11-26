@@ -9,6 +9,9 @@ export type Permission =
     | 'contacts.read'
     | 'contacts.write'
     | 'media.read'
+    | 'media.write'
+    | 'camera'
+    | 'record'
     | 'location'
     | 'payments';
 
@@ -23,6 +26,13 @@ export interface Contact {
     number: string;
 }
 
+/** A photo or clip saved to the phone's gallery. */
+export interface SavedMedia {
+    id: number;
+    url: string;
+    kind: 'photo' | 'video';
+}
+
 export interface ThemeState {
     vars: Record<string, string>;
     scheme: Scheme;
@@ -34,13 +44,25 @@ export interface InitPayload {
     locale: string;
     theme: ThemeState;
     permissions: Permission[];
+    /** Where the app was asked to open (a number to call, a thread to show). Absent for a plain launch. */
+    target?: string;
+    /** The phone's volume setting, 0 to 1, for apps that play sound. */
+    volume?: number;
 }
 
 /** iframe -> host requests: payload and response types per request type. */
 export interface RequestMap {
     ready: { payload: Record<string, never> | undefined; result: unknown };
     callback: { payload: { name: string; payload?: unknown }; result: unknown };
+    client: { payload: { name: string; payload?: unknown }; result: unknown };
+    open: { payload: { app: string; target?: string }; result: unknown };
+    refresh: { payload: Record<string, never>; result: unknown };
+    call: { payload: { number: string }; result: unknown };
+    'media.upload': { payload: { blob: Blob }; result: SavedMedia };
+    'camera.capture': { payload: { front?: boolean }; result: SavedMedia };
+    system: { payload: { action: string } & Record<string, unknown>; result: unknown };
     notify: { payload: { title: string; body: string }; result: unknown };
+    'storage.list': { payload: { prefix?: string }; result: Record<string, Json> };
     'storage.get': { payload: { key: string }; result: Json | null };
     'storage.set': { payload: { key: string; value: Json }; result: unknown };
     'storage.remove': { payload: { key: string }; result: unknown };

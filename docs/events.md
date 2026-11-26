@@ -51,20 +51,17 @@ Every NUI route that forwards to a server callback is listed once in `shared/rou
 | Phone | `getBootstrap`, `saveSettings`, `unlockPhone`, `lockPhone`, `setPhonePin`, `removePhonePin`, `hasPhone` |
 | Handsets | `handsetAction` (ops: `status`, `select`, `faceUnlock`, `faceEnroll`, `wifi`, `insertSim`, `removeSim`, `registerCloud`, `backup`, `restoreCloud`, `reset`, and service ops `buy`, `recoverCloud`, `replaceSim`, `resell`, `consent`) |
 | Contacts and sharing | `getContacts`, `saveContact`, `deleteContact`, `share:offer`, `share:answer` |
-| Messages | `sendMessage`, `getMessages`, `getConversations`, `startDirectConversation`, `markConversationRead`, `deleteMessageForSelf`, `createGroup`, `leaveGroup`, `addGroupMember`, `getBlocked`, `setBlocked` |
-| Calls | `calls:start`, `calls:accept`, `calls:reject`, `calls:hangup`, `calls:history`, `calls:signal`, `calls:videoControl` |
-| Mail | `getMail`, `sendMail`, `readMail`, `deleteMail`, `mail:system:list`, `mail:system:activity`, `mail:system:read`, `mail:system:delete`, `mail:system:accept` |
-| Media | `requestMediaUpload`, `completeMediaUpload`, `getGallery`, `deleteMedia` |
-| Economy | `getBankBalance`, `getBankHistory`, `transferBankMoney`, `getWallet`, `showWalletId`, `getJob`, `setJobDuty`, `runJobAction` |
-| Utilities | `saveItem`, `removeItem`, `getVehicles`, `getProperties` |
-| Apps (SDK) | `apps:list`, `apps:install`, `apps:uninstall`, `apps:call`, `apps:storage:get`, `apps:storage:set`, `apps:storage:remove`, `apps:contacts:list`, `apps:contacts:save`, `apps:notify` (see [App SDK API](./api/apps.md)) |
-| Community | `social:createAccount`, `getFeed`, `getProfile`, `createPost`, `deletePost`, `toggleLike`, `follow`, `unfollow`, `createComment`, `deleteComment`, `getComments`, `block`, `report`; `market:getListings`, `getListing`, `createListing`, `updateListing`, `removeListing`, `markSold`, `contactSeller`; `moderation:getQueue`, `resolve` (each prefixed with its group, for example `social:getFeed`) |
+| Messages | `sendMessage`, `getMessages`, `getConversations`, `startDirectConversation`, `markConversationRead`, `createGroup`, `leaveGroup`, `addGroupMember`, `getBlocked`, `setBlocked` |
+| Calls | `calls:start`, `calls:accept`, `calls:reject`, `calls:hangup`, `calls:signal`, `calls:videoControl` |
+| Media | `requestMediaUpload`, `completeMediaUpload`, `getGallery` |
+| Utilities | (none: items moved into the Clock and Sound apps) |
+| Apps (SDK) | `apps:list`, `apps:install`, `apps:uninstall`, `apps:call`, `apps:storage:get`, `apps:storage:list`, `apps:storage:set`, `apps:storage:remove`, `apps:contacts:list`, `apps:contacts:save`, `apps:notify` (see [App SDK API](./api/apps.md)) |
 
 The gateway in `server/callbacks.lua` registers one callback per `server` name in `shared/routes.json` and takes the rate key and app gate from there. Two callbacks the NUI never calls are registered in code: `share:offer` (rate key `shareNumber`, called by the client's third-eye option) and `hasPhone` (no rate limit; the client uses it to tell a downed player without a phone from one who cannot use it). Modules only bind handlers with `KoraPhone.Routes.handle(name, handler)`; a handler can be bound before or after the gateway loads. The `apps:*` routes (SDK) and `mail:system:*` routes (system mail) are bound the same way. Limits are in [Configuration](./configuration.md).
 
 ## NUI callbacks
 
-Forwarded to the server callbacks above, using the NUI names in `shared/routes.json` (for example `contacts:list`, `messages:send`, `bank:getData`, `bank:transfer`, `calls:start`, `gallery:list`, `settings:save`, `security:unlock`, `handset:action`, `jobs:getData`, `social:*`, `market:*`, `moderation:*`, `apps:*`, `mail:system:*`). Handled on the client:
+Forwarded to the server callbacks above, using the NUI names in `shared/routes.json` (for example `contacts:list`, `calls:start`, `gallery:list`, `settings:save`, `security:unlock`, `handset:action`, `social:*`, `moderation:*`, `apps:*`, `mail:system:*`). Handled on the client:
 
 | Callback | Purpose |
 | --- | --- |

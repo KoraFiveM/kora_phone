@@ -15,7 +15,7 @@ The NUI is a React, TypeScript and Vite app in `web/src`, built into `web/dist` 
 | Circuit Flip | `flip` | Tall inner display and a closed cover screen (clock, notifications, voice calls, music controls, camera preview) |
 | Atlas Fold | `fold` | Complete outer phone that unfolds into larger layouts, with conversations beside the open chat |
 
-Settings also offers a `classic` style, an appearance (dark or light), wallpapers, icon styles and flip-case art. See Theme below for how colour works.
+Settings (the `settings` folder app) also offers a `classic` style, an appearance (dark or light), wallpapers, icon styles and flip-case art. See Theme below for how colour works.
 
 ## Theme
 
@@ -32,20 +32,20 @@ The web build imports kora_theme's Vite plugin straight from the sibling resourc
 
 ## Apps
 
-App ids (`AppId` in `web/src/types.ts`, screens registered in `web/src/core/appRegistry.ts`): Phone, Contacts, Messages (Pulse chat), Camera, Gallery, Maps (`gps`), Mail, Notes, Weather, Calculator, Clock, Sound (`music`), Settings, plus the optional Wallet (`banking`), Pulse (`social`), Market (`classifieds`), Services, Home (`property`), Garage (`vehicles`), Flash and Moderation. Availability depends on `Config.Apps`, `Config.LaunchApps`, and server checks reported at bootstrap (media provider, housing tables, garage table, transfers). Notes, alarms and Sound stations are stored on the server ([Database](./database.md)). The list of installed optional apps (`installedApps`) and the home order are saved with the phone's settings on the server and validated against `Config.LaunchApps`; new phones start with Maps, Notes, Mail, Clock, Weather, Calculator and Sound installed. The NUI's `localStorage` only holds the last screen, notification history, Do Not Disturb times and alarm copies.
+App ids (`AppId` in `web/src/types.ts`, screens registered in `web/src/core/appRegistry.ts`): only the App Store is still a built-in screen. Pulse (`social`), Flash, Camera, Notes, Weather, Calculator, Wallet (`banking`), Mail, Moderation, Market (`classifieds`), Contacts, Phone, Messages, Gallery, Work (`services`), Home (`property`) and Garage (`vehicles`) are folder apps (`apps/<id>/`, see the [App SDK developer guide](./apps.md)) and appear on the home screen as `app:<id>` entries. Availability depends on `Config.Apps`, `Config.LaunchApps`, and server checks reported at bootstrap (media provider, housing tables, garage table, transfers). Alarms and Sound stations are stored on the server ([Database](./database.md)). The list of installed optional apps (`installedApps`) and the home order are saved with the phone's settings on the server and validated against `Config.LaunchApps`; new phones start with Maps, Clock and Sound installed, plus every folder app whose `app.lua` sets `defaultInstalled = true` (Notes, Weather, Calculator and Mail). The NUI's `localStorage` only holds the last screen, notification history, Do Not Disturb times and alarm copies.
 
 Custom apps appear in the App Store (unless `Config.AppStore` is `false`) and open in an embedded frame: SDK apps registered by manifest ([App SDK](./apps.md)) and client-registered apps from [Exports](./api/exports-events.md).
 
 ## Maps
 
-Maps shows a road map image (`web/public/map.jpg`, fitted by `MAP_BOUNDS` in `web/src/apps/maps/GPSScreen.tsx`), the saved places from `Config.Server.Maps.Locations`, and visible game blips mirrored once per second while the app is open. The game minimap is repositioned behind the app and restored when it closes.
+Maps (the `gps` folder app) shows a road map image (`apps/gps/ui/map.jpg`, fitted by `BOUNDS` in `apps/gps/ui/app.js`), the saved places from `Config.Server.Maps.Locations`, and visible game blips (coloured dots; the phone does not load blip artwork from outside the resource). Blips refresh when a resource registers or removes one, and your position once per second while the app is open.
 
 ## Source layout
 
 The React app lives in `web/src/`. `App.tsx` and `main.tsx` are a thin shell that mounts the phone.
 
 - `core/` is the phone itself: the store and reducer, lock screen, home screen, status bar, notification shade, call overlay, handset chrome, the app registry (`appRegistry.ts`), and the hooks that wire the game in (`useHostEvents.ts` for NUI messages, `useBackgroundEffects.ts`, `useCallVideo.ts`, `usePhoneActions.ts`). Shared artwork such as `CoverArt.tsx` is here too.
-- `apps/<app>/` holds one folder per built-in app (Mail, Wallet, Maps, Pulse, Flash, Market, Moderation, Settings and so on). Heavy apps load lazily in their own chunk. `apps/shared/` has pieces used by several social apps, and `apps/custom/` is the host for third-party apps.
+- `apps/<app>/` holds the built-in screens that remain (the App Store and the custom-app host). Heavy apps load lazily in their own chunk.  `apps/custom/` is the host for third-party apps.
 - `api/` is the typed client for the game. `routes/` maps each UI action to a NUI route, `adapters/` converts raw server payloads into the UI types in `types.ts`, and `api/index.ts` is the only import the screens use.
 - `sdk/` is the pure logic behind the third-party app host (protocol, permission gate, router, theme collector), shared with `@kora/phone-sdk` and covered by Node tests.
 

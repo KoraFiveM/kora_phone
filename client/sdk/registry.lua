@@ -123,6 +123,20 @@ function ClientRegistry.list()
     return result
 end
 
+ClientRegistry.MAX_HTML_BYTES = 1024 * 1024
+
+--- The page of a client-registered app, read from its own resource, so the phone can inject the lb-phone
+--- compatibility layer ahead of the app's scripts. Nil for apps whose UI is a URL, and for anything unreadable.
+function ClientRegistry.html(identifier)
+    local app = type(identifier) == 'string' and ClientRegistry.apps[identifier]
+    if not app or app.ui:find('^https?://') then return nil end
+    local path = app.ui:gsub('^/+', '')
+    if path:find('..', 1, true) or not path:match('%.html?$') then return nil end
+    local html = LoadResourceFile(app.resource, path)
+    if type(html) ~= 'string' or #html > ClientRegistry.MAX_HTML_BYTES then return nil end
+    return html
+end
+
 function ClientRegistry.sendMessage(identifier, data)
     if type(identifier) ~= 'string' or not ClientRegistry.apps[identifier] then return false, 'NOT_FOUND' end
     SendNUIMessage({ type = 'customMessage', app = identifier, data = data })

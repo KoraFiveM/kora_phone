@@ -54,7 +54,7 @@ end
 
 -- A saved handset backup follows every change a delivered text makes, shortly after it settles.
 local function scheduleBackup(target)
-    SetTimeout(BACKUP_DELAY_MS, function()
+    KoraPhone.After(BACKUP_DELAY_MS, function()
         if KoraPhone.Handsets.selected[target] then
             KoraPhone.Handsets.locked(target, KoraPhone.Handsets.backup, {})
         end

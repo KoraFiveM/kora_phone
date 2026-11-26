@@ -98,25 +98,20 @@ end
 -- so the stored JSON can never grow arbitrary client-controlled fields.
 -- Apps a player installs from the store; they only appear in the home order while installed.
 local OPTIONAL_APPS = {
-    banking = true,
-    social = true,
-    classifieds = true,
-    gps = true,
-    services = true,
-    notes = true,
-    mail = true,
-    weather = true,
-    calculator = true,
-    property = true,
-    vehicles = true,
-    flash = true,
-    music = true,
-    clock = true,
 }
 
 -- Read at use time so a config change applies without touching callers.
 function PhoneValidation.homeReorderAllowed()
     return not Config.HomeScreen or Config.HomeScreen.allowReorder ~= false
+end
+
+-- Folder and resource apps sit on the home screen under `app:<id>`; the server only checks the shape.
+function PhoneValidation.isFolderAppId(id)
+    return type(id) == 'string' and #id <= 40 and id:match('^app:[a-z0-9][a-z0-9_-]+$') ~= nil
+end
+
+local function orderId(id)
+    return type(id) == 'string' and #id <= 40 and (id:match('^[a-z]+$') ~= nil or PhoneValidation.isFolderAppId(id))
 end
 
 -- Turns a submitted home order into a clean permutation: unknown and repeated ids drop out, optional apps
@@ -127,7 +122,7 @@ function PhoneValidation.homeOrder(order, installed)
         for _, id in ipairs(installed) do keep[id] = true end
     end
     for _, id in ipairs(order) do
-        local known = not Config.LaunchApps or Config.LaunchApps[id]
+        local known = not Config.LaunchApps or Config.LaunchApps[id] or PhoneValidation.isFolderAppId(id)
         local present = not installed or not OPTIONAL_APPS[id] or keep[id]
         if known and present and not seen[id] then
             seen[id] = true
@@ -203,7 +198,7 @@ function PhoneValidation.settings(payload)
         if type(payload.appOrder) ~= 'table' or #payload.appOrder > 32 then return nil, 'appOrder is invalid' end
         out.appOrder = {}
         for i, id in ipairs(payload.appOrder) do
-            if type(id) ~= 'string' or #id > 24 or not id:match('^[a-z]+$') then return nil, 'appOrder is invalid' end
+            if not orderId(id) then return nil, 'appOrder is invalid' end
             out.appOrder[i] = id
         end
     end
@@ -211,7 +206,7 @@ function PhoneValidation.settings(payload)
         if type(payload.dockOrder) ~= 'table' or #payload.dockOrder > 8 then return nil, 'dockOrder is invalid' end
         out.dockOrder = {}
         for i, id in ipairs(payload.dockOrder) do
-            if type(id) ~= 'string' or #id > 24 or not id:match('^[a-z]+$') then return nil, 'dockOrder is invalid' end
+            if not orderId(id) then return nil, 'dockOrder is invalid' end
             out.dockOrder[i] = id
         end
     end
@@ -269,22 +264,14 @@ local function clockTime(value)
     return hours and tonumber(hours) <= 23 and tonumber(minutes) <= 59
 end
 
--- A note, alarm or music station a phone keeps (Config.Server.Items limits how many). Returns a
+-- An alarm or music station a phone keeps (Config.Server.Items limits how many). Returns a
 -- clean copy holding only the known fields, so stored JSON never carries client-chosen extras.
 function PhoneValidation.item(kind, item)
     if type(item) ~= 'table' then return nil, 'item must be an object' end
     local id, err = PhoneValidation.string(item.id, 'id', 1, 64)
     if not id then return nil, err end
     if not id:match('^[%w_%-]+$') then return nil, 'id is invalid' end
-    if kind == 'note' then
-        local title
-        title, err = PhoneValidation.string(item.title, 'title', 1, 100)
-        if not title then return nil, err end
-        local body
-        body, err = PhoneValidation.string(item.body == nil and '' or item.body, 'body', 0, 4000, true)
-        if not body then return nil, err end
-        return { id = id, title = title, body = body }
-    elseif kind == 'alarm' then
+    if kind == 'alarm' then
         local label
         label, err = PhoneValidation.string(item.label == nil and '' or item.label, 'label', 0, 60, true)
         if not label then return nil, err end
